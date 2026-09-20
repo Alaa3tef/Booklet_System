@@ -1,11 +1,58 @@
-<div class="app-shell">
-  <app-sidebar></app-sidebar>
+<div
+  class="app-shell"
+  [class.sidebar-open]="sidebarOpen">
 
-  <div class="app-content">
-    <app-header></app-header>
 
-    <main class="page-outlet">
+  <!-- =====================================
+       Mobile Overlay
+  ====================================== -->
+
+  @if (sidebarOpen) {
+
+    <div
+      class="sidebar-overlay"
+      (click)="closeSidebar()">
+    </div>
+
+  }
+
+
+  <!-- =====================================
+       Sidebar
+  ====================================== -->
+
+  <app-sidebar
+    [mobileOpen]="sidebarOpen"
+    (closeMobile)="closeSidebar()">
+  </app-sidebar>
+
+
+  <!-- =====================================
+       Main Area
+  ====================================== -->
+
+  <div class="main-area">
+
+
+    <!-- Header -->
+
+    <app-header
+      [breadcrumbs]="breadcrumbs"
+      [userName]="userName"
+      [userRole]="userRole"
+      (menuToggle)="toggleSidebar()">
+    </app-header>
+
+
+    <!-- Page Content -->
+
+    <main class="page-content">
+
       <router-outlet></router-outlet>
+
     </main>
+
+
   </div>
+
 </div>

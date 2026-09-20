@@ -1,17 +1,172 @@
-.app-shell {
-  display: flex;
+:host {
+  display: block;
+
+  width: 100%;
   min-height: 100vh;
-  background: var(--ebs-gray-bg);
 }
 
-.app-content {
-  flex: 1;
+
+/* =========================================
+   APP SHELL
+========================================= */
+
+.app-shell {
+  width: 100%;
+  min-height: 100vh;
+
+  background: #f5f8fc;
+
+  direction: ltr;
+}
+
+
+/* =========================================
+   MAIN AREA
+========================================= */
+
+.main-area {
+  width: calc(100% - var(--ebs-sidebar-width));
+
+  min-height: 100vh;
+
+  margin-left: var(--ebs-sidebar-width);
+
   display: flex;
+
   flex-direction: column;
-  min-width: 0;
+
+  direction: rtl;
+
+  transition:
+    margin-left 0.25s ease,
+    width 0.25s ease;
 }
 
-.page-outlet {
-  flex: 1;
-  padding: 1.5rem;
+
+/* =========================================
+   PAGE CONTENT
+
+   Header = 76px
+   Breadcrumb = 44px
+   Total = 120px
+========================================= */
+
+.page-content {
+  width: 100%;
+
+  min-height: calc(100vh - 120px);
+
+  padding:
+    calc(120px + 1.25rem)
+    1.25rem
+    1.25rem;
+
+  direction: rtl;
+
+  overflow-x: hidden;
+}
+
+
+/* =========================================
+   MOBILE OVERLAY
+========================================= */
+
+.sidebar-overlay {
+  display: none;
+}
+
+
+/* =========================================
+   DESKTOP
+========================================= */
+
+@media (min-width: 992px) {
+
+  .main-area {
+    width: calc(100% - var(--ebs-sidebar-width));
+
+    margin-left: var(--ebs-sidebar-width);
+  }
+
+}
+
+
+/* =========================================
+   TABLET
+========================================= */
+
+@media (max-width: 991px) {
+
+  .main-area {
+    width: 100%;
+
+    margin-left: 0;
+  }
+
+
+  .page-content {
+    min-height: calc(100vh - 112px);
+
+    padding:
+      calc(112px + 1rem)
+      1rem
+      1rem;
+  }
+
+
+  /* Overlay */
+
+  .sidebar-overlay {
+    display: block;
+
+    position: fixed;
+
+    inset: 0;
+
+    z-index: 2050;
+
+    background:
+      rgba(8, 32, 60, 0.48);
+
+    backdrop-filter: blur(2px);
+
+    animation:
+      overlayFadeIn 0.2s ease;
+  }
+
+}
+
+
+/* =========================================
+   SMALL MOBILE
+========================================= */
+
+@media (max-width: 575px) {
+
+  .page-content {
+    min-height: calc(100vh - 106px);
+
+    padding:
+      calc(106px + 0.85rem)
+      0.75rem
+      0.75rem;
+  }
+
+}
+
+
+/* =========================================
+   ANIMATION
+========================================= */
+
+@keyframes overlayFadeIn {
+
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+
 }

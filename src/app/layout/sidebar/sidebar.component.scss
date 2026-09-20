@@ -1,136 +1,737 @@
+/* ==================================================
+   SIDEBAR
+================================================== */
+
 .sidebar {
-  width: var(--ebs-sidebar-width);
-  min-width: var(--ebs-sidebar-width);
+
+  width:
+    var(--ebs-sidebar-width, 188px);
+
+
+  min-width:
+    var(--ebs-sidebar-width, 188px);
+
+
   height: 100vh;
-  background: linear-gradient(180deg, var(--ebs-navy) 0%, var(--ebs-navy-dark) 100%);
-  color: #fff;
-  display: flex;
-  flex-direction: column;
-  position: sticky;
+
+
+  /*
+    FIXED SIDEBAR
+  */
+
+  position: fixed;
+
+
   top: 0;
+
+  left: 0;
+
+
+  display: flex;
+
+  flex-direction: column;
+
+
+  background:
+    linear-gradient(
+      180deg,
+      #193b66 0%,
+      #102f55 48%,
+      #0b294b 100%
+    );
+
+
+  color: #ffffff;
+
+
+  z-index: 2100;
+
+
+  overflow: hidden;
+
+
+  direction: rtl;
+
+
+  box-shadow:
+    3px 0 15px
+    rgba(9, 35, 66, 0.12);
 }
+
+
+/* ==================================================
+   BRAND
+================================================== */
 
 .sidebar-brand {
+
+  min-height: 115px;
+
+
   display: flex;
+
+  flex-direction: column;
+
   align-items: center;
-  gap: 0.6rem;
-  padding: 1.25rem 1.25rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 
-  .brand-icon {
-    font-size: 1.4rem;
-    color: #fff;
-  }
+  justify-content: center;
 
-  .brand-text {
-    font-weight: 700;
-    font-size: 1rem;
-    letter-spacing: 0.2px;
-  }
+
+  padding:
+    1rem 0.7rem;
+
+
+  border-bottom:
+    1px solid
+    rgba(255, 255, 255, 0.09);
+
+
+  position: relative;
 }
+
+
+/* ==================================================
+   LOGO
+================================================== */
+
+.ministry-logo {
+
+  width: 48px;
+
+  height: 48px;
+
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+
+  margin-bottom: 0.35rem;
+}
+
+
+.logo-eagle {
+
+  width: 45px;
+
+  height: 45px;
+
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+
+  border-radius: 50%;
+
+
+  background:
+    linear-gradient(
+      135deg,
+      #ffffff,
+      #dcecff
+    );
+
+
+  color: #17406d;
+
+
+  font-size: 1.5rem;
+
+
+  box-shadow:
+    0 4px 12px
+    rgba(0, 0, 0, 0.15);
+}
+
+
+/* ==================================================
+   MINISTRY TEXT
+================================================== */
+
+.ministry-text {
+
+  display: flex;
+
+  flex-direction: column;
+
+  align-items: center;
+
+  text-align: center;
+}
+
+
+.arabic-name {
+
+  font-size: 0.73rem;
+
+  font-weight: 800;
+
+
+  color: #ffffff;
+
+
+  white-space: nowrap;
+}
+
+
+.english-name {
+
+  margin-top: 2px;
+
+
+  font-size: 0.53rem;
+
+
+  color:
+    rgba(255, 255, 255, 0.62);
+
+
+  white-space: nowrap;
+}
+
+
+/* ==================================================
+   NAVIGATION
+================================================== */
 
 .sidebar-nav {
+
   flex: 1;
+
+
   overflow-y: auto;
-  padding: 0.75rem 0.75rem;
+
+
+  padding:
+    0.85rem 0.65rem;
+
+
+  scrollbar-width: thin;
+
+
+  scrollbar-color:
+    rgba(255,255,255,0.18)
+    transparent;
 }
+
+
+.sidebar-nav::-webkit-scrollbar {
+
+  width: 4px;
+}
+
+
+.sidebar-nav::-webkit-scrollbar-thumb {
+
+  background:
+    rgba(255,255,255,0.18);
+
+
+  border-radius: 20px;
+}
+
+
+/* ==================================================
+   NAV LIST
+================================================== */
 
 .nav-list {
+
   list-style: none;
-  margin: 0;
+
+
   padding: 0;
+
+  margin: 0;
+
+
   display: flex;
+
   flex-direction: column;
-  gap: 0.15rem;
+
+
+  gap: 0.18rem;
 }
+
+
+/* ==================================================
+   NAV LINK
+================================================== */
 
 .nav-link {
-  display: flex;
-  align-items: center;
-  gap: 0.65rem;
+
   width: 100%;
-  padding: 0.65rem 0.85rem;
-  border-radius: 10px;
-  color: rgba(255, 255, 255, 0.82);
-  font-size: 0.92rem;
-  font-weight: 500;
-  background: transparent;
+
+
+  min-height: 43px;
+
+
+  display: flex;
+
+  align-items: center;
+
+
+  gap: 0.7rem;
+
+
+  padding:
+    0.65rem 0.7rem;
+
+
   border: none;
-  cursor: pointer;
+
+
+  border-radius: 9px;
+
+
+  background: transparent;
+
+
+  color:
+    rgba(255, 255, 255, 0.83);
+
+
+  text-decoration: none;
+
+
   font-family: inherit;
+
+
+  font-size: 0.79rem;
+
+
+  font-weight: 500;
+
+
+  cursor: pointer;
+
+
   text-align: right;
 
-  i:first-child {
-    font-size: 1rem;
-    width: 18px;
-    text-align: center;
-  }
+
+  transition:
+    background 0.2s ease,
+    color 0.2s ease;
+
 
   &:hover {
-    background: rgba(255, 255, 255, 0.06);
-    color: #fff;
+
+    background:
+      rgba(255,255,255,0.08);
+
+
+    color: #ffffff;
   }
 
+
   &.active {
-    background: var(--ebs-blue);
-    color: #fff;
+
+    background:
+      linear-gradient(
+        90deg,
+        #2e80ed,
+        #347fdb
+      );
+
+
+    color: #ffffff;
+
+
+    box-shadow:
+      0 5px 12px
+      rgba(31, 105, 196, 0.25);
   }
 }
+
+
+/* ==================================================
+   NAV ICON
+================================================== */
+
+.nav-icon {
+
+  width: 22px;
+
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+
+  flex-shrink: 0;
+
+
+  i {
+
+    font-size: 0.95rem;
+  }
+}
+
+
+/* ==================================================
+   LABEL
+================================================== */
+
+.nav-label {
+
+  flex: 1;
+
+
+  white-space: nowrap;
+}
+
+
+/* ==================================================
+   GROUP
+================================================== */
 
 .group-toggle {
-  .toggle-icon {
-    margin-inline-start: auto;
-    font-size: 0.75rem;
-    transition: transform 0.15s ease;
 
-    &.rotated { transform: rotate(180deg); }
+  font-family: inherit;
+
+
+  .toggle-icon {
+
+    margin-inline-start: auto;
+
+
+    font-size: 0.63rem;
+
+
+    opacity: 0.7;
+
+
+    transition:
+      transform 0.2s ease;
+  }
+
+
+  .toggle-icon.rotated {
+
+    transform:
+      rotate(180deg);
   }
 }
+
+
+/* ==================================================
+   SUB MENU
+================================================== */
 
 .nav-sublist {
+
   list-style: none;
-  margin: 0.15rem 0 0.35rem 0;
-  padding-inline-start: 1.1rem;
+
+
+  margin:
+    0.2rem 0 0.35rem;
+
+
+  padding:
+    0 0.5rem 0 0;
+
+
   display: flex;
+
   flex-direction: column;
-  gap: 0.1rem;
+
+
+  gap: 2px;
+
+
+  border-right:
+    1px solid
+    rgba(255,255,255,0.12);
 }
+
 
 .nav-sublink {
+
+  min-height: 35px;
+
+
   display: flex;
+
   align-items: center;
-  gap: 0.6rem;
-  padding: 0.55rem 0.85rem;
-  border-radius: 8px;
-  color: rgba(255, 255, 255, 0.65);
-  font-size: 0.88rem;
 
-  .dot { font-size: 0.4rem; color: rgba(255, 255, 255, 0.4); }
 
-  &:hover { color: #fff; background: rgba(255, 255, 255, 0.05); }
+  gap: 0.55rem;
+
+
+  padding:
+    0.45rem 0.7rem;
+
+
+  border-radius: 7px;
+
+
+  color:
+    rgba(255,255,255,0.62);
+
+
+  text-decoration: none;
+
+
+  font-size: 0.72rem;
+
+
+  transition:
+    background 0.2s ease,
+    color 0.2s ease;
+
+
+  &:hover {
+
+    background:
+      rgba(255,255,255,0.06);
+
+
+    color: #ffffff;
+  }
+
 
   &.active {
-    background: rgba(47, 128, 237, 0.18);
-    color: #fff;
-    font-weight: 600;
 
-    .dot { color: var(--ebs-blue-light); }
+    background:
+      rgba(47, 128, 237, 0.22);
+
+
+    color: #ffffff;
+
+
+    font-weight: 700;
   }
 }
 
+
+/* ==================================================
+   SUB DOT
+================================================== */
+
+.sub-dot {
+
+  width: 5px;
+
+  height: 5px;
+
+
+  border-radius: 50%;
+
+
+  background:
+    rgba(255,255,255,0.35);
+
+
+  flex-shrink: 0;
+}
+
+
+.nav-sublink.active .sub-dot {
+
+  background:
+    #6eafff;
+
+
+  box-shadow:
+    0 0 5px
+    rgba(110,175,255,0.5);
+}
+
+
+/* ==================================================
+   SIDEBAR FOOTER
+================================================== */
+
 .sidebar-footer {
-  padding: 1.5rem 1.25rem;
+
+  padding:
+    1rem 0.7rem 1.25rem;
+
+
   text-align: center;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
 
-  .books-illustration {
-    font-size: 2.5rem;
-    color: rgba(255, 255, 255, 0.25);
-    margin-bottom: 0.5rem;
+
+  border-top:
+    1px solid
+    rgba(255,255,255,0.08);
+
+
+  background:
+    rgba(0,0,0,0.06);
+}
+
+
+.footer-books {
+
+  color:
+    rgba(255,255,255,0.28);
+
+
+  font-size: 2rem;
+
+
+  margin-bottom: 0.3rem;
+}
+
+
+.footer-text {
+
+  font-size: 0.7rem;
+
+
+  color:
+    rgba(255,255,255,0.58);
+}
+
+
+.footer-subtitle {
+
+  font-size: 0.72rem;
+
+
+  color: #ffffff;
+
+
+  font-weight: 700;
+}
+
+
+/* ==================================================
+   MOBILE CLOSE
+================================================== */
+
+.sidebar-close {
+
+  display: none;
+
+
+  position: absolute;
+
+
+  top: 0.8rem;
+
+  left: 0.7rem;
+
+
+  width: 32px;
+
+  height: 32px;
+
+
+  border: none;
+
+
+  border-radius: 8px;
+
+
+  background:
+    rgba(255,255,255,0.08);
+
+
+  color: #ffffff;
+
+
+  cursor: pointer;
+
+
+  align-items: center;
+
+  justify-content: center;
+}
+
+
+/* ==================================================
+   TABLET / MOBILE
+================================================== */
+
+@media (max-width: 991px) {
+
+
+  .sidebar {
+
+    width: 260px;
+
+    min-width: 260px;
+
+
+    position: fixed;
+
+
+    top: 0;
+
+    left: 0;
+
+
+    transform:
+      translateX(-105%);
+
+
+    transition:
+      transform 0.28s
+      cubic-bezier(.4,0,.2,1);
+
+
+    box-shadow:
+      8px 0 30px
+      rgba(0,0,0,0.2);
   }
 
-  .footer-tagline {
+
+  .sidebar.mobile-open {
+
+    transform:
+      translateX(0);
+  }
+
+
+  .sidebar-close {
+
+    display: flex;
+  }
+
+
+  .sidebar-brand {
+
+    min-height: 105px;
+  }
+
+
+  .nav-link {
+
+    min-height: 46px;
+
+
+    font-size: 0.84rem;
+  }
+
+
+  .nav-sublink {
+
     font-size: 0.78rem;
-    color: rgba(255, 255, 255, 0.55);
   }
+
+}
+
+
+/* ==================================================
+   SMALL MOBILE
+================================================== */
+
+@media (max-width: 575px) {
+
+
+  .sidebar {
+
+    width: 285px;
+
+    min-width: 285px;
+  }
+
 }
