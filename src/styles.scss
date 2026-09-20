@@ -1,0 +1,167 @@
+// ==========================================================================
+// Global styles — منظومة إنتاج البوكليت (Exam Booklet System)
+// ==========================================================================
+
+:root {
+  --ebs-navy: #0b2e4f;
+  --ebs-navy-dark: #081f38;
+  --ebs-blue: #1565c0;
+  --ebs-blue-light: #2f80ed;
+  --ebs-blue-bg: #eaf2fc;
+  --ebs-sky: #e8f1fb;
+  --ebs-green: #16a34a;
+  --ebs-green-bg: #e8f8ee;
+  --ebs-gray-bg: #f4f6f9;
+  --ebs-border: #e3e8ef;
+  --ebs-text: #1f2937;
+  --ebs-text-muted: #6b7280;
+  --ebs-radius: 12px;
+  --ebs-sidebar-width: 260px;
+  --ebs-header-height: 72px;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Cairo', 'Segoe UI', Tahoma, sans-serif;
+  background: var(--ebs-gray-bg);
+  color: var(--ebs-text);
+  direction: rtl;
+}
+
+h1, h2, h3, h4, h5, h6 { margin: 0; font-weight: 700; }
+p { margin: 0; }
+
+a { color: inherit; text-decoration: none; }
+
+.card {
+  background: #fff;
+  border-radius: var(--ebs-radius);
+  border: 1px solid var(--ebs-border);
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+}
+
+// Utility classes
+.flex { display: flex; }
+.flex-col { display: flex; flex-direction: column; }
+.items-center { align-items: center; }
+.justify-between { justify-content: space-between; }
+.gap-1 { gap: 0.25rem; }
+.gap-2 { gap: 0.5rem; }
+.gap-3 { gap: 0.75rem; }
+.gap-4 { gap: 1rem; }
+.w-full { width: 100%; }
+
+// Status tag (صحيح / خطأ etc.)
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.2rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 600;
+
+  &.success {
+    background: var(--ebs-green-bg);
+    color: var(--ebs-green);
+  }
+  &.danger {
+    background: #fdeceb;
+    color: #d92d20;
+  }
+  &.warning {
+    background: #fef6e7;
+    color: #b7791f;
+  }
+  &.info {
+    background: var(--ebs-blue-bg);
+    color: var(--ebs-blue);
+  }
+}
+
+// System-option buttons used inside workflow step pages
+.opt-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.6rem 1rem;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  border: 1px solid transparent;
+
+  &.solid-green { background: var(--ebs-green); color: #fff; &:hover { background: #128a3e; } }
+  &.solid-blue { background: var(--ebs-blue); color: #fff; &:hover { background: #0e4fa0; } }
+  &.solid-red { background: #e11d48; color: #fff; &:hover { background: #c11740; } }
+  &.outline { background: #fff; color: var(--ebs-text); border-color: var(--ebs-border); &:hover { background: var(--ebs-gray-bg); } }
+  &.solid-teal { background: #0f9d94; color: #fff; &:hover { background: #0c7f78; } }
+  &.solid-purple { background: #7c3aed; color: #fff; &:hover { background: #6425d1; } }
+}
+
+// QR scan block reused across Quality / Packing / Archiving pages
+.qr-scan-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6rem;
+  border: 1.5px dashed var(--ebs-border);
+  border-radius: var(--ebs-radius);
+  padding: 1.5rem;
+  background: #fafbfd;
+  text-align: center;
+
+  .qr-icon {
+    width: 88px;
+    height: 88px;
+    border-radius: 10px;
+    background: #fff;
+    border: 1px solid var(--ebs-border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2.4rem;
+    color: var(--ebs-navy);
+  }
+
+  .qr-label { font-size: 0.85rem; font-weight: 600; color: var(--ebs-navy); }
+}
+
+// PrimeNG overrides to match the Ministry of Education visual style
+.p-component {
+  font-family: 'Cairo', 'Segoe UI', Tahoma, sans-serif;
+}
+
+.p-button.p-button-primary,
+.p-button.ebs-btn-primary {
+  background: var(--ebs-blue);
+  border-color: var(--ebs-blue);
+
+  &:hover {
+    background: #0e4fa0;
+    border-color: #0e4fa0;
+  }
+}
+
+.p-datatable .p-datatable-thead > tr > th {
+  background: var(--ebs-sky);
+  color: var(--ebs-navy);
+  font-weight: 700;
+}
+
+.p-steps .p-steps-item .p-menuitem-link .p-steps-number {
+  font-weight: 700;
+}
+
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-thumb { background: #c7cdd6; border-radius: 8px; }
+::-webkit-scrollbar-track { background: transparent; }

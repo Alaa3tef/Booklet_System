@@ -1,0 +1,191 @@
+.workflow-page {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+
+  // ---- Theme color variables, resolved per stage ----
+  --theme-from: #1565c0;
+  --theme-to: #2f80ed;
+  --theme-solid: #1565c0;
+  --theme-bg: #eaf2fc;
+
+  &[data-theme='blue'] { --theme-from: #0b3d7a; --theme-to: #1565c0; --theme-solid: #1565c0; --theme-bg: #eaf2fc; }
+  &[data-theme='green'] { --theme-from: #0f5c33; --theme-to: #16a34a; --theme-solid: #16a34a; --theme-bg: #e8f8ee; }
+  &[data-theme='navy']  { --theme-from: #0b2e4f; --theme-to: #23557f; --theme-solid: #0b2e4f; --theme-bg: #eef1f6; }
+  &[data-theme='purple']{ --theme-from: #4c1d95; --theme-to: #7c3aed; --theme-solid: #7c3aed; --theme-bg: #f2ecfc; }
+  &[data-theme='teal']  { --theme-from: #0b6e66; --theme-to: #14b8ab; --theme-solid: #0f9d94; --theme-bg: #e5f7f6; }
+}
+
+// ===================== Hero banner =====================
+.hero-banner {
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+  padding: 1.75rem 2rem;
+  border-radius: var(--ebs-radius);
+  color: #fff;
+  background: linear-gradient(120deg, var(--theme-from) 0%, var(--theme-to) 100%);
+}
+
+.hero-left {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  flex-shrink: 0;
+}
+
+.illustration-block {
+  width: 84px;
+  height: 84px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.4rem;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.illustration-tagline {
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  padding: 0.6rem 0.9rem;
+  font-size: 0.78rem;
+  line-height: 1.5;
+  max-width: 160px;
+
+  p { margin: 0; }
+}
+
+.hero-right { flex: 1; }
+
+.hero-heading {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+
+  .step-badge {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    font-size: 1.1rem;
+    flex-shrink: 0;
+  }
+
+  h2 {
+    font-size: 1.15rem;
+    font-weight: 700;
+
+    .english-label { font-weight: 400; opacity: 0.85; font-size: 0.95rem; }
+  }
+}
+
+.hero-subtitle {
+  margin-top: 0.5rem;
+  font-size: 0.88rem;
+  opacity: 0.92;
+}
+
+// ===================== Main panel =====================
+.main-panel {
+  display: flex;
+  gap: 1.75rem;
+  padding: 1.5rem;
+}
+
+.panel-content { flex: 1; min-width: 0; }
+
+.panel-header {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding-bottom: 1rem;
+  margin-bottom: 1.25rem;
+  border-bottom: 1px solid var(--ebs-border);
+
+  i {
+    color: var(--theme-solid);
+    background: var(--theme-bg);
+    padding: 0.5rem;
+    border-radius: 8px;
+  }
+
+  h3 { font-size: 1.02rem; color: var(--ebs-navy); }
+}
+
+// ===================== Summary bar =====================
+.summary-bar {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+}
+
+.summary-card {
+  background: #fff;
+  border: 1px solid var(--ebs-border);
+  border-radius: var(--ebs-radius);
+  padding: 1.1rem 1.25rem;
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+}
+
+.summary-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: var(--theme-bg);
+  color: var(--theme-solid);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+
+  &.success { background: var(--ebs-green-bg); color: var(--ebs-green); }
+}
+
+.summary-label {
+  font-size: 0.78rem;
+  color: var(--ebs-text-muted);
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+
+.summary-value { font-weight: 700; color: var(--ebs-navy); font-size: 0.92rem; }
+
+.essentials-body ul {
+  margin: 0;
+  padding-inline-start: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  font-size: 0.8rem;
+  color: var(--ebs-text);
+}
+
+.options-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.result-text { font-weight: 700; color: var(--ebs-green); font-size: 0.88rem; }
+.result-subtext { font-size: 0.78rem; color: var(--ebs-text-muted); margin-top: 0.2rem; }
+
+// ===================== Responsive =====================
+@media (max-width: 1100px) {
+  .summary-bar { grid-template-columns: repeat(2, 1fr); }
+  .main-panel { flex-direction: column; }
+  .hero-banner { flex-direction: column; align-items: flex-start; }
+}
+
+@media (max-width: 640px) {
+  .summary-bar { grid-template-columns: 1fr; }
+}

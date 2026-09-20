@@ -1,0 +1,138 @@
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #fff;
+  border-bottom: 1px solid var(--ebs-border);
+  padding: 0.85rem 1.5rem;
+  min-height: var(--ebs-header-height);
+}
+
+.brand-block {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+
+  .brand-mark {
+    font-size: 1.6rem;
+    color: var(--ebs-blue);
+    background: var(--ebs-blue-bg);
+    padding: 0.6rem;
+    border-radius: 10px;
+  }
+
+  .brand-titles {
+    h1 {
+      font-size: 1.15rem;
+      color: var(--ebs-navy);
+    }
+    p {
+      font-size: 0.78rem;
+      color: var(--ebs-text-muted);
+      margin-top: 0.15rem;
+    }
+  }
+}
+
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+}
+
+.ministry-block {
+  text-align: left;
+  padding-inline-end: 1rem;
+  border-inline-end: 1px solid var(--ebs-border);
+
+  .slogan {
+    font-size: 0.78rem;
+    color: var(--ebs-text-muted);
+  }
+
+  .ministry-name {
+    display: flex;
+    flex-direction: column;
+    font-weight: 700;
+    color: var(--ebs-navy);
+    font-size: 0.85rem;
+
+    .sub {
+      font-weight: 400;
+      font-size: 0.72rem;
+      color: var(--ebs-text-muted);
+    }
+  }
+}
+
+.icon-btn {
+  position: relative;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid var(--ebs-border);
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--ebs-navy);
+
+  .badge {
+    position: absolute;
+    top: -4px;
+    inset-inline-end: -4px;
+    background: #e11d48;
+    color: #fff;
+    font-size: 0.65rem;
+    min-width: 16px;
+    height: 16px;
+    border-radius: 999px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 3px;
+  }
+}
+
+.user-block {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.user-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+
+  .user-name { font-size: 0.85rem; font-weight: 700; color: var(--ebs-navy); }
+  .user-role { font-size: 0.72rem; color: var(--ebs-text-muted); }
+}
+
+.avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--ebs-blue-bg);
+  color: var(--ebs-blue);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+}
+
+.breadcrumb-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.65rem 1.5rem;
+  background: #fff;
+  border-bottom: 1px solid var(--ebs-border);
+  font-size: 0.85rem;
+
+  .crumb-link { color: var(--ebs-text-muted); }
+  .crumb-link:hover { color: var(--ebs-blue); }
+  .crumb-current { color: var(--ebs-navy); font-weight: 700; }
+  .sep { font-size: 0.7rem; color: var(--ebs-text-muted); }
+}

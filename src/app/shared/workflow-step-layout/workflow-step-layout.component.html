@@ -1,0 +1,81 @@
+<div class="workflow-page" [attr.data-theme]="theme">
+
+  <!-- ===================== Hero banner ===================== -->
+  <section class="hero-banner">
+    <div class="hero-left">
+      <div class="illustration-block">
+        <i [class]="illustrationIcon"></i>
+      </div>
+      @if (illustrationTaglineTop || illustrationTaglineBottom) {
+        <div class="illustration-tagline">
+          <p>{{ illustrationTaglineTop }}</p>
+          <p>{{ illustrationTaglineBottom }}</p>
+        </div>
+      }
+    </div>
+
+    <div class="hero-right">
+      <div class="hero-heading">
+        <span class="step-badge">{{ stepNumber }}</span>
+        <h2>{{ arabicTitle }} <span class="english-label">({{ englishLabel }})</span></h2>
+      </div>
+      <p class="hero-subtitle">{{ arabicSubtitle }}</p>
+    </div>
+  </section>
+
+  <!-- ===================== Main panel: mini-nav + content ===================== -->
+  <section class="card main-panel">
+    <app-workflow-mini-nav [activeKey]="activeNavKey" [theme]="theme"></app-workflow-mini-nav>
+
+    <div class="panel-content">
+      <div class="panel-header">
+        <i [class]="panelIcon"></i>
+        <h3>{{ panelTitle }}</h3>
+      </div>
+
+      <ng-content select="[panel-content]"></ng-content>
+    </div>
+  </section>
+
+  <!-- ===================== Bottom summary bar ===================== -->
+  <section class="summary-bar">
+    <div class="summary-card function-card">
+      <div class="summary-icon"><i class="pi pi-user"></i></div>
+      <div>
+        <p class="summary-label">الوظيفة</p>
+        <p class="summary-value">{{ functionLabel }}</p>
+      </div>
+    </div>
+
+    <div class="summary-card essentials-card">
+      <div class="summary-icon"><i class="pi pi-cog"></i></div>
+      <div class="essentials-body">
+        <p class="summary-label">الأساسي</p>
+        <ul>
+          @for (item of essentials; track item) {
+            <li>{{ item }}</li>
+          }
+        </ul>
+      </div>
+    </div>
+
+    <div class="summary-card options-card">
+      <div class="summary-icon"><i class="pi pi-desktop"></i></div>
+      <div class="options-body">
+        <p class="summary-label">خيارات النظام</p>
+        <ng-content select="[system-options]"></ng-content>
+      </div>
+    </div>
+
+    <div class="summary-card result-card">
+      <div class="summary-icon success"><i class="pi pi-check"></i></div>
+      <div>
+        <p class="summary-label">النتيجة</p>
+        <p class="result-text">{{ resultText }}</p>
+        @if (resultSubtext) {
+          <p class="result-subtext">{{ resultSubtext }}</p>
+        }
+      </div>
+    </div>
+  </section>
+</div>

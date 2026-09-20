@@ -1,0 +1,218 @@
+<div class="committee-setup-page">
+
+  <!-- ===================== Hero banner ===================== -->
+  <section class="hero-banner card">
+    <div class="hero-main">
+      <div class="hero-text">
+        <div class="hero-heading">
+          <h2>مستخدم IT</h2>
+          <span class="hero-gear"><i class="pi pi-cog"></i></span>
+        </div>
+        <h3>إعداد بيانات اللجان للمادة</h3>
+        <p>اختيار المحافظة والمادة ورفع بيان اللجان وإعدادها وإعدادها على المنظومة</p>
+      </div>
+    </div>
+
+    <div class="hero-checklist">
+      <ul>
+        <li><i class="pi pi-check-circle"></i> إدارة البيانات الأساسية</li>
+        <li><i class="pi pi-check-circle"></i> رفع بيانات اللجان</li>
+        <li><i class="pi pi-check-circle"></i> إعداد الملفات على المنظومة</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ===================== Body: main column + side column ===================== -->
+  <div class="page-body">
+
+    <!-- ---------- Main column ---------- -->
+    <div class="main-column">
+
+      <div class="card setup-card">
+        <div class="setup-card-header">
+          <i class="pi pi-users header-icon"></i>
+          <h3>إعداد اللجان للمادة</h3>
+        </div>
+
+        <!-- Stepper -->
+        <div class="stepper">
+          @for (step of steps(); track step.order) {
+            <div class="step" [class]="step.state">
+              <span class="step-circle">{{ step.order }}</span>
+              <span class="step-label">{{ step.label }}</span>
+            </div>
+            @if (!$last) {
+              <div class="step-connector"></div>
+            }
+          }
+        </div>
+
+        <!-- Filters -->
+        <div class="filters-grid">
+          <div class="field">
+            <label>المحافظة <span class="required">*</span></label>
+            <p-select
+              [options]="governorates"
+              [(ngModel)]="selectedGovernorate"
+              optionLabel="label"
+              optionValue="value"
+              styleClass="w-full"
+            ></p-select>
+          </div>
+
+          <div class="field">
+            <label>المادة <span class="required">*</span></label>
+            <p-select
+              [options]="subjects"
+              [(ngModel)]="selectedSubject"
+              optionLabel="label"
+              optionValue="value"
+              styleClass="w-full"
+            ></p-select>
+          </div>
+
+          <div class="field">
+            <label>الدور <span class="required">*</span></label>
+            <p-select
+              [options]="rounds"
+              [(ngModel)]="selectedRound"
+              optionLabel="label"
+              optionValue="value"
+              styleClass="w-full"
+            ></p-select>
+          </div>
+        </div>
+
+        <!-- File upload -->
+        <div class="upload-zone">
+          <div class="upload-left">
+            <div class="upload-icon"><i class="pi pi-file-excel"></i></div>
+            <div class="upload-copy">
+              <p class="upload-title">رفع ملف اللجان (Excel) <span class="required">*</span></p>
+              <p class="upload-hint">يجب أن يحتوي الملف على بيانات اللجان والأعداد لكل لجنة</p>
+
+              @if (uploadedFile(); as file) {
+                <div class="uploaded-chip">
+                  <i class="pi pi-check-circle"></i>
+                  <span>{{ file.name }}</span>
+                  <span class="chip-size">({{ file.sizeKb }} KB)</span>
+                </div>
+              }
+            </div>
+          </div>
+
+          <div class="upload-right">
+            <label class="file-input-label">
+              <input type="file" accept=".xlsx,.xls" hidden (change)="onFileSelected($event)" />
+              <i class="pi pi-upload"></i>
+              اختر ملف Excel
+            </label>
+            <button type="button" class="template-btn" (click)="downloadTemplate()">
+              <i class="pi pi-download"></i>
+              تحميل نموذج Excel
+            </button>
+          </div>
+        </div>
+
+        <!-- Preview table -->
+        <div class="preview-section">
+          <h4><i class="pi pi-table"></i> معاينة بيانات اللجان</h4>
+
+          <p-table [value]="rows()" styleClass="p-datatable-sm" responsiveLayout="scroll">
+            <ng-template pTemplate="header">
+              <tr>
+                <th>الحالة</th>
+                <th>عدد البوكليتات</th>
+                <th>الإدارة التعليمية</th>
+                <th>اسم اللجنة / المدرسة</th>
+                <th>رقم اللجنة</th>
+                <th>م</th>
+              </tr>
+            </ng-template>
+            <ng-template pTemplate="body" let-row>
+              <tr>
+                <td>
+                  <span class="status-pill" [class.success]="row.status === 'valid'" [class.danger]="row.status === 'invalid'">
+                    <i class="pi" [class.pi-check]="row.status === 'valid'" [class.pi-times]="row.status === 'invalid'"></i>
+                    {{ row.status === 'valid' ? 'صحيح' : 'خطأ' }}
+                  </span>
+                </td>
+                <td>{{ row.bookletCount }}</td>
+                <td>{{ row.educationalAdministration }}</td>
+                <td>{{ row.schoolName }}</td>
+                <td>{{ row.committeeNumber }}</td>
+                <td>{{ row.index }}</td>
+              </tr>
+            </ng-template>
+          </p-table>
+
+          <div class="preview-footer">
+            <div class="totals">
+              <span><strong>{{ totalCommittees() }}</strong> إجمالي عدد اللجان:</span>
+              <span class="divider">|</span>
+              <span><strong>{{ totalBooklets() | number }}</strong> إجمالي عدد البوكليتات:</span>
+            </div>
+
+            <div class="actions">
+              <button type="button" class="btn btn-outline" (click)="cancel()">
+                <i class="pi pi-times"></i> إلغاء
+              </button>
+              <button type="button" class="btn btn-primary" (click)="createFiles()">
+                <i class="pi pi-cog"></i> تم إنشاء الملفات
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ---------- Side column ---------- -->
+    <aside class="side-column">
+
+      <div class="card side-card">
+        <h4><i class="pi pi-user side-card-icon"></i> دور المستخدم</h4>
+        <div class="role-block">
+          <div class="role-icon"><i class="pi pi-user"></i></div>
+          <div>
+            <p class="role-title">مستخدم IT</p>
+            <p class="role-desc">
+              مسؤول عن اختيار المحافظة والمادة ورفع بيان اللجان
+              وإعداد ملفات البوكليت للمادة على المنظومة.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div class="card side-card">
+        <h4><i class="pi pi-list-check side-card-icon"></i> الخيارات المتاحة</h4>
+        <ul class="check-list">
+          <li><i class="pi pi-check"></i> اختيار المحافظة</li>
+          <li><i class="pi pi-check"></i> اختيار المادة</li>
+          <li><i class="pi pi-check"></i> رفع ملف اللجان (Excel)</li>
+          <li><i class="pi pi-check"></i> مراجعة البيانات</li>
+          <li><i class="pi pi-check"></i> إنشاء ملفات البوكليت</li>
+        </ul>
+      </div>
+
+      <div class="card side-card note-card">
+        <h4><i class="pi pi-info-circle side-card-icon"></i> ملاحظة</h4>
+        <p class="note-intro">يجب أن يحتوي ملف Excel على البيانات التالية:</p>
+        <ul class="bullet-list">
+          <li>رقم اللجنة</li>
+          <li>اسم اللجنة / المدرسة</li>
+          <li>الإدارة التعليمية</li>
+          <li>عدد البوكليتات</li>
+        </ul>
+      </div>
+
+      @if (filesGenerated()) {
+        <div class="card side-card result-card">
+          <div class="result-icon"><i class="pi pi-check"></i></div>
+          <h4>النتيجة</h4>
+          <p class="result-title">تم إنشاء الملفات بنجاح</p>
+          <p class="result-sub">وأصبحت جاهزة لمرحلة الطباعة</p>
+        </div>
+      }
+    </aside>
+  </div>
+</div>

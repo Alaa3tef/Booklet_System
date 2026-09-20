@@ -1,0 +1,44 @@
+// Shared partial for the "panel-content" area inside workflow step pages
+// (Planning / Printing / Quality / Packing / Archiving).
+
+.fields-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.fields-grid.cols-3 {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+
+  label { font-size: 0.85rem; font-weight: 600; color: var(--ebs-navy); }
+}
+
+.main-action {
+  margin-bottom: 1.75rem;
+}
+
+.table-section {
+  h4 {
+    font-size: 0.95rem;
+    color: var(--ebs-navy);
+    margin-bottom: 0.9rem;
+  }
+}
+
+.dual-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.85rem;
+  margin: 1.25rem 0 1.75rem;
+}
+
+.location-picker {
+  margin-bottom: 1.25rem;
+}

@@ -1,0 +1,12 @@
+<nav class="mini-nav" [attr.data-theme]="theme">
+  <ul>
+    @for (item of items; track item.key) {
+      <li>
+        <a [routerLink]="item.route" class="mini-nav-link" [class.active]="item.key === activeKey">
+          <i [class]="item.icon"></i>
+          <span>{{ item.label }}</span>
+        </a>
+      </li>
+    }
+  </ul>
+</nav>

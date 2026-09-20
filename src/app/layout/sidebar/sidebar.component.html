@@ -1,0 +1,56 @@
+<aside class="sidebar">
+  <div class="sidebar-brand">
+    <span class="pi pi-book brand-icon"></span>
+    <span class="brand-text">Exam Booklet System</span>
+  </div>
+
+  <nav class="sidebar-nav">
+    <ul class="nav-list">
+      @for (item of navItems(); track item.label) {
+        <li class="nav-item" [class.has-children]="item.children">
+          @if (!item.children) {
+            <a
+              class="nav-link"
+              [routerLink]="item.route"
+              routerLinkActive="active"
+            >
+              <i [class]="item.icon"></i>
+              <span>{{ item.label }}</span>
+            </a>
+          } @else {
+            <button type="button" class="nav-link group-toggle" (click)="toggle(item)">
+              <i [class]="item.icon"></i>
+              <span>{{ item.label }}</span>
+              <i class="pi pi-chevron-down toggle-icon" [class.rotated]="item.expanded"></i>
+            </button>
+
+            @if (item.expanded) {
+              <ul class="nav-sublist">
+                @for (child of item.children; track child.label) {
+                  <li>
+                    <a
+                      class="nav-sublink"
+                      [class.active]="child.active"
+                      [routerLink]="child.route"
+                      routerLinkActive="active"
+                    >
+                      <i class="pi pi-circle-fill dot"></i>
+                      <span>{{ child.label }}</span>
+                    </a>
+                  </li>
+                }
+              </ul>
+            }
+          }
+        </li>
+      }
+    </ul>
+  </nav>
+
+  <div class="sidebar-footer">
+    <div class="books-illustration">
+      <i class="pi pi-book"></i>
+    </div>
+    <p class="footer-tagline">معاً .. لامتحانات آمنة ومنظمة</p>
+  </div>
+</aside>

@@ -1,0 +1,56 @@
+<app-workflow-step-layout
+  stepNumber="04"
+  englishLabel="Packing"
+  arabicTitle="مستخدم التغليف"
+  arabicSubtitle="تغليف الأظرف الصغيرة للجنة في ظرف كبير ومراجعة اللجنة بالكامل"
+  theme="purple"
+  activeNavKey="packing"
+  illustrationIcon="pi pi-box"
+  illustrationTaglineTop="التغليف المنظم"
+  illustrationTaglineBottom="يضمن سلامة الامتحانات"
+  panelIcon="pi pi-box"
+  panelTitle="التغليف"
+  functionLabel="مستخدم التغليف"
+  [essentials]="essentials"
+  resultText="يتم تسجيل حالة التغليف وتصبح اللجنة جاهزة للتخزين"
+>
+  <div panel-content>
+    <div class="qr-scan-block main-action">
+      <div class="qr-icon"><i class="pi pi-qrcode"></i></div>
+      <p class="qr-label">امسح QR اللجنة الخارجية</p>
+    </div>
+
+    <button type="button" class="opt-btn solid-green main-action" (click)="confirmPacking()">
+      <i class="pi pi-check"></i> تم التغليف
+    </button>
+
+    <div class="table-section">
+      <h4>سجل التغليف</h4>
+      <p-table [value]="rows()" styleClass="p-datatable-sm" responsiveLayout="scroll">
+        <ng-template pTemplate="header">
+          <tr>
+            <th>الحالة</th>
+            <th>المادة</th>
+            <th>رقم اللجنة</th>
+            <th>م</th>
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-row>
+          <tr>
+            <td><span class="status-pill" [ngClass]="row.statusTone">{{ row.status }}</span></td>
+            <td>{{ row.subject }}</td>
+            <td>{{ row.committeeNumber }}</td>
+            <td>{{ row.index }}</td>
+          </tr>
+        </ng-template>
+      </p-table>
+    </div>
+  </div>
+
+  <ng-container system-options>
+    <button type="button" class="opt-btn solid-green" (click)="confirmPacking()">
+      <i class="pi pi-check"></i> تم التغليف
+    </button>
+    <button type="button" class="opt-btn outline">عرض التفاصيل</button>
+  </ng-container>
+</app-workflow-step-layout>

@@ -1,0 +1,47 @@
+<header class="topbar">
+  <div class="topbar-left">
+    <div class="brand-block">
+      <i class="pi pi-book brand-mark"></i>
+      <div class="brand-titles">
+        <h1>منظومة إنتاج البوكليت</h1>
+        <p>من الإعداد إلى التوزيع .. بدقة وأمان</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="topbar-right">
+    <div class="ministry-block">
+      <p class="slogan">تعليم أفضل .. لمستقبل أفضل</p>
+      <div class="ministry-name">
+        <span>وزارة التربية والتعليم</span>
+        <span class="sub">Ministry of Education</span>
+      </div>
+    </div>
+
+    <button type="button" class="icon-btn" aria-label="الإشعارات">
+      <i class="pi pi-bell"></i>
+      <span class="badge">3</span>
+    </button>
+
+    <div class="user-block">
+      <div class="user-info">
+        <span class="user-name">{{ userName }}</span>
+        <span class="user-role">{{ userRole }}</span>
+      </div>
+      <div class="avatar">
+        <i class="pi pi-user"></i>
+      </div>
+    </div>
+  </div>
+</header>
+
+<nav class="breadcrumb-bar" aria-label="breadcrumb">
+  @for (crumb of breadcrumbs; track crumb.label; let last = $last) {
+    @if (!last && crumb.route) {
+      <a [routerLink]="crumb.route" class="crumb-link">{{ crumb.label }}</a>
+      <i class="pi pi-angle-left sep"></i>
+    } @else {
+      <span class="crumb-current">{{ crumb.label }}</span>
+    }
+  }
+</nav>

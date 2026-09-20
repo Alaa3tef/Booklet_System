@@ -1,0 +1,136 @@
+.sidebar {
+  width: var(--ebs-sidebar-width);
+  min-width: var(--ebs-sidebar-width);
+  height: 100vh;
+  background: linear-gradient(180deg, var(--ebs-navy) 0%, var(--ebs-navy-dark) 100%);
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  position: sticky;
+  top: 0;
+}
+
+.sidebar-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 1.25rem 1.25rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+
+  .brand-icon {
+    font-size: 1.4rem;
+    color: #fff;
+  }
+
+  .brand-text {
+    font-weight: 700;
+    font-size: 1rem;
+    letter-spacing: 0.2px;
+  }
+}
+
+.sidebar-nav {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0.75rem 0.75rem;
+}
+
+.nav-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.nav-link {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  width: 100%;
+  padding: 0.65rem 0.85rem;
+  border-radius: 10px;
+  color: rgba(255, 255, 255, 0.82);
+  font-size: 0.92rem;
+  font-weight: 500;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  text-align: right;
+
+  i:first-child {
+    font-size: 1rem;
+    width: 18px;
+    text-align: center;
+  }
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.06);
+    color: #fff;
+  }
+
+  &.active {
+    background: var(--ebs-blue);
+    color: #fff;
+  }
+}
+
+.group-toggle {
+  .toggle-icon {
+    margin-inline-start: auto;
+    font-size: 0.75rem;
+    transition: transform 0.15s ease;
+
+    &.rotated { transform: rotate(180deg); }
+  }
+}
+
+.nav-sublist {
+  list-style: none;
+  margin: 0.15rem 0 0.35rem 0;
+  padding-inline-start: 1.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.nav-sublink {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.55rem 0.85rem;
+  border-radius: 8px;
+  color: rgba(255, 255, 255, 0.65);
+  font-size: 0.88rem;
+
+  .dot { font-size: 0.4rem; color: rgba(255, 255, 255, 0.4); }
+
+  &:hover { color: #fff; background: rgba(255, 255, 255, 0.05); }
+
+  &.active {
+    background: rgba(47, 128, 237, 0.18);
+    color: #fff;
+    font-weight: 600;
+
+    .dot { color: var(--ebs-blue-light); }
+  }
+}
+
+.sidebar-footer {
+  padding: 1.5rem 1.25rem;
+  text-align: center;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+
+  .books-illustration {
+    font-size: 2.5rem;
+    color: rgba(255, 255, 255, 0.25);
+    margin-bottom: 0.5rem;
+  }
+
+  .footer-tagline {
+    font-size: 0.78rem;
+    color: rgba(255, 255, 255, 0.55);
+  }
+}
