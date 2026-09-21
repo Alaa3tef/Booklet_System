@@ -14,6 +14,7 @@ import { WorkflowStatusRow } from '../../../core/models/workflow.model';
 @Component({
   selector: 'app-printing',
   standalone: true,
+
   imports: [
     CommonModule,
     FormsModule,
@@ -22,29 +23,32 @@ import { WorkflowStatusRow } from '../../../core/models/workflow.model';
     MenuModule,
     WorkflowStepLayoutComponent
   ],
+
   templateUrl: './printing.component.html',
   styleUrl: './printing.component.scss'
 })
 export class PrintingComponent {
 
   readonly governorates: SelectOption[] = [
+    { label: 'كل المحافظات', value: 'all' },
     { label: 'القاهرة', value: 'cairo' },
     { label: 'الجيزة', value: 'giza' },
     { label: 'المنوفية', value: 'monufia' }
   ];
 
   readonly subjects: SelectOption[] = [
+    { label: 'كل المواد', value: 'all' },
     { label: 'اللغة العربية', value: 'arabic' },
     { label: 'الرياضيات', value: 'math' },
     { label: 'العلوم', value: 'science' }
   ];
 
-  selectedGovernorate = this.governorates[0].value;
-  selectedSubject = this.subjects[0].value;
+  selectedGovernorate = 'all';
+  selectedSubject = 'all';
 
   readonly essentials = [
-    'اختيار المحافظة',
-    'اختيار المادة',
+    'البحث بالمحافظة',
+    'البحث بالمادة',
     'تسجيل انتهاء الطباعة'
   ];
 
@@ -72,15 +76,23 @@ export class PrintingComponent {
     }
   ]);
 
+  // ==========================================
+  // STATUS MENU
+  // ==========================================
+
   selectedRow: WorkflowStatusRow | null = null;
 
-  menuItems: MenuItem[] = [
+  readonly menuItems: MenuItem[] = [
     {
       label: 'تسجيل انتهاء الطباعة',
       icon: 'pi pi-check',
       command: () => this.finishSelectedPrinting()
     }
   ];
+
+  // ==========================================
+  // OPEN STATUS MENU
+  // ==========================================
 
   openStatusMenu(
     row: WorkflowStatusRow,
@@ -90,6 +102,10 @@ export class PrintingComponent {
     this.selectedRow = row;
     menu.toggle(event);
   }
+
+  // ==========================================
+  // FINISH PRINTING
+  // ==========================================
 
   finishSelectedPrinting(): void {
     if (!this.selectedRow) {

@@ -1,6 +1,7 @@
 import { Component, computed, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+
 import { SelectModule } from 'primeng/select';
 import { TableModule } from 'primeng/table';
 import { MenuModule } from 'primeng/menu';
@@ -78,14 +79,11 @@ export class PlanningComponent {
     }
   ]);
 
-
   readonly filteredRows = computed(() => {
-
     const governorate = this.searchGovernorate();
     const subject = this.searchSubject();
 
     return this.rows().filter(row => {
-
       const governorateMatch =
         governorate === 'all' ||
         this.getGovernorateValue(row.governorate) === governorate;
@@ -95,19 +93,16 @@ export class PlanningComponent {
         this.getSubjectValue(row.subject) === subject;
 
       return governorateMatch && subjectMatch;
-
     });
-
   });
 
-
   // ==========================================
-  // Menu
+  // MENU
   // ==========================================
 
   selectedRow: WorkflowStatusRow | null = null;
 
-  menuItems: MenuItem[] = [
+  readonly menuItems: MenuItem[] = [
     {
       label: 'تحويل إلى جاهز للطباعة',
       icon: 'pi pi-refresh',
@@ -115,26 +110,17 @@ export class PlanningComponent {
     }
   ];
 
-
   // ==========================================
-  // Search
+  // SEARCH
   // ==========================================
 
   search(): void {
-
-    this.searchGovernorate.set(
-      this.selectedGovernorate
-    );
-
-    this.searchSubject.set(
-      this.selectedSubject
-    );
-
+    this.searchGovernorate.set(this.selectedGovernorate);
+    this.searchSubject.set(this.selectedSubject);
   }
 
-
   // ==========================================
-  // Open Status Menu
+  // OPEN STATUS MENU
   // ==========================================
 
   openStatusMenu(
@@ -142,20 +128,15 @@ export class PlanningComponent {
     menu: any,
     event: Event
   ): void {
-
     this.selectedRow = row;
-
     menu.toggle(event);
-
   }
 
-
   // ==========================================
-  // Change Status
+  // CHANGE STATUS
   // ==========================================
 
   markSelectedRowReady(): void {
-
     if (!this.selectedRow) {
       return;
     }
@@ -175,18 +156,13 @@ export class PlanningComponent {
     );
 
     this.selectedRow = null;
-
   }
 
-
   // ==========================================
-  // Helpers
+  // HELPERS
   // ==========================================
 
-  private getGovernorateValue(
-    governorate: any
-  ): string {
-
+  private getGovernorateValue(governorate: any): string {
     const map: Record<string, string> = {
       'القاهرة': 'cairo',
       'الجيزة': 'giza',
@@ -194,14 +170,9 @@ export class PlanningComponent {
     };
 
     return map[governorate] ?? '';
-
   }
 
-
-  private getSubjectValue(
-    subject: string
-  ): string {
-
+  private getSubjectValue(subject: string): string {
     const map: Record<string, string> = {
       'اللغة العربية': 'arabic',
       'الرياضيات': 'math',
@@ -209,7 +180,5 @@ export class PlanningComponent {
     };
 
     return map[subject] ?? '';
-
   }
-
 }

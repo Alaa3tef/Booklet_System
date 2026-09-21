@@ -18,71 +18,93 @@
   <div panel-content>
 
     <!-- ==========================================
-         SEARCH
+         SEARCH SECTION
     =========================================== -->
 
     <div class="search-section">
 
-      <div class="fields-grid">
+      <div class="planning-search-card">
 
-        <!-- Governorate -->
+        <!-- IMAGE -->
 
-        <div class="field">
-
-          <label>
-            المحافظة
-          </label>
-
-          <p-select
-            [options]="governorates"
-            [(ngModel)]="selectedGovernorate"
-            optionLabel="label"
-            optionValue="value"
-            styleClass="w-full">
-          </p-select>
-
+        <div class="planning-image">
+          <img
+            src="assets/images/planning.png"
+            alt="التخطيط"
+          />
         </div>
 
+        <!-- SEARCH CONTENT -->
 
-        <!-- Subject -->
+        <div class="planning-search-content">
 
-        <div class="field">
+          <div class="planning-search-title">
 
-          <label>
-            المادة
-          </label>
+            <div class="planning-search-icon">
+              <i class="pi pi-search"></i>
+            </div>
 
-          <p-select
-            [options]="subjects"
-            [(ngModel)]="selectedSubject"
-            optionLabel="label"
-            optionValue="value"
-            styleClass="w-full">
-          </p-select>
+            <div>
+              <h3>البحث في خطط الإنتاج</h3>
+
+              <p>
+                اختر المحافظة والمادة لعرض الخطة المطلوبة
+              </p>
+            </div>
+
+          </div>
+
+          <div class="fields-grid">
+
+            <!-- GOVERNORATE -->
+
+            <div class="field">
+
+              <label for="governorate">
+                المحافظة
+              </label>
+
+              <p-select
+                inputId="governorate"
+                [options]="governorates"
+                [(ngModel)]="selectedGovernorate"
+                optionLabel="label"
+                optionValue="value"
+                styleClass="w-full">
+              </p-select>
+
+            </div>
+
+            <!-- SUBJECT -->
+
+            <div class="field">
+
+              <label for="subject">
+                المادة
+              </label>
+
+              <p-select
+                inputId="subject"
+                [options]="subjects"
+                [(ngModel)]="selectedSubject"
+                optionLabel="label"
+                optionValue="value"
+                styleClass="w-full">
+              </p-select>
+
+            </div>
+
+          </div>
 
         </div>
 
       </div>
 
-
-      <!-- Search Button -->
-
-      <!-- <button
-        type="button"
-        class="opt-btn solid-blue search-btn"
-        (click)="search()">
-
-        <i class="pi pi-search"></i>
-
-        بحث
-
-      </button> -->
-
     </div>
 
 
     <!-- ==========================================
-         TABLE
+         TABLE SECTION
     =========================================== -->
 
     <div class="table-section">
@@ -105,102 +127,107 @@
         styleClass="p-datatable-sm"
         responsiveLayout="scroll">
 
-
-        <!-- ================= HEADER ================= -->
+        <!-- TABLE HEADER -->
 
         <ng-template pTemplate="header">
 
           <tr>
 
-             <th>
+            <th>
               م
             </th>
-             <th>
+
+            <th>
               المحافظة
             </th>
+
             <th>
               المادة
             </th>
 
-           
-
-          
-             <th>
+            <th>
               الحالة
             </th>
 
-            <th>
-
+            <th class="action-header">
+              إجراء
             </th>
-
 
           </tr>
 
         </ng-template>
 
 
-        <!-- ================= BODY ================= -->
+        <!-- TABLE BODY -->
 
         <ng-template
           pTemplate="body"
           let-row>
 
           <tr>
-              <!-- INDEX -->
+
+            <!-- INDEX -->
 
             <td>
               {{ row.index }}
             </td>
 
-               <!-- GOVERNORATE -->
+
+            <!-- GOVERNORATE -->
 
             <td>
               {{ row.governorate }}
             </td>
+
+
             <!-- SUBJECT -->
 
             <td>
               {{ row.subject }}
             </td>
 
-            <td><span class="status-pill" [ngClass]="row.statusTone">{{ row.status }}</span></td>
+
+            <!-- STATUS -->
+
+            <td>
+              <span
+                class="status-pill"
+                [ngClass]="row.statusTone">
+                {{ row.status }}
+              </span>
+            </td>
+
+
+            <!-- ACTION -->
 
             <td class="status-cell">
 
-  <button
-    type="button"
-    class="status-menu-btn"
-    aria-label="إجراءات الحالة"
-    (click)="openStatusMenu(row, statusMenu, $event)">
-
-    <i class="pi pi-ellipsis-v"></i>
-
-  </button>
-
-  <p-menu
-    #statusMenu
-    [model]="menuItems"
-    [popup]="true"
-    appendTo="body">
-  </p-menu>
-
+              <button
+                type="button"
+                class="status-menu-btn"
+                aria-label="إجراءات الحالة"
+                pTooltip="إجراءات الحالة"
+                tooltipPosition="top"
+                (click)="openStatusMenu(row, statusMenu, $event)"
+              >
+                <i class="pi pi-ellipsis-v"></i>
+              </button>
 
             </td>
-
 
           </tr>
 
         </ng-template>
 
 
-        <!-- ================= EMPTY ================= -->
+        <!-- EMPTY MESSAGE -->
 
         <ng-template pTemplate="emptymessage">
 
           <tr>
 
             <td
-              colspan="4"
+              colspan="5"
               class="empty-message">
 
               <i class="pi pi-search"></i>
@@ -214,6 +241,16 @@
         </ng-template>
 
       </p-table>
+
+
+      <!-- SINGLE POPUP MENU -->
+
+      <p-menu
+        #statusMenu
+        [model]="menuItems"
+        [popup]="true"
+        appendTo="body">
+      </p-menu>
 
     </div>
 
