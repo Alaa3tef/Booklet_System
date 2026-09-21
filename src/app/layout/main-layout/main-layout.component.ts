@@ -1,5 +1,7 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
+import { ActivatedRoute, NavigationEnd, Router } from '@angular/router';
+import { filter } from 'rxjs';
 import { SidebarComponent } from '../sidebar/sidebar.component';
 import { Breadcrumb, HeaderComponent } from '../header/header.component';
 
@@ -10,25 +12,41 @@ import { Breadcrumb, HeaderComponent } from '../header/header.component';
   templateUrl: './main-layout.component.html',
   styleUrl: './main-layout.component.scss'
 })
-export class MainLayoutComponent {
+export class MainLayoutComponent implements OnInit {
   sidebarOpen = false;
 
   userName = 'أحمد محمد';
 
   userRole = 'Super Admin';
 
-  breadcrumbs: Breadcrumb[] = [
-    {
-      label: 'الرئيسية',
-      route: '/dashboard'
-    },
-    {
-      label: 'إدارة البيانات الأساسية'
-    },
-    {
-      label: 'إعداد اللجان'
+  breadcrumbs: Breadcrumb[] = [];
+
+  constructor(
+    private readonly router: Router,
+    private readonly activatedRoute: ActivatedRoute
+  ) {}
+
+  ngOnInit(): void {
+    this.updateBreadcrumbs();
+
+    this.router.events
+      .pipe(filter((event): event is NavigationEnd => event instanceof NavigationEnd))
+      .subscribe(() => this.updateBreadcrumbs());
+  }
+
+  private updateBreadcrumbs(): void {
+    let route = this.activatedRoute;
+
+    while (route.firstChild) {
+      route = route.firstChild;
     }
-  ];
+
+    const currentLabel = route.snapshot.data['breadcrumb'] as string | undefined;
+
+    this.breadcrumbs = currentLabel
+      ? [{ label: 'الرئيسية', route: '/dashboard' }, { label: currentLabel }]
+      : [{ label: 'الرئيسية' }];
+  }
 
 
   /**

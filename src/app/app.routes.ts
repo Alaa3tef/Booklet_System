@@ -59,6 +59,14 @@ export const routes: Routes = [
           ),
         data: { breadcrumb: 'التخزين' }
       },
+      {
+        path: 'users',
+        loadComponent: () =>
+          import('./features/user-management/user-management.component').then(
+            (m) => m.UserManagementComponent
+          ),
+        data: { breadcrumb: 'إدارة المستخدمين' }
+      },
       { path: '**', redirectTo: 'dashboard' }
     ]
   }
