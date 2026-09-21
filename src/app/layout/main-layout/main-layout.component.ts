@@ -16,7 +16,6 @@ export class MainLayoutComponent {
   userName = 'أحمد محمد';
 
   userRole = 'Super Admin';
-
   breadcrumbs: Breadcrumb[] = [
     {
       label: 'الرئيسية',
