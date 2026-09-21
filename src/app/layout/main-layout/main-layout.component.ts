@@ -15,7 +15,7 @@ export class MainLayoutComponent {
 
   userName = 'أحمد محمد';
 
-  userRole = 'Super Admin';
+  userRole = 'Printing';
 
   breadcrumbs: Breadcrumb[] = [
     {

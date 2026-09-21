@@ -1,6 +1,5 @@
 :host {
   display: block;
-
   width: 100%;
   min-height: 100vh;
 }
@@ -11,12 +10,13 @@
 ========================================= */
 
 .app-shell {
+
   width: 100%;
   min-height: 100vh;
 
   background: #f5f8fc;
 
-  direction: ltr;
+  direction: rtl;
 }
 
 
@@ -25,11 +25,19 @@
 ========================================= */
 
 .main-area {
-  width: calc(100% - var(--ebs-sidebar-width));
+
+  width:
+    calc(100% - var(--ebs-sidebar-width));
 
   min-height: 100vh;
 
-  margin-left: var(--ebs-sidebar-width);
+  /*
+    Sidebar on RIGHT
+  */
+  margin-right:
+    var(--ebs-sidebar-width);
+
+  margin-left: 0;
 
   display: flex;
 
@@ -38,23 +46,21 @@
   direction: rtl;
 
   transition:
-    margin-left 0.25s ease,
+    margin-right 0.25s ease,
     width 0.25s ease;
 }
 
 
 /* =========================================
    PAGE CONTENT
-
-   Header = 76px
-   Breadcrumb = 44px
-   Total = 120px
 ========================================= */
 
 .page-content {
+
   width: 100%;
 
-  min-height: calc(100vh - 120px);
+  min-height:
+    calc(100vh - 120px);
 
   padding:
     calc(120px + 1.25rem)
@@ -72,6 +78,7 @@
 ========================================= */
 
 .sidebar-overlay {
+
   display: none;
 }
 
@@ -83,9 +90,14 @@
 @media (min-width: 992px) {
 
   .main-area {
-    width: calc(100% - var(--ebs-sidebar-width));
 
-    margin-left: var(--ebs-sidebar-width);
+    width:
+      calc(100% - var(--ebs-sidebar-width));
+
+    margin-right:
+      var(--ebs-sidebar-width);
+
+    margin-left: 0;
   }
 
 }
@@ -98,14 +110,19 @@
 @media (max-width: 991px) {
 
   .main-area {
+
     width: 100%;
+
+    margin-right: 0;
 
     margin-left: 0;
   }
 
 
   .page-content {
-    min-height: calc(100vh - 112px);
+
+    min-height:
+      calc(100vh - 112px);
 
     padding:
       calc(112px + 1rem)
@@ -114,9 +131,8 @@
   }
 
 
-  /* Overlay */
-
   .sidebar-overlay {
+
     display: block;
 
     position: fixed;
@@ -144,7 +160,9 @@
 @media (max-width: 575px) {
 
   .page-content {
-    min-height: calc(100vh - 106px);
+
+    min-height:
+      calc(100vh - 106px);
 
     padding:
       calc(106px + 0.85rem)

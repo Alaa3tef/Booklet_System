@@ -1,29 +1,23 @@
 <aside
   class="sidebar"
-  [class.mobile-open]="mobileOpen">
+  [class.mobile-open]="mobileOpen"
+  [class.workflow-theme]="isWorkflowUser()">
 
 
-  <!-- ==========================================
+  <!-- ==================================================
        MINISTRY BRAND
-  =========================================== -->
+  =================================================== -->
 
   <div class="sidebar-brand">
-
-
-    <!-- Logo -->
 
     <div class="ministry-logo">
 
       <div class="logo-eagle">
-
         <i class="pi pi-building"></i>
-
       </div>
 
     </div>
 
-
-    <!-- Ministry Text -->
 
     <div class="ministry-text">
 
@@ -42,120 +36,90 @@
 
     <button
       type="button"
-
       class="sidebar-close"
-
       aria-label="إغلاق القائمة"
-
       (click)="closeSidebar()">
 
       <i class="pi pi-times"></i>
 
     </button>
 
-
   </div>
 
 
-  <!-- ==========================================
+  <!-- ==================================================
        NAVIGATION
-  =========================================== -->
+  =================================================== -->
 
   <nav class="sidebar-nav">
 
     <ul class="nav-list">
-
 
       @for (
         item of navItems();
         track item.label
       ) {
 
-
         <li
           class="nav-item"
           [class.has-children]="item.children">
 
 
-          <!-- ===================================
-               NORMAL LINK
-          ==================================== -->
+          <!-- ==========================================
+               NORMAL ITEM
+          =========================================== -->
 
           @if (!item.children) {
 
-
             <a
               class="nav-link"
-
               [routerLink]="item.route"
-
               routerLinkActive="active"
-
               [routerLinkActiveOptions]="{
                 exact: true
               }"
-
               (click)="closeSidebar()">
-
 
               <span class="nav-icon">
 
-                <i
-                  [class]="item.icon">
-                </i>
+                <i [class]="item.icon"></i>
 
               </span>
-
 
               <span class="nav-label">
-
                 {{ item.label }}
-
               </span>
-
 
             </a>
 
           }
 
 
-          <!-- ===================================
+          <!-- ==========================================
                GROUP
-          ==================================== -->
+          =========================================== -->
 
           @else {
 
-
             <button
               type="button"
-
               class="nav-link group-toggle"
-
               (click)="toggle(item)">
-
 
               <span class="nav-icon">
 
-                <i
-                  [class]="item.icon">
-                </i>
+                <i [class]="item.icon"></i>
 
               </span>
-
 
               <span class="nav-label">
-
                 {{ item.label }}
-
               </span>
-
 
               <i
                 class="pi pi-chevron-down toggle-icon"
-
                 [class.rotated]="item.expanded">
               </i>
-
 
             </button>
 
@@ -164,48 +128,32 @@
 
             @if (item.expanded) {
 
-
               <ul class="nav-sublist">
-
 
                 @for (
                   child of item.children;
                   track child.label
                 ) {
 
-
                   <li>
-
 
                     <a
                       class="nav-sublink"
-
                       [routerLink]="child.route"
-
                       routerLinkActive="active"
-
                       (click)="closeSidebar()">
 
-
-                      <span
-                        class="sub-dot">
-                      </span>
-
+                      <span class="sub-dot"></span>
 
                       <span>
-
                         {{ child.label }}
-
                       </span>
 
-
                     </a>
-
 
                   </li>
 
                 }
-
 
               </ul>
 
@@ -213,46 +161,33 @@
 
           }
 
-
         </li>
 
       }
-
 
     </ul>
 
   </nav>
 
 
-  <!-- ==========================================
-       SIDEBAR FOOTER
-  =========================================== -->
+  <!-- ==================================================
+       FOOTER
+  =================================================== -->
 
   <div class="sidebar-footer">
 
-
     <div class="footer-books">
-
       <i class="pi pi-book"></i>
-
     </div>
-
 
     <div class="footer-text">
-
       معًا ...
-
     </div>
-
 
     <div class="footer-subtitle">
-
       لتعليم أفضل
-
     </div>
 
-
   </div>
-
 
 </aside>
