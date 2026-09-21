@@ -12,20 +12,22 @@ import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { IconFieldModule } from 'primeng/iconfield';
 import { InputIconModule } from 'primeng/inputicon';
-import { CheckboxModule } from 'primeng/checkbox';
-import { BadgeModule } from 'primeng/badge';
-import { ProgressBarModule } from 'primeng/progressbar';
 import { BreadcrumbModule } from 'primeng/breadcrumb';
-import { AccordionModule } from 'primeng/accordion';
+
 import { MenuItem } from 'primeng/api';
+
+
+/* =========================================================
+   Interfaces
+========================================================= */
 
 interface Permission {
   id: number;
   key: string;
   name: string;
   description?: string;
-  enabled: boolean;
   icon?: string;
+  enabled: boolean;
 }
 
 interface PermissionModule {
@@ -34,9 +36,26 @@ interface PermissionModule {
   icon: string;
   route?: string;
   description?: string;
-  expanded?: boolean;
+
+  /**
+   * true = parent/group
+   * false = normal page
+   */
   group?: boolean;
+
+  /**
+   * Collapse state
+   */
+  expanded: boolean;
+
+  /**
+   * Child pages
+   */
   children?: PermissionModule[];
+
+  /**
+   * Permissions directly belonging to this module
+   */
   permissions: Permission[];
 }
 
@@ -50,9 +69,11 @@ interface User {
   status: 'Active' | 'Inactive';
 }
 
+
 @Component({
   selector: 'app-user-permissions',
   standalone: true,
+
   imports: [
     CommonModule,
     FormsModule,
@@ -60,17 +81,16 @@ interface User {
     InputTextModule,
     IconFieldModule,
     InputIconModule,
-    CheckboxModule,
-    BadgeModule,
-    ProgressBarModule,
-    BreadcrumbModule,
-    AccordionModule
+    BreadcrumbModule
   ],
+
   templateUrl: './user-permissions.html',
   styleUrl: './user-permissions.scss',
+
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class UserPermissionsComponent {
+
 
   /* =========================================================
      Breadcrumb
@@ -104,6 +124,7 @@ export class UserPermissionsComponent {
       role: 'مدير إدارة',
       status: 'Active'
     },
+
     {
       id: 2,
       name: 'أحمد محمد',
@@ -112,6 +133,7 @@ export class UserPermissionsComponent {
       role: 'موظف',
       status: 'Active'
     },
+
     {
       id: 3,
       name: 'محمد السيد',
@@ -120,6 +142,7 @@ export class UserPermissionsComponent {
       role: 'جامعة',
       status: 'Active'
     },
+
     {
       id: 4,
       name: 'سارة أحمد',
@@ -130,16 +153,19 @@ export class UserPermissionsComponent {
     }
   ]);
 
+
   selectedUserId = signal<number>(1);
 
   userSearch = signal<string>('');
 
 
-  selectedUser = computed(() =>
-    this.users().find(
+  selectedUser = computed(() => {
+
+    return this.users().find(
       user => user.id === this.selectedUserId()
-    ) ?? null
-  );
+    ) ?? null;
+
+  });
 
 
   filteredUsers = computed(() => {
@@ -153,63 +179,109 @@ export class UserPermissionsComponent {
     }
 
     return this.users().filter(user =>
+
       user.name.toLowerCase().includes(search) ||
+
       user.username.toLowerCase().includes(search) ||
+
       user.email.toLowerCase().includes(search) ||
+
       user.role.toLowerCase().includes(search)
+
     );
+
   });
 
 
   /* =========================================================
-     Permissions
+     Permission Modules
   ========================================================= */
 
   modules = signal<PermissionModule[]>([
 
-    /* =========================
+
+    /* =======================================================
        Dashboard
-    ========================= */
+    ======================================================= */
 
     {
       id: 1,
+
       name: 'الرئيسية',
+
       icon: 'pi pi-home',
+
       route: '/dashboard',
-      description: 'الصفحة الرئيسية ولوحة المعلومات',
+
+      description:
+        'الصفحة الرئيسية ولوحة المعلومات',
+
+      expanded: true,
+
       permissions: [
+
         {
           id: 101,
+
           key: 'dashboard.view',
+
           name: 'عرض الصفحة الرئيسية',
-          description: 'السماح للمستخدم بالدخول إلى لوحة المعلومات',
+
+          description:
+            'السماح للمستخدم بالدخول إلى لوحة المعلومات',
+
           icon: 'pi pi-eye',
+
           enabled: true
         }
+
       ]
     },
 
 
-    /* =========================
+    /* =======================================================
        Basic Data
-    ========================= */
+    ======================================================= */
 
     {
       id: 2,
+
       name: 'إدارة البيانات الأساسية',
+
       icon: 'pi pi-database',
-      description: 'إدارة المحافظات والمواد واللجان',
+
+      description:
+        'إدارة المحافظات والمواد واللجان',
+
       group: true,
+
+      expanded: true,
+
       permissions: [],
+
       children: [
+
+
+        /* =========================
+           Governorates
+        ========================= */
 
         {
           id: 21,
+
           name: 'المحافظات',
+
           icon: 'pi pi-map',
+
           route: '/governorates',
-          description: 'إدارة المحافظات',
+
+          description:
+            'إدارة المحافظات',
+
+          expanded: true,
+
           permissions: [
+
             {
               id: 2101,
               key: 'governorates.view',
@@ -217,6 +289,7 @@ export class UserPermissionsComponent {
               icon: 'pi pi-eye',
               enabled: true
             },
+
             {
               id: 2102,
               key: 'governorates.create',
@@ -224,6 +297,7 @@ export class UserPermissionsComponent {
               icon: 'pi pi-plus',
               enabled: false
             },
+
             {
               id: 2103,
               key: 'governorates.edit',
@@ -231,6 +305,7 @@ export class UserPermissionsComponent {
               icon: 'pi pi-pencil',
               enabled: false
             },
+
             {
               id: 2104,
               key: 'governorates.delete',
@@ -238,16 +313,31 @@ export class UserPermissionsComponent {
               icon: 'pi pi-trash',
               enabled: false
             }
+
           ]
         },
 
+
+        /* =========================
+           Materials
+        ========================= */
+
         {
           id: 22,
+
           name: 'المواد',
+
           icon: 'pi pi-box',
+
           route: '/materials',
-          description: 'إدارة المواد والخامات',
+
+          description:
+            'إدارة المواد والخامات',
+
+          expanded: true,
+
           permissions: [
+
             {
               id: 2201,
               key: 'materials.view',
@@ -255,6 +345,7 @@ export class UserPermissionsComponent {
               icon: 'pi pi-eye',
               enabled: true
             },
+
             {
               id: 2202,
               key: 'materials.create',
@@ -262,6 +353,7 @@ export class UserPermissionsComponent {
               icon: 'pi pi-plus',
               enabled: false
             },
+
             {
               id: 2203,
               key: 'materials.edit',
@@ -269,6 +361,7 @@ export class UserPermissionsComponent {
               icon: 'pi pi-pencil',
               enabled: false
             },
+
             {
               id: 2204,
               key: 'materials.delete',
@@ -276,16 +369,31 @@ export class UserPermissionsComponent {
               icon: 'pi pi-trash',
               enabled: false
             }
+
           ]
         },
 
+
+        /* =========================
+           Committees
+        ========================= */
+
         {
           id: 23,
+
           name: 'إدارة اللجان',
+
           icon: 'pi pi-users',
+
           route: '/committees/setup',
-          description: 'إعداد وإدارة اللجان',
+
+          description:
+            'إعداد وإدارة اللجان',
+
+          expanded: true,
+
           permissions: [
+
             {
               id: 2301,
               key: 'committees.view',
@@ -293,6 +401,7 @@ export class UserPermissionsComponent {
               icon: 'pi pi-eye',
               enabled: true
             },
+
             {
               id: 2302,
               key: 'committees.create',
@@ -300,6 +409,7 @@ export class UserPermissionsComponent {
               icon: 'pi pi-plus',
               enabled: false
             },
+
             {
               id: 2303,
               key: 'committees.edit',
@@ -307,6 +417,7 @@ export class UserPermissionsComponent {
               icon: 'pi pi-pencil',
               enabled: false
             },
+
             {
               id: 2304,
               key: 'committees.delete',
@@ -314,23 +425,34 @@ export class UserPermissionsComponent {
               icon: 'pi pi-trash',
               enabled: false
             }
+
           ]
         }
+
       ]
     },
 
 
-    /* =========================
+    /* =======================================================
        Planning
-    ========================= */
+    ======================================================= */
 
     {
       id: 3,
+
       name: 'الإعداد',
+
       icon: 'pi pi-sliders-h',
+
       route: '/workflow/planning',
-      description: 'إعداد ومتابعة مراحل العمل',
+
+      description:
+        'إعداد ومتابعة مراحل العمل',
+
+      expanded: false,
+
       permissions: [
+
         {
           id: 301,
           key: 'planning.view',
@@ -338,6 +460,7 @@ export class UserPermissionsComponent {
           icon: 'pi pi-eye',
           enabled: true
         },
+
         {
           id: 302,
           key: 'planning.create',
@@ -345,6 +468,7 @@ export class UserPermissionsComponent {
           icon: 'pi pi-plus',
           enabled: false
         },
+
         {
           id: 303,
           key: 'planning.edit',
@@ -352,6 +476,7 @@ export class UserPermissionsComponent {
           icon: 'pi pi-pencil',
           enabled: false
         },
+
         {
           id: 304,
           key: 'planning.execute',
@@ -359,21 +484,31 @@ export class UserPermissionsComponent {
           icon: 'pi pi-play',
           enabled: false
         }
+
       ]
     },
 
 
-    /* =========================
+    /* =======================================================
        Printing
-    ========================= */
+    ======================================================= */
 
     {
       id: 4,
+
       name: 'الطباعة',
+
       icon: 'pi pi-print',
+
       route: '/workflow/printing',
-      description: 'إدارة ومتابعة عمليات الطباعة',
+
+      description:
+        'إدارة ومتابعة عمليات الطباعة',
+
+      expanded: false,
+
       permissions: [
+
         {
           id: 401,
           key: 'printing.view',
@@ -381,6 +516,7 @@ export class UserPermissionsComponent {
           icon: 'pi pi-eye',
           enabled: true
         },
+
         {
           id: 402,
           key: 'printing.print',
@@ -388,6 +524,7 @@ export class UserPermissionsComponent {
           icon: 'pi pi-print',
           enabled: false
         },
+
         {
           id: 403,
           key: 'printing.updateStatus',
@@ -395,21 +532,31 @@ export class UserPermissionsComponent {
           icon: 'pi pi-sync',
           enabled: false
         }
+
       ]
     },
 
 
-    /* =========================
+    /* =======================================================
        Quality
-    ========================= */
+    ======================================================= */
 
     {
       id: 5,
+
       name: 'الجودة',
+
       icon: 'pi pi-verified',
+
       route: '/workflow/quality',
-      description: 'مراجعة واعتماد الجودة',
+
+      description:
+        'مراجعة واعتماد الجودة',
+
+      expanded: false,
+
       permissions: [
+
         {
           id: 501,
           key: 'quality.view',
@@ -417,6 +564,7 @@ export class UserPermissionsComponent {
           icon: 'pi pi-eye',
           enabled: true
         },
+
         {
           id: 502,
           key: 'quality.review',
@@ -424,6 +572,7 @@ export class UserPermissionsComponent {
           icon: 'pi pi-search',
           enabled: false
         },
+
         {
           id: 503,
           key: 'quality.approve',
@@ -431,6 +580,7 @@ export class UserPermissionsComponent {
           icon: 'pi pi-check',
           enabled: false
         },
+
         {
           id: 504,
           key: 'quality.reject',
@@ -438,21 +588,31 @@ export class UserPermissionsComponent {
           icon: 'pi pi-times',
           enabled: false
         }
+
       ]
     },
 
 
-    /* =========================
+    /* =======================================================
        Packing
-    ========================= */
+    ======================================================= */
 
     {
       id: 6,
+
       name: 'التغليف',
+
       icon: 'pi pi-box',
+
       route: '/workflow/packing',
-      description: 'إدارة عمليات التغليف',
+
+      description:
+        'إدارة عمليات التغليف',
+
+      expanded: false,
+
       permissions: [
+
         {
           id: 601,
           key: 'packing.view',
@@ -460,6 +620,7 @@ export class UserPermissionsComponent {
           icon: 'pi pi-eye',
           enabled: true
         },
+
         {
           id: 602,
           key: 'packing.update',
@@ -467,6 +628,7 @@ export class UserPermissionsComponent {
           icon: 'pi pi-sync',
           enabled: false
         },
+
         {
           id: 603,
           key: 'packing.complete',
@@ -474,21 +636,31 @@ export class UserPermissionsComponent {
           icon: 'pi pi-check',
           enabled: false
         }
+
       ]
     },
 
 
-    /* =========================
+    /* =======================================================
        Archiving
-    ========================= */
+    ======================================================= */
 
     {
       id: 7,
+
       name: 'التخزين',
+
       icon: 'pi pi-database',
+
       route: '/workflow/archiving',
-      description: 'إدارة التخزين والأرشفة',
+
+      description:
+        'إدارة التخزين والأرشفة',
+
+      expanded: false,
+
       permissions: [
+
         {
           id: 701,
           key: 'archiving.view',
@@ -496,6 +668,7 @@ export class UserPermissionsComponent {
           icon: 'pi pi-eye',
           enabled: true
         },
+
         {
           id: 702,
           key: 'archiving.update',
@@ -503,6 +676,7 @@ export class UserPermissionsComponent {
           icon: 'pi pi-pencil',
           enabled: false
         },
+
         {
           id: 703,
           key: 'archiving.archive',
@@ -510,21 +684,31 @@ export class UserPermissionsComponent {
           icon: 'pi pi-folder',
           enabled: false
         }
+
       ]
     },
 
 
-    /* =========================
+    /* =======================================================
        Production
-    ========================= */
+    ======================================================= */
 
     {
       id: 8,
+
       name: 'إنتاج الملفات',
+
       icon: 'pi pi-file-export',
+
       route: '/production',
-      description: 'إنتاج وتجهيز الملفات',
+
+      description:
+        'إنتاج وتجهيز الملفات',
+
+      expanded: false,
+
       permissions: [
+
         {
           id: 801,
           key: 'production.view',
@@ -532,6 +716,7 @@ export class UserPermissionsComponent {
           icon: 'pi pi-eye',
           enabled: true
         },
+
         {
           id: 802,
           key: 'production.generate',
@@ -539,6 +724,7 @@ export class UserPermissionsComponent {
           icon: 'pi pi-file-export',
           enabled: false
         },
+
         {
           id: 803,
           key: 'production.download',
@@ -546,21 +732,31 @@ export class UserPermissionsComponent {
           icon: 'pi pi-download',
           enabled: false
         }
+
       ]
     },
 
 
-    /* =========================
+    /* =======================================================
        Reports
-    ========================= */
+    ======================================================= */
 
     {
       id: 9,
+
       name: 'المتابعة والتقارير',
+
       icon: 'pi pi-chart-bar',
+
       route: '/reports',
-      description: 'عرض ومتابعة التقارير والإحصائيات',
+
+      description:
+        'عرض ومتابعة التقارير والإحصائيات',
+
+      expanded: false,
+
       permissions: [
+
         {
           id: 901,
           key: 'reports.view',
@@ -568,6 +764,7 @@ export class UserPermissionsComponent {
           icon: 'pi pi-eye',
           enabled: true
         },
+
         {
           id: 902,
           key: 'reports.export',
@@ -575,6 +772,7 @@ export class UserPermissionsComponent {
           icon: 'pi pi-download',
           enabled: false
         },
+
         {
           id: 903,
           key: 'reports.print',
@@ -582,21 +780,31 @@ export class UserPermissionsComponent {
           icon: 'pi pi-print',
           enabled: false
         }
+
       ]
     },
 
 
-    /* =========================
+    /* =======================================================
        Users
-    ========================= */
+    ======================================================= */
 
     {
       id: 10,
+
       name: 'إدارة المستخدمين',
+
       icon: 'pi pi-users',
+
       route: '/users',
-      description: 'إدارة المستخدمين والصلاحيات',
+
+      description:
+        'إدارة المستخدمين والصلاحيات',
+
+      expanded: false,
+
       permissions: [
+
         {
           id: 1001,
           key: 'users.view',
@@ -604,6 +812,7 @@ export class UserPermissionsComponent {
           icon: 'pi pi-eye',
           enabled: true
         },
+
         {
           id: 1002,
           key: 'users.create',
@@ -611,6 +820,7 @@ export class UserPermissionsComponent {
           icon: 'pi pi-user-plus',
           enabled: false
         },
+
         {
           id: 1003,
           key: 'users.edit',
@@ -618,6 +828,7 @@ export class UserPermissionsComponent {
           icon: 'pi pi-pencil',
           enabled: false
         },
+
         {
           id: 1004,
           key: 'users.delete',
@@ -625,6 +836,7 @@ export class UserPermissionsComponent {
           icon: 'pi pi-trash',
           enabled: false
         },
+
         {
           id: 1005,
           key: 'users.permissions',
@@ -632,21 +844,31 @@ export class UserPermissionsComponent {
           icon: 'pi pi-shield',
           enabled: false
         }
+
       ]
     },
 
 
-    /* =========================
+    /* =======================================================
        Settings
-    ========================= */
+    ======================================================= */
 
     {
       id: 11,
+
       name: 'الإعدادات',
+
       icon: 'pi pi-cog',
+
       route: '/settings',
-      description: 'إعدادات النظام',
+
+      description:
+        'إعدادات النظام',
+
+      expanded: false,
+
       permissions: [
+
         {
           id: 1101,
           key: 'settings.view',
@@ -654,6 +876,7 @@ export class UserPermissionsComponent {
           icon: 'pi pi-eye',
           enabled: true
         },
+
         {
           id: 1102,
           key: 'settings.edit',
@@ -661,6 +884,7 @@ export class UserPermissionsComponent {
           icon: 'pi pi-pencil',
           enabled: false
         },
+
         {
           id: 1103,
           key: 'settings.roles',
@@ -668,6 +892,7 @@ export class UserPermissionsComponent {
           icon: 'pi pi-shield',
           enabled: false
         }
+
       ]
     }
 
@@ -678,29 +903,46 @@ export class UserPermissionsComponent {
      Permission Calculations
   ========================================================= */
 
-  private getAllPermissions(
-    modules: PermissionModule[] = this.modules()
+  private collectPermissions(
+    modules: PermissionModule[]
   ): Permission[] {
 
     return modules.flatMap(module => [
+
       ...module.permissions,
+
       ...(module.children
-        ? this.getAllPermissions(module.children)
+        ? this.collectPermissions(module.children)
         : [])
+
     ]);
+
   }
 
 
-  totalPermissions = computed(() =>
-    this.getAllPermissions().length
-  );
+  getAllPermissions(): Permission[] {
+
+    return this.collectPermissions(
+      this.modules()
+    );
+
+  }
 
 
-  enabledPermissions = computed(() =>
-    this.getAllPermissions()
+  totalPermissions = computed(() => {
+
+    return this.getAllPermissions().length;
+
+  });
+
+
+  enabledPermissions = computed(() => {
+
+    return this.getAllPermissions()
       .filter(permission => permission.enabled)
-      .length
-  );
+      .length;
+
+  });
 
 
   permissionPercentage = computed(() => {
@@ -714,6 +956,7 @@ export class UserPermissionsComponent {
     return Math.round(
       (this.enabledPermissions() / total) * 100
     );
+
   });
 
 
@@ -725,8 +968,15 @@ export class UserPermissionsComponent {
 
     this.selectedUserId.set(user.id);
 
-    // هنا بعدين تقدر تجيب صلاحيات اليوزر من الـ API
-    // this.helper.loadUserPermissions(user.id);
+    /*
+      هنا بعدين:
+
+      this.helper.loadUserPermissions(user.id);
+
+      وبعد الـ API:
+      this.modules.set(...)
+    */
+
   }
 
 
@@ -743,16 +993,87 @@ export class UserPermissionsComponent {
       .map(word => word.charAt(0))
       .join('')
       .toUpperCase();
+
   }
 
 
   /* =========================================================
-     Module Helpers
+     Collapse
   ========================================================= */
 
-  getModulePermissions(module: PermissionModule): Permission[] {
+  toggleModule(moduleId: number): void {
 
-    const ownPermissions = module.permissions ?? [];
+    this.modules.update(modules =>
+
+      modules.map(module => {
+
+        if (module.id === moduleId) {
+
+          return {
+            ...module,
+            expanded: !module.expanded
+          };
+
+        }
+
+        return module;
+
+      })
+
+    );
+
+  }
+
+
+  toggleChildModule(
+    parentId: number,
+    childId: number
+  ): void {
+
+    this.modules.update(modules =>
+
+      modules.map(module => {
+
+        if (module.id !== parentId) {
+          return module;
+        }
+
+        return {
+
+          ...module,
+
+          children: module.children?.map(child => {
+
+            if (child.id !== childId) {
+              return child;
+            }
+
+            return {
+              ...child,
+              expanded: !child.expanded
+            };
+
+          })
+
+        };
+
+      })
+
+    );
+
+  }
+
+
+  /* =========================================================
+     Module Permissions
+  ========================================================= */
+
+  getModulePermissions(
+    module: PermissionModule
+  ): Permission[] {
+
+    const ownPermissions =
+      module.permissions ?? [];
 
     const childPermissions =
       module.children?.flatMap(child =>
@@ -763,6 +1084,7 @@ export class UserPermissionsComponent {
       ...ownPermissions,
       ...childPermissions
     ];
+
   }
 
 
@@ -773,6 +1095,7 @@ export class UserPermissionsComponent {
     return this.getModulePermissions(module)
       .filter(permission => permission.enabled)
       .length;
+
   }
 
 
@@ -781,6 +1104,7 @@ export class UserPermissionsComponent {
   ): number {
 
     return this.getModulePermissions(module).length;
+
   }
 
 
@@ -788,15 +1112,20 @@ export class UserPermissionsComponent {
     module: PermissionModule
   ): number {
 
-    const total = this.getTotalModulePermissions(module);
+    const total =
+      this.getTotalModulePermissions(module);
 
     if (!total) {
       return 0;
     }
 
     return Math.round(
-      (this.getEnabledPermissionsCount(module) / total) * 100
+      (
+        this.getEnabledPermissionsCount(module) /
+        total
+      ) * 100
     );
+
   }
 
 
@@ -804,12 +1133,16 @@ export class UserPermissionsComponent {
     module: PermissionModule
   ): boolean {
 
-    const permissions = this.getModulePermissions(module);
+    const permissions =
+      this.getModulePermissions(module);
 
     return (
       permissions.length > 0 &&
-      permissions.every(permission => permission.enabled)
+      permissions.every(
+        permission => permission.enabled
+      )
     );
+
   }
 
 
@@ -817,21 +1150,24 @@ export class UserPermissionsComponent {
     module: PermissionModule
   ): boolean {
 
-    const permissions = this.getModulePermissions(module);
+    const permissions =
+      this.getModulePermissions(module);
 
-    const enabled = permissions.filter(
-      permission => permission.enabled
-    ).length;
+    const enabled =
+      permissions.filter(
+        permission => permission.enabled
+      ).length;
 
     return (
       enabled > 0 &&
       enabled < permissions.length
     );
+
   }
 
 
   /* =========================================================
-     Toggle Module
+     Toggle Whole Module
   ========================================================= */
 
   toggleModulePermissions(
@@ -839,96 +1175,97 @@ export class UserPermissionsComponent {
   ): void {
 
     this.modules.update(modules =>
-      modules.map(module => {
 
-        if (module.id === moduleId) {
+      modules.map(module =>
 
-          const permissions =
-            this.getModulePermissions(module);
+        this.toggleModulePermissionsRecursive(
+          module,
+          moduleId
+        )
 
-          const enable =
-            !this.isModuleFullySelected(module);
+      )
 
-          return this.updateModulePermissions(
-            module,
-            permissions.map(permission => ({
-              ...permission,
-              enabled: enable
-            }))
-          );
-        }
-
-        return {
-          ...module,
-          children: module.children?.map(child =>
-            this.updateChildModule(
-              child,
-              moduleId
-            )
-          )
-        };
-      })
     );
+
   }
 
 
-  private updateChildModule(
+  private toggleModulePermissionsRecursive(
     module: PermissionModule,
-    targetId: number
+    moduleId: number
   ): PermissionModule {
 
-    if (module.id === targetId) {
+    /*
+      لو ده هو القسم المطلوب
+    */
 
-      const enable =
+    if (module.id === moduleId) {
+
+      const shouldEnable =
         !this.isModuleFullySelected(module);
 
-      return {
-        ...module,
-        permissions: module.permissions.map(permission => ({
-          ...permission,
-          enabled: enable
-        }))
-      };
+      return this.setAllPermissions(
+        module,
+        shouldEnable
+      );
+
     }
 
-    return {
-      ...module,
-      children: module.children?.map(child =>
-        this.updateChildModule(child, targetId)
-      )
-    };
+
+    /*
+      لو القسم Parent ندخل على الأطفال
+    */
+
+    if (module.children?.length) {
+
+      return {
+
+        ...module,
+
+        children: module.children.map(child =>
+
+          this.toggleModulePermissionsRecursive(
+            child,
+            moduleId
+          )
+
+        )
+
+      };
+
+    }
+
+
+    return module;
+
   }
 
 
-  private updateModulePermissions(
+  private setAllPermissions(
     module: PermissionModule,
-    permissions: Permission[]
+    enabled: boolean
   ): PermissionModule {
 
-    const permissionMap = new Map(
-      permissions.map(permission => [
-        permission.id,
-        permission.enabled
-      ])
-    );
-
     return {
+
       ...module,
 
-      permissions: module.permissions.map(permission => ({
-        ...permission,
-        enabled:
-          permissionMap.get(permission.id)
-          ?? permission.enabled
-      })),
+      permissions:
+        module.permissions.map(permission => ({
+          ...permission,
+          enabled
+        })),
 
-      children: module.children?.map(child =>
-        this.updateModulePermissions(
-          child,
-          permissions
+      children:
+        module.children?.map(child =>
+          this.setAllPermissions(
+            child,
+            enabled
+          )
         )
-      )
+
     };
+
   }
 
 
@@ -942,18 +1279,23 @@ export class UserPermissionsComponent {
   ): void {
 
     this.modules.update(modules =>
+
       modules.map(module =>
-        this.togglePermissionInModule(
+
+        this.togglePermissionRecursive(
           module,
           moduleId,
           permissionId
         )
+
       )
+
     );
+
   }
 
 
-  private togglePermissionInModule(
+  private togglePermissionRecursive(
     module: PermissionModule,
     moduleId: number,
     permissionId: number
@@ -962,35 +1304,57 @@ export class UserPermissionsComponent {
     if (module.id === moduleId) {
 
       return {
+
         ...module,
 
-        permissions: module.permissions.map(permission =>
-          permission.id === permissionId
-            ? {
-                ...permission,
-                enabled: !permission.enabled
-              }
-            : permission
-        )
+        permissions:
+          module.permissions.map(permission =>
+
+            permission.id === permissionId
+
+              ? {
+                  ...permission,
+                  enabled: !permission.enabled
+                }
+
+              : permission
+
+          )
+
       };
+
     }
 
-    return {
-      ...module,
 
-      children: module.children?.map(child =>
-        this.togglePermissionInModule(
-          child,
-          moduleId,
-          permissionId
-        )
-      )
-    };
+    if (module.children?.length) {
+
+      return {
+
+        ...module,
+
+        children:
+          module.children.map(child =>
+
+            this.togglePermissionRecursive(
+              child,
+              moduleId,
+              permissionId
+            )
+
+          )
+
+      };
+
+    }
+
+
+    return module;
+
   }
 
 
   /* =========================================================
-     All Permissions
+     Select All
   ========================================================= */
 
   areAllPermissionsSelected(): boolean {
@@ -1000,47 +1364,30 @@ export class UserPermissionsComponent {
 
     return (
       permissions.length > 0 &&
-      permissions.every(permission => permission.enabled)
+      permissions.every(
+        permission => permission.enabled
+      )
     );
+
   }
 
 
   toggleAllPermissions(): void {
 
-    const enable =
+    const shouldEnable =
       !this.areAllPermissionsSelected();
 
     this.modules.update(modules =>
+
       modules.map(module =>
-        this.setModulePermissions(
+        this.setAllPermissions(
           module,
-          enable
+          shouldEnable
         )
       )
+
     );
-  }
 
-
-  private setModulePermissions(
-    module: PermissionModule,
-    enabled: boolean
-  ): PermissionModule {
-
-    return {
-      ...module,
-
-      permissions: module.permissions.map(permission => ({
-        ...permission,
-        enabled
-      })),
-
-      children: module.children?.map(child =>
-        this.setModulePermissions(
-          child,
-          enabled
-        )
-      )
-    };
   }
 
 
@@ -1051,13 +1398,16 @@ export class UserPermissionsComponent {
   resetPermissions(): void {
 
     this.modules.update(modules =>
+
       modules.map(module =>
-        this.setModulePermissions(
+        this.setAllPermissions(
           module,
           false
         )
       )
+
     );
+
   }
 
 
@@ -1078,18 +1428,25 @@ export class UserPermissionsComponent {
           key: permission.key
         }));
 
+
     const payload = {
       userId,
       permissions
     };
+
 
     console.log(
       'Permissions Payload:',
       payload
     );
 
-    // بعدين:
-    // this.helper.saveUserPermissions(payload);
+
+    /*
+      بعدين:
+
+      this.helper.saveUserPermissions(payload);
+    */
+
   }
 
 
@@ -1103,6 +1460,7 @@ export class UserPermissionsComponent {
   ): number {
 
     return user.id;
+
   }
 
 
@@ -1112,6 +1470,7 @@ export class UserPermissionsComponent {
   ): number {
 
     return module.id;
+
   }
 
 
@@ -1121,5 +1480,7 @@ export class UserPermissionsComponent {
   ): number {
 
     return permission.id;
+
   }
+
 }
