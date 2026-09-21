@@ -7,31 +7,52 @@ import { SelectModule } from 'primeng/select';
 import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
 import { TooltipModule } from 'primeng/tooltip';
-
+import { CardModule } from 'primeng/card';
+import { DividerModule } from 'primeng/divider';
 import { CommitteeRow, SelectOption, StepItem } from '../../core/models/committee.model';
 
 @Component({
   selector: 'app-committee-setup',
   standalone: true,
-  imports: [
-    CommonModule,
-    FormsModule,
-    ButtonModule,
-    SelectModule,
-    TableModule,
-    TagModule,
-    TooltipModule
-  ],
+imports: [
+  CommonModule,
+  FormsModule,
+  CardModule,
+  SelectModule,
+  TableModule,
+  ButtonModule,
+  DividerModule,
+  TagModule,
+  TooltipModule
+],
   templateUrl: './committee-setup.component.html',
   styleUrl: './committee-setup.component.scss'
 })
 export class CommitteeSetupComponent {
   // ---- Steps (displayed right-to-left: 4 → 1, matching the RTL wizard) ----
+
+
   readonly steps = signal<StepItem[]>([
-    { order: 4, label: 'إنشاء الملفات', state: 'pending' },
-    { order: 3, label: 'مراجعة البيانات', state: 'pending' },
-    { order: 2, label: 'رفع ملف اللجان', state: 'pending' },
-    { order: 1, label: 'اختيار المحافظة والمادة', state: 'active' }
+      {
+      order: 1,
+      label: 'اختيار المحافظة والمادة',
+      state: 'active'
+    },
+    {
+      order: 2,
+      label: 'رفع ملف اللجان',
+      state: 'pending'
+    },
+    {
+      order: 3,
+      label: 'مراجعة البيانات',
+      state: 'pending'
+    },
+    {
+      order: 4,
+      label: 'إنشاء الملفات',
+      state: 'pending'
+    }
   ]);
 
   // ---- Filters ----
