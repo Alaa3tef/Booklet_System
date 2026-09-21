@@ -2,61 +2,221 @@
   stepNumber="01"
   englishLabel="Planning"
   arabicTitle="مستخدم الإعداد"
-  arabicSubtitle="اختيار المحافظة والمادة وتحويلها إلى جاهز للطباعة"
+  arabicSubtitle="البحث عن المواد وتغيير حالتها"
   theme="blue"
   activeNavKey="planning"
   illustrationIcon="pi pi-desktop"
   illustrationTaglineTop="التخطيط اليوم"
   illustrationTaglineBottom="لصناعة تعليم أفضل"
   panelIcon="pi pi-sliders-h"
-  panelTitle="إعداد الإنتاج"
+  panelTitle="البحث في خطط الإنتاج"
   functionLabel="مستخدم الإعداد"
   [essentials]="essentials"
-  resultText="يتم تحويل المادة إلى جاهز للطباعة"
+  resultText="يمكن تغيير حالة كل مادة مباشرة من الجدول"
 >
+
   <div panel-content>
-    <div class="fields-grid">
-      <div class="field">
-        <label>المحافظة</label>
-        <p-select [options]="governorates" [(ngModel)]="selectedGovernorate" optionLabel="label" optionValue="value" styleClass="w-full"></p-select>
+
+    <!-- ==========================================
+         SEARCH
+    =========================================== -->
+
+    <div class="search-section">
+
+      <div class="fields-grid">
+
+        <!-- Governorate -->
+
+        <div class="field">
+
+          <label>
+            المحافظة
+          </label>
+
+          <p-select
+            [options]="governorates"
+            [(ngModel)]="selectedGovernorate"
+            optionLabel="label"
+            optionValue="value"
+            styleClass="w-full">
+          </p-select>
+
+        </div>
+
+
+        <!-- Subject -->
+
+        <div class="field">
+
+          <label>
+            المادة
+          </label>
+
+          <p-select
+            [options]="subjects"
+            [(ngModel)]="selectedSubject"
+            optionLabel="label"
+            optionValue="value"
+            styleClass="w-full">
+          </p-select>
+
+        </div>
+
       </div>
-      <div class="field">
-        <label>المادة</label>
-        <p-select [options]="subjects" [(ngModel)]="selectedSubject" optionLabel="label" optionValue="value" styleClass="w-full"></p-select>
-      </div>
+
+
+      <!-- Search Button -->
+
+      <button
+        type="button"
+        class="opt-btn solid-blue search-btn"
+        (click)="search()">
+
+        <i class="pi pi-search"></i>
+
+        بحث
+
+      </button>
+
     </div>
 
-    <button type="button" class="opt-btn solid-blue main-action" (click)="markReadyForPrinting()">
-      <i class="pi pi-refresh"></i> تحويل إلى جاهز للطباعة
-    </button>
+
+    <!-- ==========================================
+         TABLE
+    =========================================== -->
 
     <div class="table-section">
-      <h4>الخطط المسجلة</h4>
-      <p-table [value]="rows()" styleClass="p-datatable-sm" responsiveLayout="scroll">
+
+      <div class="table-header">
+
+        <h4>
+          الخطط المسجلة
+        </h4>
+
+        <span class="results-count">
+          {{ filteredRows().length }} مادة
+        </span>
+
+      </div>
+
+
+      <p-table
+        [value]="filteredRows()"
+        styleClass="p-datatable-sm"
+        responsiveLayout="scroll">
+
+
+        <!-- ================= HEADER ================= -->
+
         <ng-template pTemplate="header">
+
           <tr>
-            <th>الحالة</th>
-            <th>المادة</th>
-            <th>المحافظة</th>
-            <th>م</th>
+
+             <th>
+              م
+            </th>
+             <th>
+              المحافظة
+            </th>
+            <th>
+              المادة
+            </th>
+
+           
+
+          
+             <th>
+              الحالة
+            </th>
+
+            <th>
+
+            </th>
+
+
           </tr>
+
         </ng-template>
-        <ng-template pTemplate="body" let-row>
+
+
+        <!-- ================= BODY ================= -->
+
+        <ng-template
+          pTemplate="body"
+          let-row>
+
           <tr>
+              <!-- INDEX -->
+
+            <td>
+              {{ row.index }}
+            </td>
+
+               <!-- GOVERNORATE -->
+
+            <td>
+              {{ row.governorate }}
+            </td>
+            <!-- SUBJECT -->
+
+            <td>
+              {{ row.subject }}
+            </td>
+
             <td><span class="status-pill" [ngClass]="row.statusTone">{{ row.status }}</span></td>
-            <td>{{ row.subject }}</td>
-            <td>{{ row.governorate }}</td>
-            <td>{{ row.index }}</td>
+
+            <td class="status-cell">
+
+  <button
+    type="button"
+    class="status-menu-btn"
+    aria-label="إجراءات الحالة"
+    (click)="openStatusMenu(row, statusMenu, $event)">
+
+    <i class="pi pi-ellipsis-v"></i>
+
+  </button>
+
+  <p-menu
+    #statusMenu
+    [model]="menuItems"
+    [popup]="true"
+    appendTo="body">
+  </p-menu>
+
+
+            </td>
+
+
           </tr>
+
         </ng-template>
+
+
+        <!-- ================= EMPTY ================= -->
+
+        <ng-template pTemplate="emptymessage">
+
+          <tr>
+
+            <td
+              colspan="4"
+              class="empty-message">
+
+              <i class="pi pi-search"></i>
+
+              لا توجد نتائج مطابقة للبحث
+
+            </td>
+
+          </tr>
+
+        </ng-template>
+
       </p-table>
+
     </div>
+
   </div>
 
-  <ng-container system-options>
-    <button type="button" class="opt-btn solid-blue" (click)="markReadyForPrinting()">
-      <i class="pi pi-refresh"></i> تحويل إلى جاهز للطباعة
-    </button>
-    <button type="button" class="opt-btn outline">عرض التفاصيل</button>
-  </ng-container>
 </app-workflow-step-layout>

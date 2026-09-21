@@ -6,7 +6,7 @@ import { WorkflowNavKey, WorkflowThemeColor } from '../../core/models/workflow.m
 @Component({
   selector: 'app-workflow-step-layout',
   standalone: true,
-  imports: [CommonModule, WorkflowMiniNavComponent],
+  imports: [CommonModule],
   templateUrl: './workflow-step-layout.component.html',
   styleUrl: './workflow-step-layout.component.scss'
 })

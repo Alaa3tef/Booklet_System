@@ -1,8 +1,10 @@
-import { Component, signal } from '@angular/core';
+import { Component, computed, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { SelectModule } from 'primeng/select';
 import { TableModule } from 'primeng/table';
+import { MenuModule } from 'primeng/menu';
+import { MenuItem } from 'primeng/api';
 
 import { WorkflowStepLayoutComponent } from '../../../shared/workflow-step-layout/workflow-step-layout.component';
 import { SelectOption } from '../../../core/models/committee.model';
@@ -11,35 +13,203 @@ import { WorkflowStatusRow } from '../../../core/models/workflow.model';
 @Component({
   selector: 'app-planning',
   standalone: true,
-  imports: [CommonModule, FormsModule, SelectModule, TableModule, WorkflowStepLayoutComponent],
+
+  imports: [
+    CommonModule,
+    FormsModule,
+    SelectModule,
+    TableModule,
+    MenuModule,
+    WorkflowStepLayoutComponent
+  ],
+
   templateUrl: './planning.component.html',
   styleUrl: './planning.component.scss'
 })
 export class PlanningComponent {
+
   readonly governorates: SelectOption[] = [
+    { label: 'كل المحافظات', value: 'all' },
     { label: 'القاهرة', value: 'cairo' },
     { label: 'الجيزة', value: 'giza' },
     { label: 'الإسكندرية', value: 'alexandria' }
   ];
+
   readonly subjects: SelectOption[] = [
+    { label: 'كل المواد', value: 'all' },
     { label: 'اللغة العربية', value: 'arabic' },
     { label: 'الرياضيات', value: 'math' },
     { label: 'العلوم', value: 'science' }
   ];
 
-  selectedGovernorate = this.governorates[0].value;
-  selectedSubject = this.subjects[0].value;
+  selectedGovernorate = 'all';
+  selectedSubject = 'all';
 
-  readonly essentials = ['اختيار المحافظة', 'اختيار المادة', 'تحويلها إلى جاهز للطباعة'];
+  readonly searchGovernorate = signal('all');
+  readonly searchSubject = signal('all');
+
+  readonly essentials = [
+    'البحث بالمحافظة',
+    'البحث بالمادة',
+    'تغيير حالة المادة'
+  ];
 
   readonly rows = signal<WorkflowStatusRow[]>([
-    { index: 1, subject: 'اللغة العربية', governorate: 'القاهرة', status: 'جاهز للطباعة', statusTone: 'success' },
-    { index: 2, subject: 'الرياضيات', governorate: 'الجيزة', status: 'قيد الإعداد', statusTone: 'warning' },
-    { index: 3, subject: 'العلوم', governorate: 'الإسكندرية', status: 'قيد الإعداد', statusTone: 'warning' }
+    {
+      index: 1,
+      subject: 'اللغة العربية',
+      governorate: 'القاهرة',
+      status: 'جاهز للطباعة',
+      statusTone: 'success'
+    },
+    {
+      index: 2,
+      subject: 'الرياضيات',
+      governorate: 'الجيزة',
+      status: 'قيد الإعداد',
+      statusTone: 'warning'
+    },
+    {
+      index: 3,
+      subject: 'العلوم',
+      governorate: 'الإسكندرية',
+      status: 'قيد الإعداد',
+      statusTone: 'warning'
+    }
   ]);
 
-  markReadyForPrinting(): void {
-    // Hook up to the backend "mark subject ready for printing" endpoint.
-    console.info('Converting subject to ready-for-printing...');
+
+  readonly filteredRows = computed(() => {
+
+    const governorate = this.searchGovernorate();
+    const subject = this.searchSubject();
+
+    return this.rows().filter(row => {
+
+      const governorateMatch =
+        governorate === 'all' ||
+        this.getGovernorateValue(row.governorate) === governorate;
+
+      const subjectMatch =
+        subject === 'all' ||
+        this.getSubjectValue(row.subject) === subject;
+
+      return governorateMatch && subjectMatch;
+
+    });
+
+  });
+
+
+  // ==========================================
+  // Menu
+  // ==========================================
+
+  selectedRow: WorkflowStatusRow | null = null;
+
+  menuItems: MenuItem[] = [
+    {
+      label: 'تحويل إلى جاهز للطباعة',
+      icon: 'pi pi-refresh',
+      command: () => this.markSelectedRowReady()
+    }
+  ];
+
+
+  // ==========================================
+  // Search
+  // ==========================================
+
+  search(): void {
+
+    this.searchGovernorate.set(
+      this.selectedGovernorate
+    );
+
+    this.searchSubject.set(
+      this.selectedSubject
+    );
+
   }
+
+
+  // ==========================================
+  // Open Status Menu
+  // ==========================================
+
+  openStatusMenu(
+    row: WorkflowStatusRow,
+    menu: any,
+    event: Event
+  ): void {
+
+    this.selectedRow = row;
+
+    menu.toggle(event);
+
+  }
+
+
+  // ==========================================
+  // Change Status
+  // ==========================================
+
+  markSelectedRowReady(): void {
+
+    if (!this.selectedRow) {
+      return;
+    }
+
+    const rowIndex = this.selectedRow.index;
+
+    this.rows.update(rows =>
+      rows.map(row =>
+        row.index === rowIndex
+          ? {
+              ...row,
+              status: 'جاهز للطباعة',
+              statusTone: 'success'
+            }
+          : row
+      )
+    );
+
+    this.selectedRow = null;
+
+  }
+
+
+  // ==========================================
+  // Helpers
+  // ==========================================
+
+  private getGovernorateValue(
+    governorate: any
+  ): string {
+
+    const map: Record<string, string> = {
+      'القاهرة': 'cairo',
+      'الجيزة': 'giza',
+      'الإسكندرية': 'alexandria'
+    };
+
+    return map[governorate] ?? '';
+
+  }
+
+
+  private getSubjectValue(
+    subject: string
+  ): string {
+
+    const map: Record<string, string> = {
+      'اللغة العربية': 'arabic',
+      'الرياضيات': 'math',
+      'العلوم': 'science'
+    };
+
+    return map[subject] ?? '';
+
+  }
+
 }
