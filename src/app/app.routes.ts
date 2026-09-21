@@ -13,6 +13,12 @@ export const routes: Routes = [
           import('./features/dashboard/dashboard.component').then((m) => m.DashboardComponent),
         data: { breadcrumb: 'الرئيسية' }
       },
+       {
+        path: 'settings',
+        loadComponent: () =>
+          import('./features/user-permissions/user-permissions').then((m) => m.UserPermissionsComponent),
+        data: { breadcrumb: 'الاعدادات' }
+      },
       {
         path: 'committees/setup',
         loadComponent: () =>
@@ -52,6 +58,14 @@ export const routes: Routes = [
             (m) => m.ArchivingComponent
           ),
         data: { breadcrumb: 'التخزين' }
+      },
+      {
+        path: 'users',
+        loadComponent: () =>
+          import('./features/user-management/user-management.component').then(
+            (m) => m.UserManagementComponent
+          ),
+        data: { breadcrumb: 'إدارة المستخدمين' }
       },
       { path: '**', redirectTo: 'dashboard' }
     ]

@@ -1,0 +1,489 @@
+<div class="um-page" dir="rtl">
+
+
+  <!-- ==================================================
+       HERO
+  =================================================== -->
+  <section class="um-hero">
+
+    <div class="um-hero-icon">
+      <i class="pi pi-users"></i>
+    </div>
+
+    <div class="um-hero-text">
+      <h2>إدارة المستخدمين</h2>
+      <p>إضافة وتعديل وحذف المستخدمين وإدارة صلاحياتهم داخل المنظومة</p>
+    </div>
+
+    <button
+      type="button"
+      class="um-add-btn"
+      id="btn-add-user"
+      (click)="openAddModal()">
+      <i class="pi pi-plus"></i>
+      <span>إضافة مستخدم</span>
+    </button>
+
+  </section>
+
+
+  <!-- ==================================================
+       STATS
+  =================================================== -->
+  <section class="um-stats">
+
+    <div class="um-stat total">
+      <i class="pi pi-users"></i>
+      <div>
+        <span class="stat-val">{{ stats().total }}</span>
+        <span class="stat-lbl">إجمالي المستخدمين</span>
+      </div>
+    </div>
+
+    <div class="um-stat active">
+      <i class="pi pi-check-circle"></i>
+      <div>
+        <span class="stat-val">{{ stats().active }}</span>
+        <span class="stat-lbl">مستخدمون نشطون</span>
+      </div>
+    </div>
+
+    <div class="um-stat inactive">
+      <i class="pi pi-times-circle"></i>
+      <div>
+        <span class="stat-val">{{ stats().inactive }}</span>
+        <span class="stat-lbl">مستخدمون معطلون</span>
+      </div>
+    </div>
+
+    <div class="um-stat admin">
+      <i class="pi pi-crown"></i>
+      <div>
+        <span class="stat-val">{{ stats().admins }}</span>
+        <span class="stat-lbl">مديري النظام</span>
+      </div>
+    </div>
+
+  </section>
+
+
+  <!-- ==================================================
+       FILTERS
+  =================================================== -->
+  <section class="um-filters">
+
+    <!-- Search -->
+    <div class="um-search-wrap">
+      <i class="pi pi-search"></i>
+      <input
+        type="text"
+        id="input-search-users"
+        class="um-search"
+        placeholder="البحث بالاسم أو اسم المستخدم أو البريد..."
+        [value]="searchQuery()"
+        (input)="onSearch($any($event.target).value)" />
+    </div>
+
+    <!-- Role filter -->
+    <select
+      id="select-role-filter"
+      class="um-select"
+      [value]="selectedRole()"
+      (change)="onRoleChange($any($event.target).value)">
+      @for (opt of roleOptions; track opt.value) {
+        <option [value]="opt.value">{{ opt.label }}</option>
+      }
+    </select>
+
+    <!-- Status filter -->
+    <select
+      id="select-status-filter"
+      class="um-select"
+      [value]="selectedStatus()"
+      (change)="onStatusChange($any($event.target).value)">
+      <option value="all">جميع الحالات</option>
+      <option value="active">نشط</option>
+      <option value="inactive">معطل</option>
+    </select>
+
+    <!-- Count badge -->
+    <span class="um-count-badge">
+      {{ filtered().length }} مستخدم
+    </span>
+
+  </section>
+
+
+  <!-- ==================================================
+       TABLE
+  =================================================== -->
+  <section class="um-table-wrap">
+
+    <table class="um-table">
+
+      <thead>
+        <tr>
+          <th class="col-idx">م</th>
+          <th class="col-user">المستخدم</th>
+          <th class="col-role">الدور</th>
+          <th class="col-email">البريد الإلكتروني</th>
+          <th class="col-status">الحالة</th>
+          <th class="col-date">تاريخ الإضافة</th>
+          <th class="col-actions">الإجراءات</th>
+        </tr>
+      </thead>
+
+      <tbody>
+
+        @if (paged().length === 0) {
+          <tr>
+            <td colspan="7" class="um-empty">
+              <i class="pi pi-inbox"></i>
+              <span>لا يوجد مستخدمون مطابقون للبحث</span>
+            </td>
+          </tr>
+        }
+
+        @for (user of paged(); track user.id; let i = $index) {
+
+          <tr class="um-row" [class.inactive-row]="user.status === 'inactive'">
+
+            <!-- Index -->
+            <td class="col-idx">
+              {{ (currentPage() - 1) * pageSize() + i + 1 }}
+            </td>
+
+            <!-- User info -->
+            <td class="col-user">
+              <div class="user-cell">
+
+                <div class="avatar" [class]="'avatar-' + user.avatarTone">
+                  {{ user.avatarInitials }}
+                </div>
+
+                <div class="user-info">
+                  <span class="user-name">{{ user.name }}</span>
+                  <span class="user-uname">&#64;{{ user.username }}</span>
+                </div>
+
+              </div>
+            </td>
+
+            <!-- Role -->
+            <td class="col-role">
+              <span class="role-badge" [class]="'role-' + user.roleKey">
+                {{ user.role }}
+              </span>
+            </td>
+
+            <!-- Email -->
+            <td class="col-email">
+              <span class="email-text">{{ user.email }}</span>
+            </td>
+
+            <!-- Status -->
+            <td class="col-status">
+              <span
+                class="status-chip"
+                [class.chip-active]="user.status === 'active'"
+                [class.chip-inactive]="user.status === 'inactive'">
+                <span class="chip-dot"></span>
+                {{ user.status === 'active' ? 'نشط' : 'معطل' }}
+              </span>
+            </td>
+
+            <!-- Date -->
+            <td class="col-date">{{ user.createdAt }}</td>
+
+            <!-- Actions -->
+            <td class="col-actions">
+              <div class="action-btns">
+
+                <!-- Toggle status -->
+                <button
+                  type="button"
+                  class="action-btn"
+                  [class.btn-deactivate]="user.status === 'active'"
+                  [class.btn-activate]="user.status === 'inactive'"
+                  [title]="user.status === 'active' ? 'تعطيل المستخدم' : 'تفعيل المستخدم'"
+                  (click)="toggleStatus(user)">
+                  <i [class]="user.status === 'active' ? 'pi pi-ban' : 'pi pi-check'"></i>
+                </button>
+
+                <!-- Delete -->
+                <button
+                  type="button"
+                  class="action-btn btn-delete"
+                  title="حذف المستخدم"
+                  (click)="confirmDelete(user)">
+                  <i class="pi pi-trash"></i>
+                </button>
+
+              </div>
+            </td>
+
+          </tr>
+
+        }
+
+      </tbody>
+
+    </table>
+
+  </section>
+
+
+  <!-- ==================================================
+       PAGINATION
+  =================================================== -->
+  @if (totalPages() > 1) {
+
+    <nav class="um-pagination" aria-label="التنقل بين الصفحات">
+
+      <!-- Prev -->
+      <button
+        type="button"
+        class="pag-btn pag-prev"
+        [disabled]="currentPage() === 1"
+        (click)="prevPage()">
+        <i class="pi pi-angle-right"></i>
+      </button>
+
+
+      <!-- Page numbers -->
+      @for (p of pageNumbers(); track $index) {
+
+        @if (p === '...') {
+          <span class="pag-dots">…</span>
+        } @else {
+          <button
+            type="button"
+            class="pag-btn pag-num"
+            [class.pag-active]="p === currentPage()"
+            (click)="goToPage(p)">
+            {{ p }}
+          </button>
+        }
+
+      }
+
+
+      <!-- Next -->
+      <button
+        type="button"
+        class="pag-btn pag-next"
+        [disabled]="currentPage() === totalPages()"
+        (click)="nextPage()">
+        <i class="pi pi-angle-left"></i>
+      </button>
+
+
+      <!-- Info -->
+      <span class="pag-info">
+        صفحة {{ currentPage() }} من {{ totalPages() }}
+      </span>
+
+    </nav>
+
+  }
+
+
+</div>
+
+
+<!-- ==================================================
+     ADD USER MODAL
+=================================================== -->
+@if (showAddModal()) {
+
+  <div class="um-modal-backdrop" (click)="closeAddModal()">
+
+    <div class="um-modal" (click)="$event.stopPropagation()">
+
+      <!-- Modal header -->
+      <div class="modal-header">
+        <div class="modal-header-icon">
+          <i class="pi pi-user-plus"></i>
+        </div>
+        <h3>إضافة مستخدم جديد</h3>
+        <button
+          type="button"
+          class="modal-close"
+          (click)="closeAddModal()">
+          <i class="pi pi-times"></i>
+        </button>
+      </div>
+
+
+      <!-- Form -->
+      <div class="modal-body">
+
+        @if (formError()) {
+          <div class="form-error-banner">
+            <i class="pi pi-exclamation-triangle"></i>
+            {{ formError() }}
+          </div>
+        }
+
+        <div class="form-grid">
+
+          <!-- Full name -->
+          <div class="form-floating">
+            <input
+              id="f-name"
+              type="text"
+              placeholder=" "
+              [value]="form().name"
+              (input)="updateForm('name', $any($event.target).value)" />
+            <label for="f-name">
+              الاسم الكامل
+              <span class="req">*</span>
+            </label>
+          </div>
+
+          <!-- Username -->
+          <div class="form-floating">
+            <input
+              id="f-username"
+              type="text"
+              placeholder=" "
+              [value]="form().username"
+              (input)="updateForm('username', $any($event.target).value)" />
+            <label for="f-username">
+              اسم المستخدم
+              <span class="req">*</span>
+            </label>
+          </div>
+
+          <!-- Email -->
+          <div class="form-floating span-2">
+            <input
+              id="f-email"
+              type="email"
+              placeholder=" "
+              [value]="form().email"
+              (input)="updateForm('email', $any($event.target).value)" />
+            <label for="f-email">
+              البريد الإلكتروني
+              <span class="req">*</span>
+            </label>
+          </div>
+
+          <!-- Role -->
+          <div class="form-floating">
+            <select
+              id="f-role"
+              [value]="form().roleKey"
+              (change)="updateForm('roleKey', $any($event.target).value)">
+              <option value="" disabled selected hidden></option>
+              @for (opt of formRoleOptions; track opt.value) {
+                <option [value]="opt.value">{{ opt.label }}</option>
+              }
+            </select>
+            <label for="f-role">الدور</label>
+          </div>
+
+          <!-- Status -->
+          <div class="form-floating">
+            <select
+              id="f-status"
+              [value]="form().status"
+              (change)="updateForm('status', $any($event.target).value)">
+              <option value="" disabled selected hidden></option>
+              <option value="active">نشط</option>
+              <option value="inactive">معطل</option>
+            </select>
+            <label for="f-status">الحالة</label>
+          </div>
+
+        </div>
+
+      </div>
+
+
+      <!-- Footer -->
+      <div class="modal-footer">
+
+        <button
+          type="button"
+          class="modal-btn modal-cancel"
+          (click)="closeAddModal()">
+          <i class="pi pi-times"></i>
+          إلغاء
+        </button>
+
+        <button
+          type="button"
+          class="modal-btn modal-save"
+          id="btn-save-user"
+          (click)="submitAdd()">
+          <i class="pi pi-check"></i>
+          حفظ المستخدم
+        </button>
+
+      </div>
+
+    </div>
+
+  </div>
+
+}
+
+
+<!-- ==================================================
+     DELETE CONFIRMATION MODAL
+=================================================== -->
+@if (showDeleteModal() && deleteTarget()) {
+
+  <div class="um-modal-backdrop" (click)="cancelDelete()">
+
+    <div class="um-modal um-modal-sm" (click)="$event.stopPropagation()">
+
+      <div class="modal-header danger-header">
+        <div class="modal-header-icon danger-icon">
+          <i class="pi pi-trash"></i>
+        </div>
+        <h3>تأكيد الحذف</h3>
+        <button
+          type="button"
+          class="modal-close"
+          (click)="cancelDelete()">
+          <i class="pi pi-times"></i>
+        </button>
+      </div>
+
+      <div class="modal-body confirm-body">
+        <p>هل أنت متأكد من حذف المستخدم</p>
+        <strong>{{ deleteTarget()!.name }}</strong>
+        <p class="confirm-warning">
+          <i class="pi pi-exclamation-triangle"></i>
+          لا يمكن التراجع عن هذا الإجراء
+        </p>
+      </div>
+
+      <div class="modal-footer">
+
+        <button
+          type="button"
+          class="modal-btn modal-cancel"
+          (click)="cancelDelete()">
+          <i class="pi pi-times"></i>
+          إلغاء
+        </button>
+
+        <button
+          type="button"
+          class="modal-btn modal-danger"
+          id="btn-confirm-delete"
+          (click)="executeDelete()">
+          <i class="pi pi-trash"></i>
+          نعم، احذف المستخدم
+        </button>
+
+      </div>
+
+    </div>
+
+  </div>
+
+}
