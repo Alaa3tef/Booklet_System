@@ -1,5 +1,6 @@
 <div dir="rtl" class="perm-page">
 
+
   <!-- =====================================================
        PAGE HEADER
   ====================================================== -->
@@ -21,6 +22,7 @@
         </div>
 
         <div>
+
           <h1 class="perm-title">
             إدارة صلاحيات المستخدمين
           </h1>
@@ -28,6 +30,7 @@
           <p class="perm-subtitle">
             تحكم في صلاحيات كل مستخدم والوصول إلى صفحات النظام
           </p>
+
         </div>
 
       </div>
@@ -53,19 +56,17 @@
 
 
   <!-- =====================================================
-       MAIN GRID
+       MAIN
   ====================================================== -->
 
   <div class="perm-grid">
 
 
     <!-- ===================================================
-         USERS SIDEBAR
+         USERS
     ==================================================== -->
 
     <aside class="perm-sidebar">
-
-      <!-- Sidebar Header -->
 
       <div class="perm-sidebar-header">
 
@@ -73,9 +74,9 @@
 
           <div>
 
-            <div class="section-label">
+            <span class="section-label">
               إدارة الوصول
-            </div>
+            </span>
 
             <h2 class="perm-sidebar-title">
               المستخدمون
@@ -87,14 +88,12 @@
 
           </div>
 
-          <div class="users-count">
+          <span class="users-count">
             {{ users().length }}
-          </div>
+          </span>
 
         </div>
 
-
-        <!-- Search -->
 
         <p-iconfield
           iconPosition="right"
@@ -117,7 +116,7 @@
       </div>
 
 
-      <!-- Users -->
+      <!-- User list -->
 
       <div class="perm-user-list">
 
@@ -133,12 +132,8 @@
             (click)="selectUser(user)"
           >
 
-            <!-- Accent -->
-
             <span class="user-active-line"></span>
 
-
-            <!-- Avatar -->
 
             <div
               class="perm-user-avatar"
@@ -161,8 +156,6 @@
             </div>
 
 
-            <!-- Info -->
-
             <div class="perm-user-info">
 
               <div class="perm-user-name-row">
@@ -175,6 +168,7 @@
                   class="user-status"
                   [class.active]="user.status === 'Active'"
                 >
+
                   <span class="status-dot"></span>
 
                   {{
@@ -182,6 +176,7 @@
                       ? 'نشط'
                       : 'غير نشط'
                   }}
+
                 </span>
 
               </div>
@@ -203,21 +198,19 @@
             </div>
 
 
-            <!-- Selected -->
-
             <span
               class="selected-check"
               [class.visible]="selectedUserId() === user.id"
             >
+
               <i class="pi pi-check"></i>
+
             </span>
 
           </button>
 
         }
 
-
-        <!-- Empty -->
 
         @if (filteredUsers().length === 0) {
 
@@ -245,15 +238,16 @@
 
 
     <!-- ===================================================
-         MAIN CONTENT
+         CONTENT
     ==================================================== -->
 
     <main class="perm-main">
 
       @if (selectedUser(); as user) {
 
+
         <!-- ===============================================
-             SELECTED USER
+             USER SUMMARY
         ================================================ -->
 
         <section class="selected-user-card">
@@ -261,12 +255,14 @@
           <div class="selected-user-info">
 
             <div class="selected-avatar">
+
               {{ getInitials(user.name) }}
 
               <span
                 class="selected-avatar-status"
                 [class.active]="user.status === 'Active'"
               ></span>
+
             </div>
 
 
@@ -304,15 +300,16 @@
           </div>
 
 
-          <!-- Permission Summary -->
-
           <div class="permission-summary">
 
             <div class="summary-number">
+
               {{ enabledPermissions() }}
+
               <span>
                 / {{ totalPermissions() }}
               </span>
+
             </div>
 
             <div class="summary-label">
@@ -367,8 +364,11 @@
               class="toolbar-btn secondary"
               (click)="resetPermissions()"
             >
+
               <i class="pi pi-refresh"></i>
+
               إعادة تعيين
+
             </button>
 
 
@@ -387,7 +387,7 @@
               {{
                 areAllPermissionsSelected()
                   ? 'إلغاء تحديد الكل'
-                  : 'تحديد الكل'
+                  : 'تفعيل الكل'
               }}
 
             </button>
@@ -398,134 +398,174 @@
 
 
         <!-- ===============================================
-             PERMISSIONS ACCORDION
+             MODULES
         ================================================ -->
 
-        <div class="permissions-wrapper">
-
-          <p-accordion
-            [multiple]="true"
-          >
-
-            @for (
-              module of modules();
-              track module.id
-            ) {
-
-              <p-accordion-panel
-                [value]="module.id"
-              >
-
-                <!-- =============================
-                     MODULE HEADER
-                ============================== -->
-
-                <p-accordion-header>
-
-                  <div class="module-header">
-
-                    <!-- Icon -->
-
-                    <div
-                      class="module-icon"
-                      [class.active]="
-                        getEnabledPermissionsCount(module) > 0
-                      "
-                    >
-
-                      <i [class]="module.icon"></i>
-
-                    </div>
+        <div class="permissions-list">
 
 
-                    <!-- Information -->
-
-                    <div class="module-info">
-
-                      <div class="module-title-row">
-
-                        <h3>
-                          {{ module.name }}
-                        </h3>
-
-                        @if (module.route) {
-
-                          <span class="route-chip">
-                            {{ module.route }}
-                          </span>
-
-                        }
-
-                      </div>
-
-                      <p>
-                        {{ module.description }}
-                      </p>
-
-                    </div>
+          @for (
+            module of modules();
+            track module.id
+          ) {
 
 
-                    <!-- Stats -->
+            <!-- =================================================
+                 MODULE CARD
+            ================================================== -->
 
-                    <div class="module-stat">
+            <section
+              class="permission-module"
+              [class.expanded]="module.expanded"
+            >
 
-                      <strong>
-                        {{ getEnabledPermissionsCount(module) }}
-                      </strong>
 
-                      <span>
-                        / {{ getTotalModulePermissions(module) }}
+              <!-- =============================================
+                   MODULE HEADER
+              ============================================== -->
+
+              <div class="module-header">
+
+
+                <!-- Collapse Button -->
+
+                <button
+                  type="button"
+                  class="collapse-btn"
+                  [class.open]="module.expanded"
+                  (click)="toggleModule(module.id)"
+                  [attr.aria-expanded]="module.expanded"
+                  [attr.aria-label]="
+                    module.expanded
+                      ? 'إغلاق القسم'
+                      : 'فتح القسم'
+                  "
+                >
+
+                  <i
+                    class="pi pi-chevron-down"
+                  ></i>
+
+                </button>
+
+
+                <!-- Module Icon -->
+
+                <div
+                  class="module-icon"
+                  [class.active]="
+                    getEnabledPermissionsCount(module) > 0
+                  "
+                >
+
+                  <i [class]="module.icon"></i>
+
+                </div>
+
+
+                <!-- Module Info -->
+
+                <div class="module-info">
+
+                  <div class="module-title-row">
+
+                    <h3>
+                      {{ module.name }}
+                    </h3>
+
+                    @if (module.route) {
+
+                      <span class="route-chip">
+                        {{ module.route }}
                       </span>
-
-                    </div>
-
-
-                    <!-- Toggle -->
-
-                    @if (getTotalModulePermissions(module) > 0) {
-
-                      <button
-                        type="button"
-                        class="module-toggle"
-                        [class.active]="isModuleFullySelected(module)"
-                        (click)="
-                          $event.stopPropagation();
-                          toggleModulePermissions(module.id)
-                        "
-                        [title]="
-                          isModuleFullySelected(module)
-                            ? 'إلغاء كل الصلاحيات'
-                            : 'تفعيل كل الصلاحيات'
-                        "
-                      >
-
-                        <i
-                          class="pi"
-                          [class.pi-check]="
-                            isModuleFullySelected(module)
-                          "
-                          [class.pi-minus]="
-                            isModulePartiallySelected(module)
-                            && !isModuleFullySelected(module)
-                          "
-                        ></i>
-
-                      </button>
 
                     }
 
                   </div>
 
-                </p-accordion-header>
+                  <p>
+                    {{ module.description }}
+                  </p>
+
+                </div>
 
 
-                <!-- =============================
-                     MODULE CONTENT
-                ============================== -->
+                <!-- Module Stats -->
 
-                <p-accordion-content>
+                <div class="module-stat">
 
-                  <!-- Parent group children -->
+                  <strong>
+                    {{ getEnabledPermissionsCount(module) }}
+                  </strong>
+
+                  <span>
+                    /
+                    {{ getTotalModulePermissions(module) }}
+                  </span>
+
+                </div>
+
+
+                <!-- Select All -->
+
+                @if (getTotalModulePermissions(module) > 0) {
+
+                  <button
+                    type="button"
+                    class="module-select-btn"
+                    [class.active]="
+                      isModuleFullySelected(module)
+                    "
+                    [class.partial]="
+                      isModulePartiallySelected(module)
+                    "
+                    (click)="
+                      toggleModulePermissions(module.id)
+                    "
+                    [title]="
+                      isModuleFullySelected(module)
+                        ? 'إلغاء تحديد الكل'
+                        : 'تفعيل الكل'
+                    "
+                  >
+
+                    @if (
+                      isModuleFullySelected(module)
+                    ) {
+
+                      <i class="pi pi-check"></i>
+
+                    } @else if (
+                      isModulePartiallySelected(module)
+                    ) {
+
+                      <i class="pi pi-minus"></i>
+
+                    } @else {
+
+                      <i class="pi pi-plus"></i>
+
+                    }
+
+                  </button>
+
+                }
+
+              </div>
+
+
+              <!-- =============================================
+                   MODULE CONTENT
+              ============================================== -->
+
+              @if (module.expanded) {
+
+                <div class="module-content">
+
+
+                  <!-- =========================================
+                       GROUP CHILDREN
+                  ========================================== -->
 
                   @if (module.children?.length) {
 
@@ -536,139 +576,233 @@
                         track child.id
                       ) {
 
-                        <div class="child-module">
+
+                        <section
+                          class="child-module"
+                          [class.expanded]="child.expanded"
+                        >
+
 
                           <!-- Child Header -->
 
-                          <div class="child-module-header">
+                          <div class="child-header">
 
-                            <div class="child-module-title">
 
-                              <span class="child-icon">
-                                <i [class]="child.icon"></i>
-                              </span>
+                            <!-- Child Collapse -->
 
-                              <div>
+                            <button
+                              type="button"
+                              class="child-collapse-btn"
+                              [class.open]="child.expanded"
+                              (click)="
+                                toggleChildModule(
+                                  module.id,
+                                  child.id
+                                )
+                              "
+                            >
+
+                              <i class="pi pi-chevron-down"></i>
+
+                            </button>
+
+
+                            <!-- Child Icon -->
+
+                            <div class="child-icon">
+
+                              <i
+                                [class]="child.icon"
+                              ></i>
+
+                            </div>
+
+
+                            <!-- Child Info -->
+
+                            <div class="child-info">
+
+                              <div class="child-title-row">
 
                                 <h4>
                                   {{ child.name }}
                                 </h4>
 
-                                <p>
-                                  {{ child.description }}
-                                </p>
+                                @if (child.route) {
+
+                                  <span class="child-route">
+                                    {{ child.route }}
+                                  </span>
+
+                                }
 
                               </div>
 
+                              <p>
+                                {{ child.description }}
+                              </p>
+
                             </div>
 
 
-                            <div class="child-module-actions">
+                            <!-- Counter -->
 
-                              <span class="child-counter">
-                                {{ getEnabledPermissionsCount(child) }}
-                                /
-                                {{ getTotalModulePermissions(child) }}
-                              </span>
+                            <span class="child-counter">
 
-                              <button
-                                type="button"
-                                class="child-select-btn"
-                                [class.active]="
-                                  isModuleFullySelected(child)
-                                "
-                                (click)="
-                                  toggleModulePermissions(child.id)
-                                "
-                              >
+                              {{
+                                getEnabledPermissionsCount(
+                                  child
+                                )
+                              }}
+
+                              /
+
+                              {{
+                                getTotalModulePermissions(
+                                  child
+                                )
+                              }}
+
+                            </span>
+
+
+                            <!-- Child Select All -->
+
+                            <button
+                              type="button"
+                              class="child-select-btn"
+                              [class.active]="
+                                isModuleFullySelected(child)
+                              "
+                              [class.partial]="
+                                isModulePartiallySelected(child)
+                              "
+                              (click)="
+                                toggleModulePermissions(
+                                  child.id
+                                )
+                              "
+                            >
+
+                              @if (
+                                isModuleFullySelected(child)
+                              ) {
+
+                                <i class="pi pi-check"></i>
+
+                                <span>
+                                  إلغاء الكل
+                                </span>
+
+                              } @else {
 
                                 <i
                                   class="pi"
-                                  [class.pi-check]="
-                                    isModuleFullySelected(child)
+                                  [class.pi-check-square]="
+                                    !isModulePartiallySelected(child)
                                   "
-                                  [class.pi-minus]="
+                                  [class.pi-minus-square]="
                                     isModulePartiallySelected(child)
-                                    && !isModuleFullySelected(child)
                                   "
                                 ></i>
 
-                                {{
-                                  isModuleFullySelected(child)
-                                    ? 'إلغاء الكل'
-                                    : 'تحديد الكل'
-                                }}
+                                <span>
+                                  تفعيل الكل
+                                </span>
 
-                              </button>
+                              }
+
+                            </button>
+
+                          </div>
+
+
+                          <!-- Child Content -->
+
+                          @if (child.expanded) {
+
+                            <div class="permission-grid">
+
+                              @for (
+                                permission of child.permissions;
+                                track permission.id
+                              ) {
+
+                                <button
+                                  type="button"
+                                  class="permission-item"
+                                  [class.active]="
+                                    permission.enabled
+                                  "
+                                  (click)="
+                                    togglePermission(
+                                      child.id,
+                                      permission.id
+                                    )
+                                  "
+                                >
+
+
+                                  <!-- Check -->
+
+                                  <span class="permission-check">
+
+                                    @if (
+                                      permission.enabled
+                                    ) {
+
+                                      <i class="pi pi-check"></i>
+
+                                    }
+
+                                  </span>
+
+
+                                  <!-- Icon -->
+
+                                  <span class="permission-icon">
+
+                                    <i
+                                      [class]="
+                                        permission.icon ||
+                                        'pi pi-circle'
+                                      "
+                                    ></i>
+
+                                  </span>
+
+
+                                  <!-- Text -->
+
+                                  <span class="permission-content">
+
+                                    <strong>
+                                      {{ permission.name }}
+                                    </strong>
+
+                                    @if (
+                                      permission.description
+                                    ) {
+
+                                      <small>
+                                        {{
+                                          permission.description
+                                        }}
+                                      </small>
+
+                                    }
+
+                                  </span>
+
+                                </button>
+
+                              }
 
                             </div>
 
-                          </div>
+                          }
 
-
-                          <!-- Child Permissions -->
-
-                          <div class="permission-grid">
-
-                            @for (
-                              permission of child.permissions;
-                              track permission.id
-                            ) {
-
-                              <button
-                                type="button"
-                                class="permission-item"
-                                [class.active]="permission.enabled"
-                                (click)="
-                                  togglePermission(
-                                    child.id,
-                                    permission.id
-                                  )
-                                "
-                              >
-
-                                <span class="permission-check">
-
-                                  @if (permission.enabled) {
-                                    <i class="pi pi-check"></i>
-                                  }
-
-                                </span>
-
-
-                                <span class="permission-icon">
-                                  <i
-                                    [class]="
-                                      permission.icon ||
-                                      'pi pi-circle'
-                                    "
-                                  ></i>
-                                </span>
-
-
-                                <span class="permission-content">
-
-                                  <strong>
-                                    {{ permission.name }}
-                                  </strong>
-
-                                  @if (permission.description) {
-
-                                    <small>
-                                      {{ permission.description }}
-                                    </small>
-
-                                  }
-
-                                </span>
-
-                              </button>
-
-                            }
-
-                          </div>
-
-                        </div>
+                        </section>
 
                       }
 
@@ -677,7 +811,9 @@
                   }
 
 
-                  <!-- Normal module -->
+                  <!-- =========================================
+                       NORMAL PAGE
+                  ========================================== -->
 
                   @if (
                     !module.children?.length &&
@@ -694,7 +830,9 @@
                         <button
                           type="button"
                           class="permission-item"
-                          [class.active]="permission.enabled"
+                          [class.active]="
+                            permission.enabled
+                          "
                           (click)="
                             togglePermission(
                               module.id,
@@ -705,8 +843,12 @@
 
                           <span class="permission-check">
 
-                            @if (permission.enabled) {
+                            @if (
+                              permission.enabled
+                            ) {
+
                               <i class="pi pi-check"></i>
+
                             }
 
                           </span>
@@ -730,10 +872,14 @@
                               {{ permission.name }}
                             </strong>
 
-                            @if (permission.description) {
+                            @if (
+                              permission.description
+                            ) {
 
                               <small>
-                                {{ permission.description }}
+                                {{
+                                  permission.description
+                                }}
                               </small>
 
                             }
@@ -748,13 +894,13 @@
 
                   }
 
-                </p-accordion-content>
+                </div>
 
-              </p-accordion-panel>
+              }
 
-            }
+            </section>
 
-          </p-accordion>
+          }
 
         </div>
 

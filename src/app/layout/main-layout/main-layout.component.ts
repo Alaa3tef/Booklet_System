@@ -17,7 +17,7 @@ export class MainLayoutComponent implements OnInit {
 
   userName = 'أحمد محمد';
 
-  userRole = 'Super Admin';
+  userRole = 'Printing';
 
   breadcrumbs: Breadcrumb[] = [];
 
