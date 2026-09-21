@@ -1,0 +1,810 @@
+<div dir="rtl" class="perm-page">
+
+  <!-- =====================================================
+       PAGE HEADER
+  ====================================================== -->
+
+  <header class="perm-header">
+
+    <div class="perm-header-content">
+
+      <p-breadcrumb
+        [model]="breadcrumbItems"
+        [home]="breadcrumbHome"
+        styleClass="perm-breadcrumb"
+      />
+
+      <div class="perm-heading">
+
+        <div class="perm-heading-icon">
+          <i class="pi pi-shield"></i>
+        </div>
+
+        <div>
+          <h1 class="perm-title">
+            إدارة صلاحيات المستخدمين
+          </h1>
+
+          <p class="perm-subtitle">
+            تحكم في صلاحيات كل مستخدم والوصول إلى صفحات النظام
+          </p>
+        </div>
+
+      </div>
+
+    </div>
+
+
+    <button
+      type="button"
+      class="save-main-btn"
+      (click)="savePermissions()"
+    >
+
+      <i class="pi pi-save"></i>
+
+      <span>
+        حفظ التغييرات
+      </span>
+
+    </button>
+
+  </header>
+
+
+  <!-- =====================================================
+       MAIN GRID
+  ====================================================== -->
+
+  <div class="perm-grid">
+
+
+    <!-- ===================================================
+         USERS SIDEBAR
+    ==================================================== -->
+
+    <aside class="perm-sidebar">
+
+      <!-- Sidebar Header -->
+
+      <div class="perm-sidebar-header">
+
+        <div class="perm-sidebar-title-row">
+
+          <div>
+
+            <div class="section-label">
+              إدارة الوصول
+            </div>
+
+            <h2 class="perm-sidebar-title">
+              المستخدمون
+            </h2>
+
+            <p class="perm-sidebar-subtitle">
+              اختر مستخدم لإدارة صلاحياته
+            </p>
+
+          </div>
+
+          <div class="users-count">
+            {{ users().length }}
+          </div>
+
+        </div>
+
+
+        <!-- Search -->
+
+        <p-iconfield
+          iconPosition="right"
+          styleClass="perm-search"
+        >
+
+          <p-inputicon class="pi pi-search" />
+
+          <input
+            pInputText
+            type="text"
+            class="perm-search-input"
+            placeholder="بحث عن مستخدم..."
+            [ngModel]="userSearch()"
+            (ngModelChange)="userSearch.set($event)"
+          />
+
+        </p-iconfield>
+
+      </div>
+
+
+      <!-- Users -->
+
+      <div class="perm-user-list">
+
+        @for (
+          user of filteredUsers();
+          track user.id
+        ) {
+
+          <button
+            type="button"
+            class="perm-user-item"
+            [class.active]="selectedUserId() === user.id"
+            (click)="selectUser(user)"
+          >
+
+            <!-- Accent -->
+
+            <span class="user-active-line"></span>
+
+
+            <!-- Avatar -->
+
+            <div
+              class="perm-user-avatar"
+              [class.active]="selectedUserId() === user.id"
+            >
+
+              @if (user.avatar) {
+
+                <img
+                  [src]="user.avatar"
+                  [alt]="user.name"
+                />
+
+              } @else {
+
+                {{ getInitials(user.name) }}
+
+              }
+
+            </div>
+
+
+            <!-- Info -->
+
+            <div class="perm-user-info">
+
+              <div class="perm-user-name-row">
+
+                <span class="perm-user-name">
+                  {{ user.name }}
+                </span>
+
+                <span
+                  class="user-status"
+                  [class.active]="user.status === 'Active'"
+                >
+                  <span class="status-dot"></span>
+
+                  {{
+                    user.status === 'Active'
+                      ? 'نشط'
+                      : 'غير نشط'
+                  }}
+                </span>
+
+              </div>
+
+
+              <div class="perm-user-meta">
+
+                <span>
+                  <i class="pi pi-user"></i>
+                  {{ user.username }}
+                </span>
+
+                <span>
+                  {{ user.role }}
+                </span>
+
+              </div>
+
+            </div>
+
+
+            <!-- Selected -->
+
+            <span
+              class="selected-check"
+              [class.visible]="selectedUserId() === user.id"
+            >
+              <i class="pi pi-check"></i>
+            </span>
+
+          </button>
+
+        }
+
+
+        <!-- Empty -->
+
+        @if (filteredUsers().length === 0) {
+
+          <div class="empty-users">
+
+            <div class="empty-users-icon">
+              <i class="pi pi-user-minus"></i>
+            </div>
+
+            <strong>
+              لا يوجد مستخدمون
+            </strong>
+
+            <span>
+              لم يتم العثور على نتائج مطابقة
+            </span>
+
+          </div>
+
+        }
+
+      </div>
+
+    </aside>
+
+
+    <!-- ===================================================
+         MAIN CONTENT
+    ==================================================== -->
+
+    <main class="perm-main">
+
+      @if (selectedUser(); as user) {
+
+        <!-- ===============================================
+             SELECTED USER
+        ================================================ -->
+
+        <section class="selected-user-card">
+
+          <div class="selected-user-info">
+
+            <div class="selected-avatar">
+              {{ getInitials(user.name) }}
+
+              <span
+                class="selected-avatar-status"
+                [class.active]="user.status === 'Active'"
+              ></span>
+            </div>
+
+
+            <div class="selected-user-details">
+
+              <div class="selected-user-top">
+
+                <h2>
+                  {{ user.name }}
+                </h2>
+
+                <span class="role-chip">
+                  {{ user.role }}
+                </span>
+
+              </div>
+
+
+              <div class="selected-user-meta">
+
+                <span>
+                  <i class="pi pi-user"></i>
+                  {{ user.username }}
+                </span>
+
+                <span>
+                  <i class="pi pi-envelope"></i>
+                  {{ user.email }}
+                </span>
+
+              </div>
+
+            </div>
+
+          </div>
+
+
+          <!-- Permission Summary -->
+
+          <div class="permission-summary">
+
+            <div class="summary-number">
+              {{ enabledPermissions() }}
+              <span>
+                / {{ totalPermissions() }}
+              </span>
+            </div>
+
+            <div class="summary-label">
+              صلاحية مفعلة
+            </div>
+
+            <div class="summary-progress">
+
+              <div
+                class="summary-progress-value"
+                [style.width.%]="permissionPercentage()"
+              ></div>
+
+            </div>
+
+          </div>
+
+        </section>
+
+
+        <!-- ===============================================
+             TOOLBAR
+        ================================================ -->
+
+        <section class="perm-toolbar">
+
+          <div class="toolbar-title">
+
+            <div class="toolbar-icon">
+              <i class="pi pi-lock"></i>
+            </div>
+
+            <div>
+
+              <h3>
+                صلاحيات النظام
+              </h3>
+
+              <p>
+                حدد الصفحات والعمليات المسموح للمستخدم بالوصول إليها
+              </p>
+
+            </div>
+
+          </div>
+
+
+          <div class="toolbar-actions">
+
+            <button
+              type="button"
+              class="toolbar-btn secondary"
+              (click)="resetPermissions()"
+            >
+              <i class="pi pi-refresh"></i>
+              إعادة تعيين
+            </button>
+
+
+            <button
+              type="button"
+              class="toolbar-btn primary"
+              (click)="toggleAllPermissions()"
+            >
+
+              <i
+                class="pi"
+                [class.pi-check-square]="!areAllPermissionsSelected()"
+                [class.pi-minus-square]="areAllPermissionsSelected()"
+              ></i>
+
+              {{
+                areAllPermissionsSelected()
+                  ? 'إلغاء تحديد الكل'
+                  : 'تحديد الكل'
+              }}
+
+            </button>
+
+          </div>
+
+        </section>
+
+
+        <!-- ===============================================
+             PERMISSIONS ACCORDION
+        ================================================ -->
+
+        <div class="permissions-wrapper">
+
+          <p-accordion
+            [multiple]="true"
+          >
+
+            @for (
+              module of modules();
+              track module.id
+            ) {
+
+              <p-accordion-panel
+                [value]="module.id"
+              >
+
+                <!-- =============================
+                     MODULE HEADER
+                ============================== -->
+
+                <p-accordion-header>
+
+                  <div class="module-header">
+
+                    <!-- Icon -->
+
+                    <div
+                      class="module-icon"
+                      [class.active]="
+                        getEnabledPermissionsCount(module) > 0
+                      "
+                    >
+
+                      <i [class]="module.icon"></i>
+
+                    </div>
+
+
+                    <!-- Information -->
+
+                    <div class="module-info">
+
+                      <div class="module-title-row">
+
+                        <h3>
+                          {{ module.name }}
+                        </h3>
+
+                        @if (module.route) {
+
+                          <span class="route-chip">
+                            {{ module.route }}
+                          </span>
+
+                        }
+
+                      </div>
+
+                      <p>
+                        {{ module.description }}
+                      </p>
+
+                    </div>
+
+
+                    <!-- Stats -->
+
+                    <div class="module-stat">
+
+                      <strong>
+                        {{ getEnabledPermissionsCount(module) }}
+                      </strong>
+
+                      <span>
+                        / {{ getTotalModulePermissions(module) }}
+                      </span>
+
+                    </div>
+
+
+                    <!-- Toggle -->
+
+                    @if (getTotalModulePermissions(module) > 0) {
+
+                      <button
+                        type="button"
+                        class="module-toggle"
+                        [class.active]="isModuleFullySelected(module)"
+                        (click)="
+                          $event.stopPropagation();
+                          toggleModulePermissions(module.id)
+                        "
+                        [title]="
+                          isModuleFullySelected(module)
+                            ? 'إلغاء كل الصلاحيات'
+                            : 'تفعيل كل الصلاحيات'
+                        "
+                      >
+
+                        <i
+                          class="pi"
+                          [class.pi-check]="
+                            isModuleFullySelected(module)
+                          "
+                          [class.pi-minus]="
+                            isModulePartiallySelected(module)
+                            && !isModuleFullySelected(module)
+                          "
+                        ></i>
+
+                      </button>
+
+                    }
+
+                  </div>
+
+                </p-accordion-header>
+
+
+                <!-- =============================
+                     MODULE CONTENT
+                ============================== -->
+
+                <p-accordion-content>
+
+                  <!-- Parent group children -->
+
+                  @if (module.children?.length) {
+
+                    <div class="child-modules">
+
+                      @for (
+                        child of module.children;
+                        track child.id
+                      ) {
+
+                        <div class="child-module">
+
+                          <!-- Child Header -->
+
+                          <div class="child-module-header">
+
+                            <div class="child-module-title">
+
+                              <span class="child-icon">
+                                <i [class]="child.icon"></i>
+                              </span>
+
+                              <div>
+
+                                <h4>
+                                  {{ child.name }}
+                                </h4>
+
+                                <p>
+                                  {{ child.description }}
+                                </p>
+
+                              </div>
+
+                            </div>
+
+
+                            <div class="child-module-actions">
+
+                              <span class="child-counter">
+                                {{ getEnabledPermissionsCount(child) }}
+                                /
+                                {{ getTotalModulePermissions(child) }}
+                              </span>
+
+                              <button
+                                type="button"
+                                class="child-select-btn"
+                                [class.active]="
+                                  isModuleFullySelected(child)
+                                "
+                                (click)="
+                                  toggleModulePermissions(child.id)
+                                "
+                              >
+
+                                <i
+                                  class="pi"
+                                  [class.pi-check]="
+                                    isModuleFullySelected(child)
+                                  "
+                                  [class.pi-minus]="
+                                    isModulePartiallySelected(child)
+                                    && !isModuleFullySelected(child)
+                                  "
+                                ></i>
+
+                                {{
+                                  isModuleFullySelected(child)
+                                    ? 'إلغاء الكل'
+                                    : 'تحديد الكل'
+                                }}
+
+                              </button>
+
+                            </div>
+
+                          </div>
+
+
+                          <!-- Child Permissions -->
+
+                          <div class="permission-grid">
+
+                            @for (
+                              permission of child.permissions;
+                              track permission.id
+                            ) {
+
+                              <button
+                                type="button"
+                                class="permission-item"
+                                [class.active]="permission.enabled"
+                                (click)="
+                                  togglePermission(
+                                    child.id,
+                                    permission.id
+                                  )
+                                "
+                              >
+
+                                <span class="permission-check">
+
+                                  @if (permission.enabled) {
+                                    <i class="pi pi-check"></i>
+                                  }
+
+                                </span>
+
+
+                                <span class="permission-icon">
+                                  <i
+                                    [class]="
+                                      permission.icon ||
+                                      'pi pi-circle'
+                                    "
+                                  ></i>
+                                </span>
+
+
+                                <span class="permission-content">
+
+                                  <strong>
+                                    {{ permission.name }}
+                                  </strong>
+
+                                  @if (permission.description) {
+
+                                    <small>
+                                      {{ permission.description }}
+                                    </small>
+
+                                  }
+
+                                </span>
+
+                              </button>
+
+                            }
+
+                          </div>
+
+                        </div>
+
+                      }
+
+                    </div>
+
+                  }
+
+
+                  <!-- Normal module -->
+
+                  @if (
+                    !module.children?.length &&
+                    module.permissions.length
+                  ) {
+
+                    <div class="permission-grid">
+
+                      @for (
+                        permission of module.permissions;
+                        track permission.id
+                      ) {
+
+                        <button
+                          type="button"
+                          class="permission-item"
+                          [class.active]="permission.enabled"
+                          (click)="
+                            togglePermission(
+                              module.id,
+                              permission.id
+                            )
+                          "
+                        >
+
+                          <span class="permission-check">
+
+                            @if (permission.enabled) {
+                              <i class="pi pi-check"></i>
+                            }
+
+                          </span>
+
+
+                          <span class="permission-icon">
+
+                            <i
+                              [class]="
+                                permission.icon ||
+                                'pi pi-circle'
+                              "
+                            ></i>
+
+                          </span>
+
+
+                          <span class="permission-content">
+
+                            <strong>
+                              {{ permission.name }}
+                            </strong>
+
+                            @if (permission.description) {
+
+                              <small>
+                                {{ permission.description }}
+                              </small>
+
+                            }
+
+                          </span>
+
+                        </button>
+
+                      }
+
+                    </div>
+
+                  }
+
+                </p-accordion-content>
+
+              </p-accordion-panel>
+
+            }
+
+          </p-accordion>
+
+        </div>
+
+
+        <!-- ===============================================
+             BOTTOM SAVE
+        ================================================ -->
+
+        <section class="bottom-save">
+
+          <div class="bottom-save-info">
+
+            <div class="bottom-save-icon">
+              <i class="pi pi-info-circle"></i>
+            </div>
+
+            <div>
+
+              <strong>
+                تأكد من مراجعة الصلاحيات قبل الحفظ
+              </strong>
+
+              <span>
+                سيتم تطبيق الصلاحيات على المستخدم
+                {{ user.name }}
+              </span>
+
+            </div>
+
+          </div>
+
+
+          <button
+            type="button"
+            class="save-bottom-btn"
+            (click)="savePermissions()"
+          >
+
+            <i class="pi pi-save"></i>
+
+            حفظ الصلاحيات
+
+          </button>
+
+        </section>
+
+      }
+
+    </main>
+
+  </div>
+
+</div>

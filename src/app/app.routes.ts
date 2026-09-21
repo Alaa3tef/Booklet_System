@@ -13,6 +13,12 @@ export const routes: Routes = [
           import('./features/dashboard/dashboard.component').then((m) => m.DashboardComponent),
         data: { breadcrumb: 'الرئيسية' }
       },
+       {
+        path: 'settings',
+        loadComponent: () =>
+          import('./features/user-permissions/user-permissions').then((m) => m.UserPermissionsComponent),
+        data: { breadcrumb: 'الاعدادات' }
+      },
       {
         path: 'committees/setup',
         loadComponent: () =>
