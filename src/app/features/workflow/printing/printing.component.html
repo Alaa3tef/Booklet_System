@@ -14,49 +14,252 @@
   [essentials]="essentials"
   resultText="يتم تحديث حالة المادة إلى تم الانتهاء من الطباعة"
 >
+
   <div panel-content>
-    <div class="fields-grid">
-      <div class="field">
-        <label>المحافظة</label>
-        <p-select [options]="governorates" [(ngModel)]="selectedGovernorate" optionLabel="label" optionValue="value" styleClass="w-full"></p-select>
+
+    <!-- ==========================================
+         SEARCH SECTION
+    =========================================== -->
+
+    <div class="search-section">
+
+      <div class="printing-search-card">
+
+        <!-- IMAGE -->
+
+        <div class="printing-image">
+
+          <img
+            src="assets/images/printing.png"
+            alt="الطباعة"
+          />
+
+        </div>
+
+        <!-- SEARCH CONTENT -->
+
+        <div class="printing-search-content">
+
+          <div class="printing-search-title">
+
+            <div class="printing-search-icon">
+              <i class="pi pi-print"></i>
+            </div>
+
+            <div>
+
+              <h3>
+                البحث في قائمة الطباعة
+              </h3>
+
+              <p>
+                اختر المحافظة والمادة لعرض المواد المطلوب طباعتها
+              </p>
+
+            </div>
+
+          </div>
+
+
+          <div class="fields-grid">
+
+            <!-- GOVERNORATE -->
+
+            <div class="field">
+
+              <label for="printing-governorate">
+                المحافظة
+              </label>
+
+              <p-select
+                inputId="printing-governorate"
+                [options]="governorates"
+                [(ngModel)]="selectedGovernorate"
+                optionLabel="label"
+                optionValue="value"
+                styleClass="w-full">
+              </p-select>
+
+            </div>
+
+
+            <!-- SUBJECT -->
+
+            <div class="field">
+
+              <label for="printing-subject">
+                المادة
+              </label>
+
+              <p-select
+                inputId="printing-subject"
+                [options]="subjects"
+                [(ngModel)]="selectedSubject"
+                optionLabel="label"
+                optionValue="value"
+                styleClass="w-full">
+              </p-select>
+
+            </div>
+
+          </div>
+
+        </div>
+
       </div>
-      <div class="field">
-        <label>المادة</label>
-        <p-select [options]="subjects" [(ngModel)]="selectedSubject" optionLabel="label" optionValue="value" styleClass="w-full"></p-select>
-      </div>
+
     </div>
 
-    <button type="button" class="opt-btn solid-green main-action" (click)="finishPrinting()">
-      <i class="pi pi-check"></i> تم الانتهاء من الطباعة
-    </button>
+
+    <!-- ==========================================
+         TABLE SECTION
+    =========================================== -->
 
     <div class="table-section">
-      <h4>قائمة الطباعة</h4>
-      <p-table [value]="rows()" styleClass="p-datatable-sm" responsiveLayout="scroll">
+
+      <div class="table-header">
+
+        <h4>
+          قائمة الطباعة
+        </h4>
+
+        <span class="results-count">
+          {{ rows().length }} مادة
+        </span>
+
+      </div>
+
+
+      <p-table
+        [value]="rows()"
+        styleClass="p-datatable-sm"
+        responsiveLayout="scroll"
+      >
+
+        <!-- TABLE HEADER -->
+
         <ng-template pTemplate="header">
+
           <tr>
-            <th>الحالة</th>
-            <th>المادة</th>
-            <th>المحافظة</th>
+
             <th>م</th>
+
+            <th>المحافظة</th>
+
+            <th>المادة</th>
+
+            <th>الحالة</th>
+
+            <th>الإجراء</th>
+
           </tr>
+
         </ng-template>
-        <ng-template pTemplate="body" let-row>
+
+
+        <!-- TABLE BODY -->
+
+        <ng-template
+          pTemplate="body"
+          let-row
+        >
+
           <tr>
-            <td><span class="status-pill" [ngClass]="row.statusTone">{{ row.status }}</span></td>
-            <td>{{ row.subject }}</td>
-            <td>{{ row.governorate }}</td>
-            <td>{{ row.index }}</td>
+
+            <!-- INDEX -->
+
+            <td>
+              {{ row.index }}
+            </td>
+
+
+            <!-- GOVERNORATE -->
+
+            <td>
+              {{ row.governorate }}
+            </td>
+
+
+            <!-- SUBJECT -->
+
+            <td>
+              {{ row.subject }}
+            </td>
+
+
+            <!-- STATUS -->
+
+            <td>
+
+              <span
+                class="status-pill"
+                [ngClass]="row.statusTone"
+              >
+                {{ row.status }}
+              </span>
+
+            </td>
+
+
+            <!-- ACTION -->
+
+            <td class="status-cell">
+
+              <button
+                type="button"
+                class="status-menu-btn"
+                aria-label="إجراءات الحالة"
+                title="إجراءات الحالة"
+                (click)="openStatusMenu(row, statusMenu, $event)"
+              >
+
+                <i class="pi pi-ellipsis-v"></i>
+
+              </button>
+
+            </td>
+
           </tr>
+
         </ng-template>
+
+
+        <!-- EMPTY MESSAGE -->
+
+        <ng-template pTemplate="emptymessage">
+
+          <tr>
+
+            <td
+              colspan="5"
+              class="empty-message"
+            >
+
+              <i class="pi pi-search"></i>
+
+              لا توجد نتائج مطابقة للبحث
+
+            </td>
+
+          </tr>
+
+        </ng-template>
+
       </p-table>
+
+
+      <!-- ONE POPUP MENU -->
+
+      <p-menu
+        #statusMenu
+        [model]="menuItems"
+        [popup]="true"
+        appendTo="body"
+      >
+      </p-menu>
+
     </div>
+
   </div>
 
-  <ng-container system-options>
-    <button type="button" class="opt-btn solid-green" (click)="finishPrinting()">
-      <i class="pi pi-check"></i> تم الانتهاء من الطباعة
-    </button>
-    <button type="button" class="opt-btn outline">عرض التفاصيل</button>
-  </ng-container>
 </app-workflow-step-layout>
