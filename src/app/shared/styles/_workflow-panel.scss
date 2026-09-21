@@ -21,7 +21,12 @@
 }
 
 .main-action {
-  margin-bottom: 1.75rem;
+  width: fit-content;
+  min-width: 290px;
+  margin: 0 auto 1.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .table-section {
@@ -33,10 +38,19 @@
 }
 
 .dual-actions {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
+  display: flex;
+  justify-content: center;
+  align-items: center;
   gap: 0.85rem;
   margin: 1.25rem 0 1.75rem;
+}
+
+.dual-actions .opt-btn {
+  width: fit-content;
+  min-width: 180px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .location-picker {

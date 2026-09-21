@@ -33,17 +33,31 @@ import { NavItem } from '../../core/models/nav-item.model';
 })
 export class SidebarComponent {
 
+  // ==================================================
+  // INPUTS
+  // ==================================================
 
   @Input()
   mobileOpen = false;
 
 
+  @Input()
+  userRole = 'IT';
+
+
+  // ==================================================
+  // OUTPUTS
+  // ==================================================
+
   @Output()
   closeMobile = new EventEmitter<void>();
 
 
-  readonly navItems = signal<NavItem[]>([
+  // ==================================================
+  // NAVIGATION ITEMS
+  // ==================================================
 
+  readonly navItems = signal<NavItem[]>([
 
     {
       label: 'الرئيسية',
@@ -51,27 +65,37 @@ export class SidebarComponent {
       route: '/dashboard'
     },
 
-
     {
-      label: 'متابعة الإنتاج',
-      icon: 'pi pi-box',
-      route: '/production'
+      label: 'إدارة البيانات الأساسية',
+      icon: 'pi pi-database',
+      expanded: true,
+
+      children: [
+        // {
+        //   label: 'المحافظات',
+        //   icon: 'pi pi-circle-fill',
+        //   route: '/governorates'
+        // },
+
+        // {
+        //   label: 'المواد',
+        //   icon: 'pi pi-circle-fill',
+        //   route: '/materials'
+        // },
+
+        {
+          label: 'إدارة اللجان',
+          icon: 'pi pi-circle-fill',
+          route: '/committees/setup'
+        }
+      ]
     },
 
-
     {
-      label: 'المواد',
-      icon: 'pi pi-file',
-      route: '/materials'
+      label: 'الإعداد',
+      icon: 'pi pi-sliders-h',
+      route: '/workflow/planning'
     },
-
-
-    {
-      label: 'اللجان',
-      icon: 'pi pi-users',
-      route: '/committees'
-    },
-
 
     {
       label: 'الطباعة',
@@ -79,13 +103,11 @@ export class SidebarComponent {
       route: '/workflow/printing'
     },
 
-
     {
       label: 'الجودة',
-      icon: 'pi pi-search',
+      icon: 'pi pi-verified',
       route: '/workflow/quality'
     },
-
 
     {
       label: 'التغليف',
@@ -93,27 +115,29 @@ export class SidebarComponent {
       route: '/workflow/packing'
     },
 
-
     {
       label: 'التخزين',
       icon: 'pi pi-database',
       route: '/workflow/archiving'
     },
 
+    // {
+    //   label: 'إنتاج الملفات',
+    //   icon: 'pi pi-file-export',
+    //   route: '/production'
+    // },
 
-    {
-      label: 'التقارير',
-      icon: 'pi pi-chart-bar',
-      route: '/reports'
-    },
-
+    // {
+    //   label: 'المتابعة والتقارير',
+    //   icon: 'pi pi-chart-bar',
+    //   route: '/reports'
+    // },
 
     {
       label: 'إدارة المستخدمين',
       icon: 'pi pi-users',
       route: '/users'
     },
-
 
     {
       label: 'الإعدادات',
@@ -124,25 +148,75 @@ export class SidebarComponent {
   ]);
 
 
+  // ==================================================
+  // ROLE THEME
+  // ==================================================
+
   /**
-   * Toggle menu group
+   * Roles that should use the light sidebar theme.
+   *
+   * Planning
+   * Printing
+   * Quality
+   * Packing
+   * Archiving
    */
+  isWorkflowUser(): boolean {
+
+    const role = this.normalizeRole(this.userRole);
+
+    const workflowRoles = [
+      'planning',
+      'plan',
+      'printing',
+      'print',
+      'quality',
+      'packing',
+      'packaging',
+      'archiving',
+      'archive',
+      'التخطيط',
+      'الإعداد',
+      'الطباعة',
+      'الجودة',
+      'التغليف',
+      'التخزين'
+    ];
+
+    return workflowRoles.includes(role);
+  }
+
+
+  /**
+   * Normalize role value
+   */
+  private normalizeRole(role: string): string {
+
+    return (role || '')
+      .trim()
+      .toLowerCase()
+      .replace(/\s+/g, ' ');
+  }
+
+
+  // ==================================================
+  // GROUP TOGGLE
+  // ==================================================
 
   toggle(item: NavItem): void {
 
     if (item.children) {
 
-      item.expanded =
-        !item.expanded;
+      item.expanded = !item.expanded;
 
     }
 
   }
 
 
-  /**
-   * Close mobile sidebar
-   */
+  // ==================================================
+  // MOBILE SIDEBAR
+  // ==================================================
 
   closeSidebar(): void {
 

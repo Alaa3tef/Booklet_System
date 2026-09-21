@@ -1,850 +1,309 @@
-<div
-  dir="rtl"
-  class="min-h-screen bg-slate-50 p-3 md:p-4 lg:p-5 dark:bg-slate-950"
->
-
-  <!-- =========================================================
-       HERO
-  ========================================================== -->
-  <section
-    class="relative mb-4 overflow-hidden rounded-2xl border border-blue-100 bg-gradient-to-l from-blue-50 via-white to-sky-50 shadow-sm dark:border-slate-700 dark:from-slate-900 dark:via-slate-900 dark:to-slate-800"
-  >
-
-    <!-- Decorative background -->
-    <div
-      class="pointer-events-none absolute -bottom-12 -left-8 opacity-10"
-    >
-      <i
-        class="pi pi-book text-[180px] text-blue-900"
-      ></i>
+<div class="production-dashboard" dir="rtl">
+  <section class="welcome">
+    <div>
+      <h2>مرحباً بك <b>Super Admin</b> <i class="pi pi-crown"></i></h2>
+      <p>
+        هنا يمكنك متابعة جميع مراحل إنتاج البوكليت ومعرفة حالة المواد بشكل لحظي
+      </p>
     </div>
-
-    <div
-      class="relative z-10 flex min-h-[190px] flex-col items-center justify-center gap-3 px-5 py-8 text-center lg:min-h-[180px]"
-    >
-
-      <!-- Badge -->
-      <div
-        class="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-white/80 px-4 py-1.5 text-sm font-bold text-blue-700 shadow-sm dark:border-blue-900 dark:bg-slate-800 dark:text-blue-300"
-      >
-        <i class="pi pi-shield"></i>
-
-        <span>Super Admin</span>
-      </div>
-
-      <!-- Title -->
-      <div>
-        <h1
-          class="m-0 text-2xl font-extrabold text-blue-950 md:text-3xl lg:text-4xl dark:text-white"
-        >
-          مرحباً بك في منظومة إنتاج البوكليت
-        </h1>
-
-        <h2
-          class="mt-2 text-base font-bold text-blue-700 md:text-lg dark:text-blue-300"
-        >
-          لوحة تحكم المسؤول الرئيسي
-        </h2>
-
-        <p
-          class="mt-2 text-xs font-medium text-slate-600 md:text-sm dark:text-slate-300"
-        >
-          إدارة ومتابعة جميع مراحل إنتاج البوكليت
-          من الإعداد إلى التوزيع بدقة وأمان
-        </p>
-      </div>
-
-      <!-- System status -->
-      <div
-        class="absolute left-4 top-4 hidden w-52 rounded-xl border border-blue-100 bg-white/90 p-4 text-right shadow-sm lg:block dark:border-slate-700 dark:bg-slate-800/90"
-      >
-
-        <div
-          class="flex items-center justify-between text-sm font-bold text-blue-950 dark:text-white"
-        >
-          <span>حالة المنظومة</span>
-
-          <span
-            class="h-2.5 w-2.5 rounded-full bg-green-500 ring-4 ring-green-100 dark:ring-green-900/40"
-          ></span>
+    <strong><i class="pi pi-calendar"></i> الثلاثاء، 16 سبتمبر 2026</strong>
+  </section>
+  <section class="metrics">
+    @for (
+      stat of [
+        {
+          icon: "pi pi-list",
+          value: 95,
+          label: "إجمالي المواد",
+          percent: 100,
+          tone: "total",
+        },
+        {
+          icon: "pi pi-warehouse",
+          value: 12,
+          label: "في المخزن",
+          percent: 12,
+          tone: "stock",
+        },
+        {
+          icon: "pi pi-box",
+          value: 15,
+          label: "تم التعبئة",
+          percent: 15,
+          tone: "pack",
+        },
+        {
+          icon: "pi pi-search",
+          value: 18,
+          label: "تم المراجعة",
+          percent: 18,
+          tone: "review",
+        },
+        {
+          icon: "pi pi-print",
+          value: 22,
+          label: "في الطباعة",
+          percent: 22,
+          tone: "print",
+        },
+        {
+          icon: "pi pi-file",
+          value: 28,
+          label: "تم إنشاء الملفات",
+          percent: 28,
+          tone: "file",
+        },
+      ];
+      track stat.label
+    ) {
+      <article class="metric" [class]="stat.tone">
+        <i [class]="stat.icon"></i>
+        <div>
+          <b>{{ stat.value }}</b
+          ><span>{{ stat.label }}</span
+          ><em>{{ stat.percent }}%</em
+          ><small><u [style.width.%]="stat.percent"></u></small>
         </div>
+      </article>
+    }
+  </section>
+  <section class="analytics">
+    <article class="card bars-card">
+      <header>
+        <h3>حالة المواد في مراحل الإنتاج</h3>
+        <button>العام الحالي <i class="pi pi-angle-down"></i></button>
+      </header>
 
-        <div
-          class="mt-2 text-xs font-bold text-green-700 dark:text-green-400"
-        >
-          المنظومة تعمل بشكل طبيعي
-        </div>
-
-        <div
-          class="mt-1 text-[10px] text-slate-500 dark:text-slate-400"
-        >
-          آخر تحديث منذ دقائق
-        </div>
-
+      <div class="chart-container bars-chart">
+        <canvas #stageChart aria-label="حالة المواد في مراحل الإنتاج"></canvas>
       </div>
-
+    </article>
+    <article class="card donut-card">
+      <header><h3>نسبة إنجاز مراحل الإنتاج</h3></header>
+      <div class="donut-body">
+        <div class="chart-container donut-chart">
+          <canvas #completionChart aria-label="نسبة إنجاز مراحل الإنتاج"></canvas>
+          <div class="donut-total"><b>95</b><span>مادة</span></div>
+        </div>
+        <ul>
+          <li>تم إنشاء الملفات <b>28 (28%)</b></li>
+          <li>في الطباعة <b>22 (22%)</b></li>
+          <li>تم المراجعة <b>18 (18%)</b></li>
+          <li>تم التعبئة <b>15 (15%)</b></li>
+          <li>في المخزن <b>12 (12%)</b></li>
+        </ul>
+      </div>
+    </article>
+    <article class="card distribution">
+      <header>
+        <h3>توزيع المواد حسب المحافظة</h3>
+        <button>الكل <i class="pi pi-angle-down"></i></button>
+      </header>
+      <div class="chart-container distribution-chart">
+        <canvas #distributionChart aria-label="توزيع المواد حسب المحافظة"></canvas>
+      </div>
+    </article>
+  </section>
+  <section class="content">
+    <div class="left">
+      <article class="card stages gap-0">
+        <h3>مراحل الإنتاج</h3>
+        <div>
+          <a routerLink="/workflow/planning" class="blue"
+            ><i class="pi pi-file"></i>إنشاء الملفات</a
+          ><b>→</b
+          ><a routerLink="/workflow/printing" class="green"
+            ><i class="pi pi-print"></i>الطباعة</a
+          ><b>→</b
+          ><a routerLink="/workflow/quality" class="orange"
+            ><i class="pi pi-search"></i>المراجعة</a
+          ><b>→</b
+          ><a routerLink="/workflow/packing" class="purple"
+            ><i class="pi pi-box"></i>التعبئة</a
+          ><b>→</b
+          ><a routerLink="/workflow/archiving" class="teal"
+            ><i class="pi pi-warehouse"></i>التخزين</a
+          >
+        </div>
+      </article>
+      <article class="card table-card">
+        <header>
+          <h3>حالة المواد التفصيلية</h3>
+          <a>عرض الكل</a>
+        </header>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>م</th>
+                <th>المادة</th>
+                <th>المحافظة</th>
+                <th>عدد اللجان</th>
+                <th>الكمية الكلية</th>
+                <th>حالة الإنتاج</th>
+                <th>نسبة الإنجاز</th>
+                <th>آخر تحديث</th>
+                <th>إجراءات</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>1</td>
+                <td>اللغة العربية</td>
+                <td>القاهرة</td>
+                <td>120</td>
+                <td>44,000</td>
+                <td><mark class="green">في الطباعة</mark></td>
+                <td>40%</td>
+                <td>2026/09/16</td>
+                <td><a>التفاصيل</a></td>
+              </tr>
+              <tr>
+                <td>2</td>
+                <td>الرياضيات</td>
+                <td>الجيزة</td>
+                <td>95</td>
+                <td>35,200</td>
+                <td><mark class="orange">تم المراجعة</mark></td>
+                <td>75%</td>
+                <td>2026/09/16</td>
+                <td><a>التفاصيل</a></td>
+              </tr>
+              <tr>
+                <td>3</td>
+                <td>العلوم</td>
+                <td>الإسكندرية</td>
+                <td>80</td>
+                <td>28,500</td>
+                <td><mark class="purple">تم التعبئة</mark></td>
+                <td>100%</td>
+                <td>2026/09/15</td>
+                <td><a>التفاصيل</a></td>
+              </tr>
+              <tr>
+                <td>4</td>
+                <td>الدراسات الاجتماعية</td>
+                <td>القاهرة</td>
+                <td>110</td>
+                <td>40,700</td>
+                <td><mark class="green">في الطباعة</mark></td>
+                <td>60%</td>
+                <td>2026/09/16</td>
+                <td><a>التفاصيل</a></td>
+              </tr>
+              <tr>
+                <td>5</td>
+                <td>اللغة الإنجليزية</td>
+                <td>المنوفية</td>
+                <td>75</td>
+                <td>26,100</td>
+                <td><mark class="blue">تم إنشاء الملفات</mark></td>
+                <td>20%</td>
+                <td>2026/09/16</td>
+                <td><a>التفاصيل</a></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </article>
+    </div>
+    <div class="right">
+      <article class="card activity">
+        <header>
+          <h3>أحدث الأنشطة</h3>
+          <a>عرض الكل</a>
+        </header>
+        <ul>
+          <li>
+            <i class="pi pi-warehouse"></i>تم نقل مادة الرياضيات - القاهرة إلى
+            المخزن <time>10:25 ص</time>
+          </li>
+          <li>
+            <i class="pi pi-box"></i>تم الانتهاء من تعبئة مادة اللغة العربية -
+            الجيزة <time>09:40 ص</time>
+          </li>
+          <li>
+            <i class="pi pi-check-circle"></i>تم اعتماد مراجعة مادة العلوم -
+            الإسكندرية <time>09:15 ص</time>
+          </li>
+          <li>
+            <i class="pi pi-print"></i>تم الانتهاء من طباعة مادة الدراسات
+            الاجتماعية - القاهرة <time>08:50 ص</time>
+          </li>
+          <li>
+            <i class="pi pi-file"></i>تم إنشاء ملفات مادة اللغة الإنجليزية -
+            المنوفية <time>08:30 ص</time>
+          </li>
+        </ul>
+      </article>
+      <article class="card table-card stock-table">
+        <header>
+          <h3>المواد في المخزن</h3>
+          <a>عرض الكل</a>
+        </header>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>م</th>
+                <th>المادة</th>
+                <th>المحافظة</th>
+                <th>لجان</th>
+                <th>الكمية</th>
+                <th>مكان التخزين</th>
+                <th>تاريخ الإنتاج</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>1</td>
+                <td>الرياضيات</td>
+                <td>الإسكندرية</td>
+                <td>80</td>
+                <td>28,500</td>
+                <td>مخزن 1 - رف 3</td>
+                <td>2026/09/15</td>
+              </tr>
+              <tr>
+                <td>2</td>
+                <td>اللغة العربية</td>
+                <td>المنوفية</td>
+                <td>60</td>
+                <td>22,000</td>
+                <td>مخزن 3 - رف 2</td>
+                <td>2026/09/14</td>
+              </tr>
+              <tr>
+                <td>3</td>
+                <td>التربية الدينية</td>
+                <td>الشرقية</td>
+                <td>45</td>
+                <td>18,000</td>
+                <td>مخزن 2 - رف 2</td>
+                <td>2026/09/14</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </article>
     </div>
   </section>
-
-
-  <!-- =========================================================
-       STATISTICS
-  ========================================================== -->
-
-  <div
-    class="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4"
-  >
-
-    <!-- Users -->
-    <div
-      class="flex items-center gap-3 rounded-xl border border-blue-100 bg-white p-4 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md dark:border-slate-700 dark:bg-slate-900"
-    >
-
-      <div
-        class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-400"
-      >
-        <i class="pi pi-users text-xl"></i>
-      </div>
-
-      <div class="min-w-0">
-        <span
-          class="block text-xs font-semibold text-slate-500 dark:text-slate-400"
-        >
-          المستخدمون
-        </span>
-
-        <strong
-          class="block text-2xl font-extrabold text-blue-950 dark:text-white"
-        >
-          125
-        </strong>
-
-        <span
-          class="text-[10px] text-slate-400"
-        >
-          مستخدم نشط
-        </span>
-      </div>
-
+  <footer>
+    <div>
+      <i class="pi pi-graduation-cap"></i><b>مستقبل أفضل للتعليم</b
+      ><span>معاً نحقق جودة أعلى</span>
     </div>
-
-
-    <!-- Committees -->
-    <div
-      class="flex items-center gap-3 rounded-xl border border-purple-100 bg-white p-4 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md dark:border-slate-700 dark:bg-slate-900"
-    >
-
-      <div
-        class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-purple-50 text-purple-600 dark:bg-purple-950/40 dark:text-purple-400"
-      >
-        <i class="pi pi-users text-xl"></i>
-      </div>
-
-      <div>
-        <span
-          class="block text-xs font-semibold text-slate-500 dark:text-slate-400"
-        >
-          اللجان
-        </span>
-
-        <strong
-          class="block text-2xl font-extrabold text-blue-950 dark:text-white"
-        >
-          250
-        </strong>
-
-        <span
-          class="text-[10px] text-slate-400"
-        >
-          لجنة مسجلة
-        </span>
-      </div>
-
+    <div>
+      <i class="pi pi-users"></i><b>إدارة أفضل</b
+      ><span>تقارير تفصيلية لدعم القرار</span>
     </div>
-
-
-    <!-- Booklets -->
-    <div
-      class="flex items-center gap-3 rounded-xl border border-orange-100 bg-white p-4 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md dark:border-slate-700 dark:bg-slate-900"
-    >
-
-      <div
-        class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-orange-50 text-orange-600 dark:bg-orange-950/40 dark:text-orange-400"
-      >
-        <i class="pi pi-book text-xl"></i>
-      </div>
-
-      <div>
-        <span
-          class="block text-xs font-semibold text-slate-500 dark:text-slate-400"
-        >
-          البوكليتات
-        </span>
-
-        <strong
-          class="block text-2xl font-extrabold text-blue-950 dark:text-white"
-        >
-          12,500
-        </strong>
-
-        <span
-          class="text-[10px] text-slate-400"
-        >
-          بوكليت قيد المعالجة
-        </span>
-      </div>
-
+    <div>
+      <i class="pi pi-chart-bar"></i><b>شفافية في العمل</b
+      ><span>متابعة شاملة لكل المراحل</span>
     </div>
-
-
-    <!-- Completed -->
-    <div
-      class="flex items-center gap-3 rounded-xl border border-green-100 bg-white p-4 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md dark:border-slate-700 dark:bg-slate-900"
-    >
-
-      <div
-        class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-green-50 text-green-600 dark:bg-green-950/40 dark:text-green-400"
-      >
-        <i class="pi pi-check-circle text-xl"></i>
-      </div>
-
-      <div>
-        <span
-          class="block text-xs font-semibold text-slate-500 dark:text-slate-400"
-        >
-          المكتمل
-        </span>
-
-        <strong
-          class="block text-2xl font-extrabold text-blue-950 dark:text-white"
-        >
-          8,750
-        </strong>
-
-        <span
-          class="text-[10px] text-slate-400"
-        >
-          بوكليت مكتمل
-        </span>
-      </div>
-
+    <div>
+      <i class="pi pi-verified"></i><b>دقة في البيانات</b
+      ><span>معلومات محدثة لحظياً</span>
     </div>
-
-  </div>
-
-
-  <!-- =========================================================
-       MAIN CONTENT
-  ========================================================== -->
-
-  <div
-    class="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1.55fr)_minmax(300px,0.75fr)]"
-  >
-
-    <!-- =======================================================
-         WORKFLOW
-    ======================================================== -->
-
-    <section
-      class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900"
-    >
-
-      <!-- Header -->
-      <div
-        class="flex items-center justify-between border-b border-slate-100 px-5 py-4 dark:border-slate-700"
-      >
-
-        <div>
-          <h3
-            class="m-0 text-lg font-extrabold text-blue-950 dark:text-white"
-          >
-            مراحل العمل
-          </h3>
-
-          <p
-            class="mt-1 text-xs text-slate-500 dark:text-slate-400"
-          >
-            متابعة دورة إنتاج البوكليت
-          </p>
-        </div>
-
-        <i
-          class="pi pi-sitemap text-2xl text-blue-600"
-        ></i>
-
-      </div>
-
-
-      <!-- Workflow -->
-      <div
-        class="grid grid-cols-1 gap-3 p-4 md:grid-cols-2"
-      >
-
-        <!-- Planning -->
-        <a
-          routerLink="/workflow/planning"
-          class="group flex min-h-[75px] items-center gap-3 rounded-xl border border-slate-200 bg-gradient-to-br from-white to-slate-50 p-3 no-underline transition-all hover:-translate-y-0.5 hover:border-blue-300 hover:bg-blue-50 dark:border-slate-700 dark:from-slate-900 dark:to-slate-800 dark:hover:border-blue-700"
-        >
-
-          <div
-            class="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-blue-600 dark:bg-blue-950/50"
-          >
-            <i class="pi pi-sliders-h text-lg"></i>
-          </div>
-
-          <div class="min-w-0">
-            <strong
-              class="block text-sm font-extrabold text-slate-800 dark:text-white"
-            >
-              الإعداد
-            </strong>
-
-            <span
-              class="mt-1 block text-[10px] text-slate-500 dark:text-slate-400"
-            >
-              إعداد البيانات واللجان
-            </span>
-          </div>
-
-          <i
-            class="pi pi-angle-left mr-auto text-slate-400 transition-transform group-hover:-translate-x-1"
-          ></i>
-
-        </a>
-
-
-        <!-- Printing -->
-        <a
-          routerLink="/workflow/printing"
-          class="group flex min-h-[75px] items-center gap-3 rounded-xl border border-slate-200 bg-gradient-to-br from-white to-slate-50 p-3 no-underline transition-all hover:-translate-y-0.5 hover:border-purple-300 hover:bg-purple-50 dark:border-slate-700 dark:from-slate-900 dark:to-slate-800"
-        >
-
-          <div
-            class="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-purple-50 text-purple-600 dark:bg-purple-950/40"
-          >
-            <i class="pi pi-print text-lg"></i>
-          </div>
-
-          <div>
-            <strong
-              class="block text-sm font-extrabold text-slate-800 dark:text-white"
-            >
-              الطباعة
-            </strong>
-
-            <span
-              class="mt-1 block text-[10px] text-slate-500 dark:text-slate-400"
-            >
-              متابعة عمليات الطباعة
-            </span>
-          </div>
-
-          <i
-            class="pi pi-angle-left mr-auto text-slate-400"
-          ></i>
-
-        </a>
-
-
-        <!-- Quality -->
-        <a
-          routerLink="/workflow/quality"
-          class="group flex min-h-[75px] items-center gap-3 rounded-xl border border-slate-200 bg-gradient-to-br from-white to-slate-50 p-3 no-underline transition-all hover:-translate-y-0.5 hover:border-green-300 hover:bg-green-50 dark:border-slate-700 dark:from-slate-900 dark:to-slate-800"
-        >
-
-          <div
-            class="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-green-50 text-green-600 dark:bg-green-950/40"
-          >
-            <i class="pi pi-verified text-lg"></i>
-          </div>
-
-          <div>
-            <strong
-              class="block text-sm font-extrabold text-slate-800 dark:text-white"
-            >
-              الجودة
-            </strong>
-
-            <span
-              class="mt-1 block text-[10px] text-slate-500 dark:text-slate-400"
-            >
-              مراجعة وضمان الجودة
-            </span>
-          </div>
-
-          <i
-            class="pi pi-angle-left mr-auto text-slate-400"
-          ></i>
-
-        </a>
-
-
-        <!-- Packing -->
-        <a
-          routerLink="/workflow/packing"
-          class="group flex min-h-[75px] items-center gap-3 rounded-xl border border-slate-200 bg-gradient-to-br from-white to-slate-50 p-3 no-underline transition-all hover:-translate-y-0.5 hover:border-orange-300 hover:bg-orange-50 dark:border-slate-700 dark:from-slate-900 dark:to-slate-800"
-        >
-
-          <div
-            class="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-orange-50 text-orange-600 dark:bg-orange-950/40"
-          >
-            <i class="pi pi-box text-lg"></i>
-          </div>
-
-          <div>
-            <strong
-              class="block text-sm font-extrabold text-slate-800 dark:text-white"
-            >
-              التغليف
-            </strong>
-
-            <span
-              class="mt-1 block text-[10px] text-slate-500 dark:text-slate-400"
-            >
-              تجهيز وتغليف البوكليت
-            </span>
-          </div>
-
-          <i
-            class="pi pi-angle-left mr-auto text-slate-400"
-          ></i>
-
-        </a>
-
-
-        <!-- Archiving -->
-        <a
-          routerLink="/workflow/archiving"
-          class="group flex min-h-[75px] items-center gap-3 rounded-xl border border-slate-200 bg-gradient-to-br from-white to-slate-50 p-3 no-underline transition-all hover:-translate-y-0.5 hover:border-slate-400 dark:border-slate-700 dark:from-slate-900 dark:to-slate-800"
-        >
-
-          <div
-            class="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300"
-          >
-            <i class="pi pi-database text-lg"></i>
-          </div>
-
-          <div>
-            <strong
-              class="block text-sm font-extrabold text-slate-800 dark:text-white"
-            >
-              التخزين
-            </strong>
-
-            <span
-              class="mt-1 block text-[10px] text-slate-500 dark:text-slate-400"
-            >
-              الأرشفة وحفظ الملفات
-            </span>
-          </div>
-
-          <i
-            class="pi pi-angle-left mr-auto text-slate-400"
-          ></i>
-
-        </a>
-
-
-        <!-- Distribution -->
-        <a
-          routerLink="/workflow/distribution"
-          class="group flex min-h-[75px] items-center gap-3 rounded-xl border border-slate-200 bg-gradient-to-br from-white to-slate-50 p-3 no-underline transition-all hover:-translate-y-0.5 hover:border-cyan-300 hover:bg-cyan-50 dark:border-slate-700 dark:from-slate-900 dark:to-slate-800"
-        >
-
-          <div
-            class="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-cyan-50 text-cyan-600 dark:bg-cyan-950/40"
-          >
-            <i class="pi pi-send text-lg"></i>
-          </div>
-
-          <div>
-            <strong
-              class="block text-sm font-extrabold text-slate-800 dark:text-white"
-            >
-              التوزيع
-            </strong>
-
-            <span
-              class="mt-1 block text-[10px] text-slate-500 dark:text-slate-400"
-            >
-              متابعة عمليات التوزيع
-            </span>
-          </div>
-
-          <i
-            class="pi pi-angle-left mr-auto text-slate-400"
-          ></i>
-
-        </a>
-
-      </div>
-
-    </section>
-
-
-    <!-- =======================================================
-         ADMINISTRATION
-    ======================================================== -->
-
-    <div class="flex flex-col gap-4">
-
-      <section
-        class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900"
-      >
-
-        <div
-          class="flex items-center justify-between border-b border-slate-100 px-5 py-4 dark:border-slate-700"
-        >
-
-          <div>
-            <h3
-              class="m-0 text-lg font-extrabold text-blue-950 dark:text-white"
-            >
-              إدارة المنظومة
-            </h3>
-
-            <p
-              class="mt-1 text-xs text-slate-500 dark:text-slate-400"
-            >
-              أدوات المسؤول الرئيسي
-            </p>
-          </div>
-
-          <i
-            class="pi pi-cog text-xl text-blue-600"
-          ></i>
-
-        </div>
-
-
-        <div class="px-3 py-2">
-
-          <!-- Users -->
-          <a
-            routerLink="/users"
-            class="group flex items-center gap-3 border-b border-slate-100 p-3 no-underline last:border-0 hover:bg-blue-50 dark:border-slate-700 dark:hover:bg-slate-800"
-          >
-
-            <div
-              class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-blue-600 dark:bg-blue-950/50"
-            >
-              <i class="pi pi-users"></i>
-            </div>
-
-            <div class="min-w-0">
-              <strong
-                class="block text-xs font-extrabold text-slate-800 dark:text-white"
-              >
-                إدارة المستخدمين
-              </strong>
-
-              <span
-                class="mt-1 block text-[9px] text-slate-500 dark:text-slate-400"
-              >
-                إضافة وتعديل صلاحيات المستخدمين
-              </span>
-            </div>
-
-            <i
-              class="pi pi-angle-left mr-auto text-xs text-slate-400"
-            ></i>
-
-          </a>
-
-
-          <!-- Committees -->
-          <a
-            routerLink="/committees"
-            class="group flex items-center gap-3 border-b border-slate-100 p-3 no-underline last:border-0 hover:bg-blue-50 dark:border-slate-700 dark:hover:bg-slate-800"
-          >
-
-            <div
-              class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-purple-50 text-purple-600 dark:bg-purple-950/40"
-            >
-              <i class="pi pi-users"></i>
-            </div>
-
-            <div>
-              <strong
-                class="block text-xs font-extrabold text-slate-800 dark:text-white"
-              >
-                إدارة اللجان
-              </strong>
-
-              <span
-                class="mt-1 block text-[9px] text-slate-500 dark:text-slate-400"
-              >
-                متابعة وإدارة بيانات اللجان
-              </span>
-            </div>
-
-            <i
-              class="pi pi-angle-left mr-auto text-xs text-slate-400"
-            ></i>
-
-          </a>
-
-
-          <!-- Reports -->
-          <a
-            routerLink="/reports"
-            class="group flex items-center gap-3 border-b border-slate-100 p-3 no-underline last:border-0 hover:bg-blue-50 dark:border-slate-700 dark:hover:bg-slate-800"
-          >
-
-            <div
-              class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-green-50 text-green-600 dark:bg-green-950/40"
-            >
-              <i class="pi pi-chart-bar"></i>
-            </div>
-
-            <div>
-              <strong
-                class="block text-xs font-extrabold text-slate-800 dark:text-white"
-              >
-                التقارير
-              </strong>
-
-              <span
-                class="mt-1 block text-[9px] text-slate-500 dark:text-slate-400"
-              >
-                تقارير وإحصائيات المنظومة
-              </span>
-            </div>
-
-            <i
-              class="pi pi-angle-left mr-auto text-xs text-slate-400"
-            ></i>
-
-          </a>
-
-
-          <!-- Settings -->
-          <a
-            routerLink="/settings"
-            class="group flex items-center gap-3 p-3 no-underline hover:bg-blue-50 dark:hover:bg-slate-800"
-          >
-
-            <div
-              class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-orange-50 text-orange-600 dark:bg-orange-950/40"
-            >
-              <i class="pi pi-cog"></i>
-            </div>
-
-            <div>
-              <strong
-                class="block text-xs font-extrabold text-slate-800 dark:text-white"
-              >
-                الإعدادات
-              </strong>
-
-              <span
-                class="mt-1 block text-[9px] text-slate-500 dark:text-slate-400"
-              >
-                إعدادات النظام العامة
-              </span>
-            </div>
-
-            <i
-              class="pi pi-angle-left mr-auto text-xs text-slate-400"
-            ></i>
-
-          </a>
-
-        </div>
-
-      </section>
-
-
-      <!-- System information -->
-
-      <section
-        class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900"
-      >
-
-        <div
-          class="flex items-center gap-2 border-b border-slate-100 px-5 py-3 text-sm font-extrabold text-blue-950 dark:border-slate-700 dark:text-white"
-        >
-          <i class="pi pi-info-circle text-blue-600"></i>
-
-          معلومات المنظومة
-        </div>
-
-        <div
-          class="flex items-center justify-between border-b border-slate-100 px-5 py-2.5 text-[11px] dark:border-slate-700"
-        >
-          <span class="text-slate-500">الإصدار</span>
-
-          <strong class="text-slate-700 dark:text-slate-200">
-            1.0.0
-          </strong>
-        </div>
-
-        <div
-          class="flex items-center justify-between border-b border-slate-100 px-5 py-2.5 text-[11px] dark:border-slate-700"
-        >
-          <span class="text-slate-500">حالة الخادم</span>
-
-          <strong class="flex items-center gap-1 text-green-600">
-            <span class="h-2 w-2 rounded-full bg-green-500"></span>
-            متصل
-          </strong>
-        </div>
-
-        <div
-          class="flex items-center justify-between px-5 py-2.5 text-[11px]"
-        >
-          <span class="text-slate-500">آخر تحديث</span>
-
-          <strong class="text-slate-700 dark:text-slate-200">
-            اليوم
-          </strong>
-        </div>
-
-      </section>
-
-    </div>
-
-  </div>
-
-
-  <!-- =========================================================
-       RECENT ACTIVITY
-  ========================================================== -->
-
-  <section
-    class="mt-4 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900"
-  >
-
-    <div
-      class="flex items-center justify-between border-b border-slate-100 px-5 py-4 dark:border-slate-700"
-    >
-
-      <div>
-        <h3
-          class="m-0 text-lg font-extrabold text-blue-950 dark:text-white"
-        >
-          آخر الأنشطة
-        </h3>
-
-        <p
-          class="mt-1 text-xs text-slate-500 dark:text-slate-400"
-        >
-          أحدث العمليات التي تمت على المنظومة
-        </p>
-      </div>
-
-      <i
-        class="pi pi-history text-xl text-blue-600"
-      ></i>
-
-    </div>
-
-
-    <div class="px-5">
-
-      <!-- Activity 1 -->
-      <div
-        class="flex min-h-[58px] items-center gap-3 border-b border-slate-100 dark:border-slate-700"
-      >
-
-        <div
-          class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-green-50 text-green-600 dark:bg-green-950/40"
-        >
-          <i class="pi pi-check text-xs"></i>
-        </div>
-
-        <div class="min-w-0">
-          <strong
-            class="block text-xs font-bold text-slate-700 dark:text-white"
-          >
-            تم إنشاء ملفات البوكليت
-          </strong>
-
-          <span
-            class="text-[10px] text-slate-500"
-          >
-            تم إنشاء ملفات محافظة القاهرة بنجاح
-          </span>
-        </div>
-
-        <span
-          class="mr-auto whitespace-nowrap text-[9px] text-slate-400"
-        >
-          منذ 5 دقائق
-        </span>
-
-      </div>
-
-
-      <!-- Activity 2 -->
-      <div
-        class="flex min-h-[58px] items-center gap-3 border-b border-slate-100 dark:border-slate-700"
-      >
-
-        <div
-          class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue-50 text-blue-600 dark:bg-blue-950/40"
-        >
-          <i class="pi pi-upload text-xs"></i>
-        </div>
-
-        <div>
-          <strong
-            class="block text-xs font-bold text-slate-700 dark:text-white"
-          >
-            رفع بيانات اللجان
-          </strong>
-
-          <span
-            class="text-[10px] text-slate-500"
-          >
-            تم رفع ملف بيانات اللجان الجديد
-          </span>
-        </div>
-
-        <span
-          class="mr-auto whitespace-nowrap text-[9px] text-slate-400"
-        >
-          منذ 20 دقيقة
-        </span>
-
-      </div>
-
-
-      <!-- Activity 3 -->
-      <div
-        class="flex min-h-[58px] items-center gap-3"
-      >
-
-        <div
-          class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-orange-50 text-orange-600 dark:bg-orange-950/40"
-        >
-          <i class="pi pi-user-plus text-xs"></i>
-        </div>
-
-        <div>
-          <strong
-            class="block text-xs font-bold text-slate-700 dark:text-white"
-          >
-            إضافة مستخدم جديد
-          </strong>
-
-          <span
-            class="text-[10px] text-slate-500"
-          >
-            تمت إضافة مستخدم إلى المنظومة
-          </span>
-        </div>
-
-        <span
-          class="mr-auto whitespace-nowrap text-[9px] text-slate-400"
-        >
-          منذ ساعة
-        </span>
-
-      </div>
-
-    </div>
-
-  </section>
-
+  </footer>
 </div>
