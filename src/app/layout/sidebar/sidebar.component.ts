@@ -71,17 +71,17 @@ export class SidebarComponent {
       expanded: true,
 
       children: [
-        {
-          label: 'المحافظات',
-          icon: 'pi pi-circle-fill',
-          route: '/governorates'
-        },
+        // {
+        //   label: 'المحافظات',
+        //   icon: 'pi pi-circle-fill',
+        //   route: '/governorates'
+        // },
 
-        {
-          label: 'المواد',
-          icon: 'pi pi-circle-fill',
-          route: '/materials'
-        },
+        // {
+        //   label: 'المواد',
+        //   icon: 'pi pi-circle-fill',
+        //   route: '/materials'
+        // },
 
         {
           label: 'إدارة اللجان',
@@ -121,17 +121,17 @@ export class SidebarComponent {
       route: '/workflow/archiving'
     },
 
-    {
-      label: 'إنتاج الملفات',
-      icon: 'pi pi-file-export',
-      route: '/production'
-    },
+    // {
+    //   label: 'إنتاج الملفات',
+    //   icon: 'pi pi-file-export',
+    //   route: '/production'
+    // },
 
-    {
-      label: 'المتابعة والتقارير',
-      icon: 'pi pi-chart-bar',
-      route: '/reports'
-    },
+    // {
+    //   label: 'المتابعة والتقارير',
+    //   icon: 'pi pi-chart-bar',
+    //   route: '/reports'
+    // },
 
     {
       label: 'إدارة المستخدمين',

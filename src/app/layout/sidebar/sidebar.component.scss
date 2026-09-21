@@ -476,12 +476,72 @@
 
 .footer-books {
 
-  color:
-    rgba(255,255,255,0.28);
+  height: 112px;
+  margin: 0 auto 0.55rem;
+  position: relative;
+  width: 178px;
+}
 
-  font-size: 2rem;
+.booklet-stack {
+  bottom: 0;
+  height: 102px;
+  left: 50%;
+  position: absolute;
+  transform: translateX(-50%) skewY(-9deg);
+  width: 148px;
+}
 
-  margin-bottom: 0.3rem;
+.booklet-sheet {
+  background: linear-gradient(135deg, #dce7f1 0%, #9eb2c6 100%);
+  border: 1px solid rgba(8, 31, 56, 0.35);
+  border-radius: 3px;
+  box-shadow: 0 2px 3px rgba(0, 0, 0, 0.25);
+  height: 72px;
+  left: 8px;
+  position: absolute;
+  transform: rotate(-7deg);
+  width: 128px;
+}
+
+.booklet-sheet::after {
+  background: repeating-linear-gradient(0deg, transparent 0 5px, rgba(24, 58, 88, 0.18) 6px 7px);
+  bottom: -24px;
+  content: '';
+  height: 24px;
+  left: 0;
+  position: absolute;
+  transform: skewX(-42deg);
+  transform-origin: top left;
+  width: 128px;
+}
+
+.booklet-sheet-back {
+  bottom: 13px;
+  opacity: 0.75;
+  transform: rotate(-7deg) translate(-9px, 12px);
+}
+
+.booklet-sheet-middle {
+  bottom: 10px;
+  opacity: 0.9;
+  transform: rotate(-7deg) translate(-4px, 7px);
+}
+
+.booklet-sheet-front {
+  align-items: center;
+  bottom: 17px;
+  color: #34536d;
+  display: flex;
+  flex-direction: column;
+  font-size: 9px;
+  justify-content: center;
+  text-align: center;
+  transform: rotate(-7deg);
+}
+
+.booklet-sheet-front i {
+  font-size: 20px;
+  margin-bottom: 3px;
 }
 
 

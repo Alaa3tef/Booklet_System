@@ -47,6 +47,16 @@ body {
 }
 
 
+html {
+  /*
+    Keep a persistent scrollbar so the viewport width
+    never changes between pages with/without overflow.
+    This prevents the sidebar-width jump on navigation.
+  */
+  overflow-y: scroll;
+}
+
+
 body {
 
   font-family:
