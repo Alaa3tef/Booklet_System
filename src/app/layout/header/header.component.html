@@ -1,47 +1,235 @@
+<!-- ==================================================
+     HEADER
+================================================== -->
+
 <header class="topbar">
+
+
+  <!-- ================================================
+       LEFT SIDE
+  ================================================= -->
+
   <div class="topbar-left">
-    <div class="brand-block">
-      <i class="pi pi-book brand-mark"></i>
-      <div class="brand-titles">
-        <h1>منظومة إنتاج البوكليت</h1>
-        <p>من الإعداد إلى التوزيع .. بدقة وأمان</p>
-      </div>
-    </div>
-  </div>
 
-  <div class="topbar-right">
-    <div class="ministry-block">
-      <p class="slogan">تعليم أفضل .. لمستقبل أفضل</p>
-      <div class="ministry-name">
-        <span>وزارة التربية والتعليم</span>
-        <span class="sub">Ministry of Education</span>
-      </div>
-    </div>
 
-    <button type="button" class="icon-btn" aria-label="الإشعارات">
-      <i class="pi pi-bell"></i>
-      <span class="badge">3</span>
+    <!-- Mobile Menu -->
+
+    <button
+      pButton
+      type="button"
+
+      class="mobile-menu-btn p-button-text"
+
+      aria-label="فتح القائمة"
+
+      (click)="toggleMenu()">
+
+      <i class="pi pi-bars"></i>
+
     </button>
 
-    <div class="user-block">
-      <div class="user-info">
-        <span class="user-name">{{ userName }}</span>
-        <span class="user-role">{{ userRole }}</span>
+
+    <!-- Brand -->
+
+    <div class="brand-block">
+
+
+      <!-- Brand Icon -->
+
+      <div class="brand-icon">
+
+        <i class="pi pi-book"></i>
+
       </div>
-      <div class="avatar">
-        <i class="pi pi-user"></i>
+
+
+      <!-- Brand Titles -->
+
+      <div class="brand-titles">
+
+        <h1>
+          منظومة إنتاج البوكليت
+        </h1>
+
+        <p>
+          متابعة شاملة .. لإنتاج أكثر دقة وتنظيمًا
+        </p>
+
       </div>
+
+
     </div>
+
   </div>
+
+
+  <!-- ================================================
+       RIGHT SIDE
+  ================================================= -->
+
+  <div class="topbar-right">
+
+
+    <!-- ==============================================
+         DATE
+    =============================================== -->
+
+    <div class="current-date">
+
+
+      <div class="date-icon">
+
+        <i class="pi pi-calendar"></i>
+
+      </div>
+
+
+      <div class="date-info">
+
+        <span class="date-day">
+          الثلاثاء
+        </span>
+
+        <strong>
+          16 سبتمبر 2026
+        </strong>
+
+      </div>
+
+
+    </div>
+
+
+    <!-- ==============================================
+         NOTIFICATION
+    =============================================== -->
+
+    <button
+      type="button"
+
+      class="notification-btn"
+
+      aria-label="الإشعارات"
+
+      pTooltip="الإشعارات"
+      tooltipPosition="bottom"
+
+      (click)="openNotifications()">
+
+
+      <i class="pi pi-bell"></i>
+
+
+      @if (notificationsCount > 0) {
+
+        <span class="notification-badge">
+
+          {{ notificationsCount }}
+
+        </span>
+
+      }
+
+    </button>
+
+
+    <!-- ==============================================
+         USER
+    =============================================== -->
+
+    <button
+      type="button"
+
+      class="user-menu"
+
+      (click)="openUserMenu()">
+
+
+      <!-- Avatar -->
+
+      <p-avatar
+        icon="pi pi-user"
+        shape="circle"
+        styleClass="user-avatar">
+      </p-avatar>
+
+
+      <!-- User Info -->
+
+      <span class="user-info">
+
+        <span class="user-name">
+          {{ userName }}
+        </span>
+
+        <span class="user-role">
+          {{ userRole }}
+        </span>
+
+      </span>
+
+
+      <!-- Arrow -->
+
+      <i class="pi pi-chevron-down user-arrow"></i>
+
+
+    </button>
+
+
+  </div>
+
 </header>
 
-<nav class="breadcrumb-bar" aria-label="breadcrumb">
-  @for (crumb of breadcrumbs; track crumb.label; let last = $last) {
+
+<!-- ==================================================
+     BREADCRUMB
+================================================== -->
+
+<nav
+  class="breadcrumb-bar"
+  aria-label="breadcrumb">
+
+
+  <!-- Home -->
+
+  <i class="pi pi-home breadcrumb-home"></i>
+
+
+  @for (
+    crumb of breadcrumbs;
+    track crumb.label;
+    let last = $last
+  ) {
+
+
     @if (!last && crumb.route) {
-      <a [routerLink]="crumb.route" class="crumb-link">{{ crumb.label }}</a>
-      <i class="pi pi-angle-left sep"></i>
-    } @else {
-      <span class="crumb-current">{{ crumb.label }}</span>
+
+      <a
+        [routerLink]="crumb.route"
+        class="crumb-link">
+
+        {{ crumb.label }}
+
+      </a>
+
+
+      <i class="pi pi-angle-left separator"></i>
+
     }
+
+
+    @else {
+
+      <span class="crumb-current">
+
+        {{ crumb.label }}
+
+      </span>
+
+    }
+
   }
+
+
 </nav>
