@@ -150,6 +150,42 @@ margin-bottom: 14px;
 
   line-height: 1.1;
 }
+/* ==========================================================
+   LAPTOP + GEAR
+========================================================== */
+
+.hero-device {
+  position: absolute;
+
+  top: 22px;
+  right: 20%;
+
+  width: 115px;
+  height: 105px;
+
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
+
+  z-index: 4;
+
+  /*
+   * Blend the cropped image into the banner.
+   */
+  mix-blend-mode: multiply;
+}
+
+.hero-device img {
+  width: 100%;
+  height: 100%;
+
+  display: block;
+
+  object-fit: contain;
+
+  object-position: center;
+}
 
 .hero-gear {
   width: 42px;
