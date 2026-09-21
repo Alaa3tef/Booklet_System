@@ -1,28 +1,20 @@
-<!-- ==================================================
-     HEADER
-================================================== -->
-
 <header class="topbar">
 
 
-  <!-- ================================================
-       LEFT SIDE
-  ================================================= -->
+  <!-- ==========================================
+       LEFT / BRAND
+  =========================================== -->
 
   <div class="topbar-left">
-
 
     <!-- Mobile Menu -->
 
     <button
-      pButton
       type="button"
-
-      class="mobile-menu-btn p-button-text"
-
+      class="mobile-menu-btn"
       aria-label="فتح القائمة"
-
-      (click)="toggleMenu()">
+      (click)="toggleMenu()"
+    >
 
       <i class="pi pi-bars"></i>
 
@@ -33,17 +25,12 @@
 
     <div class="brand-block">
 
-
-      <!-- Brand Icon -->
-
       <div class="brand-icon">
 
         <i class="pi pi-book"></i>
 
       </div>
 
-
-      <!-- Brand Titles -->
 
       <div class="brand-titles">
 
@@ -57,32 +44,27 @@
 
       </div>
 
-
     </div>
 
   </div>
 
 
-  <!-- ================================================
+  <!-- ==========================================
        RIGHT SIDE
-  ================================================= -->
+  =========================================== -->
 
   <div class="topbar-right">
 
 
-    <!-- ==============================================
-         DATE
-    =============================================== -->
+    <!-- DATE -->
 
     <div class="current-date">
-
 
       <div class="date-icon">
 
         <i class="pi pi-calendar"></i>
 
       </div>
-
 
       <div class="date-info">
 
@@ -96,29 +78,20 @@
 
       </div>
 
-
     </div>
 
 
-    <!-- ==============================================
-         NOTIFICATION
-    =============================================== -->
+    <!-- NOTIFICATIONS -->
 
     <button
       type="button"
-
       class="notification-btn"
-
       aria-label="الإشعارات"
 
-      pTooltip="الإشعارات"
-      tooltipPosition="bottom"
-
-      (click)="openNotifications()">
-
+      (click)="openNotifications()"
+    >
 
       <i class="pi pi-bell"></i>
-
 
       @if (notificationsCount > 0) {
 
@@ -133,28 +106,21 @@
     </button>
 
 
-    <!-- ==============================================
-         USER
-    =============================================== -->
+    <!-- USER -->
 
     <button
       type="button"
-
       class="user-menu"
 
-      (click)="openUserMenu()">
-
-
-      <!-- Avatar -->
+      (click)="openUserMenu()"
+    >
 
       <p-avatar
         icon="pi pi-user"
         shape="circle"
-        styleClass="user-avatar">
-      </p-avatar>
+        styleClass="user-avatar"
+      ></p-avatar>
 
-
-      <!-- User Info -->
 
       <span class="user-info">
 
@@ -169,29 +135,23 @@
       </span>
 
 
-      <!-- Arrow -->
-
       <i class="pi pi-chevron-down user-arrow"></i>
 
-
     </button>
-
 
   </div>
 
 </header>
 
 
-<!-- ==================================================
+<!-- ==========================================
      BREADCRUMB
-================================================== -->
+=========================================== -->
 
 <nav
   class="breadcrumb-bar"
-  aria-label="breadcrumb">
-
-
-  <!-- Home -->
+  aria-label="breadcrumb"
+>
 
   <i class="pi pi-home breadcrumb-home"></i>
 
@@ -202,34 +162,27 @@
     let last = $last
   ) {
 
-
     @if (!last && crumb.route) {
 
       <a
         [routerLink]="crumb.route"
-        class="crumb-link">
-
+        class="crumb-link"
+      >
         {{ crumb.label }}
-
       </a>
-
 
       <i class="pi pi-angle-left separator"></i>
 
     }
 
-
     @else {
 
       <span class="crumb-current">
-
         {{ crumb.label }}
-
       </span>
 
     }
 
   }
-
 
 </nav>

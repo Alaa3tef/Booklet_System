@@ -2,40 +2,25 @@
   class="app-shell"
   [class.sidebar-open]="sidebarOpen">
 
-
-  <!-- =====================================
-       Mobile Overlay
-  ====================================== -->
-
+  <!-- Mobile Overlay -->
   @if (sidebarOpen) {
-
     <div
       class="sidebar-overlay"
       (click)="closeSidebar()">
     </div>
-
   }
 
-
-  <!-- =====================================
-       Sidebar
-  ====================================== -->
-
+  <!-- Sidebar -->
   <app-sidebar
     [mobileOpen]="sidebarOpen"
+    [userRole]="userRole"
     (closeMobile)="closeSidebar()">
   </app-sidebar>
 
-
-  <!-- =====================================
-       Main Area
-  ====================================== -->
-
+  <!-- Main Area -->
   <div class="main-area">
 
-
     <!-- Header -->
-
     <app-header
       [breadcrumbs]="breadcrumbs"
       [userName]="userName"
@@ -43,15 +28,10 @@
       (menuToggle)="toggleSidebar()">
     </app-header>
 
-
     <!-- Page Content -->
-
     <main class="page-content">
-
       <router-outlet></router-outlet>
-
     </main>
-
 
   </div>
 

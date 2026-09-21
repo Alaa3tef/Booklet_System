@@ -3,49 +3,28 @@
 // ==========================================================================
 
 :root {
-
-  // ============================================================
-  // COLORS
-  // ============================================================
-
   --ebs-navy: #0b2e4f;
   --ebs-navy-dark: #081f38;
-
   --ebs-blue: #1565c0;
   --ebs-blue-light: #2f80ed;
   --ebs-blue-bg: #eaf2fc;
-
   --ebs-sky: #e8f1fb;
-
   --ebs-green: #16a34a;
   --ebs-green-bg: #e8f8ee;
-
   --ebs-gray-bg: #f4f6f9;
-
   --ebs-border: #e3e8ef;
-
   --ebs-text: #1f2937;
   --ebs-text-muted: #6b7280;
-
-
-  // ============================================================
-  // LAYOUT
-  // ============================================================
-
   --ebs-radius: 12px;
 
-  --ebs-sidebar-width: 260px;
+  // مهم: عرض الـ Sidebar
+  --ebs-sidebar-width: 240px;
 
-  --ebs-header-height: 72px;
+  // Header
+  --ebs-header-height: 76px;
 
-  // Header + Breadcrumb
+  // Breadcrumb
   --ebs-breadcrumb-height: 44px;
-
-  --ebs-layout-top:
-    calc(
-      var(--ebs-header-height) +
-      var(--ebs-breadcrumb-height)
-    );
 }
 
 

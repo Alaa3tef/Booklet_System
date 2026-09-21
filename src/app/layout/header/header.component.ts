@@ -11,17 +11,10 @@ import { RouterLink } from '@angular/router';
 
 import { AvatarModule } from 'primeng/avatar';
 
-import { ButtonModule } from 'primeng/button';
-
-import { TooltipModule } from 'primeng/tooltip';
-
 
 export interface Breadcrumb {
-
   label: string;
-
   route?: string;
-
 }
 
 
@@ -33,9 +26,7 @@ export interface Breadcrumb {
   imports: [
     CommonModule,
     RouterLink,
-    AvatarModule,
-    ButtonModule,
-    TooltipModule
+    AvatarModule
   ],
 
   templateUrl: './header.component.html',
@@ -45,12 +36,26 @@ export interface Breadcrumb {
 export class HeaderComponent {
 
 
+  /* =====================================================
+     INPUTS
+  ===================================================== */
+
   @Input()
   breadcrumbs: Breadcrumb[] = [
+
     {
       label: 'الرئيسية',
       route: '/dashboard'
+    },
+
+    {
+      label: 'إدارة البيانات الأساسية'
+    },
+
+    {
+      label: 'إعداد اللجان'
     }
+
   ];
 
 
@@ -62,16 +67,25 @@ export class HeaderComponent {
   userRole = 'Super Admin';
 
 
+  /* =====================================================
+     OUTPUT
+  ===================================================== */
+
   @Output()
   menuToggle = new EventEmitter<void>();
 
 
+  /* =====================================================
+     NOTIFICATIONS
+  ===================================================== */
+
   notificationsCount = 3;
 
 
-  /**
-   * Open mobile sidebar
-   */
+  /* =====================================================
+     MOBILE MENU
+  ===================================================== */
+
   toggleMenu(): void {
 
     this.menuToggle.emit();
@@ -79,23 +93,25 @@ export class HeaderComponent {
   }
 
 
-  /**
-   * Notification click
-   */
+  /* =====================================================
+     NOTIFICATIONS
+  ===================================================== */
+
   openNotifications(): void {
 
-    console.log('Open notifications');
-
+    // ضعي هنا فتح Notification Panel
+    // أو PrimeNG Overlay / Menu
   }
 
 
-  /**
-   * User menu
-   */
+  /* =====================================================
+     USER MENU
+  ===================================================== */
+
   openUserMenu(): void {
 
-    console.log('Open user menu');
-
+    // ضعي هنا فتح User Menu
+    // أو PrimeNG Menu
   }
 
 }
