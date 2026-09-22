@@ -93,32 +93,76 @@
 }
 
 
-.logo-eagle {
+/* ==================================================
+   EGYPT EAGLE LOGO
+================================================== */
 
-  width: 45px;
-  height: 45px;
+.ministry-logo {
+  width: 58px;
+  height: 58px;
 
   display: flex;
-
   align-items: center;
   justify-content: center;
+
+  margin-bottom: 0.35rem;
+
+  position: relative;
+}
+
+
+/*
+  خلفية بسيطة خلف النسر
+*/
+
+.ministry-logo::before {
+  content: '';
+
+  position: absolute;
+
+  width: 54px;
+  height: 54px;
 
   border-radius: 50%;
 
   background:
-    linear-gradient(
-      135deg,
-      #ffffff,
-      #dcecff
-    );
-
-  color: #17406d;
-
-  font-size: 1.5rem;
+    rgba(255, 255, 255, 0.96);
 
   box-shadow:
-    0 4px 12px
-    rgba(0, 0, 0, 0.15);
+    0 5px 16px
+    rgba(0, 0, 0, 0.14);
+}
+
+
+/*
+  صورة النسر
+*/
+
+.egypt-eagle {
+  position: relative;
+
+  width: 47px;
+  height: 47px;
+
+  object-fit: contain;
+
+  display: block;
+
+  z-index: 1;
+
+  filter:
+    drop-shadow(
+      0 2px 3px
+      rgba(0, 0, 0, 0.15)
+    );
+
+  transition:
+    transform 0.2s ease;
+}
+
+
+.sidebar-brand:hover .egypt-eagle {
+  transform: scale(1.04);
 }
 
 
