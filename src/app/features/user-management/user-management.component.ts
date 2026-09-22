@@ -6,6 +6,9 @@ import {
 
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { ButtonModule } from 'primeng/button';
+import { InputTextModule } from 'primeng/inputtext';
+import { SelectModule } from 'primeng/select';
 import { AppUser } from './interface/useManagement';
 
 
@@ -19,7 +22,7 @@ import { AppUser } from './interface/useManagement';
 @Component({
   selector: 'app-user-management',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, ButtonModule, InputTextModule, SelectModule],
   templateUrl: './user-management.component.html',
   styleUrl: './user-management.component.scss'
 })
@@ -39,10 +42,11 @@ export class UserManagementComponent {
 
   /** Form model for Add / Edit */
   form = signal({
-    name: '',
+    // name: '',
     username: '',
     email: '',
     roleKey: 'it',
+    phone: '',
     status: 'active' as 'active' | 'inactive'
   });
 
@@ -60,18 +64,18 @@ export class UserManagementComponent {
   private nextId = signal(13);
 
   readonly allUsers = signal<AppUser[]>([
-    { id: 1,  name: 'أحمد محمد علي',       username: 'ahmed.ali',      email: 'ahmed.ali@moe.gov.eg',      role: 'مدير النظام',    roleKey: 'admin',     status: 'active',   createdAt: '2025-01-10', avatarInitials: 'أح', avatarTone: 'navy' },
-    { id: 2,  name: 'فاطمة حسن',            username: 'fatma.hassan',   email: 'fatma.hassan@moe.gov.eg',   role: 'مستخدم IT',      roleKey: 'it',        status: 'active',   createdAt: '2025-02-14', avatarInitials: 'فح', avatarTone: 'blue' },
-    { id: 3,  name: 'محمد إبراهيم',         username: 'mohamed.ibr',    email: 'mohamed.ibr@moe.gov.eg',    role: 'مستخدم الإعداد', roleKey: 'planning',  status: 'active',   createdAt: '2025-03-01', avatarInitials: 'مإ', avatarTone: 'teal' },
-    { id: 4,  name: 'سارة خالد',            username: 'sara.khaled',    email: 'sara.khaled@moe.gov.eg',    role: 'مستخدم الطباعة', roleKey: 'printing',  status: 'active',   createdAt: '2025-03-12', avatarInitials: 'سخ', avatarTone: 'green' },
-    { id: 5,  name: 'عمر يوسف',             username: 'omar.youssef',   email: 'omar.youssef@moe.gov.eg',   role: 'مستخدم الجودة',  roleKey: 'quality',   status: 'inactive', createdAt: '2025-04-05', avatarInitials: 'عي', avatarTone: 'orange' },
-    { id: 6,  name: 'نورا سعيد',            username: 'noura.said',     email: 'noura.said@moe.gov.eg',     role: 'مستخدم التغليف', roleKey: 'packing',   status: 'active',   createdAt: '2025-04-20', avatarInitials: 'نس', avatarTone: 'purple' },
-    { id: 7,  name: 'خالد عبدالله',         username: 'khaled.abd',     email: 'khaled.abd@moe.gov.eg',     role: 'مستخدم التخزين', roleKey: 'archiving', status: 'active',   createdAt: '2025-05-03', avatarInitials: 'خع', avatarTone: 'navy' },
-    { id: 8,  name: 'منى أحمد',             username: 'mona.ahmed',     email: 'mona.ahmed@moe.gov.eg',     role: 'مستخدم IT',      roleKey: 'it',        status: 'inactive', createdAt: '2025-05-18', avatarInitials: 'مأ', avatarTone: 'blue' },
-    { id: 9,  name: 'يوسف الشافعي',         username: 'youssef.shafi',  email: 'youssef.shafi@moe.gov.eg',  role: 'مستخدم الإعداد', roleKey: 'planning',  status: 'active',   createdAt: '2025-06-01', avatarInitials: 'يش', avatarTone: 'teal' },
-    { id: 10, name: 'هناء رمضان',           username: 'hanaa.ramadan',  email: 'hanaa.ramadan@moe.gov.eg',  role: 'مدير النظام',    roleKey: 'admin',     status: 'active',   createdAt: '2025-06-15', avatarInitials: 'هر', avatarTone: 'navy' },
-    { id: 11, name: 'طارق مصطفى',           username: 'tarek.mostafa',  email: 'tarek.mostafa@moe.gov.eg',  role: 'مستخدم الطباعة', roleKey: 'printing',  status: 'active',   createdAt: '2025-07-02', avatarInitials: 'طم', avatarTone: 'green' },
-    { id: 12, name: 'ريم السيد',            username: 'reem.sayed',     email: 'reem.sayed@moe.gov.eg',     role: 'مستخدم الجودة',  roleKey: 'quality',   status: 'inactive', createdAt: '2025-07-14', avatarInitials: 'رس', avatarTone: 'orange' },
+    { id: 1,        username: 'ahmed.ali',      email: 'ahmed.ali@moe.gov.eg',      role: 'مدير النظام',    roleKey: 'admin',     status: 'active',   createdAt: '2025-01-10', avatarInitials: 'أح', avatarTone: 'navy' },
+    { id: 2,              username: 'fatma.hassan',   email: 'fatma.hassan@moe.gov.eg',   role: 'مستخدم IT',      roleKey: 'it',        status: 'active',   createdAt: '2025-02-14', avatarInitials: 'فح', avatarTone: 'blue' },
+    { id: 3,          username: 'mohamed.ibr',    email: 'mohamed.ibr@moe.gov.eg',    role: 'مستخدم الإعداد', roleKey: 'planning',  status: 'active',   createdAt: '2025-03-01', avatarInitials: 'مإ', avatarTone: 'teal' },
+    { id: 4,              username: 'sara.khaled',    email: 'sara.khaled@moe.gov.eg',    role: 'مستخدم الطباعة', roleKey: 'printing',  status: 'active',   createdAt: '2025-03-12', avatarInitials: 'سخ', avatarTone: 'green' },
+    { id: 5,               username: 'omar.youssef',   email: 'omar.youssef@moe.gov.eg',   role: 'مستخدم الجودة',  roleKey: 'quality',   status: 'inactive', createdAt: '2025-04-05', avatarInitials: 'عي', avatarTone: 'orange' },
+    { id: 6,             username: 'noura.said',     email: 'noura.said@moe.gov.eg',     role: 'مستخدم التغليف', roleKey: 'packing',   status: 'active',   createdAt: '2025-04-20', avatarInitials: 'نس', avatarTone: 'purple' },
+    { id: 7,           username: 'khaled.abd',     email: 'khaled.abd@moe.gov.eg',     role: 'مستخدم التخزين', roleKey: 'archiving', status: 'active',   createdAt: '2025-05-03', avatarInitials: 'خع', avatarTone: 'navy' },
+    { id: 8,           username: 'mona.ahmed',     email: 'mona.ahmed@moe.gov.eg',     role: 'مستخدم IT',      roleKey: 'it',        status: 'inactive', createdAt: '2025-05-18', avatarInitials: 'مأ', avatarTone: 'blue' },
+    { id: 9,         username: 'youssef.shafi',  email: 'youssef.shafi@moe.gov.eg',  role: 'مستخدم الإعداد', roleKey: 'planning',  status: 'active',   createdAt: '2025-06-01', avatarInitials: 'يش', avatarTone: 'teal' },
+    { id: 10,          username: 'hanaa.ramadan',  email: 'hanaa.ramadan@moe.gov.eg',  role: 'مدير النظام',    roleKey: 'admin',     status: 'active',   createdAt: '2025-06-15', avatarInitials: 'هر', avatarTone: 'navy' },
+    { id: 11,            username: 'tarek.mostafa',  email: 'tarek.mostafa@moe.gov.eg',  role: 'مستخدم الطباعة', roleKey: 'printing',  status: 'active',   createdAt: '2025-07-02', avatarInitials: 'طم', avatarTone: 'green' },
+    { id: 12,            username: 'reem.sayed',     email: 'reem.sayed@moe.gov.eg',     role: 'مستخدم الجودة',  roleKey: 'quality',   status: 'inactive', createdAt: '2025-07-14', avatarInitials: 'رس', avatarTone: 'orange' },
   ]);
 
 
@@ -85,7 +89,7 @@ export class UserManagementComponent {
     const stat = this.selectedStatus();
 
     return this.allUsers().filter(u => {
-      const matchQ    = !q || u.name.toLowerCase().includes(q) || u.username.toLowerCase().includes(q) || u.email.toLowerCase().includes(q);
+      const matchQ    = !q || u.username.toLowerCase().includes(q) || u.email.toLowerCase().includes(q);
       const matchRole = role === 'all' || u.roleKey === role;
       const matchStat = stat === 'all' || u.status === stat;
       return matchQ && matchRole && matchStat;
@@ -147,6 +151,14 @@ export class UserManagementComponent {
   ];
 
   readonly formRoleOptions = this.roleOptions.slice(1); // exclude 'all' in form
+
+  readonly statusOptions = [
+    { value: 'all', label: 'جميع الحالات' },
+    { value: 'active', label: 'نشط' },
+    { value: 'inactive', label: 'معطل' }
+  ];
+
+  readonly formStatusOptions = this.statusOptions.slice(1);
 
   readonly roleLabels: Record<string, string> = {
     admin:    'مدير النظام',
@@ -212,7 +224,7 @@ export class UserManagementComponent {
   // ==================================================
 
   openAddModal(): void {
-    this.form.set({ name: '', username: '', email: '', roleKey: 'it', status: 'active' });
+    this.form.set({  username: '', email: '', roleKey: '', phone: ''  , status: 'active' });
     this.formError.set('');
     this.showAddModal.set(true);
   }
@@ -224,7 +236,7 @@ export class UserManagementComponent {
   submitAdd(): void {
     const f = this.form();
 
-    if (!f.name.trim() || !f.username.trim() || !f.email.trim()) {
+    if (!f.username.trim() || !f.email.trim()) {
       this.formError.set('يرجى ملء جميع الحقول المطلوبة');
       return;
     }
@@ -235,16 +247,23 @@ export class UserManagementComponent {
       return;
     }
 
+    const phoneRegex = /^\d{11}$/;
+    if (f.phone && !phoneRegex.test(f.phone)) {
+      this.formError.set('رقم الهاتف يجب أن يكون مكونًا من 11 رقمًا');
+      return;
+    }
+
     const newUser: AppUser = {
       id: this.nextId(),
-      name: f.name.trim(),
+      // name: f.name.trim(),
       username: f.username.trim(),
       email: f.email.trim(),
       role: this.roleLabels[f.roleKey],
       roleKey: f.roleKey,
-      status: f.status,
+      phone: f.phone,
+      status: f.status ,
       createdAt: new Date().toISOString().split('T')[0],
-      avatarInitials: this.buildInitials(f.name),
+      avatarInitials: this.buildInitials(f.username),
       avatarTone: this.toneForRole[f.roleKey] ?? 'blue'
     };
 
@@ -312,8 +331,19 @@ export class UserManagementComponent {
   isNumber(v: number | '...'): boolean {
     return typeof v === 'number';
   }
+// updateForm(key: string, value: any): void {
+//     if (key === 'phone') {
+//         value = String(value ?? '')
+//             .replace(/\D/g, '')
+//             .slice(0, 11);
+//     }
 
+//     this.form.update(current => ({
+//         ...current,
+//         [key]: value
+//     }));
+// }
   updateForm(field: string, value: string): void {
     this.form.update(f => ({ ...f, [field]: value }));
   }
-}
+ }

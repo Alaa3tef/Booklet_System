@@ -621,6 +621,7 @@
 
 .um-modal {
   width: 100%;
+  height: 49%;
   max-width: 580px;
   background: #fff;
   border-radius: 16px;
@@ -629,6 +630,19 @@
     0 25px 60px rgba(0,0,0,0.18),
     0 8px 20px rgba(0,0,0,0.1);
   animation: modalSlideIn 0.25s cubic-bezier(.3,0,.2,1);
+}
+
+.um-modal-add {
+  min-height: 500px;
+  max-width: 760px;
+  max-height: calc(100vh - 2rem);
+  display: flex;
+  flex-direction: column;
+}
+
+.um-modal-add .modal-body {
+  flex: 1;
+  overflow-y: auto;
 }
 
 .um-modal-sm {
@@ -913,6 +927,11 @@
 }
 
 @media (max-width: 480px) {
+  .um-modal-add {
+    min-height: 0;
+    max-width: calc(100vw - 2rem);
+  }
+
   .um-stats {
     grid-template-columns: 1fr;
   }

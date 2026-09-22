@@ -15,14 +15,13 @@
       <p>إضافة وتعديل وحذف المستخدمين وإدارة صلاحياتهم داخل المنظومة</p>
     </div>
 
-    <button
-      type="button"
-      class="um-add-btn"
+    <p-button
+      label="إضافة مستخدم"
+      icon="pi pi-plus"
+      styleClass="um-add-btn"
       id="btn-add-user"
-      (click)="openAddModal()">
-      <i class="pi pi-plus"></i>
-      <span>إضافة مستخدم</span>
-    </button>
+      (onClick)="openAddModal()">
+    </p-button>
 
   </section>
 
@@ -76,6 +75,7 @@
     <div class="um-search-wrap">
       <i class="pi pi-search"></i>
       <input
+        pInputText
         type="text"
         id="input-search-users"
         class="um-search"
@@ -85,26 +85,31 @@
     </div>
 
     <!-- Role filter -->
-    <select
+    <p-select
       id="select-role-filter"
-      class="um-select"
-      [value]="selectedRole()"
-      (change)="onRoleChange($any($event.target).value)">
-      @for (opt of roleOptions; track opt.value) {
-        <option [value]="opt.value">{{ opt.label }}</option>
-      }
-    </select>
+      [options]="roleOptions"
+      optionLabel="label"
+      optionValue="value"
+      [ngModel]="selectedRole()"
+      (onChange)="onRoleChange($event.value)"
+      [fluid]="true"
+      [showClear]="true"
+      appendTo="body">
+    </p-select>
 
     <!-- Status filter -->
-    <select
+    <p-select
       id="select-status-filter"
-      class="um-select"
-      [value]="selectedStatus()"
-      (change)="onStatusChange($any($event.target).value)">
-      <option value="all">جميع الحالات</option>
-      <option value="active">نشط</option>
-      <option value="inactive">معطل</option>
-    </select>
+      [options]="statusOptions"
+      optionLabel="label"
+      optionValue="value"
+      [ngModel]="selectedStatus()"
+      (onChange)="onStatusChange($event.value)"
+      [fluid]="true"
+      [showClear]="true"
+      appendTo="body"
+>
+    </p-select>
 
     <!-- Count badge -->
     <span class="um-count-badge">
@@ -162,7 +167,6 @@
                 </div>
 
                 <div class="user-info">
-                  <span class="user-name">{{ user.name }}</span>
                   <span class="user-uname">&#64;{{ user.username }}</span>
                 </div>
 
@@ -327,34 +331,68 @@
 
         <div class="form-grid">
 
-          <!-- Full name -->
-          <div class="form-floating">
-            <input
-              id="f-name"
-              type="text"
-              placeholder=" "
-              [value]="form().name"
-              (input)="updateForm('name', $any($event.target).value)" />
-            <label for="f-name">
-              الاسم الكامل
-              <span class="req">*</span>
-            </label>
-          </div>
+
 
           <!-- Username -->
           <div class="form-floating">
             <input
+              pInputText
               id="f-username"
               type="text"
               placeholder=" "
-              [value]="form().username"
-              (input)="updateForm('username', $any($event.target).value)" />
+              [ngModel]="form().username"
+              (ngModelChange)="updateForm('username', $event)"
+              class="w-full" />
             <label for="f-username">
               اسم المستخدم
               <span class="req">*</span>
             </label>
           </div>
+      <!-- Phone -->
+<div class="form-floating">
+    <input
+        pInputText
+        id="f-phone"
+        type="tel"
+        inputmode="numeric"
+        autocomplete="tel"
+        maxlength="11"
+        [ngModel]="form().phone"
+        (ngModelChange)="updateForm('phone', $event)"
+        class="w-full"
+    />
 
+    <label for="f-phone">رقم الهاتف</label>
+</div>
+<div class="form-floating">
+    <p-select
+        id="f-role"
+        [options]="formRoleOptions"
+        optionLabel="label"
+        optionValue="value"
+        [ngModel]="form().roleKey"
+        (onChange)="updateForm('roleKey', $event.value)"
+        [fluid]="true"
+        [showClear]="true"
+    >
+    </p-select>
+
+    <label for="f-role">الدور</label>
+</div>
+
+          <!-- Status -->
+          <div class="form-floating">
+            <p-select
+              id="f-status"
+              [options]="formStatusOptions"
+              optionLabel="label"
+              optionValue="value"
+              [ngModel]="form().status"
+              (onChange)="updateForm('status', $event.value)"
+              [fluid]="true">
+            </p-select>
+            <!-- <label for="f-status">الحالة</label> -->
+          </div>
           <!-- Email -->
           <div class="form-floating span-2">
             <input
@@ -369,32 +407,6 @@
             </label>
           </div>
 
-          <!-- Role -->
-          <div class="form-floating">
-            <select
-              id="f-role"
-              [value]="form().roleKey"
-              (change)="updateForm('roleKey', $any($event.target).value)">
-              <option value="" disabled selected hidden></option>
-              @for (opt of formRoleOptions; track opt.value) {
-                <option [value]="opt.value">{{ opt.label }}</option>
-              }
-            </select>
-            <label for="f-role">الدور</label>
-          </div>
-
-          <!-- Status -->
-          <div class="form-floating">
-            <select
-              id="f-status"
-              [value]="form().status"
-              (change)="updateForm('status', $any($event.target).value)">
-              <option value="" disabled selected hidden></option>
-              <option value="active">نشط</option>
-              <option value="inactive">معطل</option>
-            </select>
-            <label for="f-status">الحالة</label>
-          </div>
 
         </div>
 
@@ -454,7 +466,7 @@
 
       <div class="modal-body confirm-body">
         <p>هل أنت متأكد من حذف المستخدم</p>
-        <strong>{{ deleteTarget()!.name }}</strong>
+        <strong>{{ deleteTarget()!.username }}</strong>
         <p class="confirm-warning">
           <i class="pi pi-exclamation-triangle"></i>
           لا يمكن التراجع عن هذا الإجراء

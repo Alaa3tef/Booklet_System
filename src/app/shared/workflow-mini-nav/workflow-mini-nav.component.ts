@@ -6,7 +6,7 @@ import { WORKFLOW_MINI_NAV, WorkflowNavKey, WorkflowThemeColor } from '../../cor
 @Component({
   selector: 'app-workflow-mini-nav',
   standalone: true,
-  imports: [CommonModule, RouterLink, RouterLinkActive],
+  imports: [CommonModule, RouterLink],
   templateUrl: './workflow-mini-nav.component.html',
   styleUrl: './workflow-mini-nav.component.scss'
 })
