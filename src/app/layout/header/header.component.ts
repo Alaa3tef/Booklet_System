@@ -1,40 +1,36 @@
 import {
   Component,
   EventEmitter,
+  HostListener,
   Input,
-  Output
+  Output,
+  inject,
+  signal
 } from '@angular/core';
 
 import { CommonModule } from '@angular/common';
-
 import { RouterLink } from '@angular/router';
-
 import { AvatarModule } from 'primeng/avatar';
-
+import { AuthService } from '../../core/services/auth.service';
 
 export interface Breadcrumb {
   label: string;
   route?: string;
 }
 
-
 @Component({
   selector: 'app-header',
-
   standalone: true,
-
   imports: [
     CommonModule,
     RouterLink,
     AvatarModule
   ],
-
   templateUrl: './header.component.html',
-
   styleUrl: './header.component.scss'
 })
 export class HeaderComponent {
-
+  private readonly authService = inject(AuthService);
 
   /* =====================================================
      INPUTS
@@ -42,30 +38,23 @@ export class HeaderComponent {
 
   @Input()
   breadcrumbs: Breadcrumb[] = [
-
     {
       label: 'الرئيسية',
       route: '/dashboard'
     },
-
     {
       label: 'إدارة البيانات الأساسية'
     },
-
     {
       label: 'إعداد اللجان'
     }
-
   ];
-
 
   @Input()
   userName = 'أحمد محمد';
 
-
   @Input()
   userRole = 'Super Admin';
-
 
   /* =====================================================
      OUTPUT
@@ -74,44 +63,59 @@ export class HeaderComponent {
   @Output()
   menuToggle = new EventEmitter<void>();
 
-
   /* =====================================================
      NOTIFICATIONS
   ===================================================== */
 
   notificationsCount = 3;
 
+  /* =====================================================
+     USER DROPDOWN
+  ===================================================== */
+  showUserDropdown = signal(false);
+
+  get currentUser() {
+    return this.authService.currentUser();
+  }
 
   /* =====================================================
      MOBILE MENU
   ===================================================== */
 
   toggleMenu(): void {
-
     this.menuToggle.emit();
-
   }
-
 
   /* =====================================================
      NOTIFICATIONS
   ===================================================== */
 
   openNotifications(): void {
-
-    // ضعي هنا فتح Notification Panel
-    // أو PrimeNG Overlay / Menu
+    // Notification panel handler
   }
-
 
   /* =====================================================
      USER MENU
   ===================================================== */
 
   openUserMenu(): void {
-
-    // ضعي هنا فتح User Menu
-    // أو PrimeNG Menu
+    this.showUserDropdown.update((v) => !v);
   }
 
-}
+  closeUserMenu(): void {
+    this.showUserDropdown.set(false);
+  }
+
+  logout(): void {
+    this.closeUserMenu();
+    this.authService.logout();
+  }
+
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event: MouseEvent): void {
+    const target = event.target as HTMLElement;
+    if (!target.closest('.user-menu-wrapper')) {
+      this.closeUserMenu();
+    }
+  }
+}

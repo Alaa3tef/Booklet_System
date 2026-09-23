@@ -1,0 +1,107 @@
+<div class="auth-page">
+  <!-- Ambient background elements -->
+  <div class="bg-pattern" aria-hidden="true"></div>
+  <div class="glow-orb orb-1" aria-hidden="true"></div>
+  <div class="glow-orb orb-2" aria-hidden="true"></div>
+
+  <div class="auth-container">
+    <!-- Brand / Presentation Column (Desktop) -->
+    <aside class="auth-brand-side">
+      <div class="brand-inner">
+        <!-- Ministry Crest Header -->
+        <div class="ministry-badge">
+          <img
+            src="assets/images/egypt.png"
+            alt="شعار جمهورية مصر العربية"
+            class="eagle-logo"
+          />
+          <div class="ministry-titles">
+            <span class="country-name">جمهورية مصر العربية</span>
+            <span class="ministry-name">وزارة التربية والتعليم والتعليم الفني</span>
+          </div>
+        </div>
+
+        <!-- Main Headline -->
+        <div class="hero-block">
+          <div class="system-tag">
+            <i class="pi pi-shield"></i>
+            <span>المنظومة المركزية المؤمنة</span>
+          </div>
+          <h1 class="system-title">
+            منظومة إنتاج البوكليت
+          </h1>
+          <p class="system-tagline">
+            متابعة دقيقة وشاملة لكافة مراحل إنتاج وتجهيز وتوزيع كراسات امتحانات الثانوية العامة والشهادات الرسمية بأعلى درجات السرية والانضباط.
+          </p>
+        </div>
+
+        <!-- System Key Pillars -->
+        <div class="feature-cards">
+          <div class="feature-item">
+            <div class="feature-icon">
+              <i class="pi pi-verified"></i>
+            </div>
+            <div class="feature-content">
+              <strong>تأمين وتشفير كامل</strong>
+              <span>باركود وتسلسل رقمي دقيق لكل كراسة بوكليت</span>
+            </div>
+          </div>
+
+          <div class="feature-item">
+            <div class="feature-icon">
+              <i class="pi pi-chart-line"></i>
+            </div>
+            <div class="feature-content">
+              <strong>متابعة حية للإنتاج</strong>
+              <span>رصد لحظي لخطوط الطباعة والتجميع والتغليف</span>
+            </div>
+          </div>
+
+          <div class="feature-item">
+            <div class="feature-icon">
+              <i class="pi pi-box"></i>
+            </div>
+            <div class="feature-content">
+              <strong>حوكمة وتوزيع مؤمن</strong>
+              <span>تسليم معتمد لمراكز توزيع الأسئلة واللجان</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Security Notice Footer -->
+        <div class="brand-footer">
+          <i class="pi pi-lock"></i>
+          <span>منظومة خاضعة لقواعد الأمن السيبراني والسرية التامة</span>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Interactive Form Column -->
+    <main class="auth-form-side">
+      <div class="form-wrapper">
+        <!-- Mobile/Tablet top header banner -->
+        <div class="mobile-brand-bar">
+          <img
+            src="assets/images/egypt.png"
+            alt="شعار مصر"
+            class="mobile-eagle"
+          />
+          <div>
+            <h2 class="mobile-sys-name">منظومة إنتاج البوكليت</h2>
+            <span class="mobile-moe-name">وزارة التربية والتعليم والتعليم الفني</span>
+          </div>
+        </div>
+
+        <!-- Outlet for Login / Forgot / Reset views -->
+        <div class="form-card-container">
+          <router-outlet></router-outlet>
+        </div>
+
+        <!-- Global Auth Footer -->
+        <footer class="auth-card-footer">
+          <span>جميع الحقوق محفوظة © {{ currentYear }} وزارة التربية والتعليم والتعليم الفني</span>
+        </footer>
+      </div>
+    </main>
+  </div>
+</div>

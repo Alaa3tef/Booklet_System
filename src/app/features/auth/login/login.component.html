@@ -1,0 +1,152 @@
+<div class="login-view">
+  <!-- Card Header -->
+  <header class="card-head">
+    <div class="head-badge">
+      <i class="pi pi-user-check"></i>
+    </div>
+    <h2 class="head-title">تسجيل الدخول</h2>
+    <p class="head-desc">
+      أهلاً بك مجدداً، أدخل بيانات اعتمادك للوصول إلى منظومة البوكليت
+    </p>
+  </header>
+
+  <!-- Error Alert -->
+  @if (errorMessage()) {
+    <div class="alert alert-danger" role="alert">
+      <i class="pi pi-exclamation-circle alert-icon"></i>
+      <span class="alert-text">{{ errorMessage() }}</span>
+      <button
+        type="button"
+        class="alert-close"
+        aria-label="إغلاق التنبيه"
+        (click)="errorMessage.set('')"
+      >
+        <i class="pi pi-times"></i>
+      </button>
+    </div>
+  }
+
+  <!-- Main Login Form -->
+  <form (ngSubmit)="onSubmit()" class="login-form" novalidate>
+    <!-- Identifier (Username or Email) -->
+    <div class="form-group">
+      <label for="identifier" class="field-label">
+        <span>اسم المستخدم أو البريد الإلكتروني</span>
+        <span class="req">*</span>
+      </label>
+      <div class="input-wrapper">
+        <i class="pi pi-user field-icon"></i>
+        <input
+          pInputText
+          id="identifier"
+          name="identifier"
+          type="text"
+          class="custom-input"
+          placeholder="مثال: ahmed.admin أو name@moe.gov.eg"
+          [ngModel]="identifier()"
+          (ngModelChange)="identifier.set($event)"
+          [disabled]="isLoading()"
+          autocomplete="username"
+          required
+        />
+      </div>
+    </div>
+
+    <!-- Password -->
+    <div class="form-group">
+      <div class="label-row">
+        <label for="password" class="field-label">
+          <span>كلمة المرور</span>
+          <span class="req">*</span>
+        </label>
+        <a
+          routerLink="/forgot-password"
+          class="forgot-link"
+          tabindex="0"
+        >
+          نسيت كلمة المرور؟
+        </a>
+      </div>
+      <div class="input-wrapper">
+        <i class="pi pi-lock field-icon"></i>
+        <input
+          pInputText
+          id="password"
+          name="password"
+          [type]="showPassword() ? 'text' : 'password'"
+          class="custom-input with-toggle"
+          placeholder="أدخل كلمة المرور"
+          [ngModel]="password()"
+          (ngModelChange)="password.set($event)"
+          [disabled]="isLoading()"
+          autocomplete="current-password"
+          required
+        />
+        <button
+          type="button"
+          class="password-toggle-btn"
+          [attr.aria-label]="showPassword() ? 'إخفاء كلمة المرور' : 'إظهار كلمة المرور'"
+          (click)="toggleShowPassword()"
+          tabindex="-1"
+        >
+          <i [class]="showPassword() ? 'pi pi-eye-slash' : 'pi pi-eye'"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Options Row: Remember Me -->
+    <div class="form-options">
+      <label class="remember-label">
+        <input
+          type="checkbox"
+          [checked]="rememberMe()"
+          (change)="rememberMe.set($any($event.target).checked)"
+          class="custom-checkbox"
+        />
+        <span>تذكر تسجيل دخولي على هذا الجهاز</span>
+      </label>
+    </div>
+
+    <!-- Submit Button -->
+    <button
+      pButton
+      type="submit"
+      class="submit-btn"
+      [disabled]="isLoading()"
+    >
+      @if (isLoading()) {
+        <i class="pi pi-spin pi-spinner btn-icon"></i>
+        <span>جاري التحقق والدخول...</span>
+      } @else {
+        <span>تسجيل الدخول</span>
+        <i class="pi pi-arrow-left btn-icon"></i>
+      }
+    </button>
+  </form>
+
+  <!-- Quick Demo Switcher -->
+  <div class="demo-section">
+    <div class="divider">
+      <span>أو الدخول السريع بالحسابات التجريبية</span>
+    </div>
+    <div class="demo-buttons">
+      @for (acc of demoAccounts; track acc.username) {
+        <button
+          type="button"
+          class="demo-chip"
+          (click)="onQuickLogin(acc)"
+          [disabled]="isLoading()"
+          [title]="acc.role + ' - ' + acc.email"
+        >
+          <span class="chip-avatar" [style.backgroundColor]="acc.color">
+            <i [class]="acc.icon"></i>
+          </span>
+          <div class="chip-info">
+            <span class="chip-title">{{ acc.label }}</span>
+            <span class="chip-sub">{{ acc.fullName }}</span>
+          </div>
+        </button>
+      }
+    </div>
+  </div>
+</div>
