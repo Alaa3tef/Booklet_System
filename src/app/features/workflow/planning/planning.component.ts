@@ -10,19 +10,33 @@ import { MenuItem } from 'primeng/api';
 import { WorkflowStepLayoutComponent } from '../../../shared/workflow-step-layout/workflow-step-layout.component';
 import { SelectOption } from '../../../core/models/committee.model';
 import { WorkflowStatusRow } from '../../../core/models/workflow.model';
+import { DialogModule } from 'primeng/dialog';
+import { ButtonModule } from 'primeng/button';
+import { TextareaModule } from 'primeng/textarea';
+import { MultiSelectModule } from 'primeng/multiselect';
+interface ReviewUser {
+  id: number;
+  name: string;
+  role: string;
+  avatar?: string;
+}
 
 @Component({
   selector: 'app-planning',
   standalone: true,
 
-  imports: [
-    CommonModule,
-    FormsModule,
-    SelectModule,
-    TableModule,
-    MenuModule,
-    WorkflowStepLayoutComponent
-  ],
+imports: [
+  CommonModule,
+  FormsModule,
+  SelectModule,
+  MultiSelectModule,
+  TableModule,
+  MenuModule,
+  DialogModule,
+  ButtonModule,
+  TextareaModule,
+  WorkflowStepLayoutComponent
+],
 
   templateUrl: './planning.component.html',
   styleUrl: './planning.component.scss'
@@ -42,6 +56,29 @@ export class PlanningComponent {
     { label: 'الرياضيات', value: 'math' },
     { label: 'العلوم', value: 'science' }
   ];
+
+  readonly reviewUsers: ReviewUser[] = [
+  {
+    id: 1,
+    name: 'أحمد محمد',
+    role: 'مراجع أول'
+  },
+  {
+    id: 2,
+    name: 'محمد علي',
+    role: 'مراجع جودة'
+  },
+  {
+    id: 3,
+    name: 'سارة أحمد',
+    role: 'مراجع محتوى'
+  },
+  {
+    id: 4,
+    name: 'محمود حسن',
+    role: 'مراجع نهائي'
+  }
+];
 
   selectedGovernorate = 'all';
   selectedSubject = 'all';
@@ -79,6 +116,36 @@ export class PlanningComponent {
     }
   ]);
 
+  private buildMenuItems(row: WorkflowStatusRow): MenuItem[] {
+  const items: MenuItem[] = [
+    {
+      label: 'تحويل إلى جاهز للطباعة',
+      icon: 'pi pi-refresh',
+      command: () => {
+        this.markSelectedRowReady();
+      }
+    }
+  ];
+
+  if (row.status !== 'جاهز للطباعة') {
+    items.push(
+      {
+        separator: true
+      },
+      {
+        label: 'رفض المادة',
+        icon: 'pi pi-times-circle',
+        styleClass: 'reject-menu-item',
+        command: () => {
+          this.openRejectDialog();
+        }
+      }
+    );
+  }
+
+  return items;
+}
+
   readonly filteredRows = computed(() => {
     const governorate = this.searchGovernorate();
     const subject = this.searchSubject();
@@ -101,14 +168,19 @@ export class PlanningComponent {
   // ==========================================
 
   selectedRow: WorkflowStatusRow | null = null;
+  // ==========================================
+// REJECT DIALOG
+// ==========================================
 
-  readonly menuItems: MenuItem[] = [
-    {
-      label: 'تحويل إلى جاهز للطباعة',
-      icon: 'pi pi-refresh',
-      command: () => this.markSelectedRowReady()
-    }
-  ];
+rejectDialogVisible = false;
+
+rejectReason = '';
+
+selectedReviewers: ReviewUser[] = [];
+
+rejectSubmitting = false;
+
+  readonly menuItems: MenuItem[] = [];
 
   // ==========================================
   // SEARCH
@@ -120,43 +192,137 @@ export class PlanningComponent {
   }
 
   // ==========================================
-  // OPEN STATUS MENU
-  // ==========================================
+// OPEN REJECT DIALOG
+// ==========================================
 
-  openStatusMenu(
-    row: WorkflowStatusRow,
-    menu: any,
-    event: Event
-  ): void {
-    this.selectedRow = row;
-    menu.toggle(event);
+openRejectDialog(): void {
+  if (!this.selectedRow) {
+    return;
   }
 
-  // ==========================================
-  // CHANGE STATUS
-  // ==========================================
+  this.rejectReason = '';
+  this.selectedReviewers = [];
+  this.rejectDialogVisible = true;
+}
 
-  markSelectedRowReady(): void {
-    if (!this.selectedRow) {
-      return;
-    }
+// ==========================================
+// CLOSE REJECT DIALOG
+// ==========================================
 
-    const rowIndex = this.selectedRow.index;
+closeRejectDialog(): void {
+  if (this.rejectSubmitting) {
+    return;
+  }
+
+  this.rejectDialogVisible = false;
+  this.rejectReason = '';
+  this.selectedReviewers = [];
+}
+
+// ==========================================
+// VALIDATE REJECT FORM
+// ==========================================
+
+get isRejectFormValid(): boolean {
+  return (
+    this.rejectReason.trim().length >= 10 &&
+    this.selectedReviewers.length > 0
+  );
+}
+
+// ==========================================
+// SUBMIT REJECTION
+// ==========================================
+
+submitRejection(): void {
+  if (!this.selectedRow || !this.isRejectFormValid) {
+    return;
+  }
+
+  this.rejectSubmitting = true;
+
+  const rejectionData = {
+    rowIndex: this.selectedRow.index,
+    subject: this.selectedRow.subject,
+    governorate: this.selectedRow.governorate,
+    reason: this.rejectReason.trim(),
+    reviewerIds: this.selectedReviewers.map(user => user.id)
+  };
+
+  console.log('Reject Request:', rejectionData);
+
+  // هنا بعدين تحطي API call
+
+  setTimeout(() => {
 
     this.rows.update(rows =>
       rows.map(row =>
-        row.index === rowIndex
+        row.index === this.selectedRow?.index
           ? {
               ...row,
-              status: 'جاهز للطباعة',
-              statusTone: 'success'
+              status: 'مرفوض',
+              statusTone: 'danger'
             }
           : row
       )
     );
 
+    this.rejectSubmitting = false;
+    this.rejectDialogVisible = false;
+
     this.selectedRow = null;
+    this.rejectReason = '';
+    this.selectedReviewers = [];
+
+  }, 800);
+}
+
+  // ==========================================
+  // OPEN STATUS MENU
+  // ==========================================
+
+openStatusMenu(
+  row: WorkflowStatusRow,
+  menu: any,
+  event: Event
+): void {
+
+  this.selectedRow = row;
+
+  this.menuItems.length = 0;
+
+  this.menuItems.push(
+    ...this.buildMenuItems(row)
+  );
+
+  menu.toggle(event);
+}
+
+  // ==========================================
+  // CHANGE STATUS
+  // ==========================================
+
+ markSelectedRowReady(): void {
+  if (!this.selectedRow) {
+    return;
   }
+
+  const rowIndex = this.selectedRow.index;
+
+  this.rows.update(rows =>
+    rows.map(row =>
+      row.index === rowIndex
+        ? {
+            ...row,
+            status: 'جاهز للطباعة',
+            statusTone: 'success'
+          }
+        : row
+    )
+  );
+
+  this.selectedRow = null;
+}
 
   // ==========================================
   // HELPERS

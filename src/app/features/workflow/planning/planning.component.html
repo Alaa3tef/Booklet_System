@@ -122,135 +122,368 @@
       </div>
 
 
-      <p-table
-        [value]="filteredRows()"
-        styleClass="p-datatable-sm"
-        responsiveLayout="scroll">
+   <p-table
+  [value]="filteredRows()"
+  styleClass="p-datatable-sm"
+  responsiveLayout="scroll">
 
-        <!-- TABLE HEADER -->
+  <ng-template pTemplate="header">
+    <tr>
+      <th>م</th>
+      <th>المحافظة</th>
+      <th>المادة</th>
+      <th>الحالة</th>
+      <th class="action-header">إجراء</th>
+    </tr>
+  </ng-template>
 
-        <ng-template pTemplate="header">
+  <ng-template
+    pTemplate="body"
+    let-row>
 
-          <tr>
+    <tr>
 
-            <th>
-              م
-            </th>
+      <td>
+        {{ row.index }}
+      </td>
 
-            <th>
-              المحافظة
-            </th>
+      <td>
+        {{ row.governorate }}
+      </td>
 
-            <th>
-              المادة
-            </th>
+      <td>
+        {{ row.subject }}
+      </td>
 
-            <th>
-              الحالة
-            </th>
+      <td>
+        <span
+          class="status-pill"
+          [ngClass]="row.statusTone">
+          {{ row.status }}
+        </span>
+      </td>
 
-            <th class="action-header">
-              إجراء
-            </th>
+      <td class="status-cell">
 
-          </tr>
+        <button
+          *ngIf="row.status !== 'جاهز للطباعة' && row.status !== 'مرفوض'"
+          type="button"
+          class="status-menu-btn"
+          aria-label="إجراءات المادة"
+          pTooltip="إجراءات المادة"
+          tooltipPosition="top"
+          (click)="openStatusMenu(row, statusMenu, $event)"
+        >
+          <i class="pi pi-ellipsis-v"></i>
+        </button>
 
-        </ng-template>
+      </td>
+
+    </tr>
+
+  </ng-template>
+
+  <ng-template pTemplate="emptymessage">
+    <tr>
+      <td
+        colspan="5"
+        class="empty-message">
+
+        <i class="pi pi-search"></i>
+
+        لا توجد نتائج مطابقة للبحث
+
+      </td>
+    </tr>
+  </ng-template>
+
+</p-table>
+
+<!-- Menu واحد فقط لكل الجدول -->
+<p-menu
+  #statusMenu
+  [model]="menuItems"
+  [popup]="true"
+  appendTo="body">
+</p-menu>
+
+      <!-- ==========================================
+     REJECT DIALOG
+========================================== -->
+
+<p-dialog
+  [(visible)]="rejectDialogVisible"
+  [modal]="true"
+  [draggable]="false"
+  [resizable]="false"
+  [closable]="!rejectSubmitting"
+  [dismissableMask]="!rejectSubmitting"
+  [style]="{ width: '720px', maxWidth: 'calc(100vw - 2rem)' }"
+  appendTo="body"
+  styleClass="reject-dialog"
+  header="رفض المادة"
+>
+
+  <div class="reject-dialog-content">
+
+    <!-- HEADER -->
+    <div class="reject-intro">
+
+      <div class="reject-icon">
+        <i class="pi pi-exclamation-triangle"></i>
+      </div>
+
+      <div class="reject-intro-text">
+
+        <h3>
+          رفض مادة {{ selectedRow?.subject }}
+        </h3>
+
+        <p>
+          يرجى توضيح سبب الرفض وتحديد المستخدمين المسؤولين عن المراجعة.
+        </p>
+
+      </div>
+
+    </div>
 
 
-        <!-- TABLE BODY -->
+    <!-- MATERIAL SUMMARY -->
 
-        <ng-template
-          pTemplate="body"
-          let-row>
+    <div class="material-summary">
 
-          <tr>
+      <div class="summary-item">
 
-            <!-- INDEX -->
+        <span class="summary-label">
+          المادة
+        </span>
 
-            <td>
-              {{ row.index }}
-            </td>
+        <span class="summary-value">
+          {{ selectedRow?.subject }}
+        </span>
 
-
-            <!-- GOVERNORATE -->
-
-            <td>
-              {{ row.governorate }}
-            </td>
+      </div>
 
 
-            <!-- SUBJECT -->
-
-            <td>
-              {{ row.subject }}
-            </td>
+      <div class="summary-divider"></div>
 
 
-            <!-- STATUS -->
+      <div class="summary-item">
 
-            <td>
-              <span
-                class="status-pill"
-                [ngClass]="row.statusTone">
-                {{ row.status }}
+        <span class="summary-label">
+          المحافظة
+        </span>
+
+        <span class="summary-value">
+          {{ selectedRow?.governorate }}
+        </span>
+
+      </div>
+
+
+      <div class="summary-divider"></div>
+
+
+      <div class="summary-item">
+
+        <span class="summary-label">
+          الحالة الحالية
+        </span>
+
+        <span class="summary-value">
+          {{ selectedRow?.status }}
+        </span>
+
+      </div>
+
+    </div>
+
+
+    <!-- REJECTION REASON -->
+
+    <div class="dialog-field">
+
+      <label for="rejectReason">
+        سبب الرفض
+
+        <span class="required">
+          *
+        </span>
+      </label>
+
+      <textarea
+        pTextarea
+        id="rejectReason"
+        [(ngModel)]="rejectReason"
+        [rows]="5"
+        [autoResize]="true"
+        maxlength="500"
+        placeholder="اكتب سبب رفض المادة بالتفصيل..."
+        class="reject-textarea"
+      ></textarea>
+
+      <div class="field-footer">
+
+        <small
+          [class.invalid-counter]="
+            rejectReason.length > 0 &&
+            rejectReason.trim().length < 10
+          "
+        >
+          {{ rejectReason.length }}/500
+        </small>
+
+        <small
+          *ngIf="
+            rejectReason.length > 0 &&
+            rejectReason.trim().length < 10
+          "
+          class="field-error"
+        >
+          يجب أن يكون سبب الرفض 10 أحرف على الأقل
+        </small>
+
+      </div>
+
+    </div>
+
+
+    <!-- REVIEWERS -->
+
+    <div class="dialog-field">
+
+      <label for="reviewers">
+
+        المستخدمون المسؤولون عن المراجعة
+
+        <span class="required">
+          *
+        </span>
+
+      </label>
+
+<p-multiselect
+  inputId="reviewers"
+  [options]="reviewUsers"
+  [(ngModel)]="selectedReviewers"
+  optionLabel="name"
+  [filter]="true"
+  filterBy="name,role"
+  placeholder="اختر المستخدمين المراجعين"
+  appendTo="body"
+  styleClass="w-full reviewers-select"
+  [showClear]="true"
+  [maxSelectedLabels]="2"
+  selectedItemsLabel="{0} مستخدمين مختارين"
+>
+
+        <ng-template pTemplate="selecteditems" let-values>
+
+          <div class="selected-reviewers">
+
+            <span
+              class="reviewer-chip"
+              *ngFor="let user of values"
+            >
+
+              <span class="reviewer-avatar">
+                {{ user.name.charAt(0) }}
               </span>
-            </td>
 
+              <span>
+                {{ user.name }}
+              </span>
 
-            <!-- ACTION -->
+            </span>
 
-            <td class="status-cell">
-
-              <button
-                type="button"
-                class="status-menu-btn"
-                aria-label="إجراءات الحالة"
-                pTooltip="إجراءات الحالة"
-                tooltipPosition="top"
-                (click)="openStatusMenu(row, statusMenu, $event)"
-              >
-                <i class="pi pi-ellipsis-v"></i>
-              </button>
-
-            </td>
-
-          </tr>
+          </div>
 
         </ng-template>
 
 
-        <!-- EMPTY MESSAGE -->
+        <ng-template pTemplate="item" let-user>
 
-        <ng-template pTemplate="emptymessage">
+          <div class="reviewer-option">
 
-          <tr>
+            <div class="reviewer-avatar">
+              {{ user.name.charAt(0) }}
+            </div>
 
-            <td
-              colspan="5"
-              class="empty-message">
+            <div class="reviewer-info">
 
-              <i class="pi pi-search"></i>
+              <span class="reviewer-name">
+                {{ user.name }}
+              </span>
 
-              لا توجد نتائج مطابقة للبحث
+              <span class="reviewer-role">
+                {{ user.role }}
+              </span>
 
-            </td>
+            </div>
 
-          </tr>
+          </div>
 
         </ng-template>
 
-      </p-table>
+      </p-multiselect>
+
+      <small class="field-hint">
+        يمكنك اختيار أكثر من مستخدم لمراجعة المادة.
+      </small>
+
+    </div>
 
 
-      <!-- SINGLE POPUP MENU -->
+    <!-- WARNING -->
 
-      <p-menu
-        #statusMenu
-        [model]="menuItems"
-        [popup]="true"
-        appendTo="body">
-      </p-menu>
+    <div class="reject-warning">
+
+      <i class="pi pi-info-circle"></i>
+
+      <span>
+        سيتم تغيير حالة المادة إلى
+        <strong>مرفوض</strong>
+        وإرسالها للمستخدمين المحددين للمراجعة.
+      </span>
+
+    </div>
+
+  </div>
+
+
+  <!-- FOOTER -->
+
+  <ng-template pTemplate="footer">
+
+    <div class="dialog-footer">
+
+      <button
+        pButton
+        type="button"
+        label="إلغاء"
+        icon="pi pi-times"
+        class="p-button-text cancel-btn"
+        [disabled]="rejectSubmitting"
+        (click)="closeRejectDialog()"
+      ></button>
+
+
+      <button
+        pButton
+        type="button"
+        label="تأكيد الرفض"
+        icon="pi pi-send"
+        class="reject-submit-btn"
+        [loading]="rejectSubmitting"
+        [disabled]="!isRejectFormValid || rejectSubmitting"
+        (click)="submitRejection()"
+      ></button>
+
+    </div>
+
+  </ng-template>
+
+</p-dialog>
 
     </div>
 

@@ -1,1 +1,661 @@
-@import '../../../shared/styles/workflow-panel';
+// =====================================================
+// SCAN SECTION
+// =====================================================
+
+.scan-section {
+  margin-bottom: 1.5rem;
+}
+
+.scan-card {
+  display: grid;
+  grid-template-columns: 230px 1fr;
+  align-items: center;
+
+  min-height: 230px;
+
+  overflow: hidden;
+
+  border: 1px solid var(--ebs-border);
+  border-radius: 20px;
+
+  background:
+    linear-gradient(
+      135deg,
+      var(--ebs-blue-bg),
+      var(--ebs-surface, #fff)
+    );
+
+  box-shadow:
+    0 8px 25px rgba(11, 46, 79, 0.06);
+}
+
+
+// =====================================================
+// SCAN VISUAL
+// =====================================================
+
+.scan-visual {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  min-height: 230px;
+
+  background:
+    radial-gradient(
+      circle at center,
+      rgba(21, 101, 192, 0.12),
+      transparent 65%
+    );
+}
+
+.scan-frame {
+  position: relative;
+
+  width: 130px;
+  height: 130px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 20px;
+
+  color: var(--ebs-blue);
+
+  background: var(--ebs-surface, #fff);
+
+  box-shadow:
+    0 10px 30px rgba(21, 101, 192, 0.12);
+
+  i {
+    font-size: 4rem;
+  }
+
+  &.scanning {
+    color: var(--ebs-blue);
+
+    box-shadow:
+      0 0 0 6px rgba(21, 101, 192, 0.08),
+      0 10px 30px rgba(21, 101, 192, 0.16);
+  }
+}
+
+
+// =====================================================
+// SCAN CORNERS
+// =====================================================
+
+.corner {
+  position: absolute;
+
+  width: 22px;
+  height: 22px;
+
+  border-color: var(--ebs-blue);
+  border-style: solid;
+}
+
+.top-left {
+  top: 12px;
+  left: 12px;
+
+  border-width: 3px 0 0 3px;
+}
+
+.top-right {
+  top: 12px;
+  right: 12px;
+
+  border-width: 3px 3px 0 0;
+}
+
+.bottom-left {
+  bottom: 12px;
+  left: 12px;
+
+  border-width: 0 0 3px 3px;
+}
+
+.bottom-right {
+  bottom: 12px;
+  right: 12px;
+
+  border-width: 0 3px 3px 0;
+}
+
+
+// =====================================================
+// SCAN LINE
+// =====================================================
+
+.scan-line {
+  position: absolute;
+
+  left: 15px;
+  right: 15px;
+
+  height: 2px;
+
+  background: var(--ebs-blue);
+
+  box-shadow:
+    0 0 10px rgba(21, 101, 192, 0.8);
+
+  animation: scanLine 1.3s ease-in-out infinite;
+}
+
+@keyframes scanLine {
+
+  0% {
+    top: 18px;
+  }
+
+  50% {
+    top: calc(100% - 18px);
+  }
+
+  100% {
+    top: 18px;
+  }
+}
+
+
+// =====================================================
+// SCAN CONTENT
+// =====================================================
+
+.scan-content {
+  padding: 2rem;
+}
+
+.scan-eyebrow {
+  display: inline-flex;
+  align-items: center;
+
+  gap: 0.4rem;
+
+  margin-bottom: 0.5rem;
+
+  color: var(--ebs-blue);
+
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+.scan-content h3 {
+  margin: 0 0 0.45rem;
+
+  color: var(--ebs-navy);
+
+  font-size: 1.25rem;
+  font-weight: 800;
+}
+
+.scan-content p {
+  max-width: 650px;
+
+  margin: 0 0 1.25rem;
+
+  color: var(--ebs-text-muted);
+
+  font-size: 0.8rem;
+  line-height: 1.8;
+}
+
+
+// =====================================================
+// SCAN BUTTON
+// =====================================================
+
+.scan-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  gap: 0.55rem;
+
+  min-width: 180px;
+
+  padding: 0.75rem 1.3rem;
+
+  border: 0;
+  border-radius: 10px;
+
+  background: var(--ebs-navy);
+  color: #fff;
+
+  font-family: inherit;
+  font-size: 0.82rem;
+  font-weight: 800;
+
+  cursor: pointer;
+
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    background 0.2s ease;
+
+  &:hover:not(:disabled) {
+    background: var(--ebs-blue);
+
+    transform: translateY(-2px);
+
+    box-shadow:
+      0 8px 18px rgba(21, 101, 192, 0.2);
+  }
+
+  &:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+  }
+}
+
+
+// =====================================================
+// SCAN MESSAGE
+// =====================================================
+
+.scan-message {
+  display: flex;
+  align-items: center;
+
+  gap: 0.45rem;
+
+  margin-top: 0.8rem;
+
+  color: var(--ebs-text-muted);
+
+  font-size: 0.72rem;
+
+  i {
+    color: var(--ebs-blue);
+  }
+}
+
+
+// =====================================================
+// TABLE SECTION
+// =====================================================
+
+.table-section {
+  overflow: hidden;
+
+  border: 1px solid var(--ebs-border);
+
+  border-radius: 18px;
+
+  background: var(--ebs-surface, #fff);
+
+  box-shadow:
+    0 6px 20px rgba(11, 46, 79, 0.04);
+}
+
+
+// =====================================================
+// TABLE HEADER
+// =====================================================
+
+.table-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 1rem;
+
+  padding: 1.25rem 1.35rem;
+
+  border-bottom: 1px solid var(--ebs-border);
+
+  h4 {
+    margin: 0.2rem 0 0;
+
+    color: var(--ebs-navy);
+
+    font-size: 1rem;
+    font-weight: 800;
+  }
+
+  p {
+    margin: 0.3rem 0 0;
+
+    color: var(--ebs-text-muted);
+
+    font-size: 0.7rem;
+  }
+}
+
+.table-eyebrow {
+  color: var(--ebs-blue);
+
+  font-size: 0.65rem;
+  font-weight: 800;
+}
+
+.results-badge {
+  display: inline-flex;
+  align-items: center;
+
+  gap: 0.4rem;
+
+  padding: 0.5rem 0.8rem;
+
+  border-radius: 999px;
+
+  background: var(--ebs-blue-bg);
+
+  color: var(--ebs-navy);
+
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+
+// =====================================================
+// TABLE
+// =====================================================
+
+.quality-table-wrapper {
+  overflow-x: auto;
+}
+
+.quality-table {
+
+  :host ::ng-deep & {
+
+    th {
+      padding: 0.85rem 1rem;
+
+      background: var(--ebs-blue-bg);
+
+      color: var(--ebs-navy);
+
+      font-size: 0.72rem;
+      font-weight: 800;
+
+      white-space: nowrap;
+    }
+
+    td {
+      padding: 0.9rem 1rem;
+
+      color: var(--ebs-text);
+
+      font-size: 0.75rem;
+
+      border-bottom: 1px solid var(--ebs-border);
+    }
+
+    tr:last-child td {
+      border-bottom: 0;
+    }
+  }
+}
+
+
+// =====================================================
+// SUBJECT
+// =====================================================
+
+.subject-cell {
+  display: flex;
+  align-items: center;
+
+  gap: 0.6rem;
+
+  font-weight: 700;
+}
+
+.subject-icon {
+  width: 32px;
+  height: 32px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  flex-shrink: 0;
+
+  border-radius: 8px;
+
+  background: var(--ebs-blue-bg);
+
+  color: var(--ebs-blue);
+}
+
+
+// =====================================================
+// COMMITTEE
+// =====================================================
+
+.committee-number {
+  font-weight: 800;
+
+  color: var(--ebs-navy);
+}
+
+
+// =====================================================
+// QR
+// =====================================================
+
+.qr-code {
+  display: inline-flex;
+  align-items: center;
+
+  gap: 0.3rem;
+
+  color: var(--ebs-text-muted);
+
+  font-size: 0.68rem;
+}
+
+
+// =====================================================
+// STATUS
+// =====================================================
+
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+
+  gap: 0.35rem;
+
+  padding: 0.35rem 0.65rem;
+
+  border-radius: 999px;
+
+  font-size: 0.67rem;
+  font-weight: 800;
+
+  white-space: nowrap;
+
+  &.success {
+    background: rgba(25, 135, 84, 0.1);
+    color: #198754;
+  }
+
+  &.info {
+    background: rgba(21, 101, 192, 0.1);
+    color: var(--ebs-blue);
+  }
+
+  &.danger {
+    background: rgba(220, 53, 69, 0.1);
+    color: #dc3545;
+  }
+}
+
+
+// =====================================================
+// ACTIONS
+// =====================================================
+
+.action-column {
+  min-width: 210px;
+}
+
+.row-actions {
+  display: flex;
+  align-items: center;
+
+  gap: 0.4rem;
+}
+
+.row-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  gap: 0.3rem;
+
+  padding: 0.45rem 0.65rem;
+
+  border-radius: 7px;
+
+  border: 1px solid transparent;
+
+  font-family: inherit;
+
+  font-size: 0.67rem;
+  font-weight: 800;
+
+  cursor: pointer;
+
+  transition: 0.2s ease;
+}
+
+.approve-action {
+  background: rgba(25, 135, 84, 0.09);
+  color: #198754;
+
+  &:hover {
+    background: #198754;
+    color: #fff;
+  }
+}
+
+.reject-action {
+  background: rgba(220, 53, 69, 0.09);
+  color: #dc3545;
+
+  &:hover {
+    background: #dc3545;
+    color: #fff;
+  }
+}
+
+
+// =====================================================
+// NO ACTION
+// =====================================================
+
+.no-action {
+  display: inline-flex;
+  align-items: center;
+
+  gap: 0.35rem;
+
+  color: #198754;
+
+  font-size: 0.68rem;
+  font-weight: 800;
+
+  &.rejected {
+    color: #dc3545;
+  }
+}
+
+
+// =====================================================
+// EMPTY STATE
+// =====================================================
+
+.empty-message {
+  padding: 0 !important;
+}
+
+.empty-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+
+  min-height: 230px;
+
+  padding: 2rem;
+
+  text-align: center;
+}
+
+.empty-icon {
+  width: 62px;
+  height: 62px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  margin-bottom: 0.8rem;
+
+  border-radius: 18px;
+
+  background: var(--ebs-blue-bg);
+
+  color: var(--ebs-blue);
+
+  i {
+    font-size: 1.6rem;
+  }
+}
+
+.empty-state h4 {
+  margin: 0 0 0.35rem;
+
+  color: var(--ebs-navy);
+
+  font-size: 0.9rem;
+}
+
+.empty-state p {
+  margin: 0;
+
+  color: var(--ebs-text-muted);
+
+  font-size: 0.7rem;
+}
+
+
+// =====================================================
+// RESPONSIVE
+// =====================================================
+
+@media (max-width: 800px) {
+
+  .scan-card {
+    grid-template-columns: 1fr;
+  }
+
+  .scan-visual {
+    min-height: 180px;
+  }
+
+  .scan-content {
+    padding: 1.25rem;
+  }
+
+  .table-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .row-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .row-action {
+    width: 100%;
+  }
+}

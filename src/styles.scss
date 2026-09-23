@@ -590,3 +590,495 @@ a {
   }
 
 }
+
+
+// ==========================================
+// REJECT DIALOG
+// ==========================================
+
+:host ::ng-deep {
+
+  .reject-dialog {
+    width: 720px;
+    max-width: calc(100vw - 2rem);
+
+    border-radius: 18px;
+    overflow: hidden;
+
+    .p-dialog-header {
+      padding: 1.25rem 1.5rem;
+      background: var(--ebs-surface, #ffffff);
+      border-bottom: 1px solid var(--ebs-border);
+      color: var(--ebs-navy);
+      font-weight: 800;
+    }
+
+    .p-dialog-content {
+      padding: 0;
+      background: var(--ebs-surface, #ffffff);
+    }
+
+    .p-dialog-footer {
+      padding: 1rem 1.5rem;
+      background: var(--ebs-surface, #ffffff);
+      border-top: 1px solid var(--ebs-border);
+    }
+  }
+}
+
+
+// ==========================================
+// DIALOG CONTENT
+// ==========================================
+
+.reject-dialog-content {
+  padding: 1.5rem;
+}
+
+
+// ==========================================
+// INTRO
+// ==========================================
+
+.reject-intro {
+  display: flex;
+  align-items: center;
+
+  gap: 1rem;
+
+  margin-bottom: 1.25rem;
+}
+
+
+.reject-icon {
+  width: 48px;
+  height: 48px;
+
+  flex-shrink: 0;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 12px;
+
+  background: rgba(220, 53, 69, 0.10);
+  color: #dc3545;
+
+  i {
+    font-size: 1.25rem;
+  }
+}
+
+
+.reject-intro-text {
+
+  h3 {
+    margin: 0 0 0.3rem;
+
+    color: var(--ebs-navy);
+
+    font-size: 1rem;
+    font-weight: 800;
+  }
+
+  p {
+    margin: 0;
+
+    color: var(--ebs-text-muted);
+
+    font-size: 0.78rem;
+    line-height: 1.6;
+  }
+}
+
+
+// ==========================================
+// MATERIAL SUMMARY
+// ==========================================
+
+.material-summary {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr auto 1fr;
+
+  align-items: center;
+
+  padding: 1rem;
+
+  margin-bottom: 1.5rem;
+
+  border: 1px solid var(--ebs-border);
+  border-radius: 12px;
+
+  background: var(--ebs-blue-bg);
+}
+
+
+.summary-item {
+  display: flex;
+  flex-direction: column;
+
+  gap: 0.3rem;
+
+  text-align: center;
+}
+
+
+.summary-label {
+  color: var(--ebs-text-muted);
+
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+
+
+.summary-value {
+  color: var(--ebs-navy);
+
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+
+.summary-divider {
+  width: 1px;
+  height: 32px;
+
+  background: var(--ebs-border);
+}
+
+
+// ==========================================
+// DIALOG FIELD
+// ==========================================
+
+.dialog-field {
+  margin-bottom: 1.25rem;
+
+  > label {
+    display: block;
+
+    margin-bottom: 0.55rem;
+
+    color: var(--ebs-navy);
+
+    font-size: 0.8rem;
+    font-weight: 800;
+  }
+}
+
+
+.required {
+  color: #dc3545;
+}
+
+
+// ==========================================
+// TEXTAREA
+// ==========================================
+
+.reject-textarea {
+  width: 100%;
+
+  min-height: 120px;
+
+  resize: vertical;
+
+  border-radius: 10px !important;
+
+  font-family: inherit;
+
+  line-height: 1.7;
+
+  &:focus {
+    border-color: var(--ebs-blue) !important;
+
+    box-shadow:
+      0 0 0 3px rgba(21, 101, 192, 0.10) !important;
+  }
+}
+
+
+.field-footer {
+  display: flex;
+  justify-content: space-between;
+
+  margin-top: 0.35rem;
+
+  color: var(--ebs-text-muted);
+
+  font-size: 0.68rem;
+}
+
+
+.invalid-counter {
+  color: #dc3545;
+}
+
+
+.field-error {
+  color: #dc3545;
+}
+
+
+// ==========================================
+// REVIEWERS SELECT
+// ==========================================
+
+.reviewers-select {
+  width: 100%;
+}
+
+
+.selected-reviewers {
+  display: flex;
+  flex-wrap: wrap;
+
+  gap: 0.35rem;
+}
+
+
+.reviewer-chip {
+  display: inline-flex;
+  align-items: center;
+
+  gap: 0.35rem;
+
+  padding: 0.2rem 0.45rem;
+
+  border-radius: 999px;
+
+  background: var(--ebs-blue-bg);
+
+  color: var(--ebs-navy);
+
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+
+.reviewer-avatar {
+  width: 28px;
+  height: 28px;
+
+  flex-shrink: 0;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 50%;
+
+  background: var(--ebs-blue);
+  color: #ffffff;
+
+  font-size: 0.7rem;
+  font-weight: 800;
+}
+
+
+.reviewer-chip .reviewer-avatar {
+  width: 22px;
+  height: 22px;
+
+  font-size: 0.6rem;
+}
+
+
+.reviewer-option {
+  display: flex;
+  align-items: center;
+
+  gap: 0.7rem;
+
+  width: 100%;
+
+  padding: 0.2rem 0;
+}
+
+
+.reviewer-info {
+  display: flex;
+  flex-direction: column;
+
+  gap: 0.15rem;
+}
+
+
+.reviewer-name {
+  color: var(--ebs-navy);
+
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+
+.reviewer-role {
+  color: var(--ebs-text-muted);
+
+  font-size: 0.68rem;
+}
+
+
+.field-hint {
+  display: block;
+
+  margin-top: 0.4rem;
+
+  color: var(--ebs-text-muted);
+
+  font-size: 0.68rem;
+}
+
+
+// ==========================================
+// WARNING
+// ==========================================
+
+.reject-warning {
+  display: flex;
+  align-items: flex-start;
+
+  gap: 0.65rem;
+
+  padding: 0.8rem 0.9rem;
+
+  border: 1px solid rgba(21, 101, 192, 0.15);
+
+  border-radius: 10px;
+
+  background: var(--ebs-blue-bg);
+
+  color: var(--ebs-text-muted);
+
+  font-size: 0.72rem;
+
+  line-height: 1.7;
+
+  i {
+    margin-top: 0.15rem;
+
+    color: var(--ebs-blue);
+
+    font-size: 0.9rem;
+  }
+
+  strong {
+    color: var(--ebs-navy);
+  }
+}
+
+
+// ==========================================
+// DIALOG FOOTER
+// ==========================================
+
+.dialog-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+
+  gap: 0.65rem;
+}
+
+
+.cancel-btn {
+  color: var(--ebs-text-muted) !important;
+}
+
+
+.reject-submit-btn {
+  min-width: 130px;
+
+  border-radius: 9px !important;
+
+  background: #dc3545 !important;
+
+  border-color: #dc3545 !important;
+
+  &:hover:not(:disabled) {
+    background: #c82333 !important;
+
+    border-color: #c82333 !important;
+  }
+}
+
+
+// ==========================================
+// MENU REJECT ITEM
+// ==========================================
+
+:host ::ng-deep {
+
+  .reject-menu-item {
+
+    .p-menuitem-link {
+      color: #dc3545 !important;
+    }
+
+    .p-menuitem-icon {
+      color: #dc3545 !important;
+    }
+  }
+}
+
+
+// ==========================================
+// RESPONSIVE
+// ==========================================
+
+@media (max-width: 600px) {
+
+  :host ::ng-deep {
+
+    .reject-dialog {
+      width: calc(100vw - 1rem);
+
+      .p-dialog-header {
+        padding: 1rem;
+      }
+
+      .p-dialog-footer {
+        padding: 0.85rem 1rem;
+      }
+    }
+  }
+
+
+  .reject-dialog-content {
+    padding: 1rem;
+  }
+
+
+  .material-summary {
+    grid-template-columns: 1fr;
+
+    gap: 0.8rem;
+  }
+
+
+  .summary-divider {
+    width: 100%;
+    height: 1px;
+  }
+
+
+  .summary-item {
+    flex-direction: row;
+
+    justify-content: space-between;
+
+    text-align: start;
+  }
+
+
+  .dialog-footer {
+    flex-direction: column-reverse;
+
+    width: 100%;
+
+    button {
+      width: 100%;
+    }
+  }
+}
