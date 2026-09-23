@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterOutlet } from '@angular/router';
 
@@ -10,5 +10,8 @@ import { RouterOutlet } from '@angular/router';
   styleUrl: './auth-layout.component.scss'
 })
 export class AuthLayoutComponent {
+
   currentYear = new Date().getFullYear();
+
+
 }

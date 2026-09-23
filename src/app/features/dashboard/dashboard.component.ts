@@ -1,4 +1,4 @@
-import { AfterViewChecked, AfterViewInit, Component, ElementRef, OnDestroy, ViewChild } from '@angular/core';
+import { AfterViewChecked, AfterViewInit, Component, ElementRef, OnDestroy, signal, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import Chart from 'chart.js/auto';
@@ -21,6 +21,7 @@ export class DashboardComponent implements AfterViewChecked, AfterViewInit, OnDe
   distributionChart!: ElementRef<HTMLCanvasElement>;
 
   private charts: Chart[] = [];
+  readonly currentDate = signal(new Date());
 
   private chartResizeObserver?: ResizeObserver;
   private chartIntersectionObserver?: IntersectionObserver;
@@ -48,7 +49,17 @@ export class DashboardComponent implements AfterViewChecked, AfterViewInit, OnDe
     this.chartInitAttempts = 0;
     this.tryInitializeCharts();
   }
+  get currentDayLabel(): string {
+    return new Intl.DateTimeFormat('ar-EG', { weekday: 'long' }).format(this.currentDate());
+  }
 
+  get currentDateLabel(): string {
+    return new Intl.DateTimeFormat('ar-EG', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric'
+    }).format(this.currentDate());
+  }
   private tryInitializeCharts(): void {
     requestAnimationFrame(() => {
       if (

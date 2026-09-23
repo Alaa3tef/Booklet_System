@@ -69,11 +69,11 @@
       <div class="date-info">
 
         <span class="date-day">
-          الثلاثاء
+          <span class="live-date-value">{{ currentDayLabel }}</span>
         </span>
 
         <strong>
-          16 سبتمبر 2026
+          <span class="live-date-value">{{ currentDateLabel }}</span>
         </strong>
 
       </div>
@@ -82,6 +82,8 @@
 
 
     <!-- NOTIFICATIONS -->
+
+    <div class="notification-wrapper">
 
     <button
       type="button"
@@ -104,6 +106,35 @@
       }
 
     </button>
+
+      @if (showNotifications()) {
+        <section class="notifications-panel" aria-label="الإشعارات">
+          <div class="notifications-header">
+            <strong>الإشعارات</strong>
+            @if (notificationsCount > 0) {
+              <button type="button" (click)="markAllNotificationsAsRead()">تعليم الكل كمقروء</button>
+            }
+          </div>
+
+          <div class="notifications-list">
+            @for (notification of notifications(); track notification.id) {
+              <button
+                type="button"
+                class="notification-item"
+                [class.unread]="!notification.read"
+                (click)="markAsRead(notification.id)"
+              >
+                <i [class]="notification.icon"></i>
+                <span>
+                  <strong>{{ notification.title }}</strong>
+                  <small>{{ notification.message }}</small>
+                </span>
+              </button>
+            }
+          </div>
+        </section>
+      }
+    </div>
 
 
     <!-- USER -->

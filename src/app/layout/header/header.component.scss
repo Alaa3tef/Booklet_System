@@ -250,6 +250,23 @@
 }
 
 
+.date-day,
+.date-info > strong {
+  /* Hide the legacy fixed text; the nested value is generated from the current date. */
+  font-size: 0 !important;
+}
+
+.live-date-value {
+  font-size: 0.68rem;
+}
+
+.date-info > strong .live-date-value {
+  color: var(--ebs-navy);
+  font-size: 0.76rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
 .date-info {
 
   display: flex;
@@ -291,6 +308,89 @@
 /* ==================================================
    NOTIFICATION
 ================================================== */
+
+.notification-wrapper {
+  position: relative;
+}
+
+.notifications-panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  width: min(340px, calc(100vw - 2rem));
+  background: #fff;
+  border: 1px solid var(--ebs-border);
+  border-radius: 14px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.14);
+  overflow: hidden;
+  z-index: 999;
+  animation: dropdownFadeIn 0.15s ease-out;
+}
+
+.notifications-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid var(--ebs-border);
+  color: var(--ebs-navy);
+
+  button {
+    border: 0;
+    background: transparent;
+    color: var(--ebs-blue);
+    cursor: pointer;
+    font: inherit;
+    font-size: 0.72rem;
+    font-weight: 700;
+  }
+}
+
+.notifications-list {
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.notification-item {
+  width: 100%;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  padding: 0.8rem 1rem;
+  border: 0;
+  border-bottom: 1px solid #f1f5f9;
+  background: #fff;
+  color: var(--ebs-navy);
+  cursor: pointer;
+  font-family: inherit;
+  text-align: right;
+
+  &:hover,
+  &.unread {
+    background: var(--ebs-blue-bg);
+  }
+
+  > i {
+    margin-top: 0.15rem;
+    color: var(--ebs-blue);
+  }
+
+  > span {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 0.2rem;
+  }
+
+  strong { font-size: 0.78rem; }
+
+  small {
+    color: var(--ebs-text-muted);
+    font-size: 0.7rem;
+    line-height: 1.4;
+  }
+}
 
 .notification-btn {
 
