@@ -56,6 +56,12 @@ html {
   overflow-y: scroll;
 }
 
+// Auth screens are designed to fit the viewport and should not display the
+// application's persistent scrollbar.
+html.auth-no-scroll {
+  overflow-y: hidden;
+}
+
 
 body {
 
