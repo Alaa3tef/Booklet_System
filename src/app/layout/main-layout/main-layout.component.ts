@@ -1,9 +1,10 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { ActivatedRoute, NavigationEnd, Router } from '@angular/router';
 import { filter } from 'rxjs';
 import { SidebarComponent } from '../sidebar/sidebar.component';
 import { Breadcrumb, HeaderComponent } from '../header/header.component';
+import { AuthService } from '../../core/services/auth.service';
 
 @Component({
   selector: 'app-main-layout',
@@ -13,11 +14,16 @@ import { Breadcrumb, HeaderComponent } from '../header/header.component';
   styleUrl: './main-layout.component.scss'
 })
 export class MainLayoutComponent implements OnInit {
+  private readonly authService = inject(AuthService);
   sidebarOpen = false;
 
-  userName = 'أحمد محمد';
+  get userName(): string {
+    return this.authService.currentUser()?.fullName || 'أحمد محمد';
+  }
 
-  userRole = 'It';
+  get userRole(): string {
+    return this.authService.currentUser()?.role || 'مسؤول النظام IT';
+  }
 
   breadcrumbs: Breadcrumb[] = [];
 

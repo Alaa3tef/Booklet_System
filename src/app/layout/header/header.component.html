@@ -108,37 +108,71 @@
 
     <!-- USER -->
 
-    <button
-      type="button"
-      class="user-menu"
+    <div class="user-menu-wrapper">
+      <button
+        type="button"
+        class="user-menu"
+        (click)="openUserMenu()"
+        [attr.aria-expanded]="showUserDropdown()"
+      >
+        <p-avatar
+          icon="pi pi-user"
+          shape="circle"
+          styleClass="user-avatar"
+        ></p-avatar>
 
-      (click)="openUserMenu()"
-    >
-
-      <p-avatar
-        icon="pi pi-user"
-        shape="circle"
-        styleClass="user-avatar"
-      ></p-avatar>
-
-
-      <span class="user-info">
-
-        <span class="user-name">
-          {{ userName }}
+        <span class="user-info">
+          <span class="user-name">
+            {{ userName }}
+          </span>
+          <span class="user-role">
+            {{ userRole }}
+          </span>
         </span>
 
-        <span class="user-role">
-          {{ userRole }}
-        </span>
+        <i
+          class="pi pi-chevron-down user-arrow"
+          [class.rotated]="showUserDropdown()"
+        ></i>
+      </button>
 
-      </span>
+      <!-- Dropdown Panel -->
+      @if (showUserDropdown()) {
+        <div class="user-dropdown-panel" (click)="$event.stopPropagation()">
+          <div class="dropdown-user-header">
+            <span class="dropdown-full-name">{{ userName }}</span>
+            <span class="dropdown-role-badge">{{ userRole }}</span>
+            @if (currentUser?.email) {
+              <span class="dropdown-email">{{ currentUser?.email }}</span>
+            }
+          </div>
 
+          <div class="dropdown-divider"></div>
 
-      <i class="pi pi-chevron-down user-arrow"></i>
+          <ul class="dropdown-menu-list">
+            <li>
+              <a routerLink="/users" class="dropdown-item" (click)="closeUserMenu()">
+                <i class="pi pi-users"></i>
+                <span>إدارة المستخدمين</span>
+              </a>
+            </li>
+            <li>
+              <a routerLink="/settings" class="dropdown-item" (click)="closeUserMenu()">
+                <i class="pi pi-cog"></i>
+                <span>الإعدادات والصلاحيات</span>
+              </a>
+            </li>
+          </ul>
 
-    </button>
+          <div class="dropdown-divider"></div>
 
+          <button type="button" class="dropdown-logout-btn" (click)="logout()">
+            <i class="pi pi-sign-out"></i>
+            <span>تسجيل الخروج</span>
+          </button>
+        </div>
+      }
+    </div>
   </div>
 
 </header>
