@@ -17,99 +17,44 @@
 
   <div panel-content>
 
-    <!-- ================================================= -->
-    <!-- SCAN SECTION -->
-    <!-- ================================================= -->
+    <!-- ========================= -->
+    <!-- Header -->
+    <!-- ========================= -->
 
-    <section class="scan-section">
+    <section class="quality-header">
 
-      <div class="scan-card">
+      <div>
 
-        <div class="scan-visual">
+        <span class="section-eyebrow">
+          QUALITY CONTROL
+        </span>
 
-          <div
-            class="scan-frame"
-            [class.scanning]="isScanning"
-          >
+        <h2>
+          فحص ومراجعة المواد
+        </h2>
 
-            <span class="corner top-left"></span>
-            <span class="corner top-right"></span>
-            <span class="corner bottom-left"></span>
-            <span class="corner bottom-right"></span>
+        <p>
+          قم بفتح المادة ثم مسح جميع الأظرف والغلاف النهائي
+          قبل اعتماد نتيجة المراجعة.
+        </p>
 
-            <i class="pi pi-qrcode"></i>
+      </div>
 
-            <div
-              *ngIf="isScanning"
-              class="scan-line"
-            ></div>
+      <div class="quality-summary">
 
-          </div>
-
+        <div class="summary-icon">
+          <i class="pi pi-qrcode"></i>
         </div>
 
+        <div>
 
-        <div class="scan-content">
+          <strong>
+            {{ rows().length }}
+          </strong>
 
-          <span class="scan-eyebrow">
-            <i class="pi pi-qrcode"></i>
-            QR QUALITY SCAN
+          <span>
+            مادة للمراجعة
           </span>
-
-          <h3>
-            مسح QR اللجنة
-          </h3>
-
-          <p>
-            امسح الـ QR الخارجي للجنة لعرض بياناتها
-            وبدء عملية المراجعة.
-          </p>
-
-
-          <button
-            type="button"
-            class="scan-button"
-            [disabled]="isScanning"
-            (click)="startScan()"
-          >
-
-            <i
-              class="pi"
-              [ngClass]="
-                isScanning
-                  ? 'pi-spin pi-spinner'
-                  : 'pi-qrcode'
-              "
-            ></i>
-
-            <span>
-              {{
-                isScanning
-                  ? 'جاري المسح...'
-                  : 'بدء Scan'
-              }}
-            </span>
-
-          </button>
-
-
-          <div
-            *ngIf="scanMessage"
-            class="scan-message"
-          >
-
-            <i
-              class="pi"
-              [ngClass]="
-                isScanning
-                  ? 'pi-spin pi-spinner'
-                  : 'pi-check-circle'
-              "
-            ></i>
-
-            {{ scanMessage }}
-
-          </div>
 
         </div>
 
@@ -118,9 +63,9 @@
     </section>
 
 
-    <!-- ================================================= -->
-    <!-- SCANNED DATA -->
-    <!-- ================================================= -->
+    <!-- ========================= -->
+    <!-- Table -->
+    <!-- ========================= -->
 
     <section class="table-section">
 
@@ -129,62 +74,57 @@
         <div>
 
           <span class="table-eyebrow">
-            نتائج الـ Scan
+            المواد
           </span>
 
-          <h4>
-            اللجان التي تم مسحها
-          </h4>
-
-          <p>
-            يمكنك مراجعة كل لجنة واتخاذ الإجراء المناسب.
-          </p>
+          <h3>
+            قائمة المواد المطلوب فحصها
+          </h3>
 
         </div>
 
-
         <div class="results-badge">
-
-          <i class="pi pi-database"></i>
-
-          {{ rows().length }}
-
-          لجنة
-
+          {{ rows().length }} مادة
         </div>
 
       </div>
 
 
-      <!-- ================================================= -->
-      <!-- TABLE -->
-      <!-- ================================================= -->
-
       <div class="quality-table-wrapper">
 
         <p-table
           [value]="rows()"
-          styleClass="p-datatable-sm quality-table"
-          responsiveLayout="scroll"
+          [tableStyle]="{ 'min-width': '950px' }"
+          styleClass="quality-table"
         >
-
-          <!-- HEADER -->
 
           <ng-template pTemplate="header">
 
             <tr>
 
-              <th>م</th>
+              <th class="index-column">
+                #
+              </th>
 
-              <th>المادة</th>
+              <th>
+                المادة
+              </th>
 
-              <th>رقم اللجنة</th>
+              <th>
+                رقم اللجنة
+              </th>
 
-              <th>المحافظة</th>
+              <th>
+                المحافظة
+              </th>
 
-              <th>QR</th>
+              <th>
+                QR
+              </th>
 
-              <th>الحالة</th>
+              <th>
+                الحالة
+              </th>
 
               <th class="action-column">
                 الإجراء
@@ -195,8 +135,6 @@
           </ng-template>
 
 
-          <!-- BODY -->
-
           <ng-template
             pTemplate="body"
             let-row
@@ -204,18 +142,14 @@
 
             <tr>
 
-              <!-- INDEX -->
-
               <td>
-
                 <span class="row-index">
                   {{ row.index }}
                 </span>
-
               </td>
 
 
-              <!-- SUBJECT -->
+              <!-- Subject -->
 
               <td>
 
@@ -225,16 +159,24 @@
                     <i class="pi pi-book"></i>
                   </div>
 
-                  <span>
-                    {{ row.subject }}
-                  </span>
+                  <div>
+
+                    <strong>
+                      {{ row.subject }}
+                    </strong>
+
+                    <small>
+                      مادة امتحانية
+                    </small>
+
+                  </div>
 
                 </div>
 
               </td>
 
 
-              <!-- COMMITTEE -->
+              <!-- Committee -->
 
               <td>
 
@@ -245,7 +187,7 @@
               </td>
 
 
-              <!-- GOVERNORATE -->
+              <!-- Governorate -->
 
               <td>
                 {{ row.governorate }}
@@ -264,27 +206,22 @@
               </td>
 
 
-              <!-- STATUS -->
+              <!-- Status -->
 
               <td>
 
                 <span
                   class="status-pill"
-                  [ngClass]="row.statusTone"
+                  [class.success]="row.status === 'تم المراجعة'"
+                  [class.info]="row.status === 'قيد المراجعة'"
+                  [class.danger]="row.status === 'مرفوض'"
                 >
 
                   <i
                     class="pi"
-                    [ngClass]="{
-                      'pi-clock':
-                        row.status === 'قيد المراجعة',
-
-                      'pi-check-circle':
-                        row.status === 'تم المراجعة',
-
-                      'pi-times-circle':
-                        row.status === 'مرفوض'
-                    }"
+                    [class.pi-check-circle]="row.status === 'تم المراجعة'"
+                    [class.pi-clock]="row.status === 'قيد المراجعة'"
+                    [class.pi-times-circle]="row.status === 'مرفوض'"
                   ></i>
 
                   {{ row.status }}
@@ -294,44 +231,28 @@
               </td>
 
 
-              <!-- ACTION -->
+              <!-- Actions -->
 
-              <td class="action-column">
+              <td>
 
-                <!-- ================================= -->
-                <!-- PENDING -->
-                <!-- ================================= -->
+                <!-- قيد المراجعة -->
 
                 <div
-                  *ngIf="hasActions(row)"
                   class="row-actions"
+                  *ngIf="row.status === 'قيد المراجعة'"
                 >
 
                   <button
+                    pButton
                     type="button"
-                    class="row-action approve-action"
-                    (click)="approve(row)"
+                    class="scan-row-button"
+                    (click)="openScanDialog(row)"
                   >
 
-                    <i class="pi pi-check"></i>
+                    <i class="pi pi-qrcode"></i>
 
                     <span>
-                      تم المراجعة
-                    </span>
-
-                  </button>
-
-
-                  <button
-                    type="button"
-                    class="row-action reject-action"
-                    (click)="openRejectDialog(row)"
-                  >
-
-                    <i class="pi pi-times"></i>
-
-                    <span>
-                      رفض
+                      بدء الفحص
                     </span>
 
                   </button>
@@ -339,36 +260,36 @@
                 </div>
 
 
-                <!-- ================================= -->
-                <!-- REVIEWED -->
-                <!-- ================================= -->
+                <!-- تم المراجعة -->
 
-                <span
-                  *ngIf="row.status === 'تم المراجعة'"
+                <div
                   class="no-action"
+                  *ngIf="row.status === 'تم المراجعة'"
                 >
 
                   <i class="pi pi-check-circle"></i>
 
-                  تمت المراجعة
+                  <span>
+                    تمت المراجعة
+                  </span>
 
-                </span>
+                </div>
 
 
-                <!-- ================================= -->
-                <!-- REJECTED -->
-                <!-- ================================= -->
+                <!-- مرفوض -->
 
-                <span
-                  *ngIf="row.status === 'مرفوض'"
+                <div
                   class="no-action rejected"
+                  *ngIf="row.status === 'مرفوض'"
                 >
 
                   <i class="pi pi-times-circle"></i>
 
-                  تم الرفض
+                  <span>
+                    تم الرفض
+                  </span>
 
-                </span>
+                </div>
 
               </td>
 
@@ -377,7 +298,7 @@
           </ng-template>
 
 
-          <!-- EMPTY -->
+          <!-- Empty -->
 
           <ng-template pTemplate="emptymessage">
 
@@ -385,24 +306,18 @@
 
               <td
                 colspan="7"
-                class="empty-message"
+                class="empty-state"
               >
 
-                <div class="empty-state">
+                <i class="pi pi-inbox"></i>
 
-                  <div class="empty-icon">
-                    <i class="pi pi-qrcode"></i>
-                  </div>
+                <strong>
+                  لا توجد مواد للمراجعة
+                </strong>
 
-                  <h4>
-                    لم يتم عمل Scan حتى الآن
-                  </h4>
-
-                  <p>
-                    اضغط على "بدء Scan" لإضافة بيانات اللجنة.
-                  </p>
-
-                </div>
+                <span>
+                  ستظهر المواد هنا بمجرد إرسالها لمرحلة الجودة.
+                </span>
 
               </td>
 
@@ -417,9 +332,681 @@
     </section>
 
 
-    <!-- ================================================= -->
+    <!-- ====================================================== -->
+    <!-- SCAN DIALOG -->
+    <!-- ====================================================== -->
+
+    <p-dialog
+      [(visible)]="scanDialogVisible"
+      [modal]="true"
+      [draggable]="false"
+      [resizable]="false"
+      [closable]="!isScanning"
+      [dismissableMask]="!isScanning"
+      [style]="{ width: '1100px', maxWidth: '95vw' }"
+      styleClass="quality-scan-dialog"
+      (onHide)="closeScanDialog()"
+    >
+
+      <!-- Header -->
+
+      <ng-template pTemplate="header">
+
+        <div class="scan-dialog-header">
+
+          <div class="dialog-title-icon">
+            <i class="pi pi-qrcode"></i>
+          </div>
+
+          <div>
+
+            <span>
+              QUALITY SCAN
+            </span>
+
+            <h3>
+              فحص المادة
+            </h3>
+
+          </div>
+
+        </div>
+
+      </ng-template>
+
+
+      <div
+        class="scan-dialog-content"
+        *ngIf="selectedRow"
+      >
+
+
+        <!-- ===================================== -->
+        <!-- Material Info -->
+        <!-- ===================================== -->
+
+        <div class="material-info-card">
+
+          <div class="material-main">
+
+            <div class="material-icon">
+              <i class="pi pi-book"></i>
+            </div>
+
+            <div>
+
+              <span>
+                المادة
+              </span>
+
+              <strong>
+                {{ selectedRow.subject }}
+              </strong>
+
+            </div>
+
+          </div>
+
+
+          <div class="material-meta">
+
+            <div>
+              <span>رقم اللجنة</span>
+              <strong>
+                {{ selectedRow.committeeNumber }}
+              </strong>
+            </div>
+
+            <div>
+              <span>المحافظة</span>
+              <strong>
+                {{ selectedRow.governorate }}
+              </strong>
+            </div>
+
+          </div>
+
+        </div>
+
+
+        <!-- ===================================== -->
+        <!-- Progress -->
+        <!-- ===================================== -->
+
+        <div class="scan-progress-section">
+
+          <div class="progress-info">
+
+            <div>
+
+              <span>
+                تقدم الفحص
+              </span>
+
+              <strong>
+                {{ completedScans }} /
+                {{ scanSteps.length }}
+              </strong>
+
+            </div>
+
+            <span>
+              {{ scanProgress }}%
+            </span>
+
+          </div>
+
+          <div class="progress-track">
+
+            <div
+              class="progress-value"
+              [style.width.%]="scanProgress"
+            ></div>
+
+          </div>
+
+        </div>
+
+
+        <!-- ===================================== -->
+        <!-- Main Scan Area -->
+        <!-- ===================================== -->
+
+        <div class="scan-workspace">
+
+
+          <!-- ============================== -->
+          <!-- Left: Scan Steps -->
+          <!-- ============================== -->
+
+          <aside class="scan-steps-panel">
+
+            <div class="steps-title">
+
+              <span>
+                مراحل الفحص
+              </span>
+
+              <small>
+                {{ scanSteps.length }} عمليات Scan
+              </small>
+
+            </div>
+
+
+            <div class="scan-steps">
+
+              <button
+                type="button"
+                class="scan-step"
+                *ngFor="
+                  let step of scanSteps;
+                  let i = index
+                "
+                [class.active]="i === currentScanIndex"
+                [class.completed]="step.scanned"
+                [class.locked]="
+                  i > currentScanIndex &&
+                  !step.scanned
+                "
+                (click)="selectScanStep(i)"
+              >
+
+                <div class="step-number">
+
+                  <i
+                    *ngIf="step.scanned"
+                    class="pi pi-check"
+                  ></i>
+
+                  <span *ngIf="!step.scanned">
+                    {{ i + 1 }}
+                  </span>
+
+                </div>
+
+
+                <div class="step-info">
+
+                  <strong>
+                    {{ step.title }}
+                  </strong>
+
+                  <small>
+                    {{ step.subtitle }}
+                  </small>
+
+                </div>
+
+
+                <i
+                  *ngIf="step.type === 'cover'"
+                  class="pi pi-file cover-icon"
+                ></i>
+
+              </button>
+
+            </div>
+
+          </aside>
+
+
+          <!-- ============================== -->
+          <!-- Right: Scanner -->
+          <!-- ============================== -->
+
+          <section class="scanner-area">
+
+
+            <!-- Scanner + Result -->
+
+            <div class="scanner-and-data">
+
+
+              <!-- Scanner -->
+
+              <div class="scanner-card">
+
+                <div class="scanner-label">
+
+                  <i class="pi pi-qrcode"></i>
+
+                  <span>
+                    {{ currentStep?.title }}
+                  </span>
+
+                </div>
+
+
+                <div class="scanner-visual">
+
+                  <div class="scanner-corners">
+
+                    <span class="corner top-right"></span>
+                    <span class="corner top-left"></span>
+                    <span class="corner bottom-right"></span>
+                    <span class="corner bottom-left"></span>
+
+                  </div>
+
+
+                  <div class="fake-qr">
+
+                    <div class="qr-pattern">
+
+                      <span></span>
+                      <span></span>
+                      <span></span>
+                      <span></span>
+                      <span></span>
+                      <span></span>
+                      <span></span>
+                      <span></span>
+                      <span></span>
+
+                    </div>
+
+                  </div>
+
+
+                  <div
+                    class="scanner-line"
+                    *ngIf="isScanning"
+                  ></div>
+
+
+                  <div
+                    class="scanner-loading"
+                    *ngIf="isScanning"
+                  >
+
+                    <i class="pi pi-spin pi-spinner"></i>
+
+                    <span>
+                      جاري المسح...
+                    </span>
+
+                  </div>
+
+                </div>
+
+
+                <button
+                  pButton
+                  type="button"
+                  class="start-scan-button"
+                  [disabled]="
+                    isScanning ||
+                    currentStep?.scanned
+                  "
+                  (click)="startScan()"
+                >
+
+                  <i
+                    class="pi"
+                    [class.pi-qrcode]="!isScanning"
+                    [class.pi-spin]="isScanning"
+                    [class.pi-spinner]="isScanning"
+                  ></i>
+
+                  <span>
+
+                    {{
+                      isScanning
+                        ? 'جاري المسح...'
+                        : currentStep?.scanned
+                          ? 'تم المسح'
+                          : 'بدء Scan'
+                    }}
+
+                  </span>
+
+                </button>
+
+
+                <div
+                  class="scan-success-message"
+                  *ngIf="
+                    currentStep?.scanned
+                  "
+                >
+
+                  <i class="pi pi-check-circle"></i>
+
+                  تم قراءة الـ QR بنجاح
+
+                </div>
+
+              </div>
+
+
+              <!-- ========================== -->
+              <!-- Scan Data -->
+              <!-- ========================== -->
+
+              <div class="scan-result-card">
+
+                <div class="result-card-header">
+
+                  <div>
+
+                    <span>
+                      بيانات الـ Scan
+                    </span>
+
+                    <strong>
+                      نتيجة القراءة
+                    </strong>
+
+                  </div>
+
+                  <span
+                    class="result-status"
+                    *ngIf="currentStep?.scanned"
+                  >
+
+                    <i class="pi pi-check"></i>
+
+                    ناجح
+
+                  </span>
+
+                </div>
+
+
+                <!-- Before Scan -->
+
+                <div
+                  class="result-empty"
+                  *ngIf="
+                    !currentStep?.scanned
+                  "
+                >
+
+                  <div class="result-empty-icon">
+
+                    <i class="pi pi-database"></i>
+
+                  </div>
+
+                  <strong>
+                    في انتظار الـ Scan
+                  </strong>
+
+                  <span>
+                    بمجرد قراءة الـ QR ستظهر
+                    بيانات المادة هنا.
+                  </span>
+
+                </div>
+
+
+                <!-- After Scan -->
+
+                <div
+                  class="result-data"
+                  *ngIf="
+                    currentStep?.scanned &&
+                    currentStep?.data as data
+                  "
+                >
+
+                  <div class="data-row">
+
+                    <span>
+                      نوع الـ Scan
+                    </span>
+
+                    <strong>
+                      {{ data.scanType }}
+                    </strong>
+
+                  </div>
+
+
+                  <div class="data-row">
+
+                    <span>
+                      QR Code
+                    </span>
+
+                    <strong class="data-qr">
+                      {{ data.qrCode }}
+                    </strong>
+
+                  </div>
+
+
+                  <div class="data-row">
+
+                    <span>
+                      المادة
+                    </span>
+
+                    <strong>
+                      {{ data.material }}
+                    </strong>
+
+                  </div>
+
+
+                  <div class="data-row">
+
+                    <span>
+                      رقم اللجنة
+                    </span>
+
+                    <strong>
+                      {{ data.committeeNumber }}
+                    </strong>
+
+                  </div>
+
+
+                  <div class="data-row">
+
+                    <span>
+                      المحافظة
+                    </span>
+
+                    <strong>
+                      {{ data.governorate }}
+                    </strong>
+
+                  </div>
+
+
+                  <div class="data-row">
+
+                    <span>
+                      وقت القراءة
+                    </span>
+
+                    <strong>
+                      {{ data.scannedAt }}
+                    </strong>
+
+                  </div>
+
+                </div>
+
+              </div>
+
+            </div>
+
+
+            <!-- ================================= -->
+            <!-- Scan Message -->
+            <!-- ================================= -->
+
+            <div
+              class="scan-message"
+              *ngIf="scanMessage"
+            >
+
+              <i class="pi pi-info-circle"></i>
+
+              <span>
+                {{ scanMessage }}
+              </span>
+
+            </div>
+
+
+            <!-- ================================= -->
+            <!-- Navigation -->
+            <!-- ================================= -->
+
+            <div
+              class="scan-navigation"
+              *ngIf="!allScansCompleted"
+            >
+
+              <button
+                pButton
+                type="button"
+                class="secondary-nav-button"
+                [disabled]="
+                  currentScanIndex === 0 ||
+                  isScanning
+                "
+                (click)="previousScan()"
+              >
+
+                <i class="pi pi-arrow-right"></i>
+
+                السابق
+
+              </button>
+
+
+              <div class="navigation-info">
+
+                <span>
+                  المرحلة
+                </span>
+
+                <strong>
+                  {{ currentScanIndex + 1 }}
+                  /
+                  {{ scanSteps.length }}
+                </strong>
+
+              </div>
+
+
+              <button
+                pButton
+                type="button"
+                class="secondary-nav-button"
+                [disabled]="
+                  !currentStep?.scanned ||
+                  isScanning
+                "
+                (click)="nextScan()"
+              >
+
+                التالي
+
+                <i class="pi pi-arrow-left"></i>
+
+              </button>
+
+            </div>
+
+
+            <!-- ================================= -->
+            <!-- Final Decision -->
+            <!-- ================================= -->
+
+            <div
+              class="final-decision"
+              *ngIf="allScansCompleted"
+            >
+
+              <div class="decision-info">
+
+                <div class="decision-icon">
+                  <i class="pi pi-check-circle"></i>
+                </div>
+
+                <div>
+
+                  <strong>
+                    اكتمل فحص المادة
+                  </strong>
+
+                  <span>
+                    تم الانتهاء من جميع عمليات الـ Scan.
+                    يمكنك الآن تسجيل نتيجة المراجعة.
+                  </span>
+
+                </div>
+
+              </div>
+
+
+              <div class="decision-actions">
+
+                <button
+                  pButton
+                  type="button"
+                  class="approve-material-button"
+                  (click)="approveMaterial()"
+                >
+
+                  <i class="pi pi-check"></i>
+
+                  تم المراجعة
+
+                </button>
+
+
+                <button
+                  pButton
+                  type="button"
+                  class="reject-material-button"
+                  (click)="openRejectDialog()"
+                >
+
+                  <i class="pi pi-times"></i>
+
+                  رفض
+
+                </button>
+
+              </div>
+
+            </div>
+
+          </section>
+
+        </div>
+
+      </div>
+
+
+      <!-- Dialog Footer -->
+
+      <ng-template pTemplate="footer">
+
+        <button
+          pButton
+          type="button"
+          class="scan-close-button"
+          label="إغلاق"
+          [disabled]="isScanning"
+          (click)="closeScanDialog()"
+        ></button>
+
+      </ng-template>
+
+    </p-dialog>
+
+
+    <!-- ====================================================== -->
     <!-- REJECT DIALOG -->
-    <!-- ================================================= -->
+    <!-- ====================================================== -->
 
     <p-dialog
       [(visible)]="rejectDialogVisible"
@@ -427,19 +1014,36 @@
       [draggable]="false"
       [resizable]="false"
       [closable]="!rejectSubmitting"
-      [dismissableMask]="!rejectSubmitting"
-      [style]="{
-        width: '720px',
-        maxWidth: 'calc(100vw - 2rem)'
-      }"
-      appendTo="body"
+      [style]="{ width: '720px' }"
       styleClass="reject-dialog"
-      header="رفض المادة"
     >
+
+      <ng-template pTemplate="header">
+
+        <div class="reject-header">
+
+          <i class="pi pi-times-circle"></i>
+
+          <div>
+
+            <strong>
+              رفض المادة
+            </strong>
+
+            <span>
+              تسجيل سبب الرفض وتحديد المراجعين
+            </span>
+
+          </div>
+
+        </div>
+
+      </ng-template>
+
 
       <div class="reject-dialog-content">
 
-        <!-- INTRO -->
+        <!-- Intro -->
 
         <div class="reject-intro">
 
@@ -452,12 +1056,12 @@
           <div class="reject-intro-text">
 
             <h3>
-              رفض مادة {{ selectedRow?.subject }}
+              رفض {{ selectedRow?.subject }}
             </h3>
 
             <p>
-              يرجى توضيح سبب الرفض وتحديد المستخدمين
-              المسؤولين عن المراجعة.
+              يرجى تسجيل سبب الرفض واختيار المستخدمين
+              المسؤولين عن متابعة الإجراء.
             </p>
 
           </div>
@@ -465,7 +1069,7 @@
         </div>
 
 
-        <!-- MATERIAL SUMMARY -->
+        <!-- Material Summary -->
 
         <div class="material-summary">
 
@@ -475,9 +1079,9 @@
               المادة
             </span>
 
-            <span class="summary-value">
+            <strong class="summary-value">
               {{ selectedRow?.subject }}
-            </span>
+            </strong>
 
           </div>
 
@@ -488,12 +1092,12 @@
           <div class="summary-item">
 
             <span class="summary-label">
-              رقم اللجنة
+              اللجنة
             </span>
 
-            <span class="summary-value">
+            <strong class="summary-value">
               {{ selectedRow?.committeeNumber }}
-            </span>
+            </strong>
 
           </div>
 
@@ -507,141 +1111,69 @@
               المحافظة
             </span>
 
-            <span class="summary-value">
+            <strong class="summary-value">
               {{ selectedRow?.governorate }}
-            </span>
-
-          </div>
-
-
-          <div class="summary-divider"></div>
-
-
-          <div class="summary-item">
-
-            <span class="summary-label">
-              الحالة الحالية
-            </span>
-
-            <span class="summary-value">
-              {{ selectedRow?.status }}
-            </span>
+            </strong>
 
           </div>
 
         </div>
 
 
-        <!-- REASON -->
+        <!-- Reason -->
 
         <div class="dialog-field">
 
-          <label for="rejectReason">
-
+          <label>
             سبب الرفض
-
-            <span class="required">
-              *
-            </span>
-
+            <span class="required">*</span>
           </label>
-
 
           <textarea
             pTextarea
-            id="rejectReason"
             [(ngModel)]="rejectReason"
-            [rows]="5"
-            [autoResize]="true"
-            maxlength="500"
-            placeholder="اكتب سبب رفض المادة بالتفصيل..."
             class="reject-textarea"
+            maxlength="500"
+            rows="5"
+            placeholder="اكتب سبب رفض المادة بالتفصيل..."
           ></textarea>
-
 
           <div class="field-footer">
 
-            <small
-              [class.invalid-counter]="
-                rejectReason.length > 0 &&
-                rejectReason.trim().length < 10
-              "
-            >
-              {{ rejectReason.length }}/500
-            </small>
+            <span>
+              يجب أن يكون سبب الرفض واضحًا ومحددًا.
+            </span>
 
-
-            <small
-              *ngIf="
-                rejectReason.length > 0 &&
-                rejectReason.trim().length < 10
-              "
-              class="field-error"
-            >
-              يجب أن يكون سبب الرفض 10 أحرف على الأقل
-            </small>
+            <span>
+              {{ rejectReason.length }} / 500
+            </span>
 
           </div>
 
         </div>
 
 
-        <!-- REVIEWERS -->
+        <!-- Reviewers -->
 
         <div class="dialog-field">
 
-          <label for="reviewers">
-
-            المستخدمون المسؤولون عن المراجعة
-
-            <span class="required">
-              *
-            </span>
-
+          <label>
+            المراجعون المسؤولون
+            <span class="required">*</span>
           </label>
 
 
-          <p-multiselect
-            inputId="reviewers"
-            [options]="reviewUsers"
+          <p-multiSelect
             [(ngModel)]="selectedReviewers"
+            [options]="reviewUsers"
             optionLabel="name"
+            placeholder="اختر المراجعين"
             [filter]="true"
             filterBy="name,role"
-            placeholder="اختر المستخدمين المراجعين"
-            appendTo="body"
-            styleClass="w-full reviewers-select"
             [showClear]="true"
-            [maxSelectedLabels]="2"
-            selectedItemsLabel="{0} مستخدمين مختارين"
+            appendTo="body"
+            styleClass="reviewers-select"
           >
-
-            <ng-template
-              pTemplate="selecteditems"
-              let-values
-            >
-
-              <div class="selected-reviewers">
-
-                <span
-                  class="reviewer-chip"
-                  *ngFor="let user of values"
-                >
-
-                  <span class="reviewer-avatar">
-                    {{ user.name.charAt(0) }}
-                  </span>
-
-                  <span>
-                    {{ user.name }}
-                  </span>
-
-                </span>
-
-              </div>
-
-            </ng-template>
-
 
             <ng-template
               pTemplate="item"
@@ -651,7 +1183,9 @@
               <div class="reviewer-option">
 
                 <div class="reviewer-avatar">
+
                   {{ user.name.charAt(0) }}
+
                 </div>
 
                 <div class="reviewer-info">
@@ -670,36 +1204,44 @@
 
             </ng-template>
 
-          </p-multiselect>
+          </p-multiSelect>
 
 
-          <small class="field-hint">
-            يمكنك اختيار أكثر من مستخدم لمراجعة المادة.
-          </small>
+          <div
+            class="selected-reviewers"
+            *ngIf="selectedReviewers.length"
+          >
+
+            <span
+              class="reviewer-chip"
+              *ngFor="let user of selectedReviewers"
+            >
+
+              {{ user.name }}
+
+            </span>
+
+          </div>
 
         </div>
 
 
-        <!-- WARNING -->
+        <!-- Warning -->
 
         <div class="reject-warning">
 
           <i class="pi pi-info-circle"></i>
 
           <span>
-
-            سيتم تغيير حالة المادة إلى
+            عند تأكيد الرفض سيتم تغيير حالة المادة إلى
             <strong>مرفوض</strong>
-            وإرسالها للمستخدمين المحددين للمراجعة.
-
+            ولن تظهر لها إجراءات مراجعة مرة أخرى.
           </span>
 
         </div>
 
       </div>
 
-
-      <!-- FOOTER -->
 
       <ng-template pTemplate="footer">
 
@@ -708,9 +1250,8 @@
           <button
             pButton
             type="button"
+            class="cancel-btn"
             label="إلغاء"
-            icon="pi pi-times"
-            class="p-button-text cancel-btn"
             [disabled]="rejectSubmitting"
             (click)="closeRejectDialog()"
           ></button>
@@ -719,16 +1260,28 @@
           <button
             pButton
             type="button"
-            label="تأكيد الرفض"
-            icon="pi pi-send"
             class="reject-submit-btn"
-            [loading]="rejectSubmitting"
             [disabled]="
               !isRejectFormValid ||
               rejectSubmitting
             "
             (click)="submitRejection()"
-          ></button>
+          >
+
+            <i
+              class="pi"
+              [class.pi-times]="!rejectSubmitting"
+              [class.pi-spin]="rejectSubmitting"
+              [class.pi-spinner]="rejectSubmitting"
+            ></i>
+
+            {{
+              rejectSubmitting
+                ? 'جاري الحفظ...'
+                : 'تأكيد الرفض'
+            }}
+
+          </button>
 
         </div>
 

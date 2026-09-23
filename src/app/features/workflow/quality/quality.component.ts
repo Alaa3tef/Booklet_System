@@ -2,19 +2,14 @@ import { CommonModule } from '@angular/common';
 import { Component, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
+import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
 import { MultiSelectModule } from 'primeng/multiselect';
 import { TableModule } from 'primeng/table';
-import { ButtonModule } from 'primeng/button';
 import { TextareaModule } from 'primeng/textarea';
 
 import { WorkflowStepLayoutComponent } from '../../../shared/workflow-step-layout/workflow-step-layout.component';
 import { WorkflowStatusRow } from '../../../core/models/workflow.model';
-
-
-// =====================================================
-// QUALITY ROW
-// =====================================================
 
 interface QualityRow extends WorkflowStatusRow {
   committeeNumber: string;
@@ -22,57 +17,60 @@ interface QualityRow extends WorkflowStatusRow {
   qrCode: string;
 }
 
+interface ScanStep {
+  id: number;
+  type: 'envelope' | 'cover';
+  title: string;
+  subtitle: string;
 
-// =====================================================
-// COMPONENT
-// =====================================================
+  scanned: boolean;
+  scanning: boolean;
+
+  qrCode: string;
+  data: ScanResult | null;
+}
+
+interface ScanResult {
+  qrCode: string;
+  material: string;
+  committeeNumber: string;
+  governorate: string;
+  envelopeNumber?: number;
+  scanType: string;
+  scannedAt: string;
+}
 
 @Component({
   selector: 'app-quality',
   standalone: true,
-
   imports: [
     CommonModule,
     FormsModule,
-    TableModule,
+
+    ButtonModule,
     DialogModule,
     MultiSelectModule,
-    ButtonModule,
+    TableModule,
     TextareaModule,
+
     WorkflowStepLayoutComponent
   ],
-
   templateUrl: './quality.component.html',
   styleUrl: './quality.component.scss'
 })
 export class QualityComponent {
 
-  // =====================================================
-  // ESSENTIALS
-  // =====================================================
-
   readonly essentials = [
-    'مسح QR اللجنة الخارجية',
-    'مراجعة بيانات اللجنة',
-    'تسجيل نتيجة المراجعة',
-    'إرجاع المواد المرفوضة للمستخدمين المختصين'
+    'مسح QR الخاص بكل مادة',
+    'مسح جميع أظرف اللجنة',
+    'مسح الغلاف النهائي',
+    'مراجعة بيانات الـ QR',
+    'تسجيل نتيجة المراجعة'
   ];
 
-
-  // =====================================================
-  // SCAN STATE
-  // =====================================================
-
-  isScanning = false;
-
-  scanMessage = '';
-
-  private mockScanIndex = 0;
-
-
-  // =====================================================
-  // TABLE DATA
-  // =====================================================
+  // =========================
+  // Main table
+  // =========================
 
   readonly rows = signal<QualityRow[]>([
     {
@@ -84,39 +82,47 @@ export class QualityComponent {
       status: 'قيد المراجعة',
       statusTone: 'info'
     },
-
     {
       index: 2,
       subject: 'الرياضيات',
       committeeNumber: '102',
       governorate: 'الجيزة',
       qrCode: 'QR-COMMITTEE-102',
-      status: 'تم المراجعة',
-      statusTone: 'success'
+      status: 'قيد المراجعة',
+      statusTone: 'info'
     },
-
     {
       index: 3,
       subject: 'اللغة الإنجليزية',
       committeeNumber: '103',
       governorate: 'القاهرة',
       qrCode: 'QR-COMMITTEE-103',
-      status: 'مرفوض',
-      statusTone: 'danger'
+      status: 'تم المراجعة',
+      statusTone: 'success'
     }
   ]);
 
 
-  // =====================================================
-  // SELECTED ROW
-  // =====================================================
+  // =========================
+  // Scan Dialog
+  // =========================
+
+  scanDialogVisible = false;
 
   selectedRow: QualityRow | null = null;
 
+  scanSteps: ScanStep[] = [];
 
-  // =====================================================
-  // REJECT DIALOG
-  // =====================================================
+  currentScanIndex = 0;
+
+  scanMessage = '';
+
+  isScanning = false;
+
+
+  // =========================
+  // Reject Dialog
+  // =========================
 
   rejectDialogVisible = false;
 
@@ -127,29 +133,22 @@ export class QualityComponent {
   rejectSubmitting = false;
 
 
-  // =====================================================
-  // REVIEW USERS
-  // =====================================================
-
   readonly reviewUsers = [
     {
       id: 1,
       name: 'أحمد محمد',
       role: 'مراجع أول'
     },
-
     {
       id: 2,
       name: 'محمد علي',
       role: 'مراجع جودة'
     },
-
     {
       id: 3,
       name: 'سارة أحمد',
       role: 'مراجع محتوى'
     },
-
     {
       id: 4,
       name: 'محمود حسن',
@@ -158,92 +157,290 @@ export class QualityComponent {
   ];
 
 
-  // =====================================================
-  // START SCAN
-  // =====================================================
+  // =========================
+  // Open scan
+  // =========================
 
-  startScan(): void {
+  openScanDialog(row: QualityRow): void {
 
-    if (this.isScanning) {
+    if (row.status === 'تم المراجعة' || row.status === 'مرفوض') {
       return;
     }
 
+    this.selectedRow = row;
+
+    this.currentScanIndex = 0;
+
+    this.scanMessage = '';
+
+    this.isScanning = false;
+
+    this.scanSteps = this.createScanSteps();
+
+    this.scanDialogVisible = true;
+  }
+
+
+  // =========================
+  // Create scan stages
+  // =========================
+
+  private createScanSteps(): ScanStep[] {
+
+    return [
+      {
+        id: 1,
+        type: 'envelope',
+        title: 'الظرف الأول',
+        subtitle: 'QR الخاص بالظرف الأول',
+        scanned: false,
+        scanning: false,
+        qrCode: '',
+        data: null
+      },
+      {
+        id: 2,
+        type: 'envelope',
+        title: 'الظرف الثاني',
+        subtitle: 'QR الخاص بالظرف الثاني',
+        scanned: false,
+        scanning: false,
+        qrCode: '',
+        data: null
+      },
+      {
+        id: 3,
+        type: 'envelope',
+        title: 'الظرف الثالث',
+        subtitle: 'QR الخاص بالظرف الثالث',
+        scanned: false,
+        scanning: false,
+        qrCode: '',
+        data: null
+      },
+      {
+        id: 4,
+        type: 'cover',
+        title: 'الغلاف النهائي',
+        subtitle: 'QR الخاص بالغلاف الداخلي',
+        scanned: false,
+        scanning: false,
+        qrCode: '',
+        data: null
+      }
+    ];
+  }
+
+
+  // =========================
+  // Current step
+  // =========================
+
+  get currentStep(): ScanStep | null {
+
+    return this.scanSteps[this.currentScanIndex] ?? null;
+  }
+
+
+  // =========================
+  // Scan
+  // =========================
+
+  startScan(): void {
+
+    if (
+      this.isScanning ||
+      !this.currentStep ||
+      !this.selectedRow
+    ) {
+      return;
+    }
+
+    const step = this.currentStep;
+
     this.isScanning = true;
 
-    this.scanMessage = 'جاري قراءة QR اللجنة...';
+    step.scanning = true;
 
-    /*
-     * Mock Scanner
-     *
-     * لاحقًا هنا هنستبدل الـ setTimeout
-     * باستدعاء الـ Scanner الحقيقي / API.
-     */
+    this.scanMessage = 'جاري قراءة بيانات الـ QR...';
 
+
+    // Mock scanner
     setTimeout(() => {
 
-      const mockData = [
-        {
-          subject: 'الفيزياء',
-          committeeNumber: '104',
-          governorate: 'القاهرة',
-          qrCode: 'QR-COMMITTEE-104'
-        },
+      const row = this.selectedRow!;
 
-        {
-          subject: 'الكيمياء',
-          committeeNumber: '105',
-          governorate: 'الجيزة',
-          qrCode: 'QR-COMMITTEE-105'
-        },
+      const envelopeNumber =
+        step.type === 'envelope'
+          ? step.id
+          : undefined;
 
-        {
-          subject: 'الأحياء',
-          committeeNumber: '106',
-          governorate: 'المنوفية',
-          qrCode: 'QR-COMMITTEE-106'
-        }
-      ];
+      const qrCode =
+        step.type === 'cover'
+          ? `${row.qrCode}-COVER`
+          : `${row.qrCode}-ENV-${step.id}`;
 
-      const data =
-        mockData[this.mockScanIndex % mockData.length];
 
-      this.mockScanIndex++;
+      const result: ScanResult = {
+        qrCode,
 
-      const newRow: QualityRow = {
-        index: this.rows().length + 1,
+        material: row.subject,
 
-        subject: data.subject,
+        committeeNumber: row.committeeNumber,
 
-        committeeNumber: data.committeeNumber,
+        governorate: row.governorate,
 
-        governorate: data.governorate,
+        envelopeNumber,
 
-        qrCode: data.qrCode,
+        scanType:
+          step.type === 'cover'
+            ? 'الغلاف النهائي'
+            : `الظرف ${step.id}`,
 
-        status: 'قيد المراجعة',
-
-        statusTone: 'info'
+        scannedAt: new Date().toLocaleTimeString(
+          'ar-EG',
+          {
+            hour: '2-digit',
+            minute: '2-digit'
+          }
+        )
       };
 
-      this.rows.update(rows => [
-        ...rows,
-        newRow
-      ]);
+
+      step.scanned = true;
+
+      step.scanning = false;
+
+      step.qrCode = qrCode;
+
+      step.data = result;
 
       this.isScanning = false;
 
       this.scanMessage =
-        `تم قراءة QR اللجنة ${data.committeeNumber} بنجاح`;
+        `تم قراءة ${step.title} بنجاح`;
 
-    }, 1200);
+
+      // Move automatically to next scan
+      if (this.currentScanIndex < this.scanSteps.length - 1) {
+
+        setTimeout(() => {
+
+          this.currentScanIndex++;
+
+        }, 600);
+      }
+
+    }, 1400);
   }
 
 
-  // =====================================================
-  // APPROVE / REVIEW
-  // =====================================================
+  // =========================
+  // Select scan step
+  // =========================
 
-  approve(row: QualityRow): void {
+  selectScanStep(index: number): void {
+
+    // لا تسمح بالدخول لمرحلة لم يصل إليها المستخدم
+    const previousStepsCompleted =
+      this.scanSteps
+        .slice(0, index)
+        .every(step => step.scanned);
+
+    if (!previousStepsCompleted) {
+      return;
+    }
+
+    this.currentScanIndex = index;
+  }
+
+
+  // =========================
+  // Next scan
+  // =========================
+
+  nextScan(): void {
+
+    if (
+      this.currentScanIndex <
+      this.scanSteps.length - 1
+    ) {
+
+      this.currentScanIndex++;
+
+      this.scanMessage = '';
+    }
+  }
+
+
+  // =========================
+  // Previous scan
+  // =========================
+
+  previousScan(): void {
+
+    if (this.currentScanIndex > 0) {
+
+      this.currentScanIndex--;
+
+      this.scanMessage = '';
+    }
+  }
+
+
+  // =========================
+  // All scans completed
+  // =========================
+
+  get allScansCompleted(): boolean {
+
+    return (
+      this.scanSteps.length > 0 &&
+      this.scanSteps.every(step => step.scanned)
+    );
+  }
+
+
+  // =========================
+  // Progress
+  // =========================
+
+  get completedScans(): number {
+
+    return this.scanSteps.filter(
+      step => step.scanned
+    ).length;
+  }
+
+
+  get scanProgress(): number {
+
+    if (!this.scanSteps.length) {
+      return 0;
+    }
+
+    return Math.round(
+      (this.completedScans /
+        this.scanSteps.length) *
+      100
+    );
+  }
+
+
+  // =========================
+  // Finish review
+  // =========================
+
+  approveMaterial(): void {
+
+    if (
+      !this.selectedRow ||
+      !this.allScansCompleted
+    ) {
+      return;
+    }
+
+    const row = this.selectedRow;
 
     this.rows.update(rows =>
       rows.map(item =>
@@ -257,27 +454,27 @@ export class QualityComponent {
       )
     );
 
+
     this.scanMessage =
-      `تم تسجيل مراجعة اللجنة ${row.committeeNumber} بنجاح`;
+      `تمت مراجعة مادة ${row.subject} بنجاح`;
+
+
+    this.scanDialogVisible = false;
   }
 
 
-  // =====================================================
-  // OPEN REJECT DIALOG
-  // =====================================================
+  // =========================
+  // Open rejection
+  // =========================
 
-  openRejectDialog(row: QualityRow): void {
+  openRejectDialog(): void {
 
-    /*
-     * لا نسمح بفتح الرفض لو المادة
-     * تم مراجعتها بالفعل.
-     */
-
-    if (row.status === 'تم المراجعة') {
+    if (
+      !this.selectedRow ||
+      !this.allScansCompleted
+    ) {
       return;
     }
-
-    this.selectedRow = row;
 
     this.rejectReason = '';
 
@@ -287,29 +484,9 @@ export class QualityComponent {
   }
 
 
-  // =====================================================
-  // CLOSE REJECT DIALOG
-  // =====================================================
-
-  closeRejectDialog(): void {
-
-    if (this.rejectSubmitting) {
-      return;
-    }
-
-    this.rejectDialogVisible = false;
-
-    this.rejectReason = '';
-
-    this.selectedReviewers = [];
-
-    this.selectedRow = null;
-  }
-
-
-  // =====================================================
-  // VALIDATE REJECTION
-  // =====================================================
+  // =========================
+  // Reject validation
+  // =========================
 
   get isRejectFormValid(): boolean {
 
@@ -320,9 +497,9 @@ export class QualityComponent {
   }
 
 
-  // =====================================================
-  // SUBMIT REJECTION
-  // =====================================================
+  // =========================
+  // Submit rejection
+  // =========================
 
   submitRejection(): void {
 
@@ -337,19 +514,26 @@ export class QualityComponent {
 
     const row = this.selectedRow;
 
+
     const rejectionData = {
 
       rowIndex: row.index,
 
       subject: row.subject,
 
-      committeeNumber: row.committeeNumber,
+      committeeNumber:
+        row.committeeNumber,
 
-      governorate: row.governorate,
+      governorate:
+        row.governorate,
 
-      qrCode: row.qrCode,
+      scans: this.scanSteps.map(step => ({
+        scanType: step.title,
+        qrCode: step.qrCode
+      })),
 
-      reason: this.rejectReason.trim(),
+      reason:
+        this.rejectReason.trim(),
 
       reviewerIds:
         this.selectedReviewers.map(
@@ -359,17 +543,12 @@ export class QualityComponent {
 
 
     console.log(
-      'Quality Reject Request:',
+      'QUALITY REJECTION REQUEST',
       rejectionData
     );
 
 
-    /*
-     * Mock API
-     *
-     * هنا لاحقًا هنضع API الحقيقي.
-     */
-
+    // Mock API
     setTimeout(() => {
 
       this.rows.update(rows =>
@@ -389,8 +568,10 @@ export class QualityComponent {
 
       this.rejectDialogVisible = false;
 
+      this.scanDialogVisible = false;
+
       this.scanMessage =
-        `تم رفض اللجنة ${row.committeeNumber} وإرسالها للمراجعة`;
+        `تم رفض مادة ${row.subject} وإرسالها للمراجعة`;
 
 
       this.selectedRow = null;
@@ -403,13 +584,55 @@ export class QualityComponent {
   }
 
 
-  // =====================================================
-  // CHECK IF ACTIONS SHOULD APPEAR
-  // =====================================================
+  // =========================
+  // Close scan dialog
+  // =========================
+
+  closeScanDialog(): void {
+
+    if (this.isScanning) {
+      return;
+    }
+
+    this.scanDialogVisible = false;
+
+    this.selectedRow = null;
+
+    this.scanSteps = [];
+
+    this.currentScanIndex = 0;
+
+    this.scanMessage = '';
+  }
+
+
+  // =========================
+  // Close reject dialog
+  // =========================
+
+  closeRejectDialog(): void {
+
+    if (this.rejectSubmitting) {
+      return;
+    }
+
+    this.rejectDialogVisible = false;
+
+    this.rejectReason = '';
+
+    this.selectedReviewers = [];
+  }
+
+
+  // =========================
+  // Actions
+  // =========================
 
   hasActions(row: QualityRow): boolean {
 
-    return row.status !== 'تم المراجعة'
-      && row.status !== 'مرفوض';
+    return (
+      row.status !== 'تم المراجعة' &&
+      row.status !== 'مرفوض'
+    );
   }
 }
