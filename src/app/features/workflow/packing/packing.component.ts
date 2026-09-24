@@ -12,7 +12,7 @@ import { WorkflowStatusRow } from '../../../core/models/workflow.model';
   templateUrl: './packing.component.html',
   styleUrl: './packing.component.scss'
 })
-export class PackingComponent {
+export default class PackingComponent {
   readonly essentials = [
     'تغليف الأظرف الصغيرة للجنة في ظرف كبير',
     'عمل Scan لل QR الخارجي للجنة بالكامل'

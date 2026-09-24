@@ -45,7 +45,7 @@ interface QualityRow extends WorkflowStatusRow {
   templateUrl: './quality.component.html',
   styleUrl: './quality.component.scss'
 })
-export class QualityComponent {
+export default class QualityComponent {
 
   // =====================================================
   // ESSENTIALS

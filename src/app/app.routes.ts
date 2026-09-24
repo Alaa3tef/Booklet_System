@@ -8,17 +8,13 @@ export const routes: Routes = [
   {
     path: '',
     loadComponent: () =>
-      import('./features/auth/auth-layout/auth-layout.component').then(
-        (m) => m.AuthLayoutComponent
-      ),
+      import('./features/auth/auth-layout/auth-layout.component'),
     canActivate: [guestGuard],
     children: [
       {
         path: 'login',
         loadComponent: () =>
-          import('./features/auth/login/login.component').then(
-            (m) => m.LoginComponent
-          ),
+          import('./features/auth/login/login.component'),
         data: { title: 'تسجيل الدخول' }
       },
       {
@@ -53,61 +49,55 @@ export const routes: Routes = [
       {
         path: 'dashboard',
         loadComponent: () =>
-          import('./features/dashboard/dashboard.component').then((m) => m.DashboardComponent),
+          import('./features/dashboard/dashboard.component'),
         data: { breadcrumb: 'الرئيسية' }
       },
       {
         path: 'settings',
         loadComponent: () =>
-          import('./features/user-permissions/user-permissions').then((m) => m.UserPermissionsComponent),
+          import('./features/user-permissions/user-permissions'),
         data: { breadcrumb: 'الاعدادات' }
       },
       {
         path: 'committees/setup',
         loadComponent: () =>
-          import('./features/committee-setup/committee-setup.component').then(
-            (m) => m.CommitteeSetupComponent
-          ),
+          import('./features/committee-setup/committee-setup.component'),
         data: { breadcrumb: 'إعداد بيانات اللجان' }
       },
       {
         path: 'workflow/planning',
         loadComponent: () =>
-          import('./features/workflow/planning/planning.component').then((m) => m.PlanningComponent),
+          import('./features/workflow/planning/planning.component'),
         data: { breadcrumb: 'الإعداد' }
       },
       {
         path: 'workflow/printing',
         loadComponent: () =>
-          import('./features/workflow/printing/printing.component').then((m) => m.PrintingComponent),
+          import('./features/workflow/printing/printing.component'),
         data: { breadcrumb: 'الطباعة' }
       },
       {
         path: 'workflow/quality',
         loadComponent: () =>
-          import('./features/workflow/quality/quality.component').then((m) => m.QualityComponent),
+          import('./features/workflow/quality/quality.component'),
         data: { breadcrumb: 'الجودة' }
       },
       {
         path: 'workflow/packing',
         loadComponent: () =>
-          import('./features/workflow/packing/packing.component').then((m) => m.PackingComponent),
+          import('./features/workflow/packing/packing.component'),
         data: { breadcrumb: 'التغليف' }
       },
       {
         path: 'workflow/archiving',
         loadComponent: () =>
-          import('./features/workflow/archiving/archiving.component').then(
-            (m) => m.ArchivingComponent
-          ),
+          import('./features/workflow/archiving/archiving.component'),
         data: { breadcrumb: 'التخزين' }
       },
       {
         path: 'users',
         loadComponent: () =>
-          import('./features/user-management/user-management.component').then(
-            (m) => m.UserManagementComponent
-          ),
+          import('./features/user-management/user-management.component'),
         data: { breadcrumb: 'إدارة المستخدمين' }
       },
       { path: '**', redirectTo: 'dashboard' }

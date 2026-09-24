@@ -89,7 +89,7 @@ interface User {
 
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class UserPermissionsComponent {
+export default class UserPermissionsComponent {
 
 
   /* =========================================================

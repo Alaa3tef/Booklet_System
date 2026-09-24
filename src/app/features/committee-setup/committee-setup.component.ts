@@ -28,7 +28,7 @@ imports: [
   templateUrl: './committee-setup.component.html',
   styleUrl: './committee-setup.component.scss'
 })
-export class CommitteeSetupComponent {
+export default class CommitteeSetupComponent {
   // ---- Steps (displayed right-to-left: 4 → 1, matching the RTL wizard) ----
 
 
