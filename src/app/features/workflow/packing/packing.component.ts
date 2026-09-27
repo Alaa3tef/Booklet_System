@@ -42,7 +42,6 @@ interface PackingScanResult {
   styleUrl: './packing.component.scss'
 })
 export default class PackingComponent {
-export class PackingComponent {
 
   // =====================================================
   // Page essentials
