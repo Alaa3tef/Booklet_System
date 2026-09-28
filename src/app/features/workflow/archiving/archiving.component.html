@@ -68,7 +68,25 @@
 
         </div>
 
+ <!-- المادة -->
 
+        <div class="field">
+
+          <label>
+            المادة
+          </label>
+
+          <p-select
+            [options]="subjectOptions"
+            [(ngModel)]="searchSubject"
+            optionLabel="label"
+            optionValue="value"
+            placeholder="اختر المادة"
+            styleClass="archive-select"
+          />
+
+        </div>
+        
         <!-- رقم اللجنة -->
 
         <div class="field">
@@ -92,25 +110,6 @@
 
         </div>
 
-
-        <!-- المادة -->
-
-        <div class="field">
-
-          <label>
-            المادة
-          </label>
-
-          <p-select
-            [options]="subjectOptions"
-            [(ngModel)]="searchSubject"
-            optionLabel="label"
-            optionValue="value"
-            placeholder="اختر المادة"
-            styleClass="archive-select"
-          />
-
-        </div>
 
       </div>
 

@@ -292,12 +292,12 @@ export default class ArchivingComponent {
             subtitle: 'مسح QR الخاص بالرف',
             scanned: false
           },
-          {
-            type: 'zone',
-            title: 'تحديد المنطقة',
-            subtitle: 'اختيار منطقة التخزين',
-            scanned: false
-          },
+          // {
+          //   type: 'zone',
+          //   title: 'تحديد المنطقة',
+          //   subtitle: 'اختيار منطقة التخزين',
+          //   scanned: false
+          // },
           {
             type: 'box',
             title: 'Scan الصندوق',
@@ -306,12 +306,12 @@ export default class ArchivingComponent {
           }
         ]
       : [
-          {
-            type: 'committee',
-            title: 'Scan اللجنة',
-            subtitle: 'مسح QR الخاص باللجنة',
-            scanned: false
-          },
+          // {
+          //   type: 'committee',
+          //   title: 'Scan اللجنة',
+          //   subtitle: 'مسح QR الخاص باللجنة',
+          //   scanned: false
+          // },
           {
             type: 'box',
             title: 'Scan الصندوق',
