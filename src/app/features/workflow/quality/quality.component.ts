@@ -10,6 +10,7 @@ import { TextareaModule } from 'primeng/textarea';
 
 import { WorkflowStepLayoutComponent } from '../../../shared/workflow-step-layout/workflow-step-layout.component';
 import { WorkflowStatusRow } from '../../../core/models/workflow.model';
+import { TooltipModule } from 'primeng/tooltip';
 
 interface QualityRow extends WorkflowStatusRow {
   committeeNumber: string;
@@ -52,14 +53,16 @@ interface ScanResult {
     MultiSelectModule,
     TableModule,
     TextareaModule,
-
+    TooltipModule,
     WorkflowStepLayoutComponent
   ],
   templateUrl: './quality.component.html',
   styleUrl: './quality.component.scss'
 })
 export default class QualityComponent {
-
+   rejectionReasonDialogVisible = false;
+    selectedRejectionReason = '';
+    selectedRow: any | null = null;
   readonly essentials = [
     'مسح QR الخاص بكل مادة',
     'مسح جميع أظرف اللجنة',
@@ -108,8 +111,6 @@ export default class QualityComponent {
   // =========================
 
   scanDialogVisible = false;
-
-  selectedRow: QualityRow | null = null;
 
   scanSteps: ScanStep[] = [];
 
@@ -634,5 +635,34 @@ export default class QualityComponent {
       row.status !== 'تم المراجعة' &&
       row.status !== 'مرفوض'
     );
+  }
+
+    openRejectionReasonDialog(
+    row: WorkflowStatusRow
+  ): void {
+
+    if (row.status !== 'مرفوض') {
+      return;
+    }
+
+
+    this.selectedRow = row;
+
+
+    this.selectedRejectionReason =
+      row.rejectionReason?.trim() ||
+      'لم يتم تسجيل سبب الرفض.';
+
+
+    this.rejectionReasonDialogVisible = true;
+  }
+
+  closeRejectionReasonDialog(): void {
+
+    this.rejectionReasonDialogVisible = false;
+
+    this.selectedRejectionReason = '';
+
+    this.selectedRow = null;
   }
 }

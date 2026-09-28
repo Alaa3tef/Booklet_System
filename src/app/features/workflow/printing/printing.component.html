@@ -1,3 +1,4 @@
+
 <app-workflow-step-layout
   stepNumber="02"
   englishLabel="Printing"
@@ -17,6 +18,7 @@
 
   <div panel-content>
 
+
     <!-- ==========================================
          SEARCH SECTION
     =========================================== -->
@@ -24,6 +26,7 @@
     <div class="search-section">
 
       <div class="printing-search-card">
+
 
         <!-- IMAGE -->
 
@@ -36,6 +39,7 @@
 
         </div>
 
+
         <!-- SEARCH CONTENT -->
 
         <div class="printing-search-content">
@@ -43,8 +47,11 @@
           <div class="printing-search-title">
 
             <div class="printing-search-icon">
+
               <i class="pi pi-print"></i>
+
             </div>
+
 
             <div>
 
@@ -61,7 +68,10 @@
           </div>
 
 
+          <!-- SEARCH FIELDS -->
+
           <div class="fields-grid">
+
 
             <!-- GOVERNORATE -->
 
@@ -77,7 +87,8 @@
                 [(ngModel)]="selectedGovernorate"
                 optionLabel="label"
                 optionValue="value"
-                styleClass="w-full">
+                styleClass="w-full"
+              >
               </p-select>
 
             </div>
@@ -97,7 +108,8 @@
                 [(ngModel)]="selectedSubject"
                 optionLabel="label"
                 optionValue="value"
-                styleClass="w-full">
+                styleClass="w-full"
+              >
               </p-select>
 
             </div>
@@ -123,12 +135,21 @@
           قائمة الطباعة
         </h4>
 
+
         <span class="results-count">
-          {{ rows().length }} مادة
+
+          {{ rows().length }}
+
+          مادة
+
         </span>
 
       </div>
 
+
+      <!-- ==========================================
+           TABLE
+      =========================================== -->
 
       <p-table
         [value]="rows()"
@@ -136,21 +157,32 @@
         responsiveLayout="scroll"
       >
 
+
         <!-- TABLE HEADER -->
 
         <ng-template pTemplate="header">
 
           <tr>
 
-            <th>م</th>
+            <th>
+              م
+            </th>
 
-            <th>المحافظة</th>
+            <th>
+              المحافظة
+            </th>
 
-            <th>المادة</th>
+            <th>
+              المادة
+            </th>
 
-            <th>الحالة</th>
+            <th>
+              الحالة
+            </th>
 
-            <th>الإجراء</th>
+            <th>
+              الإجراء
+            </th>
 
           </tr>
 
@@ -165,6 +197,7 @@
         >
 
           <tr>
+
 
             <!-- INDEX -->
 
@@ -195,7 +228,9 @@
                 class="status-pill"
                 [ngClass]="row.statusTone"
               >
+
                 {{ row.status }}
+
               </span>
 
             </td>
@@ -205,20 +240,57 @@
 
             <td class="status-cell">
 
-           
-<button
-    *ngIf="row.status !== 'تم الانتهاء' && row.status !== 'مرفوض'"
-    type="button"
-    class="status-menu-btn"
-    aria-label="إجراءات المادة"
-    pTooltip="إجراءات المادة"
-    tooltipPosition="top"
-    (click)="openStatusMenu(row, statusMenu, $event)"
-  >
-    <i class="pi pi-ellipsis-v"></i>
-  </button>
+
+              <!-- ==================================
+                   NORMAL ACTION
+              =================================== -->
+
+              <button
+                *ngIf="
+                  row.status !== 'تم الانتهاء' &&
+                  row.status !== 'مرفوض'
+                "
+                type="button"
+                class="status-menu-btn"
+                aria-label="إجراءات المادة"
+                pTooltip="إجراءات المادة"
+                tooltipPosition="top"
+                (click)="
+                  openStatusMenu(
+                    row,
+                    statusMenu,
+                    $event
+                  )
+                "
+              >
+
+                <i class="pi pi-ellipsis-v"></i>
+
+              </button>
 
 
+              <!-- ==================================
+                   REJECTED - VIEW REASON
+              =================================== -->
+
+              <button
+                *ngIf="row.status === 'مرفوض'"
+                type="button"
+                class="
+                  status-menu-btn
+                  rejection-reason-btn
+                "
+                aria-label="عرض سبب الرفض"
+                pTooltip="عرض سبب الرفض"
+                tooltipPosition="top"
+                (click)="
+                  openRejectionReasonDialog(row)
+                "
+              >
+
+                <i class="pi pi-eye"></i>
+
+              </button>
 
             </td>
 
@@ -227,7 +299,9 @@
         </ng-template>
 
 
-        <!-- EMPTY MESSAGE -->
+        <!-- ==========================================
+             EMPTY MESSAGE
+        =========================================== -->
 
         <ng-template pTemplate="emptymessage">
 
@@ -249,219 +323,400 @@
         </ng-template>
 
       </p-table>
-<p-menu
-  #statusMenu
-  [model]="menuItems"
-  [popup]="true"
-  appendTo="body">
-</p-menu>
-      
-<p-dialog
-  [(visible)]="rejectDialogVisible"
-  [modal]="true"
-  [draggable]="false"
-  [resizable]="false"
-  [closable]="!rejectSubmitting"
-  [dismissableMask]="!rejectSubmitting"
-  [style]="{ width: '720px', maxWidth: 'calc(100vw - 2rem)' }"
-  appendTo="body"
-  styleClass="reject-dialog"
-  header="رفض المادة"
->
-
-  <div class="reject-dialog-content">
-
-    <!-- HEADER -->
-    <div class="reject-intro">
-
-      <div class="reject-icon">
-        <i class="pi pi-exclamation-triangle"></i>
-      </div>
-
-      <div class="reject-intro-text">
-
-        <h3>
-          رفض مادة {{ selectedRow?.subject }}
-        </h3>
-
-        <p>
-          يرجى توضيح سبب الرفض وتحديد المستخدمين المسؤولين عن المراجعة.
-        </p>
-
-      </div>
-
-    </div>
 
 
-    <!-- MATERIAL SUMMARY -->
+      <!-- ==========================================
+           STATUS MENU
+      =========================================== -->
 
-    <div class="material-summary">
-
-      <div class="summary-item">
-
-        <span class="summary-label">
-          المادة
-        </span>
-
-        <span class="summary-value">
-          {{ selectedRow?.subject }}
-        </span>
-
-      </div>
+      <p-menu
+        #statusMenu
+        [model]="menuItems"
+        [popup]="true"
+        appendTo="body"
+      >
+      </p-menu>
 
 
-      <div class="summary-divider"></div>
+      <!-- ==========================================
+           REJECT DIALOG
+      =========================================== -->
+
+      <p-dialog
+        [(visible)]="rejectDialogVisible"
+        [modal]="true"
+        [draggable]="false"
+        [resizable]="false"
+        [closable]="!rejectSubmitting"
+        [dismissableMask]="!rejectSubmitting"
+        [style]="{
+          width: '720px',
+          maxWidth: 'calc(100vw - 2rem)'
+        }"
+        appendTo="body"
+        styleClass="reject-dialog"
+        header="رفض المادة"
+      >
+
+        <div class="reject-dialog-content">
 
 
-      <div class="summary-item">
+          <!-- HEADER -->
 
-        <span class="summary-label">
-          المحافظة
-        </span>
+          <div class="reject-intro">
 
-        <span class="summary-value">
-          {{ selectedRow?.governorate }}
-        </span>
+            <div class="reject-icon">
 
-      </div>
+              <i class="pi pi-exclamation-triangle"></i>
+
+            </div>
 
 
-      <div class="summary-divider"></div>
+            <div class="reject-intro-text">
+
+              <h3>
+                رفض مادة {{ selectedRow?.subject }}
+              </h3>
+
+              <p>
+                يرجى توضيح سبب الرفض وتحديد المستخدمين المسؤولين عن المراجعة.
+              </p>
+
+            </div>
+
+          </div>
 
 
-      <div class="summary-item">
+          <!-- MATERIAL SUMMARY -->
 
-        <span class="summary-label">
-          الحالة الحالية
-        </span>
-
-        <span class="summary-value">
-          {{ selectedRow?.status }}
-        </span>
-
-      </div>
-
-    </div>
+          <div class="material-summary">
 
 
-    <!-- REJECTION REASON -->
+            <div class="summary-item">
 
-    <div class="dialog-field">
+              <span class="summary-label">
+                المادة
+              </span>
 
-      <label for="rejectReason">
-        سبب الرفض
+              <span class="summary-value">
+                {{ selectedRow?.subject }}
+              </span>
 
-        <span class="required">
-          *
-        </span>
-      </label>
-
-      <textarea
-        pTextarea
-        id="rejectReason"
-        [(ngModel)]="rejectReason"
-        [rows]="5"
-        [autoResize]="true"
-        maxlength="500"
-        placeholder="اكتب سبب رفض المادة بالتفصيل..."
-        class="reject-textarea"
-      ></textarea>
-
-      <div class="field-footer">
-
-        <small
-          [class.invalid-counter]="
-            rejectReason.length > 0 &&
-            rejectReason.trim().length < 10
-          "
-        >
-          {{ rejectReason.length }}/500
-        </small>
-
-        <small
-          *ngIf="
-            rejectReason.length > 0 &&
-            rejectReason.trim().length < 10
-          "
-          class="field-error"
-        >
-          يجب أن يكون سبب الرفض 10 أحرف على الأقل
-        </small>
-
-      </div>
-
-    </div>
+            </div>
 
 
-    <!-- REVIEWERS -->
+            <div class="summary-divider"></div>
 
-    <div class="dialog-field">
 
-      <label for="reviewers">
+            <div class="summary-item">
 
-        المستخدمون المسؤولون عن المراجعة
+              <span class="summary-label">
+                المحافظة
+              </span>
 
-        <span class="required">
-          *
-        </span>
+              <span class="summary-value">
+                {{ selectedRow?.governorate }}
+              </span>
 
-      </label>
+            </div>
 
-<p-multiselect
-  inputId="reviewers"
-  [options]="reviewUsers"
-  [(ngModel)]="selectedReviewers"
-  optionLabel="name"
-  [filter]="true"
-  filterBy="name,role"
-  placeholder="اختر المستخدمين المراجعين"
-  appendTo="body"
-  styleClass="w-full reviewers-select"
-  [showClear]="true"
-  [maxSelectedLabels]="2"
-  selectedItemsLabel="{0} مستخدمين مختارين"
->
 
-        <ng-template pTemplate="selecteditems" let-values>
+            <div class="summary-divider"></div>
 
-          <div class="selected-reviewers">
 
-            <span
-              class="reviewer-chip"
-              *ngFor="let user of values"
+            <div class="summary-item">
+
+              <span class="summary-label">
+                الحالة الحالية
+              </span>
+
+              <span class="summary-value">
+                {{ selectedRow?.status }}
+              </span>
+
+            </div>
+
+          </div>
+
+
+          <!-- REJECTION REASON -->
+
+          <div class="dialog-field">
+
+            <label for="printingRejectReason">
+
+              سبب الرفض
+
+              <span class="required">
+                *
+              </span>
+
+            </label>
+
+
+            <textarea
+              pTextarea
+              id="printingRejectReason"
+              [(ngModel)]="rejectReason"
+              [rows]="5"
+              [autoResize]="true"
+              maxlength="500"
+              placeholder="اكتب سبب رفض المادة بالتفصيل..."
+              class="reject-textarea"
+            >
+            </textarea>
+
+
+            <div class="field-footer">
+
+              <small
+                [class.invalid-counter]="
+                  rejectReason.length > 0 &&
+                  rejectReason.trim().length < 10
+                "
+              >
+
+                {{ rejectReason.length }}/500
+
+              </small>
+
+
+              <small
+                *ngIf="
+                  rejectReason.length > 0 &&
+                  rejectReason.trim().length < 10
+                "
+                class="field-error"
+              >
+
+                يجب أن يكون سبب الرفض 10 أحرف على الأقل
+
+              </small>
+
+            </div>
+
+          </div>
+
+
+          <!-- REVIEWERS -->
+
+          <div class="dialog-field">
+
+            <label for="printingReviewers">
+
+              المستخدمون المسؤولون عن المراجعة
+
+              <span class="required">
+                *
+              </span>
+
+            </label>
+
+
+            <p-multiselect
+              inputId="printingReviewers"
+              [options]="reviewUsers"
+              [(ngModel)]="selectedReviewers"
+              optionLabel="name"
+              [filter]="true"
+              filterBy="name,role"
+              placeholder="اختر المستخدمين المراجعين"
+              appendTo="body"
+              styleClass="w-full reviewers-select"
+              [showClear]="true"
+              [maxSelectedLabels]="2"
+              selectedItemsLabel="{0} مستخدمين مختارين"
             >
 
-              <span class="reviewer-avatar">
-                {{ user.name.charAt(0) }}
-              </span>
 
-              <span>
-                {{ user.name }}
-              </span>
+              <!-- SELECTED USERS -->
+
+              <ng-template
+                pTemplate="selecteditems"
+                let-values
+              >
+
+                <div class="selected-reviewers">
+
+                  <span
+                    class="reviewer-chip"
+                    *ngFor="let user of values"
+                  >
+
+                    <span class="reviewer-avatar">
+
+                      {{ user.name.charAt(0) }}
+
+                    </span>
+
+
+                    <span>
+
+                      {{ user.name }}
+
+                    </span>
+
+                  </span>
+
+                </div>
+
+              </ng-template>
+
+
+              <!-- USER OPTION -->
+
+              <ng-template
+                pTemplate="item"
+                let-user
+              >
+
+                <div class="reviewer-option">
+
+                  <div class="reviewer-avatar">
+
+                    {{ user.name.charAt(0) }}
+
+                  </div>
+
+
+                  <div class="reviewer-info">
+
+                    <span class="reviewer-name">
+
+                      {{ user.name }}
+
+                    </span>
+
+
+                    <span class="reviewer-role">
+
+                      {{ user.role }}
+
+                    </span>
+
+                  </div>
+
+                </div>
+
+              </ng-template>
+
+            </p-multiselect>
+
+
+            <small class="field-hint">
+
+              يمكنك اختيار أكثر من مستخدم لمراجعة المادة.
+
+            </small>
+
+          </div>
+
+
+          <!-- WARNING -->
+
+          <div class="reject-warning">
+
+            <i class="pi pi-info-circle"></i>
+
+            <span>
+
+              سيتم تغيير حالة المادة إلى
+
+              <strong>
+                مرفوض
+              </strong>
+
+              وإرسالها للمستخدمين المحددين للمراجعة.
 
             </span>
 
           </div>
 
+        </div>
+
+
+        <!-- FOOTER -->
+
+        <ng-template pTemplate="footer">
+
+          <div class="dialog-footer">
+
+
+            <button
+              pButton
+              type="button"
+              label="إلغاء"
+              icon="pi pi-times"
+              class="p-button-text cancel-btn"
+              [disabled]="rejectSubmitting"
+              (click)="closeRejectDialog()"
+            >
+            </button>
+
+
+            <button
+              pButton
+              type="button"
+              label="تأكيد الرفض"
+              icon="pi pi-send"
+              class="reject-submit-btn"
+              [loading]="rejectSubmitting"
+              [disabled]="
+                !isRejectFormValid ||
+                rejectSubmitting
+              "
+              (click)="submitRejection()"
+            >
+            </button>
+
+          </div>
+
         </ng-template>
 
+      </p-dialog>
 
-        <ng-template pTemplate="item" let-user>
 
-          <div class="reviewer-option">
+      <!-- ==========================================
+           VIEW REJECTION REASON DIALOG
+      =========================================== -->
 
-            <div class="reviewer-avatar">
-              {{ user.name.charAt(0) }}
+      <p-dialog
+        [(visible)]="rejectionReasonDialogVisible"
+        [modal]="true"
+        [draggable]="false"
+        [resizable]="false"
+        [closable]="true"
+        [dismissableMask]="true"
+        [style]="{
+          width: '620px',
+          maxWidth: 'calc(100vw - 2rem)'
+        }"
+        appendTo="body"
+        styleClass="rejection-reason-dialog"
+      >
+
+
+        <!-- HEADER -->
+
+        <ng-template pTemplate="header">
+
+          <div class="rejection-dialog-header">
+
+            <div class="rejection-dialog-icon">
+
+              <i class="pi pi-info-circle"></i>
+
             </div>
 
-            <div class="reviewer-info">
 
-              <span class="reviewer-name">
-                {{ user.name }}
-              </span>
+            <div class="rejection-dialog-title">
 
-              <span class="reviewer-role">
-                {{ user.role }}
+              <h3>
+                سبب رفض المادة
+              </h3>
+
+              <span>
+                تفاصيل سبب الرفض المسجل
               </span>
 
             </div>
@@ -470,65 +725,165 @@
 
         </ng-template>
 
-      </p-multiselect>
 
-      <small class="field-hint">
-        يمكنك اختيار أكثر من مستخدم لمراجعة المادة.
-      </small>
+        <!-- CONTENT -->
 
-    </div>
+        <div class="rejection-reason-content">
 
 
-    <!-- WARNING -->
+          <!-- MATERIAL CARD -->
 
-    <div class="reject-warning">
+          <div class="rejection-material-card">
 
-      <i class="pi pi-info-circle"></i>
+            <div class="rejection-material-icon">
 
-      <span>
-        سيتم تغيير حالة المادة إلى
-        <strong>مرفوض</strong>
-        وإرسالها للمستخدمين المحددين للمراجعة.
-      </span>
+              <i class="pi pi-book"></i>
 
-    </div>
-
-  </div>
+            </div>
 
 
-  <!-- FOOTER -->
+            <div class="rejection-material-info">
 
-  <ng-template pTemplate="footer">
+              <span class="rejection-label">
+                المادة
+              </span>
 
-    <div class="dialog-footer">
+              <strong>
+                {{ selectedRow?.subject }}
+              </strong>
 
-      <button
-        pButton
-        type="button"
-        label="إلغاء"
-        icon="pi pi-times"
-        class="p-button-text cancel-btn"
-        [disabled]="rejectSubmitting"
-        (click)="closeRejectDialog()"
-      ></button>
+            </div>
 
 
-      <button
-        pButton
-        type="button"
-        label="تأكيد الرفض"
-        icon="pi pi-send"
-        class="reject-submit-btn"
-        [loading]="rejectSubmitting"
-        [disabled]="!isRejectFormValid || rejectSubmitting"
-        (click)="submitRejection()"
-      ></button>
+            <div class="rejection-status">
 
-    </div>
+              <span class="status-pill danger">
+                مرفوض
+              </span>
 
-  </ng-template>
+            </div>
 
-</p-dialog>
+          </div>
+
+
+          <!-- META -->
+
+          <div class="rejection-meta">
+
+
+            <!-- GOVERNORATE -->
+
+            <div class="rejection-meta-item">
+
+              <i class="pi pi-map-marker"></i>
+
+
+              <div>
+
+                <span>
+                  المحافظة
+                </span>
+
+                <strong>
+                  {{ selectedRow?.governorate }}
+                </strong>
+
+              </div>
+
+            </div>
+
+
+            <!-- INDEX -->
+
+            <div class="rejection-meta-item">
+
+              <i class="pi pi-file"></i>
+
+
+              <div>
+
+                <span>
+                  رقم المادة
+                </span>
+
+                <strong>
+                  {{ selectedRow?.index }}
+                </strong>
+
+              </div>
+
+            </div>
+
+          </div>
+
+
+          <!-- REASON -->
+
+          <div class="rejection-reason-box">
+
+            <div class="rejection-reason-heading">
+
+              <div class="reason-title">
+
+                <i class="pi pi-times-circle"></i>
+
+                <span>
+                  سبب الرفض
+                </span>
+
+              </div>
+
+            </div>
+
+
+            <div class="rejection-reason-text">
+
+              {{ selectedRejectionReason }}
+
+            </div>
+
+          </div>
+
+
+          <!-- INFO -->
+
+          <div class="rejection-info">
+
+            <i class="pi pi-info-circle"></i>
+
+            <span>
+
+              يمكنك مراجعة سبب الرفض قبل إعادة المادة إلى مرحلة الإعداد
+              وإجراء التعديلات المطلوبة.
+
+            </span>
+
+          </div>
+
+        </div>
+
+
+        <!-- FOOTER -->
+
+        <ng-template pTemplate="footer">
+
+          <div class="rejection-dialog-footer">
+
+            <button
+              pButton
+              type="button"
+              label="إغلاق"
+              icon="pi pi-times"
+              class="p-button-text"
+              (click)="closeRejectionReasonDialog()"
+            >
+            </button>
+
+          </div>
+
+        </ng-template>
+
+      </p-dialog>
 
     </div>
 

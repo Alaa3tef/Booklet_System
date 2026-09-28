@@ -24,6 +24,7 @@ export interface WorkflowStatusRow {
   location?: string;
   status: string;
   statusTone: 'success' | 'warning' | 'danger' | 'info';
+  rejectionReason?: string;
 }
 
 export const WORKFLOW_MINI_NAV: WorkflowMiniNavItem[] = [

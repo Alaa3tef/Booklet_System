@@ -6,14 +6,17 @@ import { SelectModule } from 'primeng/select';
 import { TableModule } from 'primeng/table';
 import { MenuModule } from 'primeng/menu';
 import { MenuItem } from 'primeng/api';
-
-import { WorkflowStepLayoutComponent } from '../../../shared/workflow-step-layout/workflow-step-layout.component';
-import { SelectOption } from '../../../core/models/committee.model';
-import { WorkflowStatusRow } from '../../../core/models/workflow.model';
 import { DialogModule } from 'primeng/dialog';
 import { ButtonModule } from 'primeng/button';
 import { TextareaModule } from 'primeng/textarea';
 import { MultiSelectModule } from 'primeng/multiselect';
+import { TooltipModule } from 'primeng/tooltip';
+
+import { WorkflowStepLayoutComponent } from '../../../shared/workflow-step-layout/workflow-step-layout.component';
+
+import { SelectOption } from '../../../core/models/committee.model';
+import { WorkflowStatusRow } from '../../../core/models/workflow.model';
+
 interface ReviewUser {
   id: number;
   name: string;
@@ -25,72 +28,125 @@ interface ReviewUser {
   selector: 'app-planning',
   standalone: true,
 
-imports: [
-  CommonModule,
-  FormsModule,
-  SelectModule,
-  MultiSelectModule,
-  TableModule,
-  MenuModule,
-  DialogModule,
-  ButtonModule,
-  TextareaModule,
-  WorkflowStepLayoutComponent
-],
+  imports: [
+    CommonModule,
+    FormsModule,
+
+    SelectModule,
+    MultiSelectModule,
+    TableModule,
+    MenuModule,
+    DialogModule,
+    ButtonModule,
+    TextareaModule,
+    TooltipModule,
+
+    WorkflowStepLayoutComponent
+  ],
 
   templateUrl: './planning.component.html',
   styleUrl: './planning.component.scss'
 })
 export default class PlanningComponent {
 
+  // ==========================================
+  // FILTER OPTIONS
+  // ==========================================
+
   readonly governorates: SelectOption[] = [
-    { label: 'كل المحافظات', value: 'all' },
-    { label: 'القاهرة', value: 'cairo' },
-    { label: 'الجيزة', value: 'giza' },
-    { label: 'الإسكندرية', value: 'alexandria' }
+    {
+      label: 'كل المحافظات',
+      value: 'all'
+    },
+    {
+      label: 'القاهرة',
+      value: 'cairo'
+    },
+    {
+      label: 'الجيزة',
+      value: 'giza'
+    },
+    {
+      label: 'الإسكندرية',
+      value: 'alexandria'
+    }
   ];
 
   readonly subjects: SelectOption[] = [
-    { label: 'كل المواد', value: 'all' },
-    { label: 'اللغة العربية', value: 'arabic' },
-    { label: 'الرياضيات', value: 'math' },
-    { label: 'العلوم', value: 'science' }
+    {
+      label: 'كل المواد',
+      value: 'all'
+    },
+    {
+      label: 'اللغة العربية',
+      value: 'arabic'
+    },
+    {
+      label: 'الرياضيات',
+      value: 'math'
+    },
+    {
+      label: 'العلوم',
+      value: 'science'
+    }
   ];
 
+
+  // ==========================================
+  // REVIEW USERS
+  // ==========================================
+
   readonly reviewUsers: ReviewUser[] = [
-  {
-    id: 1,
-    name: 'أحمد محمد',
-    role: 'مراجع أول'
-  },
-  {
-    id: 2,
-    name: 'محمد علي',
-    role: 'مراجع جودة'
-  },
-  {
-    id: 3,
-    name: 'سارة أحمد',
-    role: 'مراجع محتوى'
-  },
-  {
-    id: 4,
-    name: 'محمود حسن',
-    role: 'مراجع نهائي'
-  }
-];
+    {
+      id: 1,
+      name: 'أحمد محمد',
+      role: 'مراجع أول'
+    },
+    {
+      id: 2,
+      name: 'محمد علي',
+      role: 'مراجع جودة'
+    },
+    {
+      id: 3,
+      name: 'سارة أحمد',
+      role: 'مراجع محتوى'
+    },
+    {
+      id: 4,
+      name: 'محمود حسن',
+      role: 'مراجع نهائي'
+    }
+  ];
+
+
+  // ==========================================
+  // SEARCH
+  // ==========================================
 
   selectedGovernorate = 'all';
+
   selectedSubject = 'all';
 
   readonly searchGovernorate = signal('all');
+
   readonly searchSubject = signal('all');
+
+
+  // ==========================================
+  // ESSENTIALS
+  // ==========================================
 
   readonly essentials = [
     'البحث بالمحافظة',
     'البحث بالمادة',
     'تغيير حالة المادة'
   ];
+
+
+  // ==========================================
+  // TABLE DATA
+  // ==========================================
 
   readonly rows = signal<WorkflowStatusRow[]>([
     {
@@ -100,6 +156,7 @@ export default class PlanningComponent {
       status: 'جاهز للطباعة',
       statusTone: 'success'
     },
+
     {
       index: 2,
       subject: 'الرياضيات',
@@ -107,50 +164,32 @@ export default class PlanningComponent {
       status: 'قيد الإعداد',
       statusTone: 'warning'
     },
+
     {
       index: 3,
       subject: 'العلوم',
       governorate: 'الإسكندرية',
-      status: 'قيد الإعداد',
-      statusTone: 'warning'
+      status: 'مرفوض',
+      statusTone: 'danger',
+
+      rejectionReason:
+        'يوجد بعض الأخطاء في محتوى المادة، كما أن بعض الأسئلة تحتاج إلى مراجعة قبل اعتماد الخطة.'
     }
   ]);
 
-  private buildMenuItems(row: WorkflowStatusRow): MenuItem[] {
-  const items: MenuItem[] = [
-    {
-      label: 'تحويل إلى جاهز للطباعة',
-      icon: 'pi pi-refresh',
-      command: () => {
-        this.markSelectedRowReady();
-      }
-    }
-  ];
 
-  if (row.status !== 'جاهز للطباعة') {
-    items.push(
-      {
-        separator: true
-      },
-      {
-        label: 'رفض المادة',
-        icon: 'pi pi-times-circle',
-        styleClass: 'reject-menu-item',
-        command: () => {
-          this.openRejectDialog();
-        }
-      }
-    );
-  }
-
-  return items;
-}
+  // ==========================================
+  // FILTERED ROWS
+  // ==========================================
 
   readonly filteredRows = computed(() => {
+
     const governorate = this.searchGovernorate();
+
     const subject = this.searchSubject();
 
     return this.rows().filter(row => {
+
       const governorateMatch =
         governorate === 'all' ||
         this.getGovernorateValue(row.governorate) === governorate;
@@ -163,187 +202,389 @@ export default class PlanningComponent {
     });
   });
 
+
   // ==========================================
   // MENU
   // ==========================================
 
   selectedRow: WorkflowStatusRow | null = null;
-  // ==========================================
-// REJECT DIALOG
-// ==========================================
-
-rejectDialogVisible = false;
-
-rejectReason = '';
-
-selectedReviewers: ReviewUser[] = [];
-
-rejectSubmitting = false;
 
   readonly menuItems: MenuItem[] = [];
+
+
+  // ==========================================
+  // REJECT DIALOG
+  // ==========================================
+
+  rejectDialogVisible = false;
+
+  rejectReason = '';
+
+  selectedReviewers: ReviewUser[] = [];
+
+  rejectSubmitting = false;
+
+
+  // ==========================================
+  // REJECTION REASON VIEW DIALOG
+  // ==========================================
+
+  rejectionReasonDialogVisible = false;
+
+  selectedRejectionReason = '';
+
 
   // ==========================================
   // SEARCH
   // ==========================================
 
   search(): void {
-    this.searchGovernorate.set(this.selectedGovernorate);
-    this.searchSubject.set(this.selectedSubject);
-  }
 
-  // ==========================================
-// OPEN REJECT DIALOG
-// ==========================================
-
-openRejectDialog(): void {
-  if (!this.selectedRow) {
-    return;
-  }
-
-  this.rejectReason = '';
-  this.selectedReviewers = [];
-  this.rejectDialogVisible = true;
-}
-
-// ==========================================
-// CLOSE REJECT DIALOG
-// ==========================================
-
-closeRejectDialog(): void {
-  if (this.rejectSubmitting) {
-    return;
-  }
-
-  this.rejectDialogVisible = false;
-  this.rejectReason = '';
-  this.selectedReviewers = [];
-}
-
-// ==========================================
-// VALIDATE REJECT FORM
-// ==========================================
-
-get isRejectFormValid(): boolean {
-  return (
-    this.rejectReason.trim().length >= 10 &&
-    this.selectedReviewers.length > 0
-  );
-}
-
-// ==========================================
-// SUBMIT REJECTION
-// ==========================================
-
-submitRejection(): void {
-  if (!this.selectedRow || !this.isRejectFormValid) {
-    return;
-  }
-
-  this.rejectSubmitting = true;
-
-  const rejectionData = {
-    rowIndex: this.selectedRow.index,
-    subject: this.selectedRow.subject,
-    governorate: this.selectedRow.governorate,
-    reason: this.rejectReason.trim(),
-    reviewerIds: this.selectedReviewers.map(user => user.id)
-  };
-
-  console.log('Reject Request:', rejectionData);
-
-  // هنا بعدين تحطي API call
-
-  setTimeout(() => {
-
-    this.rows.update(rows =>
-      rows.map(row =>
-        row.index === this.selectedRow?.index
-          ? {
-              ...row,
-              status: 'مرفوض',
-              statusTone: 'danger'
-            }
-          : row
-      )
+    this.searchGovernorate.set(
+      this.selectedGovernorate
     );
 
-    this.rejectSubmitting = false;
-    this.rejectDialogVisible = false;
+    this.searchSubject.set(
+      this.selectedSubject
+    );
+  }
 
-    this.selectedRow = null;
-    this.rejectReason = '';
-    this.selectedReviewers = [];
 
-  }, 800);
-}
+  // ==========================================
+  // BUILD STATUS MENU
+  // ==========================================
+
+  private buildMenuItems(
+    row: WorkflowStatusRow
+  ): MenuItem[] {
+
+    const items: MenuItem[] = [
+
+      {
+        label: 'تحويل إلى جاهز للطباعة',
+
+        icon: 'pi pi-refresh',
+
+        command: () => {
+          this.markSelectedRowReady();
+        }
+      }
+    ];
+
+
+    // ==========================================
+    // REJECT OPTION
+    // ==========================================
+
+    if (row.status !== 'جاهز للطباعة') {
+
+      items.push(
+
+        {
+          separator: true
+        },
+
+        {
+          label: 'رفض المادة',
+
+          icon: 'pi pi-times-circle',
+
+          styleClass: 'reject-menu-item',
+
+          command: () => {
+            this.openRejectDialog();
+          }
+        }
+      );
+    }
+
+
+    return items;
+  }
+
 
   // ==========================================
   // OPEN STATUS MENU
   // ==========================================
 
-openStatusMenu(
-  row: WorkflowStatusRow,
-  menu: any,
-  event: Event
-): void {
+  openStatusMenu(
+    row: WorkflowStatusRow,
+    menu: any,
+    event: Event
+  ): void {
 
-  this.selectedRow = row;
+    this.selectedRow = row;
 
-  this.menuItems.length = 0;
+    this.menuItems.length = 0;
 
-  this.menuItems.push(
-    ...this.buildMenuItems(row)
-  );
+    this.menuItems.push(
+      ...this.buildMenuItems(row)
+    );
 
-  menu.toggle(event);
-}
-
-  // ==========================================
-  // CHANGE STATUS
-  // ==========================================
-
- markSelectedRowReady(): void {
-  if (!this.selectedRow) {
-    return;
+    menu.toggle(event);
   }
 
-  const rowIndex = this.selectedRow.index;
 
-  this.rows.update(rows =>
-    rows.map(row =>
-      row.index === rowIndex
-        ? {
-            ...row,
-            status: 'جاهز للطباعة',
-            statusTone: 'success'
-          }
-        : row
-    )
-  );
+  // ==========================================
+  // OPEN REJECT DIALOG
+  // ==========================================
 
-  this.selectedRow = null;
-}
+  openRejectDialog(): void {
+
+    if (!this.selectedRow) {
+      return;
+    }
+
+    this.rejectReason = '';
+
+    this.selectedReviewers = [];
+
+    this.rejectSubmitting = false;
+
+    this.rejectDialogVisible = true;
+  }
+
+
+  // ==========================================
+  // CLOSE REJECT DIALOG
+  // ==========================================
+
+  closeRejectDialog(): void {
+
+    if (this.rejectSubmitting) {
+      return;
+    }
+
+    this.rejectDialogVisible = false;
+
+    this.rejectReason = '';
+
+    this.selectedReviewers = [];
+  }
+
+
+  // ==========================================
+  // REJECT FORM VALIDATION
+  // ==========================================
+
+  get isRejectFormValid(): boolean {
+
+    return (
+      this.rejectReason.trim().length >= 10 &&
+      this.selectedReviewers.length > 0
+    );
+  }
+
+
+  // ==========================================
+  // SUBMIT REJECTION
+  // ==========================================
+
+  submitRejection(): void {
+
+    if (
+      !this.selectedRow ||
+      !this.isRejectFormValid
+    ) {
+      return;
+    }
+
+
+    this.rejectSubmitting = true;
+
+
+    const rejectionData = {
+
+      rowIndex: this.selectedRow.index,
+
+      subject: this.selectedRow.subject,
+
+      governorate: this.selectedRow.governorate,
+
+      reason: this.rejectReason.trim(),
+
+      reviewerIds:
+        this.selectedReviewers.map(
+          user => user.id
+        )
+    };
+
+
+    console.log(
+      'Reject Request:',
+      rejectionData
+    );
+
+
+    // ==========================================
+    // API CALL WILL BE HERE
+    // ==========================================
+
+    setTimeout(() => {
+
+      const rowIndex =
+        this.selectedRow?.index;
+
+
+      if (!rowIndex) {
+        this.rejectSubmitting = false;
+        return;
+      }
+
+
+      const reason =
+        this.rejectReason.trim();
+
+
+      this.rows.update(rows =>
+
+        rows.map(row =>
+
+          row.index === rowIndex
+
+            ? {
+                ...row,
+
+                status: 'مرفوض',
+
+                statusTone: 'danger',
+
+                rejectionReason: reason
+              }
+
+            : row
+        )
+      );
+
+
+      this.rejectSubmitting = false;
+
+      this.rejectDialogVisible = false;
+
+      this.selectedRow = null;
+
+      this.rejectReason = '';
+
+      this.selectedReviewers = [];
+
+    }, 800);
+  }
+
+
+  // ==========================================
+  // OPEN REJECTION REASON
+  // ==========================================
+
+  openRejectionReasonDialog(
+    row: WorkflowStatusRow
+  ): void {
+
+    if (row.status !== 'مرفوض') {
+      return;
+    }
+
+
+    this.selectedRow = row;
+
+
+    this.selectedRejectionReason =
+      row.rejectionReason?.trim() ||
+      'لم يتم تسجيل سبب الرفض.';
+
+
+    this.rejectionReasonDialogVisible = true;
+  }
+
+
+  // ==========================================
+  // CLOSE REJECTION REASON
+  // ==========================================
+
+  closeRejectionReasonDialog(): void {
+
+    this.rejectionReasonDialogVisible = false;
+
+    this.selectedRejectionReason = '';
+
+    this.selectedRow = null;
+  }
+
+
+  // ==========================================
+  // CHANGE STATUS TO READY
+  // ==========================================
+
+  markSelectedRowReady(): void {
+
+    if (!this.selectedRow) {
+      return;
+    }
+
+
+    const rowIndex =
+      this.selectedRow.index;
+
+
+    this.rows.update(rows =>
+
+      rows.map(row =>
+
+        row.index === rowIndex
+
+          ? {
+              ...row,
+
+              status: 'جاهز للطباعة',
+
+              statusTone: 'success',
+
+              rejectionReason: undefined
+            }
+
+          : row
+      )
+    );
+
+
+    this.selectedRow = null;
+  }
+
 
   // ==========================================
   // HELPERS
   // ==========================================
 
-  private getGovernorateValue(governorate: any): string {
+  private getGovernorateValue(
+    governorate: any
+  ): string {
+
     const map: Record<string, string> = {
+
       'القاهرة': 'cairo',
+
       'الجيزة': 'giza',
+
       'الإسكندرية': 'alexandria'
     };
+
 
     return map[governorate] ?? '';
   }
 
-  private getSubjectValue(subject: string): string {
+
+  private getSubjectValue(
+    subject: string
+  ): string {
+
     const map: Record<string, string> = {
+
       'اللغة العربية': 'arabic',
+
       'الرياضيات': 'math',
+
       'العلوم': 'science'
     };
+
 
     return map[subject] ?? '';
   }

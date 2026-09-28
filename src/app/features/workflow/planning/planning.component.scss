@@ -1,5 +1,6 @@
 @import '../../../shared/styles/workflow-panel';
 
+
 // ==========================================
 // SEARCH SECTION
 // ==========================================
@@ -22,10 +23,10 @@
   align-items: stretch;
 
   background: #ffffff;
-  border: 1px solid var(--ebs-border);
-  border-radius: var(--ebs-radius);
 
- // overflow: hidden;
+  border: 1px solid var(--ebs-border);
+
+  border-radius: var(--ebs-radius);
 }
 
 
@@ -52,6 +53,7 @@
     display: block;
 
     object-fit: cover;
+
     object-position: center;
   }
 }
@@ -71,7 +73,10 @@
   justify-content: center;
 }
 
-
+.p-button-text{
+    color: #b42318 !important;
+    background-color: rgba(180, 35, 24, 0.045) !important;
+}
 // ==========================================
 // SEARCH TITLE
 // ==========================================
@@ -79,6 +84,7 @@
 .planning-search-title {
   display: flex;
   align-items: center;
+
   gap: 0.8rem;
 
   margin-bottom: 1.25rem;
@@ -89,6 +95,7 @@
     color: var(--ebs-navy);
 
     font-size: 1rem;
+
     font-weight: 800;
   }
 
@@ -119,6 +126,7 @@
   border-radius: 10px;
 
   background: var(--ebs-blue-bg);
+
   color: var(--ebs-blue);
 
   i {
@@ -169,9 +177,11 @@
   border-radius: 999px;
 
   background: var(--ebs-blue-bg);
+
   color: var(--ebs-blue);
 
   font-size: 0.75rem;
+
   font-weight: 700;
 }
 
@@ -191,6 +201,7 @@
 
 .action-header {
   width: 75px;
+
   text-align: center;
 }
 
@@ -206,6 +217,7 @@
   padding: 0.65rem !important;
 
   text-align: center;
+
   vertical-align: middle;
 }
 
@@ -219,6 +231,7 @@
   height: 35px;
 
   padding: 0;
+
   margin: 0 auto;
 
   display: inline-flex;
@@ -226,14 +239,17 @@
   justify-content: center;
 
   border: 1px solid var(--ebs-border);
+
   border-radius: 8px;
 
   background: #ffffff;
+
   color: var(--ebs-navy);
 
   cursor: pointer;
 
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.06);
 
   transition:
     background 0.2s ease,
@@ -244,10 +260,13 @@
 
   &:hover {
     background: var(--ebs-blue-bg);
+
     color: var(--ebs-blue);
+
     border-color: var(--ebs-blue);
 
-    box-shadow: 0 2px 7px rgba(21, 101, 192, 0.15);
+    box-shadow:
+      0 2px 7px rgba(21, 101, 192, 0.15);
   }
 
   &:active {
@@ -256,12 +275,42 @@
 
   &:focus-visible {
     outline: 2px solid var(--ebs-blue);
+
     outline-offset: 2px;
   }
 
   i {
     font-size: 1rem;
+
     line-height: 1;
+  }
+}
+
+
+// ==========================================
+// REJECTION REASON BUTTON
+// ==========================================
+
+.rejection-reason-btn {
+  color: #b42318;
+
+  border-color: rgba(180, 35, 24, 0.18);
+
+  background: rgba(180, 35, 24, 0.04);
+
+  &:hover {
+    color: #b42318;
+
+    background: rgba(180, 35, 24, 0.08);
+
+    border-color: rgba(180, 35, 24, 0.3);
+
+    box-shadow:
+      0 2px 7px rgba(180, 35, 24, 0.12);
+  }
+
+  &:focus-visible {
+    outline-color: #b42318;
   }
 }
 
@@ -285,6 +334,337 @@
 }
 
 
+// ==================================================
+// REJECTION REASON VIEW DIALOG
+// ==================================================
+
+:host ::ng-deep .rejection-reason-dialog {
+
+  .p-dialog-header {
+    padding: 1.25rem 1.5rem;
+
+    border-bottom: 1px solid var(--ebs-border);
+  }
+
+  .p-dialog-content {
+    padding: 0;
+  }
+
+  .p-dialog-footer {
+    padding: 0.9rem 1.5rem;
+
+    border-top: 1px solid var(--ebs-border);
+  }
+}
+
+
+// ==========================================
+// DIALOG HEADER
+// ==========================================
+
+.rejection-dialog-header {
+  display: flex;
+  align-items: center;
+
+  gap: 0.85rem;
+}
+
+
+.rejection-dialog-icon {
+  width: 42px;
+  height: 42px;
+
+  flex-shrink: 0;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 12px;
+
+  background: rgba(180, 35, 24, 0.08);
+
+  color: #b42318;
+
+  i {
+    font-size: 1.15rem;
+  }
+}
+
+
+.rejection-dialog-title {
+
+  h3 {
+    margin: 0 0 0.2rem;
+
+    color: var(--ebs-navy);
+
+    font-size: 1rem;
+
+    font-weight: 800;
+  }
+
+  span {
+    display: block;
+
+    color: var(--ebs-text-muted);
+
+    font-size: 0.76rem;
+
+    font-weight: 400;
+  }
+}
+
+
+// ==========================================
+// DIALOG CONTENT
+// ==========================================
+
+.rejection-reason-content {
+  padding: 1.5rem;
+}
+
+
+// ==========================================
+// MATERIAL CARD
+// ==========================================
+
+.rejection-material-card {
+  display: flex;
+  align-items: center;
+
+  gap: 0.85rem;
+
+  padding: 1rem;
+
+  border: 1px solid var(--ebs-border);
+
+  border-radius: 12px;
+
+  background: var(--ebs-blue-bg);
+}
+
+
+.rejection-material-icon {
+  width: 42px;
+  height: 42px;
+
+  flex-shrink: 0;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 10px;
+
+  background: #ffffff;
+
+  color: var(--ebs-blue);
+
+  box-shadow:
+    0 1px 4px rgba(0, 0, 0, 0.05);
+
+  i {
+    font-size: 1rem;
+  }
+}
+
+
+.rejection-material-info {
+  flex: 1;
+
+  display: flex;
+  flex-direction: column;
+
+  gap: 0.25rem;
+
+  .rejection-label {
+    color: var(--ebs-text-muted);
+
+    font-size: 0.7rem;
+  }
+
+  strong {
+    color: var(--ebs-navy);
+
+    font-size: 0.9rem;
+
+    font-weight: 800;
+  }
+}
+
+
+.rejection-status {
+  flex-shrink: 0;
+}
+
+
+// ==========================================
+// META INFORMATION
+// ==========================================
+
+.rejection-meta {
+  display: grid;
+
+  grid-template-columns: 1fr 1fr;
+
+  gap: 1rem;
+
+  margin-top: 1rem;
+}
+
+
+.rejection-meta-item {
+  display: flex;
+  align-items: center;
+
+  gap: 0.65rem;
+
+  padding: 0.8rem 0.9rem;
+
+  border: 1px solid var(--ebs-border);
+
+  border-radius: 10px;
+
+  background: #ffffff;
+
+  i {
+    color: var(--ebs-blue);
+
+    font-size: 0.9rem;
+  }
+
+  div {
+    display: flex;
+    flex-direction: column;
+
+    gap: 0.15rem;
+  }
+
+  span {
+    color: var(--ebs-text-muted);
+
+    font-size: 0.68rem;
+  }
+
+  strong {
+    color: var(--ebs-navy);
+
+    font-size: 0.78rem;
+
+    font-weight: 700;
+  }
+}
+
+
+// ==========================================
+// REJECTION REASON BOX
+// ==========================================
+
+.rejection-reason-box {
+  margin-top: 1rem;
+
+  overflow: hidden;
+
+  border: 1px solid rgba(180, 35, 24, 0.18);
+
+  border-radius: 12px;
+
+  background: #fffafa;
+}
+
+
+.rejection-reason-heading {
+  padding: 0.75rem 1rem;
+
+  border-bottom: 1px solid rgba(180, 35, 24, 0.12);
+
+  background: rgba(180, 35, 24, 0.045);
+}
+
+
+.reason-title {
+  display: flex;
+  align-items: center;
+
+  gap: 0.5rem;
+
+  color: #b42318;
+
+  font-size: 0.8rem;
+
+  font-weight: 800;
+
+  i {
+    font-size: 0.9rem;
+  }
+}
+
+
+.rejection-reason-text {
+  min-height: 90px;
+
+  padding: 1rem;
+
+  color: #344054;
+
+  font-size: 0.85rem;
+
+  line-height: 1.9;
+
+  white-space: pre-wrap;
+
+  word-break: break-word;
+}
+
+
+// ==========================================
+// INFORMATION MESSAGE
+// ==========================================
+
+.rejection-info {
+  display: flex;
+  align-items: flex-start;
+
+  gap: 0.55rem;
+
+  margin-top: 1rem;
+
+  padding: 0.75rem 0.9rem;
+
+  border-radius: 9px;
+
+  background: var(--ebs-blue-bg);
+
+  color: var(--ebs-text-muted);
+
+  font-size: 0.73rem;
+
+  line-height: 1.7;
+
+  i {
+    flex-shrink: 0;
+
+    margin-top: 0.15rem;
+
+    color: var(--ebs-blue);
+
+    font-size: 0.85rem;
+  }
+}
+
+
+// ==========================================
+// DIALOG FOOTER
+// ==========================================
+
+.rejection-dialog-footer {
+  display: flex;
+
+  justify-content: flex-start;
+}
+
+
 // ==========================================
 // RESPONSIVE
 // ==========================================
@@ -295,9 +675,11 @@
     flex-direction: column;
   }
 
+
   .planning-image {
     width: 100%;
     min-width: 100%;
+
     height: 180px;
 
     img {
@@ -305,17 +687,47 @@
     }
   }
 
+
   .planning-search-content {
     padding: 1.25rem;
   }
+
 
   .planning-search-content .fields-grid {
     grid-template-columns: 1fr;
   }
 
+
   .status-menu-btn {
     width: 32px;
     height: 32px;
+  }
+
+
+  .rejection-reason-content {
+    padding: 1rem;
+  }
+
+
+  .rejection-meta {
+    grid-template-columns: 1fr;
+  }
+
+
+  .rejection-material-card {
+    align-items: flex-start;
+  }
+
+
+  .rejection-material-card {
+    flex-wrap: wrap;
+  }
+
+
+  .rejection-status {
+    width: 100%;
+
+    padding-inline-start: 3rem;
   }
 
 }

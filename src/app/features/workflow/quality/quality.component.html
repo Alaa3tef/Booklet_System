@@ -278,18 +278,25 @@
 
                 <!-- مرفوض -->
 
-                <div
-                  class="no-action rejected"
-                  *ngIf="row.status === 'مرفوض'"
-                >
+                 <button
+                *ngIf="row.status === 'مرفوض'"
+                type="button"
+                class="
+                  status-menu-btn
+                  rejection-reason-btn
+                "
+                aria-label="عرض سبب الرفض"
+                pTooltip="عرض سبب الرفض"
+                tooltipPosition="top"
+                (click)="
+                  openRejectionReasonDialog(row)
+                "
+              >
 
-                  <i class="pi pi-times-circle"></i>
+                <i class="pi pi-eye"></i>
 
-                  <span>
-                    تم الرفض
-                  </span>
+              </button>
 
-                </div>
 
               </td>
 
@@ -1288,6 +1295,218 @@
       </ng-template>
 
     </p-dialog>
+
+     <p-dialog
+        [(visible)]="rejectionReasonDialogVisible"
+        [modal]="true"
+        [draggable]="false"
+        [resizable]="false"
+        [closable]="true"
+        [dismissableMask]="true"
+        [style]="{
+          width: '620px',
+          maxWidth: 'calc(100vw - 2rem)'
+        }"
+        appendTo="body"
+        styleClass="rejection-reason-dialog"
+      >
+
+        <!-- ======================================
+             HEADER
+        ======================================= -->
+
+        <ng-template pTemplate="header">
+
+          <div class="rejection-dialog-header">
+
+            <div class="rejection-dialog-icon">
+
+              <i class="pi pi-info-circle"></i>
+
+            </div>
+
+
+            <div class="rejection-dialog-title">
+
+              <h3>
+                سبب رفض المادة
+              </h3>
+
+              <span>
+                تفاصيل سبب الرفض المسجل
+              </span>
+
+            </div>
+
+          </div>
+
+        </ng-template>
+
+
+        <!-- ======================================
+             CONTENT
+        ======================================= -->
+
+        <div class="rejection-reason-content">
+
+
+          <!-- MATERIAL -->
+
+          <div class="rejection-material-card">
+
+            <div class="rejection-material-icon">
+
+              <i class="pi pi-book"></i>
+
+            </div>
+
+
+            <div class="rejection-material-info">
+
+              <span class="rejection-label">
+                المادة
+              </span>
+
+              <strong>
+                {{ selectedRow?.subject }}
+              </strong>
+
+            </div>
+
+
+            <div class="rejection-status">
+
+              <span class="status-pill danger">
+
+                مرفوض
+
+              </span>
+
+            </div>
+
+          </div>
+
+
+          <!-- META -->
+
+          <div class="rejection-meta">
+
+
+            <!-- GOVERNORATE -->
+
+            <div class="rejection-meta-item">
+
+              <i class="pi pi-map-marker"></i>
+
+
+              <div>
+
+                <span>
+                  المحافظة
+                </span>
+
+                <strong>
+                  {{ selectedRow?.governorate }}
+                </strong>
+
+              </div>
+
+            </div>
+
+
+            <!-- INDEX -->
+
+            <div class="rejection-meta-item">
+
+              <i class="pi pi-file"></i>
+
+
+              <div>
+
+                <span>
+                  رقم المادة
+                </span>
+
+                <strong>
+                  {{ selectedRow?.index }}
+                </strong>
+
+              </div>
+
+            </div>
+
+          </div>
+
+
+          <!-- REASON -->
+
+          <div class="rejection-reason-box">
+
+            <div class="rejection-reason-heading">
+
+              <div class="reason-title">
+
+                <i class="pi pi-times-circle"></i>
+
+                <span>
+                  سبب الرفض
+                </span>
+
+              </div>
+
+            </div>
+
+
+            <div class="rejection-reason-text">
+
+              {{ selectedRejectionReason }}
+
+            </div>
+
+          </div>
+
+
+          <!-- INFO -->
+
+          <div class="rejection-info">
+
+            <i class="pi pi-info-circle"></i>
+
+            <span>
+
+              يمكنك مراجعة سبب الرفض قبل إعادة المادة إلى مرحلة الإعداد
+              وإجراء التعديلات المطلوبة.
+
+            </span>
+
+          </div>
+
+        </div>
+
+
+        <!-- ======================================
+             FOOTER
+        ======================================= -->
+
+        <ng-template pTemplate="footer">
+
+          <div class="rejection-dialog-footer">
+
+            <button
+              pButton
+              type="button"
+              label="إغلاق"
+              icon="pi pi-times"
+              class="p-button-text"
+              (click)="closeRejectionReasonDialog()"
+            >
+            </button>
+
+          </div>
+
+        </ng-template>
+
+      </p-dialog>
 
   </div>
 
