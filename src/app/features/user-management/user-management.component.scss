@@ -596,7 +596,6 @@
   margin-right: 0.5rem;
 }
 
-
 /* ==================================================
    MODAL BACKDROP
 ================================================== */
@@ -605,53 +604,143 @@
   position: fixed;
   inset: 0;
   z-index: 3000;
+
   background: rgba(8, 30, 55, 0.52);
   backdrop-filter: blur(3px);
+
   display: flex;
   align-items: center;
   justify-content: center;
+
   padding: 1rem;
+
+  overflow-y: auto;
+
   animation: backdropIn 0.2s ease;
 }
 
 @keyframes backdropIn {
-  from { opacity: 0; }
-  to   { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
+
+
+/* ==================================================
+   BASE MODAL
+================================================== */
 
 .um-modal {
   width: 100%;
-  height: 49%;
   max-width: 580px;
-  background: #fff;
-  border-radius: 16px;
-  overflow: hidden;
-  box-shadow:
-    0 25px 60px rgba(0,0,0,0.18),
-    0 8px 20px rgba(0,0,0,0.1);
-  animation: modalSlideIn 0.25s cubic-bezier(.3,0,.2,1);
-}
 
-.um-modal-add {
-  min-height: 500px;
-  max-width: 760px;
+  /*
+   * مهم جدًا:
+   * ممنوع height ثابت هنا
+   */
+  height: fit-content !important;
+  min-height: 0 !important;
+
+  /*
+   * يكبر حسب المحتوى
+   * لكن لا يتجاوز الشاشة
+   */
   max-height: calc(100vh - 2rem);
+
+  background: #fff;
+
+  border-radius: 16px;
+
+  overflow: hidden;
+
+  box-shadow:
+    0 25px 60px rgba(0, 0, 0, 0.18),
+    0 8px 20px rgba(0, 0, 0, 0.1);
+
+  animation: modalSlideIn 0.25s cubic-bezier(.3, 0, .2, 1);
+
+  /*
+   * Flex هنا فقط لترتيب
+   * header / body / footer
+   */
   display: flex;
   flex-direction: column;
+
+  /*
+   * مهم لو في أي style خارجي
+   */
+  flex: 0 0 auto;
 }
+
+
+/* ==================================================
+   ADD / EDIT MODAL
+================================================== */
+
+.um-modal-add {
+  width: 100%;
+  max-width: 760px;
+
+  /*
+   * لا يوجد ارتفاع إجباري
+   */
+  height: fit-content !important;
+  min-height: 0 !important;
+
+  max-height: calc(100vh - 2rem);
+
+  display: flex;
+  flex-direction: column;
+
+  flex: 0 0 auto;
+}
+
+
+/* ==================================================
+   ADD MODAL BODY
+================================================== */
 
 .um-modal-add .modal-body {
-  flex: 1;
+  /*
+   * لا نستخدم flex: 1
+   * لأن ده كان بيملأ الفراغ
+   */
+  flex: 0 1 auto;
+
+  /*
+   * في الوضع الطبيعي:
+   * الارتفاع حسب المحتوى
+   */
+  height: auto;
+
+  min-height: 0;
+
+  /*
+   * لو الفورم كبر جدًا فقط
+   * يظهر scroll
+   */
   overflow-y: auto;
+
+  overflow-x: hidden;
 }
+
+
+/* ==================================================
+   SMALL / DELETE MODAL
+================================================== */
 
 .um-modal-sm {
+  width: 100%;
   max-width: 420px;
-}
 
-@keyframes modalSlideIn {
-  from { opacity: 0; transform: translateY(-18px) scale(0.97); }
-  to   { opacity: 1; transform: translateY(0)   scale(1); }
+  height: fit-content !important;
+  min-height: 0 !important;
+
+  flex: 0 0 auto;
 }
 
 
@@ -662,10 +751,19 @@
 .modal-header {
   display: flex;
   align-items: center;
+
   gap: 0.9rem;
+
   padding: 1.3rem 1.5rem;
+
   background: linear-gradient(120deg, #0b3d7a, #1565c0);
+
   color: #fff;
+
+  /*
+   * يمنع الـ header من الانكماش
+   */
+  flex: 0 0 auto;
 
   h3 {
     font-size: 1.05rem;
@@ -675,42 +773,61 @@
   }
 }
 
+
 .modal-header-icon {
   width: 42px;
   height: 42px;
+
   border-radius: 11px;
-  background: rgba(255,255,255,0.18);
+
+  background: rgba(255, 255, 255, 0.18);
+
   display: flex;
   align-items: center;
   justify-content: center;
+
   font-size: 1.15rem;
+
   flex-shrink: 0;
-  border: 1px solid rgba(255,255,255,0.2);
+
+  border: 1px solid rgba(255, 255, 255, 0.2);
 }
+
 
 .danger-header {
   background: linear-gradient(120deg, #7f1d1d, #dc2626);
 }
 
+
 .danger-icon {
-  background: rgba(255,255,255,0.18);
+  background: rgba(255, 255, 255, 0.18);
 }
+
 
 .modal-close {
   width: 34px;
   height: 34px;
+
   border: none;
   border-radius: 8px;
-  background: rgba(255,255,255,0.12);
+
+  background: rgba(255, 255, 255, 0.12);
+
   color: #fff;
+
   cursor: pointer;
+
   display: flex;
   align-items: center;
   justify-content: center;
+
   transition: background 0.18s;
+
   flex-shrink: 0;
 
-  &:hover { background: rgba(255,255,255,0.22); }
+  &:hover {
+    background: rgba(255, 255, 255, 0.22);
+  }
 }
 
 
@@ -720,65 +837,139 @@
 
 .modal-body {
   padding: 1.5rem;
+
+  /*
+   * مهم:
+   * لا يوجد flex-grow هنا
+   */
+  flex: 0 1 auto;
+
+  min-height: 0;
+
+  box-sizing: border-box;
 }
+
+
+/* ==================================================
+   FORM ERROR
+================================================== */
 
 .form-error-banner {
   display: flex;
   align-items: center;
+
   gap: 0.55rem;
+
   padding: 0.7rem 1rem;
+
   background: #fff0f0;
+
   border: 1px solid #fca5a5;
+
   border-radius: 9px;
+
   color: #dc2626;
+
   font-size: 0.83rem;
+
   font-weight: 600;
+
   margin-bottom: 1.15rem;
 }
 
+
+/* ==================================================
+   FORM GRID
+================================================== */
+
 .form-grid {
   display: grid;
+
   grid-template-columns: 1fr 1fr;
+
   gap: 1rem;
+
+  /*
+   * مهم حتى لا يحصل تمدد غريب
+   */
+  align-items: start;
 }
+
+
+/* ==================================================
+   FLOATING INPUT
+================================================== */
 
 .form-floating {
   position: relative;
+
   display: flex;
   flex-direction: column;
 
+  min-width: 0;
+
   label {
     position: absolute;
+
     top: 50%;
     right: 0.85rem;
+
     transform: translateY(-50%);
+
     font-size: 0.84rem;
+
     color: var(--um-muted);
+
     transition: all 0.2s ease-in-out;
+
     pointer-events: none;
+
     font-weight: 600;
+
     transform-origin: right top;
+
+    z-index: 2;
   }
 
-  .req { color: #dc2626; margin-right: 2px; }
+  .req {
+    color: #dc2626;
+    margin-right: 2px;
+  }
 
   input,
   select {
-    padding: 1.4rem 0.85rem 0.4rem 0.85rem;
+    box-sizing: border-box;
+
+    padding: 1.4rem 0.85rem 0.4rem;
+
     border: 1px solid #9fb8cf;
+
     border-radius: 9px;
+
     font-family: inherit;
+
     font-size: 0.84rem;
+
     color: var(--um-text);
+
     background: var(--um-bg);
+
     outline: none;
-    transition: border-color 0.2s, box-shadow 0.2s;
+
+    transition:
+      border-color 0.2s,
+      box-shadow 0.2s;
+
     height: 3.5rem;
+
     width: 100%;
 
     &:focus {
       border-color: var(--um-primary);
-      box-shadow: 0 0 0 3px rgba(21,101,192,0.1);
+
+      box-shadow:
+        0 0 0 3px rgba(21, 101, 192, 0.1);
+
       background: #fff;
     }
 
@@ -787,13 +978,16 @@
     }
   }
 
-  /* Float effect */
   input:focus ~ label,
   input:not(:placeholder-shown) ~ label,
   select:focus ~ label,
   select:not(:has(option[value=""]:checked)) ~ label {
     top: 0.6rem;
-    transform: translateY(0) scale(0.85);
+
+    transform:
+      translateY(0)
+      scale(0.85);
+
     color: var(--um-primary);
   }
 
@@ -802,29 +996,54 @@
   }
 }
 
-/* Delete confirm body */
+
+/* ==================================================
+   DELETE CONFIRM BODY
+================================================== */
+
 .confirm-body {
   text-align: center;
-  padding: 2rem 1.5rem !important;
 
-  p { color: var(--um-muted); font-size: 0.9rem; margin: 0; }
+  /*
+   * أصغر من إضافة المستخدم
+   * وبالتالي لا يوجد فراغ كبير
+   */
+  padding: 1.4rem 1.5rem !important;
+
+  p {
+    color: var(--um-muted);
+
+    font-size: 0.9rem;
+
+    margin: 0;
+  }
 
   strong {
     display: block;
+
     font-size: 1.05rem;
+
     color: var(--um-text);
+
     margin: 0.5rem 0;
   }
 }
 
+
 .confirm-warning {
   display: flex;
+
   align-items: center;
   justify-content: center;
+
   gap: 0.4rem;
+
   margin-top: 0.75rem !important;
+
   color: #b45309 !important;
+
   font-size: 0.8rem !important;
+
   font-weight: 600;
 }
 
@@ -835,87 +1054,155 @@
 
 .modal-footer {
   display: flex;
+
   align-items: center;
+
   justify-content: flex-end;
+
   gap: 0.75rem;
+
   padding: 1rem 1.5rem;
+
   border-top: 1px solid #edf2f7;
+
   background: #fafcff;
-}
 
-.modal-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.65rem 1.3rem;
-  border: none;
-  border-radius: 9px;
-  font-family: inherit;
-  font-size: 0.84rem;
-  font-weight: 700;
-  cursor: pointer;
-  transition: all 0.18s ease;
-
-  i { font-size: 0.8rem; }
-
-  &:hover { transform: translateY(-1px); }
-  &:active { transform: translateY(0); }
-}
-
-.modal-cancel {
-  background: #f1f4f8;
-  color: var(--um-muted);
-  border: 1px solid var(--um-border);
-
-  &:hover { background: #e6eaf0; color: var(--um-text); }
-}
-
-.modal-save {
-  background: linear-gradient(135deg, #1565c0, #2f80ed);
-  color: #fff;
-  box-shadow: 0 4px 12px rgba(21,101,192,0.28);
-
-  &:hover { box-shadow: 0 6px 16px rgba(21,101,192,0.36); }
-}
-
-.modal-danger {
-  background: linear-gradient(135deg, #b91c1c, #dc2626);
-  color: #fff;
-  box-shadow: 0 4px 12px rgba(185,28,28,0.28);
-
-  &:hover { box-shadow: 0 6px 16px rgba(185,28,28,0.36); }
+  /*
+   * مهم جدًا
+   */
+  flex: 0 0 auto;
 }
 
 
 /* ==================================================
-   RESPONSIVE
+   MODAL BUTTONS
 ================================================== */
 
-@media (max-width: 1100px) {
-  .um-stats {
-    grid-template-columns: repeat(2, 1fr);
+.modal-btn {
+  display: inline-flex;
+
+  align-items: center;
+
+  gap: 0.5rem;
+
+  padding: 0.65rem 1.3rem;
+
+  border: none;
+
+  border-radius: 9px;
+
+  font-family: inherit;
+
+  font-size: 0.84rem;
+
+  font-weight: 700;
+
+  cursor: pointer;
+
+  transition: all 0.18s ease;
+
+  i {
+    font-size: 0.8rem;
+  }
+
+  &:hover {
+    transform: translateY(-1px);
+  }
+
+  &:active {
+    transform: translateY(0);
   }
 }
 
+
+.modal-cancel {
+  background: #f1f4f8;
+
+  color: var(--um-muted);
+
+  border: 1px solid var(--um-border);
+
+  &:hover {
+    background: #e6eaf0;
+    color: var(--um-text);
+  }
+}
+
+
+.modal-save {
+  background: linear-gradient(
+    135deg,
+    #1565c0,
+    #2f80ed
+  );
+
+  color: #fff;
+
+  box-shadow:
+    0 4px 12px rgba(21, 101, 192, 0.28);
+
+  &:hover {
+    box-shadow:
+      0 6px 16px rgba(21, 101, 192, 0.36);
+  }
+}
+
+
+.modal-danger {
+  background: linear-gradient(
+    135deg,
+    #b91c1c,
+    #dc2626
+  );
+
+  color: #fff;
+
+  box-shadow:
+    0 4px 12px rgba(185, 28, 28, 0.28);
+
+  &:hover {
+    box-shadow:
+      0 6px 16px rgba(185, 28, 28, 0.36);
+  }
+}
+
+
+/* ==================================================
+   MODAL ANIMATION
+================================================== */
+
+@keyframes modalSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-18px) scale(0.97);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+
+/* ==================================================
+   RESPONSIVE MODAL
+================================================== */
+
 @media (max-width: 768px) {
-  .um-hero {
-    flex-direction: column;
-    text-align: center;
+
+  .um-modal-backdrop {
+    padding: 0.75rem;
   }
 
-  .um-stats {
-    grid-template-columns: repeat(2, 1fr);
+  .um-modal {
+    max-width: 100%;
+
+    max-height: calc(100vh - 1.5rem);
   }
 
-  .um-filters {
-    flex-direction: column;
-    align-items: stretch;
+  .um-modal-add {
+    max-width: 100%;
   }
-
-  .um-count-badge { margin-right: 0; text-align: center; }
-
-  .col-email,
-  .col-date { display: none; }
 
   .form-grid {
     grid-template-columns: 1fr;
@@ -926,13 +1213,32 @@
   }
 }
 
+
 @media (max-width: 480px) {
-  .um-modal-add {
-    min-height: 0;
-    max-width: calc(100vw - 2rem);
+
+  .um-modal-backdrop {
+    padding: 0.5rem;
   }
 
-  .um-stats {
-    grid-template-columns: 1fr;
+  .um-modal {
+    max-height: calc(100vh - 1rem);
+
+    border-radius: 14px;
+  }
+
+  .modal-header {
+    padding: 1rem;
+  }
+
+  .modal-body {
+    padding: 1rem;
+  }
+
+  .modal-footer {
+    padding: 0.85rem 1rem;
+  }
+
+  .um-modal-add {
+    max-width: 100%;
   }
 }

@@ -300,41 +300,57 @@
 =================================================== -->
 @if (showAddModal()) {
 
-  <div class="um-modal-backdrop" (click)="closeAddModal()">
+  <div
+    class="um-modal-backdrop"
+    (click)="closeAddModal()">
 
-    <div class="um-modal" (click)="$event.stopPropagation()">
+    <div
+      class="um-modal um-modal-add"
+      (click)="$event.stopPropagation()">
 
-      <!-- Modal header -->
+      <!-- HEADER -->
       <div class="modal-header">
+
         <div class="modal-header-icon">
           <i class="pi pi-user-plus"></i>
         </div>
+
         <h3>إضافة مستخدم جديد</h3>
+
         <button
           type="button"
           class="modal-close"
           (click)="closeAddModal()">
+
           <i class="pi pi-times"></i>
+
         </button>
+
       </div>
 
 
-      <!-- Form -->
+      <!-- BODY -->
       <div class="modal-body">
 
         @if (formError()) {
+
           <div class="form-error-banner">
+
             <i class="pi pi-exclamation-triangle"></i>
+
             {{ formError() }}
+
           </div>
+
         }
+
 
         <div class="form-grid">
 
 
-
           <!-- Username -->
           <div class="form-floating">
+
             <input
               pInputText
               id="f-username"
@@ -343,45 +359,65 @@
               [ngModel]="form().username"
               (ngModelChange)="updateForm('username', $event)"
               class="w-full" />
+
             <label for="f-username">
+
               اسم المستخدم
+
               <span class="req">*</span>
+
             </label>
+
           </div>
-      <!-- Phone -->
-<div class="form-floating">
-    <input
-        pInputText
-        id="f-phone"
-        type="tel"
-        inputmode="numeric"
-        autocomplete="tel"
-        maxlength="11"
-        [ngModel]="form().phone"
-        (ngModelChange)="updateForm('phone', $event)"
-        class="w-full"
-    />
 
-    <label for="f-phone">رقم الهاتف</label>
-</div>
-<div class="form-floating">
-    <p-select
-        id="f-role"
-        [options]="formRoleOptions"
-        optionLabel="label"
-        optionValue="value"
-        [ngModel]="form().roleKey"
-        (onChange)="updateForm('roleKey', $event.value)"
-        [fluid]="true"
-        [showClear]="true"
-    >
-    </p-select>
 
-    <label for="f-role">الدور</label>
-</div>
+          <!-- Phone -->
+          <div class="form-floating">
+
+            <input
+              pInputText
+              id="f-phone"
+              type="tel"
+              inputmode="numeric"
+              autocomplete="tel"
+              maxlength="11"
+              placeholder=" "
+              [ngModel]="form().phone"
+              (ngModelChange)="updateForm('phone', $event)"
+              class="w-full" />
+
+            <label for="f-phone">
+              رقم الهاتف
+            </label>
+
+          </div>
+
+
+          <!-- Role -->
+          <div class="form-floating">
+
+            <p-select
+              id="f-role"
+              [options]="formRoleOptions"
+              optionLabel="label"
+              optionValue="value"
+              [ngModel]="form().roleKey"
+              (onChange)="updateForm('roleKey', $event.value)"
+              [fluid]="true"
+              [showClear]="true"
+              appendTo="body">
+            </p-select>
+
+            <label for="f-role">
+              الدور
+            </label>
+
+          </div>
+
 
           <!-- Status -->
           <div class="form-floating">
+
             <p-select
               id="f-status"
               [options]="formStatusOptions"
@@ -389,22 +425,35 @@
               optionValue="value"
               [ngModel]="form().status"
               (onChange)="updateForm('status', $event.value)"
-              [fluid]="true">
+              [fluid]="true"
+              appendTo="body">
             </p-select>
-            <!-- <label for="f-status">الحالة</label> -->
+
           </div>
+
+
           <!-- Email -->
           <div class="form-floating span-2">
+
             <input
+              pInputText
               id="f-email"
               type="email"
               placeholder=" "
               [value]="form().email"
-              (input)="updateForm('email', $any($event.target).value)" />
+              (input)="updateForm(
+                'email',
+                $any($event.target).value
+              )" />
+
             <label for="f-email">
+
               البريد الإلكتروني
+
               <span class="req">*</span>
+
             </label>
+
           </div>
 
 
@@ -413,24 +462,31 @@
       </div>
 
 
-      <!-- Footer -->
+      <!-- FOOTER -->
       <div class="modal-footer">
 
         <button
           type="button"
           class="modal-btn modal-cancel"
           (click)="closeAddModal()">
+
           <i class="pi pi-times"></i>
+
           إلغاء
+
         </button>
+
 
         <button
           type="button"
           class="modal-btn modal-save"
           id="btn-save-user"
           (click)="submitAdd()">
+
           <i class="pi pi-check"></i>
+
           حفظ المستخدم
+
         </button>
 
       </div>
@@ -447,49 +503,85 @@
 =================================================== -->
 @if (showDeleteModal() && deleteTarget()) {
 
-  <div class="um-modal-backdrop" (click)="cancelDelete()">
+  <div
+    class="um-modal-backdrop"
+    (click)="cancelDelete()">
 
-    <div class="um-modal um-modal-sm" (click)="$event.stopPropagation()">
+    <div
+      class="um-modal um-modal-sm"
+      (click)="$event.stopPropagation()">
 
+
+      <!-- HEADER -->
       <div class="modal-header danger-header">
+
         <div class="modal-header-icon danger-icon">
+
           <i class="pi pi-trash"></i>
+
         </div>
+
         <h3>تأكيد الحذف</h3>
+
         <button
           type="button"
           class="modal-close"
           (click)="cancelDelete()">
+
           <i class="pi pi-times"></i>
+
         </button>
+
       </div>
 
+
+      <!-- BODY -->
       <div class="modal-body confirm-body">
-        <p>هل أنت متأكد من حذف المستخدم</p>
-        <strong>{{ deleteTarget()!.username }}</strong>
-        <p class="confirm-warning">
-          <i class="pi pi-exclamation-triangle"></i>
-          لا يمكن التراجع عن هذا الإجراء
+
+        <p>
+          هل أنت متأكد من حذف المستخدم
         </p>
+
+        <strong>
+          {{ deleteTarget()!.username }}
+        </strong>
+
+        <p class="confirm-warning">
+
+          <i class="pi pi-exclamation-triangle"></i>
+
+          لا يمكن التراجع عن هذا الإجراء
+
+        </p>
+
       </div>
 
+
+      <!-- FOOTER -->
       <div class="modal-footer">
 
         <button
           type="button"
           class="modal-btn modal-cancel"
           (click)="cancelDelete()">
+
           <i class="pi pi-times"></i>
+
           إلغاء
+
         </button>
+
 
         <button
           type="button"
           class="modal-btn modal-danger"
           id="btn-confirm-delete"
           (click)="executeDelete()">
+
           <i class="pi pi-trash"></i>
+
           نعم، احذف المستخدم
+
         </button>
 
       </div>
