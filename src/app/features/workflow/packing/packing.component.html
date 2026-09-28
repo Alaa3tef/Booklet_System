@@ -2,7 +2,7 @@
   stepNumber="04"
   englishLabel="Packing"
   arabicTitle="مستخدم التغليف"
-  arabicSubtitle="تغليف الأظرف الصغيرة للجنة في ظرف كبير ومراجعة اللجنة بالكامل"
+  arabicSubtitle="تغليف الأظرف الصغيرة للجنة في ظرف كبير وعمل Scan للغلاف الخارجي"
   theme="purple"
   activeNavKey="packing"
   illustrationIcon="pi pi-box"
@@ -14,43 +14,1111 @@
   [essentials]="essentials"
   resultText="يتم تسجيل حالة التغليف وتصبح اللجنة جاهزة للتخزين"
 >
+
   <div panel-content>
-    <div class="qr-scan-block main-action">
-      <div class="qr-icon"><i class="pi pi-qrcode"></i></div>
-      <p class="qr-label">امسح QR اللجنة الخارجية</p>
+
+
+    <!-- ================================================= -->
+    <!-- Page Intro -->
+    <!-- ================================================= -->
+
+    <div class="packing-intro">
+
+      <div>
+
+        <span class="intro-eyebrow">
+          PACKING CONTROL
+        </span>
+
+        <h3>
+          تغليف ومراجعة اللجان
+        </h3>
+
+        <p>
+          اختر المادة لعمل Scan للغلاف الخارجي للجنة،
+          ثم قم بتسجيل نتيجة التغليف.
+        </p>
+
+      </div>
+
+
+      <div class="packing-counter">
+
+        <div class="counter-icon">
+          <i class="pi pi-box"></i>
+        </div>
+
+        <div>
+
+          <strong>
+            {{ rows().length }}
+          </strong>
+
+          <span>
+            لجنة
+          </span>
+
+        </div>
+
+      </div>
+
     </div>
 
-    <button type="button" class="opt-btn solid-green main-action" (click)="confirmPacking()">
-      <i class="pi pi-check"></i> تم التغليف
-    </button>
+
+    <!-- ================================================= -->
+    <!-- Table -->
+    <!-- ================================================= -->
 
     <div class="table-section">
-      <h4>سجل التغليف</h4>
-      <p-table [value]="rows()" styleClass="p-datatable-sm" responsiveLayout="scroll">
+
+      <div class="table-header">
+
+        <div>
+
+          <span>
+            PACKING REGISTER
+          </span>
+
+          <h4>
+            سجل التغليف
+          </h4>
+
+        </div>
+
+
+        <div class="table-count">
+          {{ rows().length }} لجنة
+        </div>
+
+      </div>
+
+
+      <p-table
+        [value]="rows()"
+        styleClass="packing-table"
+        responsiveLayout="scroll"
+      >
+
+        <!-- Header -->
+
         <ng-template pTemplate="header">
+
           <tr>
-            <th>م</th>
-            <th>المادة</th>
-            <th>رقم اللجنة</th>
-            <th>الحالة</th>
+
+            <th>
+              م
+            </th>
+
+            <th>
+              المادة
+            </th>
+
+            <th>
+              رقم اللجنة
+            </th>
+
+            <th>
+              المحافظة
+            </th>
+
+            <th>
+              الحالة
+            </th>
+
+            <th>
+              الإجراء
+            </th>
+
           </tr>
+
         </ng-template>
-        <ng-template pTemplate="body" let-row>
+
+
+        <!-- Body -->
+
+        <ng-template
+          pTemplate="body"
+          let-row
+        >
+
           <tr>
-            <td>{{ row.index }}</td>
-            <td>{{ row.subject }}</td>
-            <td>{{ row.committeeNumber }}</td>
-            <td><span class="status-pill" [ngClass]="row.statusTone">{{ row.status }}</span></td>
+
+
+            <!-- Index -->
+
+            <td>
+
+              <span class="row-index">
+                {{ row.index }}
+              </span>
+
+            </td>
+
+
+            <!-- Subject -->
+
+            <td>
+
+              <div class="subject-cell">
+
+                <div class="subject-icon">
+                  <i class="pi pi-book"></i>
+                </div>
+
+                <div>
+
+                  <strong>
+                    {{ row.subject }}
+                  </strong>
+
+                  <small>
+                    لجنة امتحانية
+                  </small>
+
+                </div>
+
+              </div>
+
+            </td>
+
+
+            <!-- Committee -->
+
+            <td>
+
+              <span class="committee-number">
+                {{ row.committeeNumber }}
+              </span>
+
+            </td>
+
+
+            <!-- Governorate -->
+
+            <td>
+              {{ row.governorate }}
+            </td>
+
+
+            <!-- Status -->
+
+            <td>
+
+              <span
+                class="status-pill"
+                [class.success]="row.status === 'تم التغليف'"
+                [class.warning]="row.status === 'قيد التغليف'"
+                [class.danger]="row.status === 'مرفوض'"
+              >
+
+                <i
+                  class="pi"
+                  [class.pi-check-circle]="row.status === 'تم التغليف'"
+                  [class.pi-clock]="row.status === 'قيد التغليف'"
+                  [class.pi-times-circle]="row.status === 'مرفوض'"
+                ></i>
+
+                {{ row.status }}
+
+              </span>
+
+            </td>
+
+
+            <!-- Action -->
+
+            <td>
+
+
+              <!-- قيد التغليف -->
+
+              <button
+                *ngIf="row.status === 'قيد التغليف'"
+                pButton
+                type="button"
+                class="scan-row-button"
+                (click)="openScanDialog(row)"
+              >
+
+                <i class="pi pi-qrcode"></i>
+
+                <span>
+                  بدء Scan
+                </span>
+
+              </button>
+
+
+              <!-- تم التغليف -->
+
+              <div
+                *ngIf="row.status === 'تم التغليف'"
+                class="no-action success-action"
+              >
+
+                <i class="pi pi-check-circle"></i>
+
+                <span>
+                  تم التغليف
+                </span>
+
+              </div>
+
+
+              <!-- مرفوض -->
+
+              <div
+                *ngIf="row.status === 'مرفوض'"
+                class="no-action rejected-action"
+              >
+
+                <i class="pi pi-times-circle"></i>
+
+                <span>
+                  تم الرفض
+                </span>
+
+              </div>
+
+            </td>
+
           </tr>
+
         </ng-template>
+
+
+        <!-- Empty -->
+
+        <ng-template pTemplate="emptymessage">
+
+          <tr>
+
+            <td
+              colspan="6"
+              class="empty-state"
+            >
+
+              <i class="pi pi-inbox"></i>
+
+              <strong>
+                لا توجد لجان للتغليف
+              </strong>
+
+              <span>
+                ستظهر اللجان المطلوب تغليفها هنا.
+              </span>
+
+            </td>
+
+          </tr>
+
+        </ng-template>
+
       </p-table>
+
     </div>
+
+
+    <!-- ================================================= -->
+    <!-- PACKING SCAN DIALOG -->
+    <!-- ================================================= -->
+
+    <p-dialog
+      [(visible)]="scanDialogVisible"
+      [modal]="true"
+      [draggable]="false"
+      [resizable]="false"
+      [closable]="!isScanning"
+      [dismissableMask]="!isScanning"
+      [style]="{ width: '950px', maxWidth: '95vw' }"
+      styleClass="packing-scan-dialog"
+      (onHide)="closeScanDialog()"
+    >
+
+
+      <!-- Header -->
+
+      <ng-template pTemplate="header">
+
+        <div class="scan-dialog-header">
+
+          <div class="dialog-icon">
+
+            <i class="pi pi-qrcode"></i>
+
+          </div>
+
+          <div>
+
+            <span>
+              PACKING SCAN
+            </span>
+
+            <h3>
+              Scan الغلاف الخارجي
+            </h3>
+
+          </div>
+
+        </div>
+
+      </ng-template>
+
+
+      <div
+        class="scan-dialog-content"
+        *ngIf="selectedRow"
+      >
+
+
+        <!-- ========================================== -->
+        <!-- Material Info -->
+        <!-- ========================================== -->
+
+        <div class="material-info">
+
+          <div class="material-main">
+
+            <div class="material-icon">
+
+              <i class="pi pi-book"></i>
+
+            </div>
+
+            <div>
+
+              <span>
+                المادة
+              </span>
+
+              <strong>
+                {{ selectedRow.subject }}
+              </strong>
+
+            </div>
+
+          </div>
+
+
+          <div class="material-details">
+
+            <div>
+
+              <span>
+                رقم اللجنة
+              </span>
+
+              <strong>
+                {{ selectedRow.committeeNumber }}
+              </strong>
+
+            </div>
+
+            <div>
+
+              <span>
+                المحافظة
+              </span>
+
+              <strong>
+                {{ selectedRow.governorate }}
+              </strong>
+
+            </div>
+
+          </div>
+
+        </div>
+
+
+        <!-- ========================================== -->
+        <!-- Scan Workspace -->
+        <!-- ========================================== -->
+
+        <div class="scan-workspace">
+
+
+          <!-- Scanner -->
+
+          <div class="scanner-card">
+
+            <div class="scanner-title">
+
+              <div>
+
+                <span>
+                  الخطوة الوحيدة
+                </span>
+
+                <strong>
+                  Scan الغلاف الخارجي
+                </strong>
+
+              </div>
+
+              <i class="pi pi-qrcode"></i>
+
+            </div>
+
+
+            <div class="scanner-visual">
+
+
+              <div class="scanner-corners">
+
+                <span class="corner top-right"></span>
+                <span class="corner top-left"></span>
+                <span class="corner bottom-right"></span>
+                <span class="corner bottom-left"></span>
+
+              </div>
+
+
+              <!-- Fake QR -->
+
+              <div class="fake-qr">
+
+                <div class="qr-grid">
+
+                  <span></span>
+                  <span></span>
+                  <span></span>
+                  <span></span>
+                  <span></span>
+                  <span></span>
+                  <span></span>
+                  <span></span>
+                  <span></span>
+
+                </div>
+
+              </div>
+
+
+              <!-- Scan Line -->
+
+              <div
+                class="scan-line"
+                *ngIf="isScanning"
+              ></div>
+
+
+              <!-- Loading -->
+
+              <div
+                class="scanner-loading"
+                *ngIf="isScanning"
+              >
+
+                <i class="pi pi-spin pi-spinner"></i>
+
+                جاري قراءة QR...
+
+              </div>
+
+            </div>
+
+
+            <!-- Start -->
+
+            <button
+              pButton
+              type="button"
+              class="start-scan-button"
+              [disabled]="
+                isScanning ||
+                scanCompleted
+              "
+              (click)="startScan()"
+            >
+
+              <i
+                class="pi"
+                [class.pi-qrcode]="!isScanning"
+                [class.pi-spinner]="isScanning"
+                [class.pi-spin]="isScanning"
+              ></i>
+
+              {{
+                isScanning
+                  ? 'جاري المسح...'
+                  : scanCompleted
+                    ? 'تم الـ Scan'
+                    : 'بدء Scan'
+              }}
+
+            </button>
+
+
+            <!-- Success -->
+
+            <div
+              class="scan-success"
+              *ngIf="scanCompleted"
+            >
+
+              <i class="pi pi-check-circle"></i>
+
+              تم قراءة الغلاف بنجاح
+
+            </div>
+
+          </div>
+
+
+          <!-- ====================================== -->
+          <!-- Scan Data -->
+          <!-- ====================================== -->
+
+          <div class="scan-data-card">
+
+            <div class="data-header">
+
+              <div>
+
+                <span>
+                  SCAN RESULT
+                </span>
+
+                <strong>
+                  بيانات الغلاف
+                </strong>
+
+              </div>
+
+
+              <span
+                class="success-badge"
+                *ngIf="scanCompleted"
+              >
+
+                <i class="pi pi-check"></i>
+
+                ناجح
+
+              </span>
+
+            </div>
+
+
+            <!-- Empty -->
+
+            <div
+              class="data-empty"
+              *ngIf="!scanCompleted"
+            >
+
+              <div class="empty-icon">
+
+                <i class="pi pi-database"></i>
+
+              </div>
+
+              <strong>
+                في انتظار الـ Scan
+              </strong>
+
+              <span>
+                قم بعمل Scan للـ QR الموجود على
+                الغلاف الخارجي للجنة.
+              </span>
+
+            </div>
+
+
+            <!-- Result -->
+
+            <div
+              class="scan-result"
+              *ngIf="scanCompleted && scanResult"
+            >
+
+              <div class="result-row">
+
+                <span>
+                  نوع الـ Scan
+                </span>
+
+                <strong>
+                  {{ scanResult.scanType }}
+                </strong>
+
+              </div>
+
+
+              <div class="result-row">
+
+                <span>
+                  QR Code
+                </span>
+
+                <strong class="qr-result">
+                  {{ scanResult.qrCode }}
+                </strong>
+
+              </div>
+
+
+              <div class="result-row">
+
+                <span>
+                  المادة
+                </span>
+
+                <strong>
+                  {{ scanResult.subject }}
+                </strong>
+
+              </div>
+
+
+              <div class="result-row">
+
+                <span>
+                  رقم اللجنة
+                </span>
+
+                <strong>
+                  {{ scanResult.committeeNumber }}
+                </strong>
+
+              </div>
+
+
+              <div class="result-row">
+
+                <span>
+                  المحافظة
+                </span>
+
+                <strong>
+                  {{ scanResult.governorate }}
+                </strong>
+
+              </div>
+
+
+              <div class="result-row">
+
+                <span>
+                  وقت القراءة
+                </span>
+
+                <strong>
+                  {{ scanResult.scannedAt }}
+                </strong>
+
+              </div>
+
+            </div>
+
+          </div>
+
+        </div>
+
+
+        <!-- ========================================== -->
+        <!-- Message -->
+        <!-- ========================================== -->
+
+        <div
+          class="scan-message"
+          *ngIf="scanMessage"
+        >
+
+          <i class="pi pi-info-circle"></i>
+
+          {{ scanMessage }}
+
+        </div>
+
+
+        <!-- ========================================== -->
+        <!-- Final Actions -->
+        <!-- ========================================== -->
+
+        <div
+          class="final-actions"
+          *ngIf="scanCompleted"
+        >
+
+          <div class="final-info">
+
+            <div class="final-check">
+
+              <i class="pi pi-check"></i>
+
+            </div>
+
+            <div>
+
+              <strong>
+                تم الانتهاء من Scan
+              </strong>
+
+              <span>
+                يمكنك الآن تسجيل نتيجة التغليف.
+              </span>
+
+            </div>
+
+          </div>
+
+
+          <div class="decision-buttons">
+
+            <button
+              pButton
+              type="button"
+              class="packing-confirm-button"
+              (click)="confirmPacking()"
+            >
+
+              <i class="pi pi-check"></i>
+
+              تم التغليف
+
+            </button>
+
+
+            <button
+              pButton
+              type="button"
+              class="packing-reject-button"
+              (click)="openRejectDialog()"
+            >
+
+              <i class="pi pi-times"></i>
+
+              رفض
+
+            </button>
+
+          </div>
+
+        </div>
+
+      </div>
+
+
+      <ng-template pTemplate="footer">
+
+        <button
+          pButton
+          type="button"
+          class="dialog-close-button"
+          label="إغلاق"
+          [disabled]="isScanning"
+          (click)="closeScanDialog()"
+        ></button>
+
+      </ng-template>
+
+    </p-dialog>
+
+
+    <!-- ================================================= -->
+    <!-- REJECT DIALOG -->
+    <!-- ================================================= -->
+
+    <p-dialog
+      [(visible)]="rejectDialogVisible"
+      [modal]="true"
+      [draggable]="false"
+      [resizable]="false"
+      [closable]="!rejectSubmitting"
+      [style]="{ width: '720px' }"
+      styleClass="reject-dialog"
+    >
+
+      <ng-template pTemplate="header">
+
+        <div class="reject-header">
+
+          <i class="pi pi-times-circle"></i>
+
+          <div>
+
+            <strong>
+              رفض التغليف
+            </strong>
+
+            <span>
+              تسجيل سبب الرفض وتحديد المراجعين
+            </span>
+
+          </div>
+
+        </div>
+
+      </ng-template>
+
+
+      <div class="reject-dialog-content">
+
+
+        <!-- Intro -->
+
+        <div class="reject-intro">
+
+          <div class="reject-icon">
+
+            <i class="pi pi-exclamation-triangle"></i>
+
+          </div>
+
+          <div class="reject-intro-text">
+
+            <h3>
+              رفض {{ selectedRow?.subject }}
+            </h3>
+
+            <p>
+              يرجى تسجيل سبب الرفض واختيار المستخدمين
+              المسؤولين عن متابعة الإجراء.
+            </p>
+
+          </div>
+
+        </div>
+
+
+        <!-- Summary -->
+
+        <div class="material-summary">
+
+          <div class="summary-item">
+
+            <span class="summary-label">
+              المادة
+            </span>
+
+            <strong class="summary-value">
+              {{ selectedRow?.subject }}
+            </strong>
+
+          </div>
+
+
+          <div class="summary-divider"></div>
+
+
+          <div class="summary-item">
+
+            <span class="summary-label">
+              اللجنة
+            </span>
+
+            <strong class="summary-value">
+              {{ selectedRow?.committeeNumber }}
+            </strong>
+
+          </div>
+
+
+          <div class="summary-divider"></div>
+
+
+          <div class="summary-item">
+
+            <span class="summary-label">
+              المحافظة
+            </span>
+
+            <strong class="summary-value">
+              {{ selectedRow?.governorate }}
+            </strong>
+
+          </div>
+
+        </div>
+
+
+        <!-- Reason -->
+
+        <div class="dialog-field">
+
+          <label>
+            سبب الرفض
+            <span class="required">*</span>
+          </label>
+
+          <textarea
+            pTextarea
+            [(ngModel)]="rejectReason"
+            class="reject-textarea"
+            maxlength="500"
+            rows="5"
+            placeholder="اكتب سبب رفض التغليف..."
+          ></textarea>
+
+          <div class="field-footer">
+
+            <span>
+              يجب أن يكون سبب الرفض واضحًا ومحددًا.
+            </span>
+
+            <span>
+              {{ rejectReason.length }} / 500
+            </span>
+
+          </div>
+
+        </div>
+
+
+        <!-- Reviewers -->
+
+        <div class="dialog-field">
+
+          <label>
+            المراجعون المسؤولون
+            <span class="required">*</span>
+          </label>
+
+          <p-multiSelect
+            [(ngModel)]="selectedReviewers"
+            [options]="reviewUsers"
+            optionLabel="name"
+            placeholder="اختر المراجعين"
+            [filter]="true"
+            filterBy="name,role"
+            [showClear]="true"
+            appendTo="body"
+            styleClass="reviewers-select"
+          >
+
+            <ng-template
+              pTemplate="item"
+              let-user
+            >
+
+              <div class="reviewer-option">
+
+                <div class="reviewer-avatar">
+
+                  {{ user.name.charAt(0) }}
+
+                </div>
+
+                <div class="reviewer-info">
+
+                  <span class="reviewer-name">
+                    {{ user.name }}
+                  </span>
+
+                  <span class="reviewer-role">
+                    {{ user.role }}
+                  </span>
+
+                </div>
+
+              </div>
+
+            </ng-template>
+
+          </p-multiSelect>
+
+
+          <div
+            class="selected-reviewers"
+            *ngIf="selectedReviewers.length"
+          >
+
+            <span
+              class="reviewer-chip"
+              *ngFor="let user of selectedReviewers"
+            >
+
+              {{ user.name }}
+
+            </span>
+
+          </div>
+
+        </div>
+
+
+        <!-- Warning -->
+
+        <div class="reject-warning">
+
+          <i class="pi pi-info-circle"></i>
+
+          <span>
+            عند تأكيد الرفض سيتم تغيير حالة المادة إلى
+            <strong>مرفوض</strong>
+            ولن تظهر لها إجراءات تغليف مرة أخرى.
+          </span>
+
+        </div>
+
+      </div>
+
+
+      <ng-template pTemplate="footer">
+
+        <div class="dialog-footer">
+
+          <button
+            pButton
+            type="button"
+            class="cancel-btn"
+            label="إلغاء"
+            [disabled]="rejectSubmitting"
+            (click)="closeRejectDialog()"
+          ></button>
+
+
+          <button
+            pButton
+            type="button"
+            class="reject-submit-btn"
+            [disabled]="
+              !isRejectFormValid ||
+              rejectSubmitting
+            "
+            (click)="submitRejection()"
+          >
+
+            <i
+              class="pi"
+              [class.pi-times]="!rejectSubmitting"
+              [class.pi-spin]="rejectSubmitting"
+              [class.pi-spinner]="rejectSubmitting"
+            ></i>
+
+            {{
+              rejectSubmitting
+                ? 'جاري الحفظ...'
+                : 'تأكيد الرفض'
+            }}
+
+          </button>
+
+        </div>
+
+      </ng-template>
+
+    </p-dialog>
+
   </div>
 
+
+  <!-- ================================================= -->
+  <!-- System Options -->
+  <!-- ================================================= -->
+
   <ng-container system-options>
-    <button type="button" class="opt-btn solid-green" (click)="confirmPacking()">
-      <i class="pi pi-check"></i> تم التغليف
-    </button>
-    <button type="button" class="opt-btn outline">عرض التفاصيل</button>
+
+    <span class="system-option-info">
+
+      <i class="pi pi-info-circle"></i>
+
+      يتم تسجيل التغليف من خلال Scan الغلاف الخارجي لكل لجنة.
+
+    </span>
+
   </ng-container>
+
 </app-workflow-step-layout>

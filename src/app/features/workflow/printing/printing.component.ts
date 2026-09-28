@@ -35,7 +35,7 @@ import { MultiSelectModule } from 'primeng/multiselect';
   templateUrl: './printing.component.html',
   styleUrl: './printing.component.scss'
 })
-export class PrintingComponent {
+export default class PrintingComponent {
 
   readonly governorates: SelectOption[] = [
     { label: 'كل المحافظات', value: 'all' },

@@ -10,7 +10,7 @@ import Chart from 'chart.js/auto';
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.scss'
 })
-export class DashboardComponent implements AfterViewChecked, AfterViewInit, OnDestroy {
+export default class DashboardComponent implements AfterViewChecked, AfterViewInit, OnDestroy {
    @ViewChild('stageChart')
   stageChart!: ElementRef<HTMLCanvasElement>;
 

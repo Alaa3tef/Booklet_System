@@ -26,7 +26,7 @@ import { AppUser } from './interface/useManagement';
   templateUrl: './user-management.component.html',
   styleUrl: './user-management.component.scss'
 })
-export class UserManagementComponent {
+export default class UserManagementComponent {
 
   // ==================================================
   // STATE

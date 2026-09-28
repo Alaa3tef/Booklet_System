@@ -15,7 +15,7 @@ import { WorkflowStatusRow } from '../../../core/models/workflow.model';
   templateUrl: './archiving.component.html',
   styleUrl: './archiving.component.scss'
 })
-export class ArchivingComponent {
+export default class ArchivingComponent {
   readonly zones: SelectOption[] = [{ label: 'المخزن الرئيسي', value: 'main' }];
   readonly shelves: SelectOption[] = [
     { label: 'A-01', value: 'A-01' },
