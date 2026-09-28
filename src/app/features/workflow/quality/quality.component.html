@@ -345,7 +345,7 @@
 
     <p-dialog
       [(visible)]="scanDialogVisible"
-      [modal]="true"
+      [modal]="true" [baseZIndex]="10000"
       [draggable]="false"
       [resizable]="false"
       [closable]="!isScanning"
@@ -1017,11 +1017,11 @@
 
     <p-dialog
       [(visible)]="rejectDialogVisible"
-      [modal]="true"
+      [modal]="true" [baseZIndex]="10000"
       [draggable]="false"
       [resizable]="false"
       [closable]="!rejectSubmitting"
-      [style]="{ width: '720px' }"
+      [style]="{ width: '1100px', maxWidth: '95vw' }"
       styleClass="reject-dialog"
     >
 
@@ -1298,7 +1298,7 @@
 
      <p-dialog
         [(visible)]="rejectionReasonDialogVisible"
-        [modal]="true"
+        [modal]="true" [baseZIndex]="10000"
         [draggable]="false"
         [resizable]="false"
         [closable]="true"

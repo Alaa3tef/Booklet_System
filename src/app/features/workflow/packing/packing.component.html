@@ -325,7 +325,7 @@
 
     <p-dialog
       [(visible)]="scanDialogVisible"
-      [modal]="true"
+      [modal]="true" [baseZIndex]="10000"
       [draggable]="false"
       [resizable]="false"
       [closable]="!isScanning"
@@ -823,7 +823,7 @@
 
     <p-dialog
       [(visible)]="rejectDialogVisible"
-      [modal]="true"
+      [modal]="true" [baseZIndex]="10000"
       [draggable]="false"
       [resizable]="false"
       [closable]="!rejectSubmitting"
