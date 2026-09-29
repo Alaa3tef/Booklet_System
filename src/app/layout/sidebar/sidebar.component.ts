@@ -139,11 +139,11 @@ export class SidebarComponent {
       route: '/users'
     },
 
-    {
-      label: 'الإعدادات',
-      icon: 'pi pi-cog',
-      route: '/settings'
-    }
+    // {
+    //   label: 'الإعدادات',
+    //   icon: 'pi pi-cog',
+    //   route: '/settings'
+    // }
 
   ]);
 
