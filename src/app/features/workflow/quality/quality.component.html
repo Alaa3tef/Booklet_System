@@ -952,7 +952,7 @@
 
               </div>
 
-
+<!-- 
               <div class="decision-actions">
 
                 <button
@@ -982,7 +982,7 @@
 
                 </button>
 
-              </div>
+              </div> -->
 
             </div>
 
@@ -997,14 +997,45 @@
 
       <ng-template pTemplate="footer">
 
-        <button
+        <!-- <button
           pButton
           type="button"
           class="scan-close-button"
           label="إغلاق"
           [disabled]="isScanning"
           (click)="closeScanDialog()"
-        ></button>
+        ></button> -->
+
+        <div class="decision-actions" *ngIf="allScansCompleted">
+
+                <button
+                  pButton
+                  type="button"
+                  class="approve-material-button"
+                  (click)="approveMaterial()"
+                >
+
+                  <i class="pi pi-check"></i>
+
+                  تم المراجعة
+
+                </button>
+
+
+                <button
+                  pButton
+                  type="button"
+                  class="reject-material-button"
+                  (click)="openRejectDialog()"
+                >
+
+                  <i class="pi pi-times"></i>
+
+                  رفض
+
+                </button>
+
+              </div>
 
       </ng-template>
 

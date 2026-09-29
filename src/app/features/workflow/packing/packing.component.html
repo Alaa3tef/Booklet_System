@@ -737,7 +737,7 @@
         <!-- Final Actions -->
         <!-- ========================================== -->
 
-        <div
+        <!-- <div
           class="final-actions"
           *ngIf="scanCompleted"
         >
@@ -796,21 +796,52 @@
 
           </div>
 
-        </div>
+        </div> -->
 
       </div>
 
 
       <ng-template pTemplate="footer">
 
-        <button
+        <!-- <button
           pButton
           type="button"
           class="dialog-close-button"
           label="إغلاق"
           [disabled]="isScanning"
           (click)="closeScanDialog()"
-        ></button>
+        ></button> -->
+
+         <div class="decision-buttons" *ngIf="scanCompleted">
+
+            <button
+              pButton
+              type="button"
+              class="packing-confirm-button"
+              (click)="confirmPacking()"
+            >
+
+              <i class="pi pi-check"></i>
+
+              تم التغليف
+
+            </button>
+
+
+            <button
+              pButton
+              type="button"
+              class="packing-reject-button"
+              (click)="openRejectDialog()"
+            >
+
+              <i class="pi pi-times"></i>
+
+              رفض
+
+            </button>
+
+          </div>
 
       </ng-template>
 
@@ -827,7 +858,7 @@
       [draggable]="false"
       [resizable]="false"
       [closable]="!rejectSubmitting"
-      [style]="{ width: '720px' }"
+      [style]="{ width: '950px', maxWidth: '95vw' }"
       styleClass="reject-dialog"
     >
 

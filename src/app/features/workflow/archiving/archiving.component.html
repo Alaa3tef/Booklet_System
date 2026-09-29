@@ -86,7 +86,7 @@
           />
 
         </div>
-        
+
         <!-- رقم اللجنة -->
 
         <div class="field">
@@ -664,7 +664,24 @@
                   </div>
                 </div>
 
-                <div class="decision-actions">
+              </div>
+            }
+          </section>
+        </div>
+      </div>
+    }
+  }
+
+  <ng-template pTemplate="footer">
+    <!-- <button
+      pButton type="button"
+      class="scan-close-button"
+      label="إغلاق"
+      [disabled]="isScanning()"
+      (click)="closeDialog()"
+    ></button> -->
+    @if (allScansCompleted()) {
+    <div class="decision-actions">
                   <button
                     pButton type="button"
                     class="approve-material-button"
@@ -675,22 +692,7 @@
                     {{ isStorage() ? 'تأكيد التخزين' : 'تأكيد التسليم' }}
                   </button>
                 </div>
-              </div>
-            }
-          </section>
-        </div>
-      </div>
-    }
-  }
-
-  <ng-template pTemplate="footer">
-    <button
-      pButton type="button"
-      class="scan-close-button"
-      label="إغلاق"
-      [disabled]="isScanning()"
-      (click)="closeDialog()"
-    ></button>
+              }
   </ng-template>
 </p-dialog>
 
