@@ -1475,3 +1475,16 @@
     min-width: 85px;
   }
 }
+.pagination-page:hover {
+  background: #f1f5f9;
+  color: #14b8ab;
+}
+
+.pagination-page.active {
+  background: #14b8ab;
+  border-color: #14b8ab;
+  color: #fff;
+
+  box-shadow:
+    0 3px 8px rgba(37, 99, 235, 0.22);
+}

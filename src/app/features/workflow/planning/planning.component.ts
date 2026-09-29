@@ -48,7 +48,105 @@ interface ReviewUser {
   styleUrl: './planning.component.scss'
 })
 export default class PlanningComponent {
+  // ==========================================
+// PAGINATION
+// ==========================================
 
+readonly pageSize = signal(5);
+
+readonly currentPage = signal(1);
+
+readonly totalPages = computed(() => {
+  return Math.max(
+    1,
+    Math.ceil(this.filteredRows().length / this.pageSize())
+  );
+});
+
+readonly paginatedRows = computed(() => {
+  const page = this.currentPage();
+  const size = this.pageSize();
+
+  const start = (page - 1) * size;
+  const end = start + size;
+
+  return this.filteredRows().slice(start, end);
+});
+
+readonly paginationPages = computed(() => {
+
+  const total = this.totalPages();
+  const current = this.currentPage();
+
+  // 4 صفحات أو أقل → اعرضهم كلهم
+  if (total <= 4) {
+    return Array.from(
+      { length: total },
+      (_, index) => index + 1
+    );
+  }
+
+  // أكثر من 4 صفحات
+  if (current <= 2) {
+    return [1, 2, 3, 'dots', total];
+  }
+
+  if (current >= total - 1) {
+    return [1, 'dots', total - 2, total - 1, total];
+  }
+
+  return [1, 'dots', current, 'dots', total];
+});
+
+readonly paginationStart = computed(() => {
+
+  if (this.filteredRows().length === 0) {
+    return 0;
+  }
+
+  return (
+    (this.currentPage() - 1) *
+      this.pageSize() +
+    1
+  );
+});
+
+readonly paginationEnd = computed(() => {
+
+  return Math.min(
+    this.currentPage() * this.pageSize(),
+    this.filteredRows().length
+  );
+});
+
+
+goToPage(page: number): void {
+
+  if (
+    page < 1 ||
+    page > this.totalPages() ||
+    page === this.currentPage()
+  ) {
+    return;
+  }
+
+  this.currentPage.set(page);
+}
+
+
+previousPage(): void {
+  this.goToPage(this.currentPage() - 1);
+}
+
+
+nextPage(): void {
+  this.goToPage(this.currentPage() + 1);
+}
+
+
+onPageSizeChange(): void {
+  this.currentPage.set(1);
+}
   // ==========================================
   // FILTER OPTIONS
   // ==========================================
@@ -174,7 +272,33 @@ export default class PlanningComponent {
 
       rejectionReason:
         'يوجد بعض الأخطاء في محتوى المادة، كما أن بعض الأسئلة تحتاج إلى مراجعة قبل اعتماد الخطة.'
-    }
+    },
+    {
+      index: 1,
+      subject: 'اللغة العربية',
+      governorate: 'القاهرة',
+      status: 'جاهز للطباعة',
+      statusTone: 'success'
+    },
+
+    {
+      index: 2,
+      subject: 'الرياضيات',
+      governorate: 'الجيزة',
+      status: 'قيد الإعداد',
+      statusTone: 'warning'
+    },
+
+    {
+      index: 3,
+      subject: 'العلوم',
+      governorate: 'الإسكندرية',
+      status: 'مرفوض',
+      statusTone: 'danger',
+
+      rejectionReason:
+        'يوجد بعض الأخطاء في محتوى المادة، كما أن بعض الأسئلة تحتاج إلى مراجعة قبل اعتماد الخطة.'
+    },
   ]);
 
 
@@ -238,16 +362,19 @@ export default class PlanningComponent {
   // SEARCH
   // ==========================================
 
-  search(): void {
+search(): void {
 
-    this.searchGovernorate.set(
-      this.selectedGovernorate
-    );
+  this.searchGovernorate.set(
+    this.selectedGovernorate
+  );
 
-    this.searchSubject.set(
-      this.selectedSubject
-    );
-  }
+  this.searchSubject.set(
+    this.selectedSubject
+  );
+
+  // Reset pagination after filtering
+  this.currentPage.set(1);
+}
 
 
   // ==========================================

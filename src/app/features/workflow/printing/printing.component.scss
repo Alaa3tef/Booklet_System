@@ -36,7 +36,7 @@
 
   border-radius: var(--ebs-radius);
 
-  overflow: hidden;
+  overflow: visible;
 }
 
 
@@ -759,4 +759,18 @@
     padding-inline-start: 3rem;
   }
 
+}
+
+.pagination-page:hover {
+  background: #f1f5f9;
+  color: #16a34a;
+}
+
+.pagination-page.active {
+  background: #16a34a;
+  border-color: #16a34a;
+  color: #fff;
+
+  box-shadow:
+    0 3px 8px rgba(37, 99, 235, 0.22);
 }

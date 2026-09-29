@@ -1,4 +1,4 @@
-import { Component, signal } from '@angular/core';
+import { Component, computed, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 
@@ -10,6 +10,7 @@ import { TextareaModule } from 'primeng/textarea';
 
 import { WorkflowStepLayoutComponent } from '../../../shared/workflow-step-layout/workflow-step-layout.component';
 import { WorkflowStatusRow } from '../../../core/models/workflow.model';
+import { SelectModule } from 'primeng/select';
 
 interface PackingRow extends WorkflowStatusRow {
   governorate: string;
@@ -35,7 +36,7 @@ interface PackingScanResult {
     DialogModule,
     MultiSelectModule,
     ButtonModule,
-    TextareaModule,
+    TextareaModule, SelectModule,
     WorkflowStepLayoutComponent
   ],
   templateUrl: './packing.component.html',
@@ -97,7 +98,188 @@ export default class PackingComponent {
     }
   ]);
 
+    // ==========================================
+  // SEARCH FILTERS
+  // ==========================================
 
+  // القيم اللي المستخدم بيختارها/بيكتبها (لسه مطبقتش)
+  readonly subjectFilter = signal<string | null>(null);
+  readonly governorateFilter = signal<string | null>(null);
+  readonly committeeFilter = signal('');
+
+  // القيم المطبقة فعليًا بعد الضغط على "بحث"
+  private readonly appliedFilters = signal({
+    subject: null as string | null,
+    governorate: null as string | null,
+    committee: ''
+  });
+
+  // خيارات الـ dropdown بتتولد تلقائيًا من البيانات
+  readonly subjectOptions = computed(() =>
+    [...new Set(this.rows().map(r => r.subject))]
+      .map(value => ({ label: value, value }))
+  );
+
+  readonly governorateOptions = computed(() =>
+    [...new Set(this.rows().map(r => r.governorate))]
+      .map(value => ({ label: value, value }))
+  );
+
+  readonly filteredRows = computed(() => {
+    const { subject, governorate, committee } = this.appliedFilters();
+    const committeeTerm = committee.trim();
+
+    return this.rows().filter(row =>
+      (!subject || row.subject === subject) &&
+      (!governorate || row.governorate === governorate) &&
+(!committeeTerm || (row.committeeNumber ?? '').includes(committeeTerm))    );
+  });
+
+  readonly hasActiveFilters = computed(() => {
+    const f = this.appliedFilters();
+    return !!(f.subject || f.governorate || f.committee.trim());
+  });
+
+  applyFilters(): void {
+    this.appliedFilters.set({
+      subject: this.subjectFilter(),
+      governorate: this.governorateFilter(),
+      committee: this.committeeFilter()
+    });
+
+    this.currentPage.set(1);
+  }
+
+  resetFilters(): void {
+    this.subjectFilter.set(null);
+    this.governorateFilter.set(null);
+    this.committeeFilter.set('');
+
+    this.appliedFilters.set({
+      subject: null,
+      governorate: null,
+      committee: ''
+    });
+
+    this.currentPage.set(1);
+  }
+
+// ==========================================
+// PAGINATION
+// ==========================================
+
+readonly pageSize = signal(5);
+
+readonly currentPage = signal(1);
+
+readonly totalPages = computed(() => {
+  return Math.max(
+    1,
+    Math.ceil(
+      this.filteredRows().length / this.pageSize()
+    )
+  );
+});
+
+readonly paginatedRows = computed(() => {
+
+  const page = this.currentPage();
+  const size = this.pageSize();
+
+  const start = (page - 1) * size;
+  const end = start + size;
+
+  return this.filteredRows().slice(start, end);
+});
+
+readonly paginationPages = computed(() => {
+
+  const total = this.totalPages();
+  const current = this.currentPage();
+
+  // 4 صفحات أو أقل
+  if (total <= 4) {
+    return Array.from(
+      { length: total },
+      (_, index) => index + 1
+    );
+  }
+
+  // أول الصفحات
+  if (current <= 2) {
+    return [1, 2, 3, 'dots', total];
+  }
+
+  // آخر الصفحات
+  if (current >= total - 1) {
+    return [
+      1,
+      'dots',
+      total - 2,
+      total - 1,
+      total
+    ];
+  }
+
+  // الصفحات الوسط
+  return [
+    1,
+    'dots',
+    current,
+    'dots',
+    total
+  ];
+});
+
+readonly paginationStart = computed(() => {
+
+  if (this.filteredRows().length === 0) {
+    return 0;
+  }
+
+  return (
+    (this.currentPage() - 1) *
+      this.pageSize() +
+    1
+  );
+});
+
+readonly paginationEnd = computed(() => {
+
+  return Math.min(
+    this.currentPage() * this.pageSize(),
+    this.filteredRows().length
+  );
+});
+
+
+goToPage(page: number): void {
+
+  if (
+    page < 1 ||
+    page > this.totalPages() ||
+    page === this.currentPage()
+  ) {
+    return;
+  }
+
+  this.currentPage.set(page);
+}
+
+
+previousPage(): void {
+  this.goToPage(this.currentPage() - 1);
+}
+
+
+nextPage(): void {
+  this.goToPage(this.currentPage() + 1);
+}
+
+
+onPageSizeChange(): void {
+  this.currentPage.set(1);
+}
   // =====================================================
   // Scan Dialog
   // =====================================================

@@ -141,7 +141,7 @@
 
 
       <p-table
-        [value]="filteredRows()"
+        [value]="paginatedRows()"
         styleClass="p-datatable-sm archive-table"
         responsiveLayout="scroll"
       >
@@ -378,6 +378,127 @@
         </ng-template>
 
       </p-table>
+
+      <!-- ==========================================
+     PAGINATION
+=========================================== -->
+
+<div
+  class="printing-pagination"
+  *ngIf="rows().length > 0"
+>
+
+  <!-- RESULTS INFO -->
+
+  <div class="pagination-info">
+
+    <span class="pagination-info-icon">
+      <i class="pi pi-list"></i>
+    </span>
+
+    <span>
+      عرض
+      <strong>{{ paginationStart() }}</strong>
+      -
+      <strong>{{ paginationEnd() }}</strong>
+      من
+      <strong>{{ rows().length }}</strong>
+      مادة
+    </span>
+
+  </div>
+
+
+  <!-- PAGE SIZE -->
+
+  <div class="pagination-size">
+
+    <span>عدد الصفوف</span>
+
+    <p-select
+      [options]="[
+        { label: '5', value: 5 },
+        { label: '10', value: 10 },
+        { label: '20', value: 20 }
+      ]"
+      optionLabel="label"
+      optionValue="value"
+      [ngModel]="pageSize()"
+      (ngModelChange)="
+        pageSize.set($event);
+        onPageSizeChange()
+      "
+      styleClass="pagination-size-select"
+    />
+
+  </div>
+
+
+  <!-- PAGINATION CONTROLS -->
+
+  <div class="pagination-controls">
+
+    <!-- PREVIOUS -->
+
+    <button
+      type="button"
+      class="pagination-arrow"
+      [disabled]="currentPage() === 1"
+      (click)="previousPage()"
+      pTooltip="الصفحة السابقة"
+      tooltipPosition="top"
+    >
+      <i class="pi pi-chevron-right"></i>
+    </button>
+
+
+    <!-- PAGES -->
+
+    <ng-container
+      *ngFor="let page of paginationPages()"
+    >
+
+      <!-- DOTS -->
+
+      <span
+        *ngIf="page === 'dots'"
+        class="pagination-dots"
+      >
+        ...
+      </span>
+
+
+      <!-- PAGE -->
+
+      <button
+        *ngIf="page !== 'dots'"
+        type="button"
+        class="pagination-page"
+        [class.active]="page === currentPage()"
+        (click)="goToPage(+page)"
+      >
+        {{ page }}
+      </button>
+
+    </ng-container>
+
+
+    <!-- NEXT -->
+
+    <button
+      type="button"
+      class="pagination-arrow"
+      [disabled]="currentPage() === totalPages()"
+      (click)="nextPage()"
+      pTooltip="الصفحة التالية"
+      tooltipPosition="top"
+    >
+      <i class="pi pi-chevron-left"></i>
+    </button>
+
+  </div>
+
+</div>
 
     </section>
 
