@@ -5,12 +5,14 @@ import {
 } from '@angular/core';
 
 import { CommonModule } from '@angular/common';
+import { AppUser } from './interface/useManagement';
 import { FormsModule } from '@angular/forms';
-import { ButtonModule } from 'primeng/button';
+import { DialogModule } from 'primeng/dialog';
 import { InputTextModule } from 'primeng/inputtext';
 import { SelectModule } from 'primeng/select';
-import { AppUser } from './interface/useManagement';
-
+import { FloatLabelModule } from 'primeng/floatlabel';
+import { ButtonModule } from 'primeng/button';
+import { MessageModule } from 'primeng/message';
 
 // ==================================================
 // MODEL
@@ -22,7 +24,7 @@ import { AppUser } from './interface/useManagement';
 @Component({
   selector: 'app-user-management',
   standalone: true,
-  imports: [CommonModule, FormsModule, ButtonModule, InputTextModule, SelectModule],
+  imports: [CommonModule, FormsModule, ButtonModule, InputTextModule, SelectModule, DialogModule, FloatLabelModule, MessageModule],
   templateUrl: './user-management.component.html',
   styleUrl: './user-management.component.scss'
 })

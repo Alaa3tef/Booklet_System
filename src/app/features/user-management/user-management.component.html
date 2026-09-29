@@ -298,204 +298,177 @@
 <!-- ==================================================
      ADD USER MODAL
 =================================================== -->
-@if (showAddModal()) {
+<!--
+  p-dialog only provides the overlay, ESC / outside-click closing, focus trap and animation.
+  Its own header, background, padding and shadow are switched off, so your existing
+  um-modal / modal-* / form-* styles render exactly as before.
+-->
+<p-dialog
+  [visible]="showAddModal()"
+  (visibleChange)="!$event && closeAddModal()"
+  [modal]="true"
+  [showHeader]="false"
+  [draggable]="false"
+  [resizable]="false"
+  [dismissableMask]="true"
+  [contentStyle]="{ padding: '0', overflow: 'visible' }"
+  [style]="{ background: 'transparent', border: 'none', 'box-shadow': 'none', width: '1000px', maxWidth: '95vw' }">
 
-  <div
-    class="um-modal-backdrop"
-    (click)="closeAddModal()">
+  <div class="um-modal um-modal-add">
 
-    <div
-      class="um-modal um-modal-add"
-      (click)="$event.stopPropagation()">
-
-      <!-- HEADER -->
-      <div class="modal-header">
-
-        <div class="modal-header-icon">
-          <i class="pi pi-user-plus"></i>
-        </div>
-
-        <h3>إضافة مستخدم جديد</h3>
-
-        <button
-          type="button"
-          class="modal-close"
-          (click)="closeAddModal()">
-
-          <i class="pi pi-times"></i>
-
-        </button>
-
+    <!-- HEADER -->
+    <div class="modal-header">
+      <div class="modal-header-icon">
+        <i class="pi pi-user-plus"></i>
       </div>
 
+      <h3>إضافة مستخدم جديد</h3>
 
-      <!-- BODY -->
-      <div class="modal-body">
+      <button type="button" class="modal-close" (click)="closeAddModal()">
+        <i class="pi pi-times"></i>
+      </button>
+    </div>
 
-        @if (formError()) {
+    <!-- BODY -->
+    <div class="modal-body">
 
-          <div class="form-error-banner">
-
+    @if (formError()) {
+        <div class="form-error-banner">
             <i class="pi pi-exclamation-triangle"></i>
-
             {{ formError() }}
+        </div>
+    }
 
-          </div>
+    <div class="form-grid">
 
-        }
-
-
-        <div class="form-grid">
-
-
-          <!-- Username -->
-          <div class="form-floating">
-
+        <!-- =========================
+             Username
+        ========================== -->
+        <p-floatlabel variant="on">
             <input
-              pInputText
-              id="f-username"
-              type="text"
-              placeholder=" "
-              [ngModel]="form().username"
-              (ngModelChange)="updateForm('username', $event)"
-              class="w-full" />
+                pInputText
+                id="f-username"
+                type="text"
+                class="w-full"
+                placeholder=" "
+                [ngModel]="form().username"
+                (ngModelChange)="updateForm('username', $event)" />
 
             <label for="f-username">
-
-              اسم المستخدم
-
-              <span class="req">*</span>
-
+                اسم المستخدم
+                <span class="text-red-500">*</span>
             </label>
+        </p-floatlabel>
 
-          </div>
 
-
-          <!-- Phone -->
-          <div class="form-floating">
-
+        <!-- =========================
+             Phone
+        ========================== -->
+        <p-floatlabel variant="on">
             <input
-              pInputText
-              id="f-phone"
-              type="tel"
-              inputmode="numeric"
-              autocomplete="tel"
-              maxlength="11"
-              placeholder=" "
-              [ngModel]="form().phone"
-              (ngModelChange)="updateForm('phone', $event)"
-              class="w-full" />
+                pInputText
+                id="f-phone"
+                type="tel"
+                inputmode="numeric"
+                autocomplete="tel"
+                maxlength="11"
+                class="w-full"
+                placeholder=" "
+                [ngModel]="form().phone"
+                (ngModelChange)="updateForm('phone', $event)" />
 
             <label for="f-phone">
-              رقم الهاتف
+                رقم الهاتف
             </label>
+        </p-floatlabel>
 
-          </div>
 
-
-          <!-- Role -->
-          <div class="form-floating">
-
+        <!-- =========================
+             Role
+        ========================== -->
+        <p-floatlabel variant="on">
             <p-select
-              id="f-role"
-              [options]="formRoleOptions"
-              optionLabel="label"
-              optionValue="value"
-              [ngModel]="form().roleKey"
-              (onChange)="updateForm('roleKey', $event.value)"
-              [fluid]="true"
-              [showClear]="true"
-              appendTo="body">
+                id="f-role"
+                [options]="formRoleOptions"
+                optionLabel="label"
+                optionValue="value"
+                [ngModel]="form().roleKey"
+                (onChange)="updateForm('roleKey', $event.value)"
+                [fluid]="true"
+                [showClear]="true"
+                appendTo="body">
             </p-select>
 
             <label for="f-role">
-              الدور
+                الدور
             </label>
+        </p-floatlabel>
 
-          </div>
 
-
-          <!-- Status -->
-          <div class="form-floating">
-
+        <!-- =========================
+             Status
+        ========================== -->
+        <p-floatlabel variant="on">
             <p-select
-              id="f-status"
-              [options]="formStatusOptions"
-              optionLabel="label"
-              optionValue="value"
-              [ngModel]="form().status"
-              (onChange)="updateForm('status', $event.value)"
-              [fluid]="true"
-              appendTo="body">
+                id="f-status"
+                [options]="formStatusOptions"
+                optionLabel="label"
+                optionValue="value"
+                [ngModel]="form().status"
+                (onChange)="updateForm('status', $event.value)"
+                [fluid]="true"
+                appendTo="body">
             </p-select>
 
-          </div>
-
-
-          <!-- Email -->
-          <div class="form-floating span-2">
-
-            <input
-              pInputText
-              id="f-email"
-              type="email"
-              placeholder=" "
-              [value]="form().email"
-              (input)="updateForm(
-                'email',
-                $any($event.target).value
-              )" />
-
-            <label for="f-email">
-
-              البريد الإلكتروني
-
-              <span class="req">*</span>
-
+            <label for="f-status">
+                الحالة
             </label>
+        </p-floatlabel>
 
-          </div>
 
+        <!-- =========================
+             Email
+        ========================== -->
+        <div class="span-2">
+            <p-floatlabel variant="on">
+                <input
+                    pInputText
+                    id="f-email"
+                    type="email"
+                    class="w-full"
+                    placeholder=" "
+                    [ngModel]="form().email"
+                    (ngModelChange)="updateForm('email', $event)" />
 
+                <label for="f-email">
+                    البريد الإلكتروني
+                    <span class="text-red-500">*</span>
+                </label>
+            </p-floatlabel>
         </div>
 
-      </div>
+    </div>
+</div>
 
+    <!-- FOOTER -->
+    <div class="modal-footer">
+      <p-button
+        label="إلغاء"
+        icon="pi pi-times"
+        styleClass="modal-btn modal-cancel"
+        (onClick)="closeAddModal()" />
 
-      <!-- FOOTER -->
-      <div class="modal-footer">
-
-        <button
-          type="button"
-          class="modal-btn modal-cancel"
-          (click)="closeAddModal()">
-
-          <i class="pi pi-times"></i>
-
-          إلغاء
-
-        </button>
-
-
-        <button
-          type="button"
-          class="modal-btn modal-save"
-          id="btn-save-user"
-          (click)="submitAdd()">
-
-          <i class="pi pi-check"></i>
-
-          حفظ المستخدم
-
-        </button>
-
-      </div>
-
+      <p-button
+        id="btn-save-user"
+        label="حفظ المستخدم"
+        icon="pi pi-check"
+        styleClass="modal-btn modal-save"
+        (onClick)="submitAdd()" />
     </div>
 
   </div>
+</p-dialog>
 
-}
 
 
 <!-- ==================================================
