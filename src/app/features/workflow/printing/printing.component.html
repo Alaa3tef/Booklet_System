@@ -251,7 +251,7 @@
         [closable]="!rejectSubmitting"
         [dismissableMask]="!rejectSubmitting"
         [style]="{ width: '720px', maxWidth: 'calc(100vw - 2rem)' }"
-        appendTo="body"
+        appendTo="body" [baseZIndex]="10000"
         styleClass="reject-dialog"
         header="رفض المادة"
       >
@@ -413,7 +413,7 @@
         [(visible)]="rejectionReasonDialogVisible"
         [modal]="true"
         [draggable]="false"
-        [resizable]="false"
+        [resizable]="false" [baseZIndex]="10000"
         [closable]="true"
         [dismissableMask]="true"
         [style]="{ width: '620px', maxWidth: 'calc(100vw - 2rem)' }"

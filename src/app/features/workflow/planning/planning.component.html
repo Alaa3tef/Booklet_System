@@ -524,7 +524,7 @@
 
       <p-dialog
         [(visible)]="rejectDialogVisible"
-        [modal]="true"
+        [modal]="true" [baseZIndex]="10000"
         [draggable]="false"
         [resizable]="false"
         [closable]="!rejectSubmitting"
@@ -858,7 +858,7 @@
 
       <p-dialog
         [(visible)]="rejectionReasonDialogVisible"
-        [modal]="true"
+        [modal]="true" [baseZIndex]="10000"
         [draggable]="false"
         [resizable]="false"
         [closable]="true"
