@@ -104,7 +104,13 @@ export class AuthService {
   //   );
   // }
 profile():Observable<any>{
-return this.http.get<any>(`${this.appConfig.baseURL}api/Account/profile`);
+    const token = this.getToken();
+
+  const headers = new HttpHeaders({
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${token}`
+  });
+return this.http.get<any>(`${this.appConfig.baseURL}api/Account/profile`, { headers });
 }
 
     login(event: { email: string; password: string }) {
@@ -200,8 +206,8 @@ logout(): Observable<any> {
   return this.http
     .post<any>(
       `${this.appConfig.baseURL}api/Account/logout`,
-      {},
-      { headers }
+        {},
+        { headers }
     )
     .pipe(
       finalize(() => {

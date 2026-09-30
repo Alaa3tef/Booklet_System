@@ -81,62 +81,6 @@
     </div>
 
 
-    <!-- NOTIFICATIONS -->
-
-    <div class="notification-wrapper">
-
-    <button
-      type="button"
-      class="notification-btn"
-      aria-label="الإشعارات"
-
-      (click)="openNotifications()"
-    >
-
-      <i class="pi pi-bell"></i>
-
-      @if (notificationsCount > 0) {
-
-        <span class="notification-badge">
-
-          {{ notificationsCount }}
-
-        </span>
-
-      }
-
-    </button>
-
-      @if (showNotifications()) {
-        <section class="notifications-panel" aria-label="الإشعارات">
-          <div class="notifications-header">
-            <strong>الإشعارات</strong>
-            @if (notificationsCount > 0) {
-              <button type="button" (click)="markAllNotificationsAsRead()">تعليم الكل كمقروء</button>
-            }
-          </div>
-
-          <div class="notifications-list">
-            @for (notification of notifications(); track notification.id) {
-              <button
-                type="button"
-                class="notification-item"
-                [class.unread]="!notification.read"
-                (click)="markAsRead(notification.id)"
-              >
-                <i [class]="notification.icon"></i>
-                <span>
-                  <strong>{{ notification.title }}</strong>
-                  <small>{{ notification.message }}</small>
-                </span>
-              </button>
-            }
-          </div>
-        </section>
-      }
-    </div>
-
-
     <!-- USER -->
 
     <div class="user-menu-wrapper">
@@ -154,10 +98,10 @@
 
         <span class="user-info">
           <span class="user-name">
-            {{ userName }}
+            {{ profileData?.fullName }}
           </span>
           <span class="user-role">
-            {{ userRole }}
+            {{ profileData?.roleName }}
           </span>
         </span>
 

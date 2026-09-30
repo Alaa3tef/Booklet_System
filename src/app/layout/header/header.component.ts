@@ -80,40 +80,18 @@ export class HeaderComponent implements OnDestroy {
   ===================================================== */
 
   readonly showNotifications = signal(false);
-  readonly notifications = signal<HeaderNotification[]>([
-    {
-      id: 1,
-      title: 'تحديث اليوم',
-      message: 'تم تجهيز ملخص أعمال اليوم.',
-      icon: 'pi pi-calendar',
-      read: false
-    },
-    {
-      id: 2,
-      title: 'طلب جديد',
-      message: 'هناك طلب إنتاج جديد بانتظار المراجعة.',
-      icon: 'pi pi-file',
-      read: false
-    },
-    {
-      id: 3,
-      title: 'تنبيه',
-      message: 'يرجى مراجعة المهام المستحقة اليوم.',
-      icon: 'pi pi-exclamation-circle',
-      read: false
-    }
-  ]);
+
 
   readonly currentDate = signal(new Date());
+  profileData!: any;
 
   constructor() {
     this.scheduleDateRefresh();
   }
 
-  get notificationsCount(): number {
-    return this.notifications().filter((notification) => !notification.read).length;
-  }
-
+ngOnInit(): void {
+  this.profile()
+}
   get currentDayLabel(): string {
     return new Intl.DateTimeFormat('ar-EG', { weekday: 'long' }).format(this.currentDate());
   }
@@ -143,28 +121,7 @@ export class HeaderComponent implements OnDestroy {
     this.menuToggle.emit();
   }
 
-  /* =====================================================
-     NOTIFICATIONS
-  ===================================================== */
 
-  openNotifications(): void {
-    this.showNotifications.update((visible) => !visible);
-    this.closeUserMenu();
-  }
-
-  markAsRead(notificationId: number): void {
-    this.notifications.update((notifications) =>
-      notifications.map((notification) =>
-        notification.id === notificationId ? { ...notification, read: true } : notification
-      )
-    );
-  }
-
-  markAllNotificationsAsRead(): void {
-    this.notifications.update((notifications) =>
-      notifications.map((notification) => ({ ...notification, read: true }))
-    );
-  }
 
   private scheduleDateRefresh(): void {
     const now = new Date();
@@ -205,7 +162,20 @@ logout(): void {
     }
   });
 }
+profile() {
+  this.closeUserMenu();
+  this.authService.profile().subscribe({
+        next: (response) => {
+      console.log('Logout response:', response);
+      this.profileData = response.data;
+    },
+    error: (error) => {
+      console.error('Logout error:', error);
 
+    }
+  });
+  
+}
   @HostListener('document:click', ['$event'])
   onDocumentClick(event: MouseEvent): void {
     const target = event.target as HTMLElement;
