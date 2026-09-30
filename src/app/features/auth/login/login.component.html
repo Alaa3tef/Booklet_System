@@ -29,28 +29,54 @@
   <!-- Main Login Form -->
   <form (ngSubmit)="onSubmit()" class="login-form" novalidate>
     <!-- Identifier (Username or Email) -->
-    <div class="form-group">
-      <label for="identifier" class="field-label">
-        <span>البريد الإلكتروني</span>
-        <span class="req">*</span>
-      </label>
-      <div class="input-wrapper">
-        <i class="pi pi-envelope field-icon"></i>
-        <input
-          pInputText
-          id="identifier"
-          name="identifier"
-          type="email"
-          class="custom-input"
-          placeholder="مثال: name@moe.gov.eg"
-          [ngModel]="identifier()"
-          (ngModelChange)="identifier.set($event)"
-          [disabled]="isLoading()"
-          autocomplete="email"
-          required
-        />
-      </div>
+    
+<!-- Email -->
+<div class="form-group">
+  <label for="identifier" class="field-label">
+    <span>البريد الإلكتروني</span>
+    <span class="req">*</span>
+  </label>
+
+  <div
+    class="input-wrapper"
+    [class.input-error]="emailError() && emailTouched()"
+    [class.input-success]="!emailError() && isEmailValid()"
+  >
+
+    <input
+      pInputText
+      id="identifier"
+      name="identifier"
+      type="email"
+      class="custom-input"
+      placeholder="مثال: name@moe.gov.eg"
+      [ngModel]="identifier()"
+      (ngModelChange)="validateEmail($event)"
+      (blur)="onEmailBlur()"
+      [disabled]="isLoading()"
+      autocomplete="email"
+      required
+      [attr.aria-invalid]="
+        emailError() && emailTouched() ? 'true' : 'false'
+      "
+      aria-describedby="email-error"
+    />
+
+  </div>
+
+  <!-- Email Error -->
+  @if (emailTouched() && emailError()) {
+    <div
+      id="email-error"
+      class="field-error"
+      role="alert"
+    >
+      <i class="pi pi-info-circle"></i>
+      <span>{{ emailError() }}</span>
     </div>
+  }
+</div>
+
 
     <!-- Password -->
     <div class="form-group">
@@ -59,13 +85,13 @@
           <span>كلمة المرور</span>
           <span class="req">*</span>
         </label>
-        <a
+        <!-- <a
           routerLink="/forgot-password"
           class="forgot-link"
           tabindex="0"
         >
           نسيت كلمة المرور؟
-        </a>
+        </a> -->
       </div>
       <div class="input-wrapper">
         <i class="pi pi-lock field-icon"></i>

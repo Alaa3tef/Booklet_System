@@ -1,0 +1,30 @@
+@if (loadingService.isLoading()) {
+  <div
+    class="global-loader"
+    role="status"
+    aria-live="polite"
+    aria-label="جاري تحميل البيانات"
+  >
+
+    <div class="loader-backdrop"></div>
+
+    <div class="loader-content">
+
+      <div class="loader-spinner">
+        <div class="spinner-ring"></div>
+        <div class="spinner-center">
+          <i class="pi pi-cog"></i>
+        </div>
+      </div>
+
+      <div class="loader-text">
+        <span class="loader-title">جاري التحميل</span>
+        <span class="loader-subtitle">
+          يرجى الانتظار...
+        </span>
+      </div>
+
+    </div>
+
+  </div>
+}

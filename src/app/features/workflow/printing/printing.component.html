@@ -37,7 +37,7 @@
             </div>
           </div>
 
-          <div class="fields-grid">
+          <div class="fields-grid cols-3">
 
             <div class="field">
               <label for="printing-governorate">المحافظة</label>
@@ -91,7 +91,6 @@
 
       <p-table
         [value]="rows()"
-        [loading]="loading()"
         styleClass="p-datatable-sm"
         responsiveLayout="scroll"
       >
@@ -252,7 +251,7 @@
         [closable]="!rejectSubmitting"
         [dismissableMask]="!rejectSubmitting"
         [style]="{ width: '720px', maxWidth: 'calc(100vw - 2rem)' }"
-        appendTo="body"
+        appendTo="body" [baseZIndex]="10000"
         styleClass="reject-dialog"
         header="رفض المادة"
       >
@@ -414,7 +413,7 @@
         [(visible)]="rejectionReasonDialogVisible"
         [modal]="true"
         [draggable]="false"
-        [resizable]="false"
+        [resizable]="false" [baseZIndex]="10000"
         [closable]="true"
         [dismissableMask]="true"
         [style]="{ width: '620px', maxWidth: 'calc(100vw - 2rem)' }"

@@ -67,51 +67,115 @@
 
           <!-- SEARCH FIELDS -->
 
-          <div class="fields-grid">
+          <div class="fields-grid cols-3">
 
-            <!-- GOVERNORATE -->
+  <!-- GOVERNORATE -->
 
-            <div class="field">
+  <div class="field">
 
-              <label for="governorate">
-                المحافظة
-              </label>
+    <label for="governorate">
+      المحافظة
+    </label>
 
-              <p-select
-                inputId="governorate"
-                [options]="governorates"
-                [(ngModel)]="selectedGovernorate"
-                optionLabel="label"
-                optionValue="value"
-                styleClass="w-full"
-              >
-              </p-select>
+    <p-select
+      inputId="governorate"
+      [options]="governorates"
+      [(ngModel)]="selectedGovernorate"
+      optionLabel="label"
+      optionValue="value"
+      styleClass="w-full"
+    >
+    </p-select>
 
-            </div>
+  </div>
 
 
-            <!-- SUBJECT -->
+  <!-- SUBJECT -->
 
-            <div class="field">
+  <div class="field">
 
-              <label for="subject">
-                المادة
-              </label>
+    <label for="subject">
+      المادة
+    </label>
 
-              <p-select
-                inputId="subject"
-                [options]="subjects"
-                [(ngModel)]="selectedSubject"
-                optionLabel="label"
-                optionValue="value"
-                styleClass="w-full"
-              >
-              </p-select>
+    <p-select
+      inputId="subject"
+      [options]="subjects"
+      [(ngModel)]="selectedSubject"
+      optionLabel="label"
+      optionValue="value"
+      styleClass="w-full"
+    >
+    </p-select>
 
-            </div>
+  </div>
 
-          </div>
+    <div class="field committee-search-field">
 
+    <label for="committeeNumber">
+      رقم اللجنة
+    </label>
+
+    <div class="committee-input-wrapper">
+
+      <i class="pi pi-hashtag"></i>
+
+      <input
+        id="committeeNumber"
+        type="text"
+        pInputText
+        [(ngModel)]="selectedCommitteeNumber"
+        placeholder="أدخل رقم اللجنة"
+        autocomplete="off"
+        (keyup.enter)="search()"
+      />
+
+      <button
+        *ngIf="selectedCommitteeNumber"
+        type="button"
+        class="clear-search-btn"
+        aria-label="مسح رقم اللجنة"
+        pTooltip="مسح"
+        tooltipPosition="top"
+        (click)="selectedCommitteeNumber = ''"
+      >
+        <i class="pi pi-times"></i>
+      </button>
+
+    </div>
+
+  </div>
+
+</div>
+
+<!-- <div class="search-actions">
+
+  <button
+    pButton
+    type="button"
+    label="بحث"
+    icon="pi pi-search"
+    class="search-btn"
+    (click)="search()"
+  >
+  </button>
+
+  <button
+    *ngIf="
+      selectedCommitteeNumber ||
+      selectedGovernorate !== 'all' ||
+      selectedSubject !== 'all'
+    "
+    pButton
+    type="button"
+    label="إعادة تعيين"
+    icon="pi pi-refresh"
+    class="p-button-text reset-search-btn"
+    (click)="resetSearch()"
+  >
+  </button>
+
+</div> -->
         </div>
 
       </div>
@@ -460,7 +524,7 @@
 
       <p-dialog
         [(visible)]="rejectDialogVisible"
-        [modal]="true"
+        [modal]="true" [baseZIndex]="10000"
         [draggable]="false"
         [resizable]="false"
         [closable]="!rejectSubmitting"
@@ -794,7 +858,7 @@
 
       <p-dialog
         [(visible)]="rejectionReasonDialogVisible"
-        [modal]="true"
+        [modal]="true" [baseZIndex]="10000"
         [draggable]="false"
         [resizable]="false"
         [closable]="true"
