@@ -36,69 +36,77 @@ export default class LoginComponent {
   errorMessage = signal('');
 
   // Demo accounts
-  readonly demoAccounts = this.authService.demoAccounts;
+  // readonly demoAccounts = this.authService.demoAccounts;
 
   /**
    * Handle Login Form Submission
    */
-  onSubmit(): void {
-    this.errorMessage.set('');
+onSubmit(): void {
+  this.errorMessage.set('');
 
-    const id = this.identifier().trim();
-    const pass = this.password().trim();
+  const id = this.identifier().trim();
+  const pass = this.password();
 
-    if (!id) {
-      this.errorMessage.set('يرجى إدخال اسم المستخدم أو البريد الإلكتروني.');
-      return;
-    }
-
-    if (!pass) {
-      this.errorMessage.set('يرجى إدخال كلمة المرور.');
-      return;
-    }
-
-    this.isLoading.set(true);
-
-    this.authService
-      .login({
-        identifier: id,
-        password: pass,
-        rememberMe: this.rememberMe()
-      })
-      .subscribe({
-        next: () => {
-          this.isLoading.set(false);
-          const returnUrl = this.route.snapshot.queryParams['returnUrl'] || '/dashboard';
-          this.router.navigateByUrl(returnUrl);
-        },
-        error: (err: Error) => {
-          this.isLoading.set(false);
-          this.errorMessage.set(err.message || 'حدث خطأ أثناء تسجيل الدخول. يرجى المحاولة لاحقاً.');
-        }
-      });
+  if (!id) {
+    this.errorMessage.set('يرجى إدخال البريد الإلكتروني.');
+    return;
   }
+
+  if (!pass) {
+    this.errorMessage.set('يرجى إدخال كلمة المرور.');
+    return;
+  }
+
+  this.isLoading.set(true);
+
+  this.authService.login({
+    email: id,
+    password: pass
+  }).subscribe({
+    next: (response) => {
+      this.isLoading.set(false);
+
+      console.log('Login successful:', response);
+      console.log('Access token:', sessionStorage.getItem('accessToken'));
+
+      this.router.navigate(['/dashboard']);
+    },
+
+    error: (err) => {
+      this.isLoading.set(false);
+
+      console.error('Login error:', err);
+
+      this.errorMessage.set(
+        err?.error?.message ||
+        err?.message ||
+        'حدث خطأ أثناء تسجيل الدخول. يرجى المحاولة لاحقاً.'
+      );
+    }
+  });
+}
 
   /**
    * One-click demo login for fast testing
    */
-  onQuickLogin(account: DemoAccount): void {
-    this.errorMessage.set('');
-    this.identifier.set(account.username);
-    this.password.set('demo123456');
-    this.isLoading.set(true);
+  // onQuickLogin(account: DemoAccount): void {
+  //   this.errorMessage.set('');
+  //   this.identifier.set(account.username);
+  //   this.password.set('demo123456');
+  //   this.isLoading.set(true);
 
-    this.authService.loginAsDemo(account, this.rememberMe()).subscribe({
-      next: () => {
-        this.isLoading.set(false);
-        const returnUrl = this.route.snapshot.queryParams['returnUrl'] || '/dashboard';
-        this.router.navigateByUrl(returnUrl);
-      },
-      error: (err: Error) => {
-        this.isLoading.set(false);
-        this.errorMessage.set(err.message || 'فشل تسجيل الدخول بالحساب التجريبي.');
-      }
-    });
-  }
+  //   this.authService.loginAsDemo(account, this.rememberMe()).subscribe({
+  //     next: () => {
+  //       this.isLoading.set(false);
+  //       const returnUrl = this.route.snapshot.queryParams['returnUrl'] || '/dashboard';
+  //       this.router.navigateByUrl(returnUrl);
+  //     },
+  //     error: (err: Error) => {
+  //       this.isLoading.set(false);
+  //       this.errorMessage.set(err.message || 'فشل تسجيل الدخول بالحساب التجريبي.');
+  //     }
+  //   });
+  // }
 
   toggleShowPassword(): void {
     this.showPassword.update((val) => !val);

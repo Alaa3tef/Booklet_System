@@ -10,7 +10,8 @@ import {
 } from '@angular/core';
 
 import { CommonModule } from '@angular/common';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink  } from '@angular/router';
+
 import { AvatarModule } from 'primeng/avatar';
 import { AuthService } from '../../core/services/auth.service';
 
@@ -41,6 +42,7 @@ interface HeaderNotification {
 export class HeaderComponent implements OnDestroy {
   private readonly authService = inject(AuthService);
   private midnightTimer?: ReturnType<typeof setTimeout>;
+  private readonly router = inject(Router);
 
   /* =====================================================
      INPUTS
@@ -187,10 +189,22 @@ export class HeaderComponent implements OnDestroy {
     this.showUserDropdown.set(false);
   }
 
-  logout(): void {
-    this.closeUserMenu();
-    this.authService.logout();
-  }
+logout(): void {
+  this.closeUserMenu();
+
+  this.authService.logout().subscribe({
+    next: (response) => {
+      console.log('Logout response:', response);
+      this.router.navigate(['/login']);
+    },
+    error: (error) => {
+      console.error('Logout error:', error);
+
+      // Still clear local session and go to login
+      this.router.navigate(['/login']);
+    }
+  });
+}
 
   @HostListener('document:click', ['$event'])
   onDocumentClick(event: MouseEvent): void {

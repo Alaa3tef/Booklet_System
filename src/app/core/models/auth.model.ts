@@ -27,6 +27,32 @@ export interface LoginCredentials {
   rememberMe: boolean;
 }
 
+/** Payload sent to POST /api/Account/login */
+export interface LoginRequest {
+  email: string;
+  password: string;
+}
+
+/** User object nested inside the login API response */
+export interface LoginApiUser {
+  id: number;
+  fullName: string;
+  email: string;
+  isActive: boolean;
+}
+
+/** Full response from POST /api/Account/login */
+export interface LoginApiResponse {
+  success: boolean;
+  statusCode: number;
+  message: string;
+  count: number;
+  data: {
+    accessToken: string;
+    user: LoginApiUser;
+  };
+}
+
 export interface ForgotPasswordRequest {
   identifier: string; // email or username
 }

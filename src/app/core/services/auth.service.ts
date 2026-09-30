@@ -1,12 +1,13 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
+import { HttpClient, HttpErrorResponse, HttpHeaders } from '@angular/common/http';
 import { Router } from '@angular/router';
-import { Observable, delay, of, throwError } from 'rxjs';
+import { Observable,  delay, finalize, map, of, tap, throwError } from 'rxjs';
 import {
   AuthUser,
-  DemoAccount,
-  LoginCredentials,
+
   ResetPasswordRequest
 } from '../models/auth.model';
+import { AppConfigService } from '../../shared/services/app-config.service';
 
 const STORAGE_KEY = 'ebs_current_user';
 const TOKEN_KEY = 'ebs_auth_token';
@@ -15,55 +16,16 @@ const TOKEN_KEY = 'ebs_auth_token';
   providedIn: 'root'
 })
 export class AuthService {
+  private readonly http = inject(HttpClient);
   private readonly router = inject(Router);
+  private readonly appConfig = inject(AppConfigService);
+
 
   // Demo accounts for instant one-click login and testing
-  readonly demoAccounts: DemoAccount[] = [
-    {
-      label: 'مدير المنظومة (IT)',
-      role: 'مسؤول النظام IT',
-      roleKey: 'it',
-      username: 'ahmed.admin',
-      email: 'admin@moe.gov.eg',
-      fullName: 'أحمد محمد عبد الله',
-      icon: 'pi pi-shield',
-      color: '#1565c0'
-    },
-    {
-      label: 'مشرف الإعداد والتخطيط',
-      role: 'مسؤول الإعداد',
-      roleKey: 'planning',
-      username: 'khaled.plan',
-      email: 'planning@moe.gov.eg',
-      fullName: 'م. خالد إبراهيم سالم',
-      icon: 'pi pi-sliders-h',
-      color: '#0284c7'
-    },
-    {
-      label: 'مشرف خط الطباعة',
-      role: 'مشرف الطباعة',
-      roleKey: 'printing',
-      username: 'tarek.print',
-      email: 'printing@moe.gov.eg',
-      fullName: 'أ. طارق محمود السيد',
-      icon: 'pi pi-print',
-      color: '#d97706'
-    },
-    {
-      label: 'مراقب الجودة والتسليم',
-      role: 'مسؤول الجودة',
-      roleKey: 'quality',
-      username: 'sara.quality',
-      email: 'quality@moe.gov.eg',
-      fullName: 'د. سارة عبد الرحمن',
-      icon: 'pi pi-verified',
-      color: '#16a34a'
-    }
-  ];
+
 
   // Signal State
   readonly currentUser = signal<AuthUser | null>(this.getStoredUser());
-  readonly isAuthenticated = computed(() => !!this.currentUser());
   readonly userRole = computed(() => this.currentUser()?.role || '');
   readonly userRoleKey = computed(() => this.currentUser()?.roleKey || 'it');
 
@@ -71,94 +33,186 @@ export class AuthService {
   private activeResetTokens = new Map<string, { emailOrUsername: string; expiresAt: number }>();
 
   constructor() {
-    // Default initial reset demo token
-    this.activeResetTokens.set('EBS-984215', {
-      emailOrUsername: 'admin@moe.gov.eg',
-      expiresAt: Date.now() + 1000 * 60 * 60 // 1 hour
-    });
+
   }
 
   /**
-   * Log in user with credentials
+   * Log in user by calling the real backend API.
+   * Payload: { email, password } → POST /api/Account/login
    */
-  login(credentials: LoginCredentials): Observable<AuthUser> {
-    const rawId = (credentials.identifier || '').trim().toLowerCase();
-    const rawPass = (credentials.password || '').trim();
+  // login(credentials: LoginCredentials): Observable<AuthUser> {
+  //   const email = (credentials.identifier || '').trim();
+  //   const password = (credentials.password || '').trim();
 
-    if (!rawId) {
-      return throwError(() => new Error('يرجى إدخال اسم المستخدم أو البريد الإلكتروني.'));
-    }
-    if (!rawPass) {
-      return throwError(() => new Error('يرجى إدخال كلمة المرور.'));
-    }
+  //   if (!email) {
+  //     return throwError(() => new Error('يرجى إدخال البريد الإلكتروني.'));
+  //   }
+  //   if (!password) {
+  //     return throwError(() => new Error('يرجى إدخال كلمة المرور.'));
+  //   }
 
-    // Match against demo users or create a valid user session
-    const matchedDemo = this.demoAccounts.find(
-      (acc) =>
-        acc.username.toLowerCase() === rawId ||
-        acc.email.toLowerCase() === rawId
-    );
+  //   const body: LoginRequest = { email, password };
 
-    const authUser: AuthUser = matchedDemo
-      ? {
-          id: 101 + this.demoAccounts.indexOf(matchedDemo),
-          username: matchedDemo.username,
-          fullName: matchedDemo.fullName,
-          email: matchedDemo.email,
-          role: matchedDemo.role,
-          roleKey: matchedDemo.roleKey,
-          avatarInitials: this.extractInitials(matchedDemo.fullName),
-          avatarTone: matchedDemo.color,
-          token: 'mock-jwt-token-' + Date.now(),
-          lastLogin: new Date().toISOString()
+  //   return this.http.post<LoginApiResponse>(`${this.apiBase}/Account/login`, body).pipe(
+  //     map((res) => {
+  //       // Guard: API returned a failure response
+  //       if (!res.success) {
+  //         throw new Error(res.message || 'فشل تسجيل الدخول. يرجى التحقق من البريد الإلكتروني وكلمة المرور.');
+  //       }
+
+  //       const { accessToken, user } = res.data;
+
+  //       const authUser: AuthUser = {
+  //         id: user.id,
+  //         fullName: user.fullName,
+  //         email: user.email,
+  //         role: 'مستخدم',       // extend once the API returns a role field
+  //         roleKey: 'it',        // extend once the API returns a roleKey field
+  //         avatarInitials: this.extractInitials(user.fullName),
+  //         avatarTone: '#1565c0',
+  //         token: accessToken,
+  //         lastLogin: new Date().toISOString()
+  //       };
+
+  //       this.storeUser(authUser, credentials.rememberMe);
+  //       this.currentUser.set(authUser);
+  //       return authUser;
+  //     }),
+  //     catchError((err: HttpErrorResponse | Error) => {
+  //       // Status 0 = browser blocked the request (self-signed cert / CORS / network)
+  //       if (err instanceof HttpErrorResponse) {
+  //         if (err.status === 0) {
+  //           return throwError(() => new Error(
+  //             'تعذّر الاتصال بالخادم. إذا كان الخادم يستخدم شهادة SSL خاصة، ' +
+  //             'يرجى فتح هذا الرابط في المتصفح وقبول الشهادة أولاً:\n' +
+  //             `${this.apiBase.replace('/api', '')}`
+  //           ));
+  //         }
+  //         if (err.status === 401 || err.status === 403) {
+  //           return throwError(() => new Error('البريد الإلكتروني أو كلمة المرور غير صحيحة.'));
+  //         }
+  //         if (err.status >= 500) {
+  //           return throwError(() => new Error('حدث خطأ في الخادم. يرجى المحاولة لاحقاً.'));
+  //         }
+  //         // API returned an error body with a message
+  //         const apiMsg = (err.error as any)?.message;
+  //         return throwError(() => new Error(apiMsg || `خطأ (${err.status}): ${err.statusText}`));
+  //       }
+  //       // Re-throw errors thrown from map() (e.g. success: false)
+  //       return throwError(() => err);
+  //     })
+  //   );
+  // }
+profile():Observable<any>{
+return this.http.get<any>(`${this.appConfig.baseURL}api/Account/profile`);
+}
+
+    login(event: { email: string; password: string }) {
+
+    const headers = new HttpHeaders()
+      .set('Content-Type', 'application/json');
+
+
+    return this.http
+      .post<any>(
+        `${this.appConfig.baseURL}api/Account/login`,
+        {
+          email: event.email,
+          password: event.password
+        },
+        {
+          headers
         }
-      : {
-          id: 999,
-          username: rawId.split('@')[0],
-          fullName: rawId.split('@')[0],
-          email: rawId.includes('@') ? rawId : `${rawId}@moe.gov.eg`,
-          role: 'مسؤول النظام IT',
-          roleKey: 'it',
-          avatarInitials: rawId.substring(0, 2).toUpperCase(),
-          avatarTone: '#1565c0',
-          token: 'mock-jwt-token-' + Date.now(),
-          lastLogin: new Date().toISOString()
-        };
+      )
+      .pipe(
 
-    // Store user
-    this.storeUser(authUser, credentials.rememberMe);
-    this.currentUser.set(authUser);
+        tap((response: any) => {
 
-    return of(authUser).pipe(delay(600));
+          console.log(
+            'Backend Login Response:',
+            response
+          );
+
+
+          if (
+            response?.success &&
+            response?.data
+          ) {
+
+            const data = response.data;
+
+       if (data.accessToken) {
+
+              localStorage.setItem(
+                'accessToken',
+                data.accessToken
+              );
+            }
+
+            // ==================================================
+            // User information
+            // ==================================================
+
+            if (data.user) {
+
+              localStorage.setItem(
+                'userName',
+                `${data.user.fullName }`
+              );
+
+ localStorage.setItem(
+                'isActive',
+                `${data.user.isActive }`
+              );
+              localStorage.setItem(
+                'emailAddress',
+                data.user.email ?? ''
+              );
+ localStorage.setItem(
+                'emailAddress',
+                data.user.roleId ?? ''
+              );
+            }
+
+
+          }
+        })
+      );
   }
 
-  /**
-   * Direct login using one of the demo roles
-   */
-  loginAsDemo(demo: DemoAccount, rememberMe = true): Observable<AuthUser> {
-    return this.login({
-      identifier: demo.username,
-      password: 'demoPassword123',
-      rememberMe
-    });
+ getToken(): string | null {
+    return localStorage.getItem('accessToken');
   }
-
+ isAuthenticated(): boolean {
+    return !!this.getToken();
+  }
   /**
    * Log out current user and redirect to login
    */
-  logout(): void {
-    this.currentUser.set(null);
-    try {
-      localStorage.removeItem(STORAGE_KEY);
-      localStorage.removeItem(TOKEN_KEY);
-      sessionStorage.removeItem(STORAGE_KEY);
-      sessionStorage.removeItem(TOKEN_KEY);
-    } catch (e) {
-      console.warn('Storage clear error', e);
-    }
-    this.router.navigate(['/login']);
-  }
+logout(): Observable<any> {
+  const token = this.getToken();
 
+  const headers = new HttpHeaders({
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${token}`
+  });
+
+  return this.http
+    .post<any>(
+      `${this.appConfig.baseURL}api/Account/logout`,
+      {},
+      { headers }
+    )
+    .pipe(
+      finalize(() => {
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('userName');
+        localStorage.removeItem('emailAddress');
+        localStorage.removeItem('isActive');
+        localStorage.removeItem('roleId');
+      })
+    );
+    }
   /**
    * Request password reset link / verification token
    */
@@ -185,24 +239,24 @@ export class AuthService {
   /**
    * Verify token validity
    */
-  verifyResetToken(token: string): Observable<boolean> {
-    const trimmed = (token || '').trim();
-    const entry = this.activeResetTokens.get(trimmed);
-    if (!entry) {
-      // Allow fallback if it matches general pattern
-      if (trimmed.startsWith('EBS-') && trimmed.length === 10) {
-        return of(true).pipe(delay(300));
-      }
-      return of(false).pipe(delay(300));
-    }
+  // verifyResetToken(token: string): Observable<boolean> {
+  //   const trimmed = (token || '').trim();
+  //   const entry = this.activeResetTokens.get(trimmed);
+  //   if (!entry) {
+  //     // Allow fallback if it matches general pattern
+  //     if (trimmed.startsWith('EBS-') && trimmed.length === 10) {
+  //       return of(true).pipe(delay(300));
+  //     }
+  //     return of(false).pipe(delay(300));
+  //   }
 
-    if (Date.now() > entry.expiresAt) {
-      this.activeResetTokens.delete(trimmed);
-      return of(false).pipe(delay(300));
-    }
+  //   if (Date.now() > entry.expiresAt) {
+  //     this.activeResetTokens.delete(trimmed);
+  //     return of(false).pipe(delay(300));
+  //   }
 
-    return of(true).pipe(delay(300));
-  }
+  //   return of(true).pipe(delay(300));
+  // }
 
   /**
    * Complete password reset
@@ -236,8 +290,8 @@ export class AuthService {
         localStorage.setItem(STORAGE_KEY, serialized);
         if (user.token) localStorage.setItem(TOKEN_KEY, user.token);
       } else {
-        sessionStorage.setItem(STORAGE_KEY, serialized);
-        if (user.token) sessionStorage.setItem(TOKEN_KEY, user.token);
+        localStorage.setItem(STORAGE_KEY, serialized);
+        if (user.token) localStorage.setItem(TOKEN_KEY, user.token);
       }
     } catch (e) {
       console.warn('Storage set error', e);
@@ -248,7 +302,7 @@ export class AuthService {
     try {
       const local = localStorage.getItem(STORAGE_KEY);
       if (local) return JSON.parse(local);
-      const session = sessionStorage.getItem(STORAGE_KEY);
+      const session = localStorage.getItem(STORAGE_KEY);
       if (session) return JSON.parse(session);
     } catch {
       // Storage unavailable or JSON invalid

@@ -31,22 +31,22 @@
     <!-- Identifier (Username or Email) -->
     <div class="form-group">
       <label for="identifier" class="field-label">
-        <span>اسم المستخدم أو البريد الإلكتروني</span>
+        <span>البريد الإلكتروني</span>
         <span class="req">*</span>
       </label>
       <div class="input-wrapper">
-        <i class="pi pi-user field-icon"></i>
+        <i class="pi pi-envelope field-icon"></i>
         <input
           pInputText
           id="identifier"
           name="identifier"
-          type="text"
+          type="email"
           class="custom-input"
-          placeholder="مثال: ahmed.admin أو name@moe.gov.eg"
+          placeholder="مثال: name@moe.gov.eg"
           [ngModel]="identifier()"
           (ngModelChange)="identifier.set($event)"
           [disabled]="isLoading()"
-          autocomplete="username"
+          autocomplete="email"
           required
         />
       </div>
@@ -125,7 +125,7 @@
   </form>
 
   <!-- Quick Demo Switcher -->
-  <div class="demo-section">
+  <!-- <div class="demo-section">
     <div class="divider">
       <span>أو الدخول السريع بالحسابات التجريبية</span>
     </div>
@@ -148,5 +148,5 @@
         </button>
       }
     </div>
-  </div>
+  </div> -->
 </div>

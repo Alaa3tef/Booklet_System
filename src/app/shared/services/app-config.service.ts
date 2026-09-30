@@ -1,4 +1,4 @@
-import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 
@@ -10,14 +10,18 @@ export class AppConfigService {
 
   constructor(private http: HttpClient) { }
 
-    loadConfig() {
-      return firstValueFrom(this.http.get('/assets/config.json'))
-        .then(config => {
-          this.config = config;
-        });
-    }
-
-    get baseURL() {
-      return this.config?.baseURL;
-    }
+  loadConfig() {
+    return firstValueFrom(this.http.get('/assets/config.json'))
+      .then(config => {
+        this.config = config;
+      });
   }
+
+  get baseURL(): string {
+    return this.config?.baseURL ?? '';
+  }
+
+  get apiBase(): string {
+    return this.config?.apiBase ?? '';
+  }
+}
