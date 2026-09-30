@@ -774,3 +774,106 @@
   box-shadow:
     0 3px 8px rgba(37, 99, 235, 0.22);
 }
+
+
+// ==========================================================
+// API ERROR
+// ==========================================================
+
+.api-error {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+
+  margin: 1rem 0;
+  padding: 0.9rem 1rem;
+
+  border: 1px solid #fecaca;
+  border-radius: 12px;
+
+  background: #fef2f2;
+  color: #991b1b;
+
+  i {
+    font-size: 1.1rem;
+  }
+
+  span {
+    flex: 1;
+    font-size: 0.9rem;
+    font-weight: 500;
+  }
+}
+
+
+// ==========================================================
+// SEARCH ACTIONS
+// ==========================================================
+
+.search-actions {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.65rem;
+
+  button {
+    min-height: 42px;
+  }
+}
+
+
+// ==========================================================
+// COMMITTEE NUMBER
+// ==========================================================
+
+.committee-number {
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+
+// ==========================================================
+// EMPTY MESSAGE
+// ==========================================================
+
+.empty-message {
+  height: 180px;
+
+  text-align: center;
+
+  i {
+    display: block;
+
+    margin-bottom: 0.75rem;
+
+    font-size: 2rem;
+    opacity: 0.45;
+  }
+
+  span {
+    display: block;
+  }
+}
+
+
+// ==========================================================
+// MOBILE
+// ==========================================================
+
+@media (max-width: 768px) {
+
+  .search-actions {
+    width: 100%;
+
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+
+    button {
+      width: 100%;
+    }
+  }
+
+  .api-error {
+    align-items: flex-start;
+  }
+
+}

@@ -1,7 +1,18 @@
-
-import { Component, computed, signal } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import {
+  Subject,
+  catchError,
+  debounceTime,
+  distinctUntilChanged,
+  finalize,
+  of,
+  startWith,
+  switchMap,
+  tap
+} from 'rxjs';
 
 import { SelectModule } from 'primeng/select';
 import { TableModule } from 'primeng/table';
@@ -12,12 +23,13 @@ import { ButtonModule } from 'primeng/button';
 import { TextareaModule } from 'primeng/textarea';
 import { MultiSelectModule } from 'primeng/multiselect';
 import { TooltipModule } from 'primeng/tooltip';
+import { InputTextModule } from 'primeng/inputtext';
 
 import { WorkflowStepLayoutComponent } from '../../../shared/workflow-step-layout/workflow-step-layout.component';
 
 import { SelectOption } from '../../../core/models/committee.model';
 import { WorkflowStatusRow } from '../../../core/models/workflow.model';
-
+import { PrintingService } from './service/printing-service';
 
 interface ReviewUser {
   id: number;
@@ -26,11 +38,9 @@ interface ReviewUser {
   avatar?: string;
 }
 
-
 @Component({
   selector: 'app-printing',
   standalone: true,
-
   imports: [
     CommonModule,
     FormsModule,
@@ -43,68 +53,50 @@ interface ReviewUser {
     ButtonModule,
     TextareaModule,
     TooltipModule,
+    InputTextModule,
 
     WorkflowStepLayoutComponent
   ],
-
   templateUrl: './printing.component.html',
   styleUrl: './printing.component.scss'
 })
 export default class PrintingComponent {
+  private readonly service = inject(PrintingService);
 
+  private readonly reload$ = new Subject<void>();
+  private readonly committeeInput$ = new Subject<string>();
 
   // ==========================================
   // FILTER OPTIONS
   // ==========================================
 
   readonly governorates: SelectOption[] = [
-    {
-      label: 'كل المحافظات',
-      value: 'all'
-    },
-    {
-      label: 'القاهرة',
-      value: 'cairo'
-    },
-    {
-      label: 'الجيزة',
-      value: 'giza'
-    },
-    {
-      label: 'المنوفية',
-      value: 'monufia'
-    }
+    { label: 'كل المحافظات', value: 'all' },
+    { label: 'القاهرة', value: 'cairo' },
+    { label: 'الجيزة', value: 'giza' },
+    { label: 'المنوفية', value: 'monufia' }
   ];
-
 
   readonly subjects: SelectOption[] = [
-    {
-      label: 'كل المواد',
-      value: 'all'
-    },
-    {
-      label: 'اللغة العربية',
-      value: 'arabic'
-    },
-    {
-      label: 'الرياضيات',
-      value: 'math'
-    },
-    {
-      label: 'العلوم',
-      value: 'science'
-    }
+    { label: 'كل المواد', value: 'all' },
+    { label: 'اللغة العربية', value: 'arabic' },
+    { label: 'الرياضيات', value: 'math' },
+    { label: 'العلوم', value: 'science' }
   ];
 
+  readonly pageSizeOptions = [
+    { label: '5', value: 5 },
+    { label: '10', value: 10 },
+    { label: '20', value: 20 }
+  ];
 
   // ==========================================
   // SEARCH
   // ==========================================
 
   selectedGovernorate = 'all';
-
   selectedSubject = 'all';
-
+  selectedCommittee = '';
 
   // ==========================================
   // PAGE ESSENTIALS
@@ -113,600 +105,269 @@ export default class PrintingComponent {
   readonly essentials = [
     'البحث بالمحافظة',
     'البحث بالمادة',
+    'البحث برقم اللجنة',
     'تسجيل انتهاء الطباعة'
   ];
 
+  // ==========================================
+  // TABLE DATA (SERVER SIDE)
+  // ==========================================
+
+  readonly rows = signal<WorkflowStatusRow[]>([]);
+  readonly total = signal(0);
+  readonly loading = signal(false);
 
   // ==========================================
-  // TABLE DATA
+  // PAGINATION
   // ==========================================
 
-  readonly rows = signal<WorkflowStatusRow[]>([
-    {
-      index: 1,
-      subject: 'اللغة العربية',
-      governorate: 'القاهرة',
-      status: 'تم الانتهاء',
-      statusTone: 'success'
-    },
+  readonly pageSize = signal(5);
+  readonly currentPage = signal(1);
 
-    {
-      index: 2,
-      subject: 'الرياضيات',
-      governorate: 'الجيزة',
-      status: 'قيد الطباعة',
-      statusTone: 'info'
-    },
+  readonly totalPages = computed(() =>
+    Math.max(1, Math.ceil(this.total() / this.pageSize()))
+  );
 
-    {
-      index: 3,
-      subject: 'العلوم',
-      governorate: 'المنوفية',
-      status: 'مرفوض',
-      statusTone: 'danger',
+  readonly paginationPages = computed<(number | 'dots')[]>(() => {
+    const total = this.totalPages();
+    const current = this.currentPage();
 
-      rejectionReason:
-        'يوجد خطأ في بعض صفحات المادة، كما أن ترتيب الأسئلة يحتاج إلى مراجعة قبل إعادة الطباعة.'
-    },
-    {
-      index: 1,
-      subject: 'اللغة العربية',
-      governorate: 'القاهرة',
-      status: 'تم الانتهاء',
-      statusTone: 'success'
-    },
-
-    {
-      index: 2,
-      subject: 'الرياضيات',
-      governorate: 'الجيزة',
-      status: 'قيد الطباعة',
-      statusTone: 'info'
-    },
-
-    {
-      index: 3,
-      subject: 'العلوم',
-      governorate: 'المنوفية',
-      status: 'مرفوض',
-      statusTone: 'danger',
-
-      rejectionReason:
-        'يوجد خطأ في بعض صفحات المادة، كما أن ترتيب الأسئلة يحتاج إلى مراجعة قبل إعادة الطباعة.'
-    },
-    {
-      index: 1,
-      subject: 'اللغة العربية',
-      governorate: 'القاهرة',
-      status: 'تم الانتهاء',
-      statusTone: 'success'
-    },
-
-    {
-      index: 2,
-      subject: 'الرياضيات',
-      governorate: 'الجيزة',
-      status: 'قيد الطباعة',
-      statusTone: 'info'
-    },
-
-    {
-      index: 3,
-      subject: 'العلوم',
-      governorate: 'المنوفية',
-      status: 'مرفوض',
-      statusTone: 'danger',
-
-      rejectionReason:
-        'يوجد خطأ في بعض صفحات المادة، كما أن ترتيب الأسئلة يحتاج إلى مراجعة قبل إعادة الطباعة.'
+    if (total <= 4) {
+      return Array.from({ length: total }, (_, i) => i + 1);
     }
-  ]);
+    if (current <= 2) {
+      return [1, 2, 3, 'dots', total];
+    }
+    if (current >= total - 1) {
+      return [1, 'dots', total - 2, total - 1, total];
+    }
+    return [1, 'dots', current, 'dots', total];
+  });
 
-  // ==========================================
-// PAGINATION
-// ==========================================
-
-readonly pageSize = signal(5);
-
-readonly currentPage = signal(1);
-
-readonly totalPages = computed(() => {
-  return Math.max(
-    1,
-    Math.ceil(
-      this.rows().length / this.pageSize()
-    )
+  readonly paginationStart = computed(() =>
+    this.total() === 0 ? 0 : (this.currentPage() - 1) * this.pageSize() + 1
   );
-});
 
-readonly paginatedRows = computed(() => {
-
-  const page = this.currentPage();
-  const size = this.pageSize();
-
-  const start = (page - 1) * size;
-  const end = start + size;
-
-  return this.rows().slice(start, end);
-});
-
-readonly paginationPages = computed(() => {
-
-  const total = this.totalPages();
-  const current = this.currentPage();
-
-  // 4 صفحات أو أقل
-  if (total <= 4) {
-    return Array.from(
-      { length: total },
-      (_, index) => index + 1
-    );
-  }
-
-  // أول الصفحات
-  if (current <= 2) {
-    return [1, 2, 3, 'dots', total];
-  }
-
-  // آخر الصفحات
-  if (current >= total - 1) {
-    return [
-      1,
-      'dots',
-      total - 2,
-      total - 1,
-      total
-    ];
-  }
-
-  // الصفحات الوسط
-  return [
-    1,
-    'dots',
-    current,
-    'dots',
-    total
-  ];
-});
-
-readonly paginationStart = computed(() => {
-
-  if (this.rows().length === 0) {
-    return 0;
-  }
-
-  return (
-    (this.currentPage() - 1) *
-      this.pageSize() +
-    1
+  readonly paginationEnd = computed(() =>
+    Math.min(this.currentPage() * this.pageSize(), this.total())
   );
-});
 
-readonly paginationEnd = computed(() => {
+  constructor() {
+    // تحميل الداتا (فوري) عند أول فتح وعند أي تغيير في الفلاتر/الصفحة
+    this.reload$
+      .pipe(
+        startWith(undefined),
+        tap(() => this.loading.set(true)),
+        switchMap(() =>
+          this.service
+            .getList({
+              governorate: this.selectedGovernorate,
+              subject: this.selectedSubject,
+              committeeNumber: this.selectedCommittee,
+              page: this.currentPage(),
+              pageSize: this.pageSize()
+            })
+            .pipe(catchError(() => of({ items: [], total: 0 })))
+        ),
+        takeUntilDestroyed()
+      )
+      .subscribe(res => {
+        this.rows.set(res.items);
+        this.total.set(res.total);
+        this.loading.set(false);
+      });
 
-  return Math.min(
-    this.currentPage() * this.pageSize(),
-    this.rows().length
-  );
-});
-
-
-goToPage(page: number): void {
-
-  if (
-    page < 1 ||
-    page > this.totalPages() ||
-    page === this.currentPage()
-  ) {
-    return;
+    // البحث برقم اللجنة (بعد ما المستخدم يوقف كتابة)
+    this.committeeInput$
+      .pipe(debounceTime(400), distinctUntilChanged(), takeUntilDestroyed())
+      .subscribe(() => this.onFilterChange());
   }
 
-  this.currentPage.set(page);
-}
+  reload(): void {
+    this.reload$.next();
+  }
 
+  /** أي تغيير في الفلاتر يرجّع لأول صفحة */
+  onFilterChange(): void {
+    this.currentPage.set(1);
+    this.reload();
+  }
 
-previousPage(): void {
-  this.goToPage(this.currentPage() - 1);
-}
+  onCommitteeInput(value: string): void {
+    this.selectedCommittee = value;
+    this.committeeInput$.next(value.trim());
+  }
 
+  goToPage(page: number): void {
+    if (page < 1 || page > this.totalPages() || page === this.currentPage()) {
+      return;
+    }
+    this.currentPage.set(page);
+    this.reload();
+  }
 
-nextPage(): void {
-  this.goToPage(this.currentPage() + 1);
-}
+  previousPage(): void {
+    this.goToPage(this.currentPage() - 1);
+  }
 
+  nextPage(): void {
+    this.goToPage(this.currentPage() + 1);
+  }
 
-onPageSizeChange(): void {
-  this.currentPage.set(1);
-}
+  onPageSizeChange(size: number): void {
+    this.pageSize.set(size);
+    this.onFilterChange();
+  }
 
   // ==========================================
   // STATUS MENU
   // ==========================================
 
-  selectedRow: WorkflowStatusRow | null = null;
+  selectedRow: any | null = null;
 
   readonly menuItems: MenuItem[] = [];
 
+  openStatusMenu(row: WorkflowStatusRow, menu: any, event: Event): void {
+    this.selectedRow = row;
+
+    this.menuItems.length = 0;
+    this.menuItems.push(...this.buildMenuItems(row));
+
+    menu.toggle(event);
+  }
+
+  private buildMenuItems(row: WorkflowStatusRow): MenuItem[] {
+    const items: MenuItem[] = [
+      {
+        label: 'تسجيل انتهاء الطباعة',
+        icon: 'pi pi-check-circle',
+        command: () => this.finishSelectedPrinting()
+      }
+    ];
+
+    if (row.status !== 'تم الانتهاء' && row.status !== 'مرفوض') {
+      items.push(
+        { separator: true },
+        {
+          label: 'رفض المادة',
+          icon: 'pi pi-times-circle',
+          styleClass: 'reject-menu-item',
+          command: () => this.openRejectDialog()
+        }
+      );
+    }
+
+    return items;
+  }
 
   // ==========================================
   // REVIEW USERS
   // ==========================================
 
   readonly reviewUsers: ReviewUser[] = [
-
-    {
-      id: 1,
-      name: 'أحمد محمد',
-      role: 'مراجع أول'
-    },
-
-    {
-      id: 2,
-      name: 'محمد علي',
-      role: 'مراجع جودة'
-    },
-
-    {
-      id: 3,
-      name: 'سارة أحمد',
-      role: 'مراجع محتوى'
-    },
-
-    {
-      id: 4,
-      name: 'محمود حسن',
-      role: 'مراجع نهائي'
-    }
-
+    { id: 1, name: 'أحمد محمد', role: 'مراجع أول' },
+    { id: 2, name: 'محمد علي', role: 'مراجع جودة' },
+    { id: 3, name: 'سارة أحمد', role: 'مراجع محتوى' },
+    { id: 4, name: 'محمود حسن', role: 'مراجع نهائي' }
   ];
-
 
   // ==========================================
   // REJECT DIALOG
   // ==========================================
 
   rejectDialogVisible = false;
-
   rejectReason = '';
-
   selectedReviewers: ReviewUser[] = [];
-
   rejectSubmitting = false;
 
+  get isRejectFormValid(): boolean {
+    return this.rejectReason.trim().length >= 10 && this.selectedReviewers.length > 0;
+  }
+
+  openRejectDialog(): void {
+    if (!this.selectedRow) {
+      return;
+    }
+    this.rejectReason = '';
+    this.selectedReviewers = [];
+    this.rejectSubmitting = false;
+    this.rejectDialogVisible = true;
+  }
+
+  closeRejectDialog(): void {
+    if (this.rejectSubmitting) {
+      return;
+    }
+    this.rejectDialogVisible = false;
+    this.rejectReason = '';
+    this.selectedReviewers = [];
+  }
+
+  submitRejection(): void {
+    if (!this.selectedRow || !this.isRejectFormValid) {
+      return;
+    }
+
+    this.rejectSubmitting = true;
+
+    this.service
+      .reject(this.selectedRow.id, {
+        reason: this.rejectReason.trim(),
+        reviewerIds: this.selectedReviewers.map(u => u.id)
+      })
+      .pipe(finalize(() => (this.rejectSubmitting = false)))
+      .subscribe({
+        next: () => {
+          this.rejectDialogVisible = false;
+          this.selectedRow = null;
+          this.rejectReason = '';
+          this.selectedReviewers = [];
+          this.reload();
+        }
+      });
+  }
 
   // ==========================================
   // VIEW REJECTION REASON DIALOG
   // ==========================================
 
   rejectionReasonDialogVisible = false;
-
   selectedRejectionReason = '';
 
-
-  // ==========================================
-  // OPEN REJECT DIALOG
-  // ==========================================
-
-  openRejectDialog(): void {
-
-    if (!this.selectedRow) {
-      return;
-    }
-
-    this.rejectReason = '';
-
-    this.selectedReviewers = [];
-
-    this.rejectSubmitting = false;
-
-    this.rejectDialogVisible = true;
-  }
-
-
-  // ==========================================
-  // CLOSE REJECT DIALOG
-  // ==========================================
-
-  closeRejectDialog(): void {
-
-    if (this.rejectSubmitting) {
-      return;
-    }
-
-    this.rejectDialogVisible = false;
-
-    this.rejectReason = '';
-
-    this.selectedReviewers = [];
-  }
-
-
-  // ==========================================
-  // REJECT FORM VALIDATION
-  // ==========================================
-
-  get isRejectFormValid(): boolean {
-
-    return (
-      this.rejectReason.trim().length >= 10 &&
-      this.selectedReviewers.length > 0
-    );
-  }
-
-
-  // ==========================================
-  // SUBMIT REJECTION
-  // ==========================================
-
-  submitRejection(): void {
-
-    if (
-      !this.selectedRow ||
-      !this.isRejectFormValid
-    ) {
-      return;
-    }
-
-
-    this.rejectSubmitting = true;
-
-
-    const rejectionData = {
-
-      rowIndex: this.selectedRow.index,
-
-      subject: this.selectedRow.subject,
-
-      governorate: this.selectedRow.governorate,
-
-      reason: this.rejectReason.trim(),
-
-      reviewerIds:
-        this.selectedReviewers.map(
-          user => user.id
-        )
-    };
-
-
-    console.log(
-      'Reject Request:',
-      rejectionData
-    );
-
-
-    // ==========================================
-    // API CALL WILL BE HERE
-    // ==========================================
-
-    setTimeout(() => {
-
-      const rowIndex =
-        this.selectedRow?.index;
-
-
-      if (!rowIndex) {
-
-        this.rejectSubmitting = false;
-
-        return;
-      }
-
-
-      const reason =
-        this.rejectReason.trim();
-
-
-      this.rows.update(rows =>
-
-        rows.map(row =>
-
-          row.index === rowIndex
-
-            ? {
-                ...row,
-
-                status: 'مرفوض',
-
-                statusTone: 'danger',
-
-                rejectionReason: reason
-              }
-
-            : row
-        )
-      );
-
-
-      this.rejectSubmitting = false;
-
-      this.rejectDialogVisible = false;
-
-      this.selectedRow = null;
-
-      this.rejectReason = '';
-
-      this.selectedReviewers = [];
-
-    }, 800);
-  }
-
-
-  // ==========================================
-  // OPEN STATUS MENU
-  // ==========================================
-
-  openStatusMenu(
-    row: WorkflowStatusRow,
-    menu: any,
-    event: Event
-  ): void {
-
-    this.selectedRow = row;
-
-    this.menuItems.length = 0;
-
-    this.menuItems.push(
-      ...this.buildMenuItems(row)
-    );
-
-    menu.toggle(event);
-  }
-
-
-  // ==========================================
-  // BUILD MENU ITEMS
-  // ==========================================
-
-  private buildMenuItems(
-    row: WorkflowStatusRow
-  ): MenuItem[] {
-
-    const items: MenuItem[] = [
-
-      {
-        label: 'تسجيل انتهاء الطباعة',
-
-        icon: 'pi pi-check-circle',
-
-        command: () => {
-
-          this.finishSelectedPrinting();
-
-        }
-      }
-
-    ];
-
-
-    // ==========================================
-    // REJECT
-    // ==========================================
-
-    if (
-      row.status !== 'تم الانتهاء' &&
-      row.status !== 'مرفوض'
-    ) {
-
-      items.push(
-
-        {
-          separator: true
-        },
-
-        {
-          label: 'رفض المادة',
-
-          icon: 'pi pi-times-circle',
-
-          styleClass: 'reject-menu-item',
-
-          command: () => {
-
-            this.openRejectDialog();
-
-          }
-        }
-
-      );
-    }
-
-
-    return items;
-  }
-
-
-  // ==========================================
-  // OPEN REJECTION REASON DIALOG
-  // ==========================================
-
-  openRejectionReasonDialog(
-    row: WorkflowStatusRow
-  ): void {
-
+  openRejectionReasonDialog(row: WorkflowStatusRow): void {
     if (row.status !== 'مرفوض') {
       return;
     }
-
-
     this.selectedRow = row;
-
-
     this.selectedRejectionReason =
-      row.rejectionReason?.trim() ||
-      'لم يتم تسجيل سبب الرفض.';
-
-
+      row.rejectionReason?.trim() || 'لم يتم تسجيل سبب الرفض.';
     this.rejectionReasonDialogVisible = true;
   }
 
-
-  // ==========================================
-  // CLOSE REJECTION REASON DIALOG
-  // ==========================================
-
   closeRejectionReasonDialog(): void {
-
     this.rejectionReasonDialogVisible = false;
-
     this.selectedRejectionReason = '';
-
     this.selectedRow = null;
   }
-
 
   // ==========================================
   // FINISH PRINTING
   // ==========================================
 
   finishSelectedPrinting(): void {
-
     if (!this.selectedRow) {
       return;
     }
 
-
-    const rowIndex =
-      this.selectedRow.index;
-
-
-    this.rows.update(rows =>
-
-      rows.map(row =>
-
-        row.index === rowIndex
-
-          ? {
-              ...row,
-
-              status: 'تم الانتهاء',
-
-              statusTone: 'success',
-
-              rejectionReason: undefined
-            }
-
-          : row
-      )
-    );
-
-
-    console.info(
-      `Printing finished for row ${rowIndex}`
-    );
-
-
-    this.selectedRow = null;
+    this.service.finish(this.selectedRow.id).subscribe({
+      next: () => {
+        this.selectedRow = null;
+        this.reload();
+      }
+    });
   }
-
-
-  // ==========================================
-  // ALIAS
-  // ==========================================
 
   markSelectedRowReady(): void {
-
     this.finishSelectedPrinting();
-
   }
-
 }
