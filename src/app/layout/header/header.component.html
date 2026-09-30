@@ -101,7 +101,7 @@
             {{ profileData?.fullName }}
           </span>
           <span class="user-role">
-            {{ profileData?.roleName }}
+          مسؤول النظام  {{ profileData?.roleName }}
           </span>
         </span>
 
@@ -115,11 +115,10 @@
       @if (showUserDropdown()) {
         <div class="user-dropdown-panel" (click)="$event.stopPropagation()">
           <div class="dropdown-user-header">
-            <span class="dropdown-full-name">{{ userName }}</span>
-            <span class="dropdown-role-badge">{{ userRole }}</span>
-            @if (currentUser?.email) {
-              <span class="dropdown-email">{{ currentUser?.email }}</span>
-            }
+            <span class="dropdown-full-name">{{ profileData?.fullName }}</span>
+            <span class="dropdown-role-badge"> مسؤول النظام {{ profileData?.roleName }}</span>
+              <span class="dropdown-email">{{ profileData?.email }}</span>
+           
           </div>
 
           <div class="dropdown-divider"></div>

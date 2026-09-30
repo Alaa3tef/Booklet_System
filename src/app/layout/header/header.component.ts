@@ -158,7 +158,7 @@ logout(): void {
       console.error('Logout error:', error);
 
       // Still clear local session and go to login
-      this.router.navigate(['/login']);
+      // this.router.navigate(['/login']);
     }
   });
 }
@@ -174,7 +174,7 @@ profile() {
 
     }
   });
-  
+
 }
   @HostListener('document:click', ['$event'])
   onDocumentClick(event: MouseEvent): void {

@@ -1242,3 +1242,11 @@
     max-width: 100%;
   }
 }
+.role-badge {
+  &.role-tone-navy   { background: #e0e7f5; color: #1e3a6e; }
+  &.role-tone-blue   { background: #dbeafe; color: #1d4ed8; }
+  &.role-tone-teal   { background: #d5f5f0; color: #0f6b5f; }
+  &.role-tone-green  { background: #d7f5e0; color: #166534; }
+  &.role-tone-orange { background: #fde8d7; color: #9a4a12; }
+  &.role-tone-purple { background: #ede3fb; color: #5b2ea6; }
+}

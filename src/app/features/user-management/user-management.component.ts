@@ -1,11 +1,12 @@
 import {
   Component,
   computed,
+  inject,
   signal
 } from '@angular/core';
 
 import { CommonModule } from '@angular/common';
-import { AppUser } from './interface/useManagement';
+import { AppUser } from './interfaces/useManagement';
 import { FormsModule } from '@angular/forms';
 import { DialogModule } from 'primeng/dialog';
 import { InputTextModule } from 'primeng/inputtext';
@@ -13,99 +14,123 @@ import { SelectModule } from 'primeng/select';
 import { FloatLabelModule } from 'primeng/floatlabel';
 import { ButtonModule } from 'primeng/button';
 import { MessageModule } from 'primeng/message';
-
-// ==================================================
-// MODEL
-// ==================================================
-
-
+import { UserManagement } from './service/user-management';
+import { AppRole } from './interfaces/role';
+import { AppUserResponse } from './interfaces/useManagementResponse';
+import { UserForm } from './interfaces/UserForm';
+import { MenuModule, Menu } from 'primeng/menu';
+import { MenuItem } from 'primeng/api';
 
 
 @Component({
   selector: 'app-user-management',
   standalone: true,
-  imports: [CommonModule, FormsModule, ButtonModule, InputTextModule, SelectModule, DialogModule, FloatLabelModule, MessageModule],
+  imports: [CommonModule, FormsModule, ButtonModule, InputTextModule, SelectModule, DialogModule, FloatLabelModule, MessageModule , MenuModule],
   templateUrl: './user-management.component.html',
   styleUrl: './user-management.component.scss'
 })
+
 export default class UserManagementComponent {
 
-  // ==================================================
-  // STATE
-  // ==================================================
 
-  searchQuery = signal('');
-  selectedRole = signal('all');
+  private readonly userManagement = inject(UserManagement);
+
+  // ---------- STATE ----------
+  searchQuery    = signal('');
+  selectedRole   = signal('all');
   selectedStatus = signal('all');
 
-  showAddModal = signal(false);
+  editingId = signal<number | null>(null);
+  editLoading = signal(false);
+  readonly isEdit = computed(() => this.editingId() !== null);
+  menuItems = signal<MenuItem[]>([]);
+
+  showAddModal    = signal(false);
   showDeleteModal = signal(false);
-  deleteTarget = signal<AppUser | null>(null);
+  deleteTarget    = signal<AppUser | null>(null);
 
-  /** Form model for Add / Edit */
-  form = signal({
-    // name: '',
-    username: '',
-    email: '',
-    roleKey: 'it',
-    phone: '',
-    status: 'active' as 'active' | 'inactive'
-  });
+  user    = signal<AppUser[]>([]);
+  roles   = signal<AppRole[]>([]);
+  loading = signal(false);
 
+  totalRecords = signal(0);
+  pageSize     = signal(10);
+  currentPage  = signal(1);
+
+  // Stats (each one comes from its own count request)
+  activeUsersCount   = signal(0);
+  inactiveUsersCount = signal(0);
+  managementUsersCount     = signal(0);
+  allUsersCount      = signal(0);
+
+  form = signal<UserForm>(this.emptyForm());
   formError = signal('');
 
-  /** Pagination */
-  pageSize = signal(8);
-  currentPage = signal(1);
+  ngOnInit(): void {
+    this.loadRoles();
+    this.loadUsers();
+    //this.loadStats();
+  }
 
+  private emptyForm(): UserForm {
+    return { fullName: '', email: '', password: '', roleKey: '', status: 'active' };
+  }
 
-  // ==================================================
-  // SEED DATA
-  // ==================================================
+  // ---------- LOAD ----------
+  loadUsers(): void {
+    this.loading.set(true);
 
-  private nextId = signal(13);
+    const roleId   = this.selectedRole() === 'all' ? undefined : Number(this.selectedRole());
+    const isActive = this.selectedStatus() === 'all' ? undefined : this.selectedStatus() === 'active';
 
-  readonly allUsers = signal<AppUser[]>([
-    { id: 1,        username: 'ahmed.ali',      email: 'ahmed.ali@moe.gov.eg',      role: 'مدير النظام',    roleKey: 'admin',     status: 'active',   createdAt: '2025-01-10', avatarInitials: 'أح', avatarTone: 'navy' },
-    { id: 2,              username: 'fatma.hassan',   email: 'fatma.hassan@moe.gov.eg',   role: 'مستخدم IT',      roleKey: 'it',        status: 'active',   createdAt: '2025-02-14', avatarInitials: 'فح', avatarTone: 'blue' },
-    { id: 3,          username: 'mohamed.ibr',    email: 'mohamed.ibr@moe.gov.eg',    role: 'مستخدم الإعداد', roleKey: 'planning',  status: 'active',   createdAt: '2025-03-01', avatarInitials: 'مإ', avatarTone: 'teal' },
-    { id: 4,              username: 'sara.khaled',    email: 'sara.khaled@moe.gov.eg',    role: 'مستخدم الطباعة', roleKey: 'printing',  status: 'active',   createdAt: '2025-03-12', avatarInitials: 'سخ', avatarTone: 'green' },
-    { id: 5,               username: 'omar.youssef',   email: 'omar.youssef@moe.gov.eg',   role: 'مستخدم الجودة',  roleKey: 'quality',   status: 'inactive', createdAt: '2025-04-05', avatarInitials: 'عي', avatarTone: 'orange' },
-    { id: 6,             username: 'noura.said',     email: 'noura.said@moe.gov.eg',     role: 'مستخدم التغليف', roleKey: 'packing',   status: 'active',   createdAt: '2025-04-20', avatarInitials: 'نس', avatarTone: 'purple' },
-    { id: 7,           username: 'khaled.abd',     email: 'khaled.abd@moe.gov.eg',     role: 'مستخدم التخزين', roleKey: 'archiving', status: 'active',   createdAt: '2025-05-03', avatarInitials: 'خع', avatarTone: 'navy' },
-    { id: 8,           username: 'mona.ahmed',     email: 'mona.ahmed@moe.gov.eg',     role: 'مستخدم IT',      roleKey: 'it',        status: 'inactive', createdAt: '2025-05-18', avatarInitials: 'مأ', avatarTone: 'blue' },
-    { id: 9,         username: 'youssef.shafi',  email: 'youssef.shafi@moe.gov.eg',  role: 'مستخدم الإعداد', roleKey: 'planning',  status: 'active',   createdAt: '2025-06-01', avatarInitials: 'يش', avatarTone: 'teal' },
-    { id: 10,          username: 'hanaa.ramadan',  email: 'hanaa.ramadan@moe.gov.eg',  role: 'مدير النظام',    roleKey: 'admin',     status: 'active',   createdAt: '2025-06-15', avatarInitials: 'هر', avatarTone: 'navy' },
-    { id: 11,            username: 'tarek.mostafa',  email: 'tarek.mostafa@moe.gov.eg',  role: 'مستخدم الطباعة', roleKey: 'printing',  status: 'active',   createdAt: '2025-07-02', avatarInitials: 'طم', avatarTone: 'green' },
-    { id: 12,            username: 'reem.sayed',     email: 'reem.sayed@moe.gov.eg',     role: 'مستخدم الجودة',  roleKey: 'quality',   status: 'inactive', createdAt: '2025-07-14', avatarInitials: 'رس', avatarTone: 'orange' },
+    this.userManagement
+      .getUsers(this.searchQuery().trim(), roleId, isActive, this.currentPage(), this.pageSize())
+      .subscribe({
+        next: (res: AppUserResponse) => {
+          // this.user.set(res.data?.data ?? []);
+          // this.totalRecords.set(res.data?.totalCount ?? 0);
+          // this.loading.set(false);
+           const d = res.data;
+  this.user.set(d?.data ?? []);
+  this.totalRecords.set(d?.totalCount ?? 0);
+  this.activeUsersCount.set(d?.activeUsersCount ?? 0);
+  this.inactiveUsersCount.set(d?.inactiveUsersCount ?? 0);
+  this.managementUsersCount.set(d?.managementUsersCount ?? 0);
+  this.loading.set(false);
+        },
+        error: (err) => {
+          console.error('Error loading users:', err);
+          this.user.set([]);
+          this.totalRecords.set(0);
+          this.loading.set(false);
+        }
+      });
+  }
+
+  loadRoles(): void {
+    this.userManagement.getRoles().subscribe({
+      next: res => this.roles.set(res.data ?? []),
+      error: err => {
+        console.error('Error loading roles:', err);
+        this.roles.set([]);
+      }
+    });
+  }
+
+  // ---------- DERIVED ----------
+  readonly roleOptions = computed(() => [
+    { value: 'all', label: 'جميع الأدوار' },
+    ...this.roles().map(r => ({ value: String(r.id), label: r.name }))
   ]);
 
+  readonly formRoleOptions = computed(() => this.roleOptions().slice(1));
 
-  // ==================================================
-  // DERIVED (computed)
-  // ==================================================
-
-  readonly filtered = computed(() => {
-    const q    = this.searchQuery().trim().toLowerCase();
-    const role = this.selectedRole();
-    const stat = this.selectedStatus();
-
-    return this.allUsers().filter(u => {
-      const matchQ    = !q || u.username.toLowerCase().includes(q) || u.email.toLowerCase().includes(q);
-      const matchRole = role === 'all' || u.roleKey === role;
-      const matchStat = stat === 'all' || u.status === stat;
-      return matchQ && matchRole && matchStat;
-    });
-  });
+  readonly filtered = computed(() => this.user());
+  readonly paged    = computed(() => this.user());
 
   readonly totalPages = computed(() =>
-    Math.max(1, Math.ceil(this.filtered().length / this.pageSize()))
+    Math.max(1, Math.ceil(this.totalRecords() / this.pageSize()))
   );
-
-  readonly paged = computed(() => {
-    const start = (this.currentPage() - 1) * this.pageSize();
-    return this.filtered().slice(start, start + this.pageSize());
-  });
 
   readonly pageNumbers = computed(() => {
     const total = this.totalPages();
@@ -117,186 +142,211 @@ export default class UserManagementComponent {
     } else {
       pages.push(1);
       if (cur > 3) pages.push('...');
-      for (let i = Math.max(2, cur - 1); i <= Math.min(total - 1, cur + 1); i++) {
-        pages.push(i);
-      }
+      for (let i = Math.max(2, cur - 1); i <= Math.min(total - 1, cur + 1); i++) pages.push(i);
       if (cur < total - 2) pages.push('...');
       pages.push(total);
     }
     return pages;
   });
 
-  readonly stats = computed(() => {
-    const users = this.allUsers();
-    return {
-      total:    users.length,
-      active:   users.filter(u => u.status === 'active').length,
-      inactive: users.filter(u => u.status === 'inactive').length,
-      admins:   users.filter(u => u.roleKey === 'admin').length
-    };
-  });
-
-
-  // ==================================================
-  // ROLE OPTIONS
-  // ==================================================
-
-  readonly roleOptions = [
-    { value: 'all',      label: 'جميع الأدوار' },
-    { value: 'admin',    label: 'مدير النظام' },
-    { value: 'it',       label: 'مستخدم IT' },
-    { value: 'planning', label: 'مستخدم الإعداد' },
-    { value: 'printing', label: 'مستخدم الطباعة' },
-    { value: 'quality',  label: 'مستخدم الجودة' },
-    { value: 'packing',  label: 'مستخدم التغليف' },
-    { value: 'archiving',label: 'مستخدم التخزين' }
-  ];
-
-  readonly formRoleOptions = this.roleOptions.slice(1); // exclude 'all' in form
+readonly stats = computed(() => ({
+  total:      this.totalRecords(),
+  active:     this.activeUsersCount(),
+  inactive:   this.inactiveUsersCount(),
+  management: this.managementUsersCount()
+}));
 
   readonly statusOptions = [
-    { value: 'all', label: 'جميع الحالات' },
-    { value: 'active', label: 'نشط' },
+    { value: 'all',      label: 'جميع الحالات' },
+    { value: 'active',   label: 'نشط' },
     { value: 'inactive', label: 'معطل' }
   ];
-
   readonly formStatusOptions = this.statusOptions.slice(1);
 
-  readonly roleLabels: Record<string, string> = {
-    admin:    'مدير النظام',
-    it:       'مستخدم IT',
-    planning: 'مستخدم الإعداد',
-    printing: 'مستخدم الطباعة',
-    quality:  'مستخدم الجودة',
-    packing:  'مستخدم التغليف',
-    archiving:'مستخدم التخزين'
-  };
-
+  // Keyed by roleName returned from the API
   readonly toneForRole: Record<string, string> = {
-    admin:    'navy',
-    it:       'blue',
-    planning: 'teal',
-    printing: 'green',
-    quality:  'orange',
-    packing:  'purple',
-    archiving:'navy'
+    SuperAdmin:       'navy',
+    IT:               'blue',
+    ProjectManagment: 'teal',
+    Printing:         'green',
+    Quality:          'orange',
+    WareHouse:        'purple',
+    Archive:          'navy',
+    Packing:          'purple',
+    TopManagment:     'navy'
   };
 
-
-  // ==================================================
-  // NAVIGATION
-  // ==================================================
-
+  // ---------- FILTERS / PAGING ----------
   onSearch(value: string): void {
     this.searchQuery.set(value);
     this.currentPage.set(1);
+    this.loadUsers();
   }
 
-  onRoleChange(value: string): void {
-    this.selectedRole.set(value);
+  onRoleChange(value: string | null): void {
+    this.selectedRole.set(value ?? 'all');
     this.currentPage.set(1);
+    this.loadUsers();
   }
 
-  onStatusChange(value: string): void {
-    this.selectedStatus.set(value);
+  onStatusChange(value: string | null): void {
+    this.selectedStatus.set(value ?? 'all');
     this.currentPage.set(1);
+    this.loadUsers();
   }
 
+  openMenu(event: Event, u: AppUser, menu: Menu): void {
+  this.menuItems.set([
+    {
+      label: 'تعديل',
+      icon: 'pi pi-pencil',
+      command: () => this.openEditModal(u)
+    },
+    {
+      label: u.isActive ? 'تعطيل المستخدم' : 'تفعيل المستخدم',
+      icon: u.isActive ? 'pi pi-ban' : 'pi pi-check',
+      command: () => this.toggleStatus(u)
+    },
+    { separator: true },
+    {
+      label: 'حذف',
+      icon: 'pi pi-trash',
+      styleClass: 'menu-danger',
+      command: () => this.confirmDelete(u)
+    }
+  ]);
+  menu.toggle(event);
+}
   goToPage(page: number | '...'): void {
     if (typeof page === 'number') {
       this.currentPage.set(page);
+      this.loadUsers();
     }
   }
 
   prevPage(): void {
     if (this.currentPage() > 1) {
       this.currentPage.update(p => p - 1);
+      this.loadUsers();
     }
   }
 
   nextPage(): void {
     if (this.currentPage() < this.totalPages()) {
       this.currentPage.update(p => p + 1);
+      this.loadUsers();
     }
   }
 
-
-  // ==================================================
-  // ADD MODAL
-  // ==================================================
-
-  openAddModal(): void {
-    this.form.set({  username: '', email: '', roleKey: '', phone: ''  , status: 'active' });
-    this.formError.set('');
-    this.showAddModal.set(true);
+  // ---------- ADD ----------
+  updateForm<K extends keyof UserForm>(key: K, value: UserForm[K] | null): void {
+    this.form.update(f => ({ ...f, [key]: value ?? '' }));
   }
 
-  closeAddModal(): void {
-    this.showAddModal.set(false);
-  }
+ openAddModal(): void {
+  this.editingId.set(null);
+  this.form.set(this.emptyForm());
+  this.formError.set('');
+  this.showAddModal.set(true);
+}
 
-  submitAdd(): void {
-    const f = this.form();
+openEditModal(u: AppUser): void {
+  this.editingId.set(u.id);
+  this.formError.set('');
+  this.form.set(this.emptyForm());
+  this.editLoading.set(true);
+  this.showAddModal.set(true);
 
-    if (!f.username.trim() || !f.email.trim()) {
-      this.formError.set('يرجى ملء جميع الحقول المطلوبة');
-      return;
+  this.userManagement.getUserById(u.id).subscribe({
+    next: res => {
+      const d = res.data;
+      this.form.set({
+        fullName: d.fullName,
+        email:    d.email,
+        password: '',
+        roleKey:  String(d.roleId),
+        status:   d.isActive ? 'active' : 'inactive'
+      });
+      this.editLoading.set(false);
+    },
+    error: err => {
+      console.error('Get user error:', err);
+      this.editLoading.set(false);
+      this.formError.set(err?.error?.message ?? 'تعذّر تحميل بيانات المستخدم');
     }
+  });
+}
 
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(f.email)) {
-      this.formError.set('صيغة البريد الإلكتروني غير صحيحة');
-      return;
-    }
+closeAddModal(): void {
+  this.showAddModal.set(false);
+  this.editingId.set(null);
+  this.editLoading.set(false);
+}
 
-    const phoneRegex = /^\d{11}$/;
-    if (f.phone && !phoneRegex.test(f.phone)) {
-      this.formError.set('رقم الهاتف يجب أن يكون مكونًا من 11 رقمًا');
-      return;
-    }
+submitForm(): void {
+  if (this.editLoading()) return;
+  const f = this.form();
+  const editing = this.isEdit();
 
-    const newUser: AppUser = {
-      id: this.nextId(),
-      // name: f.name.trim(),
-      username: f.username.trim(),
-      email: f.email.trim(),
-      role: this.roleLabels[f.roleKey],
-      roleKey: f.roleKey,
-      phone: f.phone,
-      status: f.status ,
-      createdAt: new Date().toISOString().split('T')[0],
-      avatarInitials: this.buildInitials(f.username),
-      avatarTone: this.toneForRole[f.roleKey] ?? 'blue'
-    };
-
-    this.allUsers.update(users => [...users, newUser]);
-    this.nextId.update(n => n + 1);
-    this.formError.set('');
-    this.showAddModal.set(false);
+  if (!f.fullName.trim() || !f.email.trim() || !f.roleKey || (!editing && !f.password)) {
+    this.formError.set('يرجى ملء جميع الحقول المطلوبة');
+    return;
+  }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.email)) {
+    this.formError.set('صيغة البريد الإلكتروني غير صحيحة');
+    return;
+  }
+  if (!editing && f.password.length < 6) {
+    this.formError.set('كلمة المرور يجب ألا تقل عن 6 أحرف');
+    return;
   }
 
+  const body = {
+    fullName: f.fullName.trim(),
+    email:    f.email.trim(),
+    roleId:   Number(f.roleKey),
+    isActive: f.status === 'active'
+  };
 
-  // ==================================================
-  // TOGGLE STATUS
-  // ==================================================
+  const request$ = editing
+    ? this.userManagement.updateUser(this.editingId()!, body)
+    : this.userManagement.createUser({ ...body, password: f.password });
 
-  toggleStatus(user: AppUser): void {
-    this.allUsers.update(users =>
-      users.map(u =>
-        u.id === user.id
-          ? { ...u, status: u.status === 'active' ? 'inactive' : 'active' }
-          : u
-      )
-    );
+  request$.subscribe({
+    next: () => {
+      this.formError.set('');
+      this.closeAddModal();
+      this.loadUsers();
+    },
+    error: err => {
+      console.error('Save user error:', err);
+      this.formError.set(
+        err?.error?.message ??
+        (editing ? 'حدث خطأ أثناء تعديل المستخدم' : 'حدث خطأ أثناء إضافة المستخدم')
+      );
+    }
+  });
+}
+
+  // ---------- TOGGLE STATUS (PUT) ----------
+  toggleStatus(u: AppUser): void {
+    this.userManagement.updateUser(u.id, {
+      fullName: u.fullName,
+      email:    u.email,
+      roleId:   u.roleId,
+      isActive: !u.isActive
+    }).subscribe({
+      next: () => {
+        this.loadUsers();
+        //this.loadStats();
+      },
+      error: err => console.error('Update user error:', err)
+    });
   }
 
-
-  // ==================================================
-  // DELETE
-  // ==================================================
-
-  confirmDelete(user: AppUser): void {
-    this.deleteTarget.set(user);
+  // ---------- DELETE ----------
+  confirmDelete(u: AppUser): void {
+    this.deleteTarget.set(u);
     this.showDeleteModal.set(true);
   }
 
@@ -308,24 +358,26 @@ export default class UserManagementComponent {
   executeDelete(): void {
     const target = this.deleteTarget();
     if (!target) return;
-    this.allUsers.update(users => users.filter(u => u.id !== target.id));
 
-    // adjust page if needed
-    if (this.currentPage() > this.totalPages()) {
-      this.currentPage.set(this.totalPages());
-    }
+    this.userManagement.deleteUser(target.id).subscribe({
+      next: () => {
+        this.showDeleteModal.set(false);
+        this.deleteTarget.set(null);
 
-    this.showDeleteModal.set(false);
-    this.deleteTarget.set(null);
+        // If the last row of the last page was deleted, go back one page
+        if (this.user().length === 1 && this.currentPage() > 1) {
+          this.currentPage.update(p => p - 1);
+        }
+        this.loadUsers();
+        //this.loadStats();
+      },
+      error: err => console.error('Delete user error:', err)
+    });
   }
 
-
-  // ==================================================
-  // HELPERS
-  // ==================================================
-
-  private buildInitials(name: string): string {
-    const parts = name.trim().split(/\s+/);
+  // ---------- HELPERS ----------
+  initials(name: string): string {
+    const parts = (name ?? '').trim().split(/\s+/);
     if (parts.length >= 2) return parts[0][0] + parts[1][0];
     return (parts[0] || 'م').slice(0, 2);
   }
@@ -333,19 +385,7 @@ export default class UserManagementComponent {
   isNumber(v: number | '...'): boolean {
     return typeof v === 'number';
   }
-// updateForm(key: string, value: any): void {
-//     if (key === 'phone') {
-//         value = String(value ?? '')
-//             .replace(/\D/g, '')
-//             .slice(0, 11);
-//     }
-
-//     this.form.update(current => ({
-//         ...current,
-//         [key]: value
-//     }));
-// }
-  updateForm(field: string, value: string): void {
-    this.form.update(f => ({ ...f, [field]: value }));
-  }
+  toneFor(roleName: string): string {
+  return this.toneForRole[roleName] ?? 'navy';
+}
  }

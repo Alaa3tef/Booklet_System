@@ -58,7 +58,7 @@
     <div class="um-stat admin">
       <i class="pi pi-crown"></i>
       <div>
-        <span class="stat-val">{{ stats().admins }}</span>
+        <span class="stat-val">{{ stats().management  }}</span>
         <span class="stat-lbl">مديري النظام</span>
       </div>
     </div>
@@ -87,7 +87,7 @@
     <!-- Role filter -->
     <p-select
       id="select-role-filter"
-      [options]="roleOptions"
+      [options]="roleOptions()"
       optionLabel="label"
       optionValue="value"
       [ngModel]="selectedRole()"
@@ -113,8 +113,8 @@
 
     <!-- Count badge -->
     <span class="um-count-badge">
-      {{ filtered().length }} مستخدم
-    </span>
+  {{ paged().length }} من {{ totalRecords() }} مستخدم
+</span>
 
   </section>
 
@@ -151,7 +151,7 @@
 
         @for (user of paged(); track user.id; let i = $index) {
 
-          <tr class="um-row" [class.inactive-row]="user.status === 'inactive'">
+          <tr class="um-row" [class.inactive-row]="!user.isActive">
 
             <!-- Index -->
             <td class="col-idx">
@@ -162,12 +162,12 @@
             <td class="col-user">
               <div class="user-cell">
 
-                <div class="avatar" [class]="'avatar-' + user.avatarTone">
-                  {{ user.avatarInitials }}
-                </div>
+               <div class="avatar" [class]="'avatar-' + toneFor(user.roleName)">
+  {{ initials(user.fullName) }}
+</div>
 
                 <div class="user-info">
-                  <span class="user-uname">&#64;{{ user.username }}</span>
+                  <span class="user-uname">&#64;{{ user.fullName }}</span>
                 </div>
 
               </div>
@@ -175,9 +175,9 @@
 
             <!-- Role -->
             <td class="col-role">
-              <span class="role-badge" [class]="'role-' + user.roleKey">
-                {{ user.role }}
-              </span>
+              <span class="role-badge" [class]="'role-tone-' + toneFor(user.roleName)">
+  {{ user.roleName }}
+</span>
             </td>
 
             <!-- Email -->
@@ -189,42 +189,27 @@
             <td class="col-status">
               <span
                 class="status-chip"
-                [class.chip-active]="user.status === 'active'"
-                [class.chip-inactive]="user.status === 'inactive'">
+                [class.chip-active]="user.isActive === true"
+                [class.chip-inactive]="user.isActive === false">
                 <span class="chip-dot"></span>
-                {{ user.status === 'active' ? 'نشط' : 'معطل' }}
+                {{ user.isActive === true ? 'نشط' : 'معطل' }}
               </span>
             </td>
 
             <!-- Date -->
-            <td class="col-date">{{ user.createdAt }}</td>
+            <td class="col-date">{{ user.createdAt | date }}</td>
 
             <!-- Actions -->
-            <td class="col-actions">
-              <div class="action-btns">
-
-                <!-- Toggle status -->
-                <button
-                  type="button"
-                  class="action-btn"
-                  [class.btn-deactivate]="user.status === 'active'"
-                  [class.btn-activate]="user.status === 'inactive'"
-                  [title]="user.status === 'active' ? 'تعطيل المستخدم' : 'تفعيل المستخدم'"
-                  (click)="toggleStatus(user)">
-                  <i [class]="user.status === 'active' ? 'pi pi-ban' : 'pi pi-check'"></i>
-                </button>
-
-                <!-- Delete -->
-                <button
-                  type="button"
-                  class="action-btn btn-delete"
-                  title="حذف المستخدم"
-                  (click)="confirmDelete(user)">
-                  <i class="pi pi-trash"></i>
-                </button>
-
-              </div>
-            </td>
+          <td class="col-actions">
+  <button
+    type="button"
+    class="action-btn"
+    title="الإجراءات"
+    aria-haspopup="true"
+    (click)="openMenu($event, user, menu)">
+    <i class="pi pi-ellipsis-v"></i>
+  </button>
+</td>
 
           </tr>
 
@@ -235,7 +220,7 @@
     </table>
 
   </section>
-
+<p-menu #menu [model]="menuItems()" [popup]="true" appendTo="body" />
 
   <!-- ==================================================
        PAGINATION
@@ -306,29 +291,34 @@
 <p-dialog
   [visible]="showAddModal()"
   (visibleChange)="!$event && closeAddModal()"
+  appendTo="body"
+  [baseZIndex]="10000"
   [modal]="true"
   [showHeader]="false"
   [draggable]="false"
   [resizable]="false"
   [dismissableMask]="true"
   [contentStyle]="{ padding: '0', overflow: 'visible' }"
-  [style]="{ background: 'transparent', border: 'none', 'box-shadow': 'none', width: '1000px', maxWidth: '95vw' }">
+  [style]="{ background: 'transparent', border: 'none', 'box-shadow': 'none', width: '760px', maxWidth: '95vw' }">
 
-  <div class="um-modal um-modal-add">
+  <div class="um-modal um-modal-add" dir="rtl">
 
     <!-- HEADER -->
     <div class="modal-header">
       <div class="modal-header-icon">
-        <i class="pi pi-user-plus"></i>
-      </div>
-
-      <h3>إضافة مستخدم جديد</h3>
+  <i [class]="isEdit() ? 'pi pi-user-edit' : 'pi pi-user-plus'"></i>
+</div>
+<h3>{{ isEdit() ? 'تعديل المستخدم' : 'إضافة مستخدم جديد' }}</h3>
 
       <button type="button" class="modal-close" (click)="closeAddModal()">
         <i class="pi pi-times"></i>
       </button>
     </div>
-
+@if (editLoading()) {
+  <div class="form-loading">
+    <i class="pi pi-spin pi-spinner"></i> جارٍ تحميل البيانات...
+  </div>
+}
     <!-- BODY -->
     <div class="modal-body">
 
@@ -351,8 +341,8 @@
                 type="text"
                 class="w-full"
                 placeholder=" "
-                [ngModel]="form().username"
-                (ngModelChange)="updateForm('username', $event)" />
+                [ngModel]="form().fullName"
+                (ngModelChange)="updateForm('fullName', $event)" />
 
             <label for="f-username">
                 اسم المستخدم
@@ -360,36 +350,13 @@
             </label>
         </p-floatlabel>
 
-
-        <!-- =========================
-             Phone
-        ========================== -->
-        <p-floatlabel variant="on">
-            <input
-                pInputText
-                id="f-phone"
-                type="tel"
-                inputmode="numeric"
-                autocomplete="tel"
-                maxlength="11"
-                class="w-full"
-                placeholder=" "
-                [ngModel]="form().phone"
-                (ngModelChange)="updateForm('phone', $event)" />
-
-            <label for="f-phone">
-                رقم الهاتف
-            </label>
-        </p-floatlabel>
-
-
         <!-- =========================
              Role
         ========================== -->
         <p-floatlabel variant="on">
             <p-select
                 id="f-role"
-                [options]="formRoleOptions"
+                [options]="formRoleOptions()"
                 optionLabel="label"
                 optionValue="value"
                 [ngModel]="form().roleKey"
@@ -447,6 +414,29 @@
             </p-floatlabel>
         </div>
 
+
+               <!-- =========================
+     Password
+========================== -->
+@if (!isEdit()) {
+
+<p-floatlabel variant="on">
+    <input
+        pInputText
+        id="f-password"
+        type="password"
+        autocomplete="new-password"
+        class="w-full"
+        placeholder=" "
+        [ngModel]="form().password"
+        (ngModelChange)="updateForm('password', $event)" />
+
+    <label for="f-password">
+        كلمة المرور
+        <span class="text-red-500">*</span>
+    </label>
+</p-floatlabel>
+}
     </div>
 </div>
 
@@ -458,12 +448,15 @@
         styleClass="modal-btn modal-cancel"
         (onClick)="closeAddModal()" />
 
-      <p-button
-        id="btn-save-user"
-        label="حفظ المستخدم"
-        icon="pi pi-check"
-        styleClass="modal-btn modal-save"
-        (onClick)="submitAdd()" />
+   <p-button
+  id="btn-save-user"
+  [label]="isEdit() ? 'حفظ التعديلات' : 'حفظ المستخدم'"
+  icon="pi pi-check"
+  styleClass="modal-btn modal-save"
+  [disabled]="editLoading()"
+  [loading]="editLoading()"
+  (onClick)="submitForm()" />
+
     </div>
 
   </div>
@@ -516,7 +509,7 @@
         </p>
 
         <strong>
-          {{ deleteTarget()!.username }}
+          {{ deleteTarget()!.fullName }}
         </strong>
 
         <p class="confirm-warning">
