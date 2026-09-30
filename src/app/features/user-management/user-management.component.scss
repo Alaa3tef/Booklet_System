@@ -638,17 +638,11 @@
   width: 100%;
   max-width: 580px;
 
-  /*
-   * مهم جدًا:
-   * ممنوع height ثابت هنا
-   */
+  /* ممنوع height ثابت هنا */
   height: fit-content !important;
   min-height: 0 !important;
 
-  /*
-   * يكبر حسب المحتوى
-   * لكن لا يتجاوز الشاشة
-   */
+  /* يكبر حسب المحتوى لكن لا يتجاوز الشاشة */
   max-height: calc(100vh - 2rem);
 
   background: #fff;
@@ -663,16 +657,10 @@
 
   animation: modalSlideIn 0.25s cubic-bezier(.3, 0, .2, 1);
 
-  /*
-   * Flex هنا فقط لترتيب
-   * header / body / footer
-   */
+  /* Flex لترتيب header / body / footer */
   display: flex;
   flex-direction: column;
 
-  /*
-   * مهم لو في أي style خارجي
-   */
   flex: 0 0 auto;
 }
 
@@ -685,9 +673,6 @@
   width: 100%;
   max-width: 760px;
 
-  /*
-   * لا يوجد ارتفاع إجباري
-   */
   height: fit-content !important;
   min-height: 0 !important;
 
@@ -705,27 +690,64 @@
 ================================================== */
 
 .um-modal-add .modal-body {
-  /*
-   * لا نستخدم flex: 1
-   * لأن ده كان بيملأ الفراغ
-   */
   flex: 0 1 auto;
 
-  /*
-   * في الوضع الطبيعي:
-   * الارتفاع حسب المحتوى
-   */
   height: auto;
 
   min-height: 0;
 
-  /*
-   * لو الفورم كبر جدًا فقط
-   * يظهر scroll
-   */
+  /* لو الفورم كبر جدًا فقط يظهر scroll */
   overflow-y: auto;
 
   overflow-x: hidden;
+}
+
+
+/* ==================================================
+   SET PASSWORD MODAL
+================================================== */
+
+.um-modal-pass {
+  max-width: 520px;
+
+  form {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+
+  .modal-body {
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+}
+
+.pass-body {
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+}
+
+.pass-invalid ::ng-deep input {
+  border-color: #dc2626 !important;
+}
+
+.pass-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+
+  p-floatlabel,
+  p-password {
+    width: 100%;
+  }
+}
+
+.field-error {
+  color: #dc2626;
+  font-size: 0.76rem;
+  font-weight: 600;
+  padding-right: 0.25rem;
 }
 
 
@@ -760,9 +782,7 @@
 
   color: #fff;
 
-  /*
-   * يمنع الـ header من الانكماش
-   */
+  /* يمنع الـ header من الانكماش */
   flex: 0 0 auto;
 
   h3 {
@@ -838,15 +858,31 @@
 .modal-body {
   padding: 1.5rem;
 
-  /*
-   * مهم:
-   * لا يوجد flex-grow هنا
-   */
   flex: 0 1 auto;
 
   min-height: 0;
 
   box-sizing: border-box;
+}
+
+
+/* ==================================================
+   FORM LOADING
+================================================== */
+
+.form-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+
+  padding: 0.75rem 1rem;
+
+  background: var(--um-primary-light, #eaf2fc);
+  color: var(--um-primary, #1565c0);
+
+  font-size: 0.83rem;
+  font-weight: 600;
 }
 
 
@@ -889,9 +925,6 @@
 
   gap: 1rem;
 
-  /*
-   * مهم حتى لا يحصل تمدد غريب
-   */
   align-items: start;
 }
 
@@ -1004,10 +1037,6 @@
 .confirm-body {
   text-align: center;
 
-  /*
-   * أصغر من إضافة المستخدم
-   * وبالتالي لا يوجد فراغ كبير
-   */
   padding: 1.4rem 1.5rem !important;
 
   p {
@@ -1067,9 +1096,6 @@
 
   background: #fafcff;
 
-  /*
-   * مهم جدًا
-   */
   flex: 0 0 auto;
 }
 
@@ -1242,6 +1268,12 @@
     max-width: 100%;
   }
 }
+
+
+/* ==================================================
+   ROLE TONES
+================================================== */
+
 .role-badge {
   &.role-tone-navy   { background: #e0e7f5; color: #1e3a6e; }
   &.role-tone-blue   { background: #dbeafe; color: #1d4ed8; }

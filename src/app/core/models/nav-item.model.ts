@@ -5,4 +5,5 @@ export interface NavItem {
   active?: boolean;
   children?: NavItem[];
   expanded?: boolean;
+   roles?: string[]; 
 }

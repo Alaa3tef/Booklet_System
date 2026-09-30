@@ -58,7 +58,7 @@
     <div class="um-stat admin">
       <i class="pi pi-crown"></i>
       <div>
-        <span class="stat-val">{{ stats().management  }}</span>
+        <span class="stat-val">{{ stats().management }}</span>
         <span class="stat-lbl">مديري النظام</span>
       </div>
     </div>
@@ -107,14 +107,13 @@
       (onChange)="onStatusChange($event.value)"
       [fluid]="true"
       [showClear]="true"
-      appendTo="body"
->
+      appendTo="body">
     </p-select>
 
     <!-- Count badge -->
     <span class="um-count-badge">
-  {{ paged().length }} من {{ totalRecords() }} مستخدم
-</span>
+      {{ paged().length }} من {{ totalRecords() }} مستخدم
+    </span>
 
   </section>
 
@@ -162,9 +161,9 @@
             <td class="col-user">
               <div class="user-cell">
 
-               <div class="avatar" [class]="'avatar-' + toneFor(user.roleName)">
-  {{ initials(user.fullName) }}
-</div>
+                <div class="avatar" [class]="'avatar-' + toneFor(user.roleName)">
+                  {{ initials(user.fullName) }}
+                </div>
 
                 <div class="user-info">
                   <span class="user-uname">&#64;{{ user.fullName }}</span>
@@ -176,8 +175,8 @@
             <!-- Role -->
             <td class="col-role">
               <span class="role-badge" [class]="'role-tone-' + toneFor(user.roleName)">
-  {{ user.roleName }}
-</span>
+                {{ user.roleName }}
+              </span>
             </td>
 
             <!-- Email -->
@@ -200,16 +199,16 @@
             <td class="col-date">{{ user.createdAt | date }}</td>
 
             <!-- Actions -->
-          <td class="col-actions">
-  <button
-    type="button"
-    class="action-btn"
-    title="الإجراءات"
-    aria-haspopup="true"
-    (click)="openMenu($event, user, menu)">
-    <i class="pi pi-ellipsis-v"></i>
-  </button>
-</td>
+            <td class="col-actions">
+              <button
+                type="button"
+                class="action-btn"
+                title="الإجراءات"
+                aria-haspopup="true"
+                (click)="openMenu($event, user, menu)">
+                <i class="pi pi-ellipsis-v"></i>
+              </button>
+            </td>
 
           </tr>
 
@@ -220,7 +219,8 @@
     </table>
 
   </section>
-<p-menu #menu [model]="menuItems()" [popup]="true" appendTo="body" />
+
+  <p-menu #menu [model]="menuItems()" [popup]="true" appendTo="body" />
 
   <!-- ==================================================
        PAGINATION
@@ -281,13 +281,8 @@
 
 
 <!-- ==================================================
-     ADD USER MODAL
+     ADD / EDIT USER MODAL
 =================================================== -->
-<!--
-  p-dialog only provides the overlay, ESC / outside-click closing, focus trap and animation.
-  Its own header, background, padding and shadow are switched off, so your existing
-  um-modal / modal-* / form-* styles render exactly as before.
--->
 <p-dialog
   [visible]="showAddModal()"
   (visibleChange)="!$event && closeAddModal()"
@@ -306,139 +301,123 @@
     <!-- HEADER -->
     <div class="modal-header">
       <div class="modal-header-icon">
-  <i [class]="isEdit() ? 'pi pi-user-edit' : 'pi pi-user-plus'"></i>
-</div>
-<h3>{{ isEdit() ? 'تعديل المستخدم' : 'إضافة مستخدم جديد' }}</h3>
+        <i [class]="isEdit() ? 'pi pi-user-edit' : 'pi pi-user-plus'"></i>
+      </div>
+      <h3>{{ isEdit() ? 'تعديل المستخدم' : 'إضافة مستخدم جديد' }}</h3>
 
       <button type="button" class="modal-close" (click)="closeAddModal()">
         <i class="pi pi-times"></i>
       </button>
     </div>
-@if (editLoading()) {
-  <div class="form-loading">
-    <i class="pi pi-spin pi-spinner"></i> جارٍ تحميل البيانات...
-  </div>
-}
+
+    @if (editLoading()) {
+      <div class="form-loading">
+        <i class="pi pi-spin pi-spinner"></i> جارٍ تحميل البيانات...
+      </div>
+    }
+
     <!-- BODY -->
     <div class="modal-body">
 
-    @if (formError()) {
+      @if (formError()) {
         <div class="form-error-banner">
-            <i class="pi pi-exclamation-triangle"></i>
-            {{ formError() }}
+          <i class="pi pi-exclamation-triangle"></i>
+          {{ formError() }}
         </div>
-    }
+      }
 
-    <div class="form-grid">
+      <div class="form-grid">
 
-        <!-- =========================
-             Username
-        ========================== -->
+        <!-- Username -->
         <p-floatlabel variant="on">
-            <input
-                pInputText
-                id="f-username"
-                type="text"
-                class="w-full"
-                placeholder=" "
-                [ngModel]="form().fullName"
-                (ngModelChange)="updateForm('fullName', $event)" />
+          <input
+            pInputText
+            id="f-username"
+            type="text"
+            class="w-full"
+            placeholder=" "
+            [ngModel]="form().fullName"
+            (ngModelChange)="updateForm('fullName', $event)" />
 
-            <label for="f-username">
-                اسم المستخدم
-                <span class="text-red-500">*</span>
-            </label>
+          <label for="f-username">
+            اسم المستخدم
+            <span class="text-red-500">*</span>
+          </label>
         </p-floatlabel>
 
-        <!-- =========================
-             Role
-        ========================== -->
+        <!-- Role -->
         <p-floatlabel variant="on">
-            <p-select
-                id="f-role"
-                [options]="formRoleOptions()"
-                optionLabel="label"
-                optionValue="value"
-                [ngModel]="form().roleKey"
-                (onChange)="updateForm('roleKey', $event.value)"
-                [fluid]="true"
-                [showClear]="true"
-                appendTo="body">
-            </p-select>
+          <p-select
+            id="f-role"
+            [options]="formRoleOptions()"
+            optionLabel="label"
+            optionValue="value"
+            [ngModel]="form().roleKey"
+            (onChange)="updateForm('roleKey', $event.value)"
+            [fluid]="true"
+            [showClear]="true"
+            appendTo="body">
+          </p-select>
 
-            <label for="f-role">
-                الدور
-            </label>
+          <label for="f-role">الدور</label>
         </p-floatlabel>
 
-
-        <!-- =========================
-             Status
-        ========================== -->
+        <!-- Status -->
         <p-floatlabel variant="on">
-            <p-select
-                id="f-status"
-                [options]="formStatusOptions"
-                optionLabel="label"
-                optionValue="value"
-                [ngModel]="form().status"
-                (onChange)="updateForm('status', $event.value)"
-                [fluid]="true"
-                appendTo="body">
-            </p-select>
+          <p-select
+            id="f-status"
+            [options]="formStatusOptions"
+            optionLabel="label"
+            optionValue="value"
+            [ngModel]="form().status"
+            (onChange)="updateForm('status', $event.value)"
+            [fluid]="true"
+            appendTo="body">
+          </p-select>
 
-            <label for="f-status">
-                الحالة
-            </label>
+          <label for="f-status">الحالة</label>
         </p-floatlabel>
 
-
-        <!-- =========================
-             Email
-        ========================== -->
+        <!-- Email -->
         <div class="span-2">
-            <p-floatlabel variant="on">
-                <input
-                    pInputText
-                    id="f-email"
-                    type="email"
-                    class="w-full"
-                    placeholder=" "
-                    [ngModel]="form().email"
-                    (ngModelChange)="updateForm('email', $event)" />
+          <p-floatlabel variant="on">
+            <input
+              pInputText
+              id="f-email"
+              type="email"
+              class="w-full"
+              placeholder=" "
+              [ngModel]="form().email"
+              (ngModelChange)="updateForm('email', $event)" />
 
-                <label for="f-email">
-                    البريد الإلكتروني
-                    <span class="text-red-500">*</span>
-                </label>
-            </p-floatlabel>
+            <label for="f-email">
+              البريد الإلكتروني
+              <span class="text-red-500">*</span>
+            </label>
+          </p-floatlabel>
         </div>
 
+        <!-- Password (add mode only) -->
+        @if (!isEdit()) {
+          <p-floatlabel variant="on">
+            <input
+              pInputText
+              id="f-password"
+              type="password"
+              autocomplete="new-password"
+              class="w-full"
+              placeholder=" "
+              [ngModel]="form().password"
+              (ngModelChange)="updateForm('password', $event)" />
 
-               <!-- =========================
-     Password
-========================== -->
-@if (!isEdit()) {
-
-<p-floatlabel variant="on">
-    <input
-        pInputText
-        id="f-password"
-        type="password"
-        autocomplete="new-password"
-        class="w-full"
-        placeholder=" "
-        [ngModel]="form().password"
-        (ngModelChange)="updateForm('password', $event)" />
-
-    <label for="f-password">
-        كلمة المرور
-        <span class="text-red-500">*</span>
-    </label>
-</p-floatlabel>
-}
+            <label for="f-password">
+              كلمة المرور
+              <span class="text-red-500">*</span>
+            </label>
+          </p-floatlabel>
+        }
+      </div>
     </div>
-</div>
 
     <!-- FOOTER -->
     <div class="modal-footer">
@@ -448,20 +427,145 @@
         styleClass="modal-btn modal-cancel"
         (onClick)="closeAddModal()" />
 
-   <p-button
-  id="btn-save-user"
-  [label]="isEdit() ? 'حفظ التعديلات' : 'حفظ المستخدم'"
-  icon="pi pi-check"
-  styleClass="modal-btn modal-save"
-  [disabled]="editLoading()"
-  [loading]="editLoading()"
-  (onClick)="submitForm()" />
-
+      <p-button
+        id="btn-save-user"
+        [label]="isEdit() ? 'حفظ التعديلات' : 'حفظ المستخدم'"
+        icon="pi pi-check"
+        styleClass="modal-btn modal-save"
+        [disabled]="editLoading()"
+        [loading]="editLoading()"
+        (onClick)="submitForm()" />
     </div>
 
   </div>
 </p-dialog>
 
+
+<!-- ==================================================
+     SET PASSWORD MODAL
+=================================================== -->
+<p-dialog
+  [visible]="showPasswordModal()"
+  (visibleChange)="!$event && closePasswordModal()"
+  appendTo="body"
+  [baseZIndex]="10000"
+  [modal]="true"
+  [showHeader]="false"
+  [draggable]="false"
+  [resizable]="false"
+  [dismissableMask]="true"
+  [contentStyle]="{ padding: '0', overflow: 'visible' }"
+  [style]="{ background: 'transparent', border: 'none', 'box-shadow': 'none', width: '520px', maxWidth: '95vw' }">
+
+  <div class="um-modal um-modal-pass" dir="rtl">
+
+    <!-- HEADER -->
+    <div class="modal-header">
+      <div class="modal-header-icon"><i class="pi pi-key"></i></div>
+      <h3>تعيين كلمة المرور</h3>
+      <button type="button" class="modal-close" (click)="closePasswordModal()">
+        <i class="pi pi-times"></i>
+      </button>
+    </div>
+
+    <form [formGroup]="passwordForm" (ngSubmit)="submitPassword()" novalidate>
+
+      <!-- BODY -->
+      <div class="modal-body pass-body">
+
+        @if (passwordError()) {
+          <div class="form-error-banner">
+            <i class="pi pi-exclamation-triangle"></i>
+            {{ passwordError() }}
+          </div>
+        }
+
+        <!-- Email (read-only) -->
+        <div class="pass-field">
+          <p-floatlabel variant="on">
+            <input
+              pInputText
+              id="p-email"
+              type="email"
+              class="w-full"
+              formControlName="email"
+              readonly />
+            <label for="p-email">البريد الإلكتروني</label>
+          </p-floatlabel>
+        </div>
+
+      <!-- New password -->
+<div class="pass-field"
+     [class.pass-invalid]="pf.newPassword.invalid && pf.newPassword.touched">
+  <p-floatlabel variant="on">
+    <p-password
+      inputId="p-new"
+      formControlName="newPassword"
+      [feedback]="false"
+      [toggleMask]="true"
+      [fluid]="true"
+      autocomplete="new-password" />
+    <label for="p-new">كلمة المرور الجديدة <span class="text-red-500">*</span></label>
+  </p-floatlabel>
+
+  @if (pf.newPassword.touched && pf.newPassword.errors) {
+    <small class="field-error">
+      @if (pf.newPassword.errors['required']) {
+        كلمة المرور مطلوبة
+      } @else if (pf.newPassword.errors['minlength']) {
+        كلمة المرور يجب ألا تقل عن 6 أحرف
+      }
+    </small>
+  }
+</div>
+
+<!-- Confirm password -->
+<div class="pass-field"
+     [class.pass-invalid]="pf.confirmNewPassword.touched &&
+                           (pf.confirmNewPassword.invalid || passwordForm.hasError('mismatch'))">
+  <p-floatlabel variant="on">
+    <p-password
+      inputId="p-confirm"
+      formControlName="confirmNewPassword"
+      [feedback]="false"
+      [toggleMask]="true"
+      [fluid]="true"
+      autocomplete="new-password" />
+    <label for="p-confirm">تأكيد كلمة المرور <span class="text-red-500">*</span></label>
+  </p-floatlabel>
+
+  @if (pf.confirmNewPassword.touched) {
+    @if (pf.confirmNewPassword.errors?.['required']) {
+      <small class="field-error">تأكيد كلمة المرور مطلوب</small>
+    } @else if (passwordForm.hasError('mismatch')) {
+      <small class="field-error">كلمتا المرور غير متطابقتين</small>
+    }
+  }
+</div>
+
+      </div>
+
+      <!-- FOOTER -->
+      <div class="modal-footer">
+        <p-button
+          type="button"
+          label="إلغاء"
+          icon="pi pi-times"
+          styleClass="modal-btn modal-cancel"
+          (onClick)="closePasswordModal()" />
+
+        <p-button
+          type="submit"
+          label="حفظ كلمة المرور"
+          icon="pi pi-check"
+          styleClass="modal-btn modal-save"
+          [disabled]="passwordSaving()"
+          [loading]="passwordSaving()" />
+      </div>
+
+    </form>
+  </div>
+</p-dialog>
 
 
 <!-- ==================================================
@@ -477,14 +581,11 @@
       class="um-modal um-modal-sm"
       (click)="$event.stopPropagation()">
 
-
       <!-- HEADER -->
       <div class="modal-header danger-header">
 
         <div class="modal-header-icon danger-icon">
-
           <i class="pi pi-trash"></i>
-
         </div>
 
         <h3>تأكيد الحذف</h3>
@@ -493,35 +594,24 @@
           type="button"
           class="modal-close"
           (click)="cancelDelete()">
-
           <i class="pi pi-times"></i>
-
         </button>
 
       </div>
 
-
       <!-- BODY -->
       <div class="modal-body confirm-body">
 
-        <p>
-          هل أنت متأكد من حذف المستخدم
-        </p>
+        <p>هل أنت متأكد من حذف المستخدم</p>
 
-        <strong>
-          {{ deleteTarget()!.fullName }}
-        </strong>
+        <strong>{{ deleteTarget()!.fullName }}</strong>
 
         <p class="confirm-warning">
-
           <i class="pi pi-exclamation-triangle"></i>
-
           لا يمكن التراجع عن هذا الإجراء
-
         </p>
 
       </div>
-
 
       <!-- FOOTER -->
       <div class="modal-footer">
@@ -530,24 +620,17 @@
           type="button"
           class="modal-btn modal-cancel"
           (click)="cancelDelete()">
-
           <i class="pi pi-times"></i>
-
           إلغاء
-
         </button>
-
 
         <button
           type="button"
           class="modal-btn modal-danger"
           id="btn-confirm-delete"
           (click)="executeDelete()">
-
           <i class="pi pi-trash"></i>
-
           نعم، احذف المستخدم
-
         </button>
 
       </div>

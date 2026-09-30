@@ -181,6 +181,11 @@ return this.http.get<any>(`${this.appConfig.baseURL}api/Account/profile`);
       );
   }
 
+ChangePassword(data:any):Observable<any>{
+
+return this.http.post<any>(`${this.appConfig.baseURL}api/Account/change-password`, data);
+}
+
  getToken(): string | null {
     return localStorage.getItem('accessToken');
   }

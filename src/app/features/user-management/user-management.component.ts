@@ -6,26 +6,57 @@ import {
 } from '@angular/core';
 
 import { CommonModule } from '@angular/common';
-import { AppUser } from './interfaces/useManagement';
-import { FormsModule } from '@angular/forms';
+import {
+  FormsModule,
+  ReactiveFormsModule,
+  FormGroup,
+  FormControl,
+  Validators,
+  AbstractControl,
+  ValidationErrors
+} from '@angular/forms';
 import { DialogModule } from 'primeng/dialog';
 import { InputTextModule } from 'primeng/inputtext';
 import { SelectModule } from 'primeng/select';
 import { FloatLabelModule } from 'primeng/floatlabel';
 import { ButtonModule } from 'primeng/button';
 import { MessageModule } from 'primeng/message';
+import { PasswordModule } from 'primeng/password';
+import { MenuModule, Menu } from 'primeng/menu';
+import { MenuItem } from 'primeng/api';
+
+import { AppUser } from './interfaces/useManagement';
 import { UserManagement } from './service/user-management';
 import { AppRole } from './interfaces/role';
 import { AppUserResponse } from './interfaces/useManagementResponse';
 import { UserForm } from './interfaces/UserForm';
-import { MenuModule, Menu } from 'primeng/menu';
-import { MenuItem } from 'primeng/api';
+import { AuthService } from '../../core/services/auth.service';
+
+
+/** Validator: newPassword must equal confirmNewPassword */
+export function passwordsMatch(group: AbstractControl): ValidationErrors | null {
+  const pass    = group.get('newPassword')?.value;
+  const confirm = group.get('confirmNewPassword')?.value;
+  return pass && confirm && pass !== confirm ? { mismatch: true } : null;
+}
 
 
 @Component({
   selector: 'app-user-management',
   standalone: true,
-  imports: [CommonModule, FormsModule, ButtonModule, InputTextModule, SelectModule, DialogModule, FloatLabelModule, MessageModule , MenuModule],
+  imports: [
+    CommonModule,
+    FormsModule,
+    ReactiveFormsModule,
+    ButtonModule,
+    InputTextModule,
+    SelectModule,
+    DialogModule,
+    FloatLabelModule,
+    MessageModule,
+    MenuModule,
+    PasswordModule
+  ],
   templateUrl: './user-management.component.html',
   styleUrl: './user-management.component.scss'
 })
@@ -34,7 +65,7 @@ export default class UserManagementComponent {
 
 
   private readonly userManagement = inject(UserManagement);
-
+  private readonly authService = inject(AuthService);
   // ---------- STATE ----------
   searchQuery    = signal('');
   selectedRole   = signal('all');
@@ -66,6 +97,29 @@ export default class UserManagementComponent {
   form = signal<UserForm>(this.emptyForm());
   formError = signal('');
 
+  // ---------- SET PASSWORD STATE ----------
+  showPasswordModal = signal(false);
+  passwordSaving    = signal(false);
+  passwordError     = signal('');
+  passwordTarget    = signal<AppUser | null>(null);
+
+  passwordForm = new FormGroup(
+    {
+      email: new FormControl({ value: '', disabled: true }, { nonNullable: true }),
+      newPassword: new FormControl('', {
+        nonNullable: true,
+        validators: [Validators.required, Validators.minLength(6)]
+      }),
+      confirmNewPassword: new FormControl('', {
+        nonNullable: true,
+        validators: [Validators.required]
+      })
+    },
+    { validators: passwordsMatch }
+  );
+
+  get pf() { return this.passwordForm.controls; }
+
   ngOnInit(): void {
     this.loadRoles();
     this.loadUsers();
@@ -87,16 +141,13 @@ export default class UserManagementComponent {
       .getUsers(this.searchQuery().trim(), roleId, isActive, this.currentPage(), this.pageSize())
       .subscribe({
         next: (res: AppUserResponse) => {
-          // this.user.set(res.data?.data ?? []);
-          // this.totalRecords.set(res.data?.totalCount ?? 0);
-          // this.loading.set(false);
-           const d = res.data;
-  this.user.set(d?.data ?? []);
-  this.totalRecords.set(d?.totalCount ?? 0);
-  this.activeUsersCount.set(d?.activeUsersCount ?? 0);
-  this.inactiveUsersCount.set(d?.inactiveUsersCount ?? 0);
-  this.managementUsersCount.set(d?.managementUsersCount ?? 0);
-  this.loading.set(false);
+          const d = res.data;
+          this.user.set(d?.data ?? []);
+          this.totalRecords.set(d?.totalCount ?? 0);
+          this.activeUsersCount.set(d?.activeUsersCount ?? 0);
+          this.inactiveUsersCount.set(d?.inactiveUsersCount ?? 0);
+          this.managementUsersCount.set(d?.managementUsersCount ?? 0);
+          this.loading.set(false);
         },
         error: (err) => {
           console.error('Error loading users:', err);
@@ -149,12 +200,12 @@ export default class UserManagementComponent {
     return pages;
   });
 
-readonly stats = computed(() => ({
-  total:      this.totalRecords(),
-  active:     this.activeUsersCount(),
-  inactive:   this.inactiveUsersCount(),
-  management: this.managementUsersCount()
-}));
+  readonly stats = computed(() => ({
+    total:      this.totalRecords(),
+    active:     this.activeUsersCount(),
+    inactive:   this.inactiveUsersCount(),
+    management: this.managementUsersCount()
+  }));
 
   readonly statusOptions = [
     { value: 'all',      label: 'جميع الحالات' },
@@ -196,27 +247,33 @@ readonly stats = computed(() => ({
   }
 
   openMenu(event: Event, u: AppUser, menu: Menu): void {
-  this.menuItems.set([
-    {
-      label: 'تعديل',
-      icon: 'pi pi-pencil',
-      command: () => this.openEditModal(u)
-    },
-    {
-      label: u.isActive ? 'تعطيل المستخدم' : 'تفعيل المستخدم',
-      icon: u.isActive ? 'pi pi-ban' : 'pi pi-check',
-      command: () => this.toggleStatus(u)
-    },
-    { separator: true },
-    {
-      label: 'حذف',
-      icon: 'pi pi-trash',
-      styleClass: 'menu-danger',
-      command: () => this.confirmDelete(u)
-    }
-  ]);
-  menu.toggle(event);
-}
+    this.menuItems.set([
+      {
+        label: 'تعديل',
+        icon: 'pi pi-pencil',
+        command: () => this.openEditModal(u)
+      },
+      {
+        label: 'تعيين كلمة المرور',
+        icon: 'pi pi-key',
+        command: () => this.openPasswordModal(u)
+      },
+      {
+        label: u.isActive ? 'تعطيل المستخدم' : 'تفعيل المستخدم',
+        icon: u.isActive ? 'pi pi-ban' : 'pi pi-check',
+        command: () => this.toggleStatus(u)
+      },
+      { separator: true },
+      {
+        label: 'حذف',
+        icon: 'pi pi-trash',
+        styleClass: 'menu-danger',
+        command: () => this.confirmDelete(u)
+      }
+    ]);
+    menu.toggle(event);
+  }
+
   goToPage(page: number | '...'): void {
     if (typeof page === 'number') {
       this.currentPage.set(page);
@@ -238,95 +295,136 @@ readonly stats = computed(() => ({
     }
   }
 
-  // ---------- ADD ----------
+  // ---------- ADD / EDIT ----------
   updateForm<K extends keyof UserForm>(key: K, value: UserForm[K] | null): void {
     this.form.update(f => ({ ...f, [key]: value ?? '' }));
   }
 
- openAddModal(): void {
-  this.editingId.set(null);
-  this.form.set(this.emptyForm());
-  this.formError.set('');
-  this.showAddModal.set(true);
-}
+  openAddModal(): void {
+    this.editingId.set(null);
+    this.form.set(this.emptyForm());
+    this.formError.set('');
+    this.showAddModal.set(true);
+  }
 
-openEditModal(u: AppUser): void {
-  this.editingId.set(u.id);
-  this.formError.set('');
-  this.form.set(this.emptyForm());
-  this.editLoading.set(true);
-  this.showAddModal.set(true);
+  openEditModal(u: AppUser): void {
+    this.editingId.set(u.id);
+    this.formError.set('');
+    this.form.set(this.emptyForm());
+    this.editLoading.set(true);
+    this.showAddModal.set(true);
 
-  this.userManagement.getUserById(u.id).subscribe({
-    next: res => {
-      const d = res.data;
-      this.form.set({
-        fullName: d.fullName,
-        email:    d.email,
-        password: '',
-        roleKey:  String(d.roleId),
-        status:   d.isActive ? 'active' : 'inactive'
-      });
-      this.editLoading.set(false);
-    },
-    error: err => {
-      console.error('Get user error:', err);
-      this.editLoading.set(false);
-      this.formError.set(err?.error?.message ?? 'تعذّر تحميل بيانات المستخدم');
+    this.userManagement.getUserById(u.id).subscribe({
+      next: res => {
+        const d = res.data;
+        this.form.set({
+          fullName: d.fullName,
+          email:    d.email,
+          password: '',
+          roleKey:  String(d.roleId),
+          status:   d.isActive ? 'active' : 'inactive'
+        });
+        this.editLoading.set(false);
+      },
+      error: err => {
+        console.error('Get user error:', err);
+        this.editLoading.set(false);
+        this.formError.set(err?.error?.message ?? 'تعذّر تحميل بيانات المستخدم');
+      }
+    });
+  }
+
+  closeAddModal(): void {
+    this.showAddModal.set(false);
+    this.editingId.set(null);
+    this.editLoading.set(false);
+  }
+
+  submitForm(): void {
+    if (this.editLoading()) return;
+    const f = this.form();
+    const editing = this.isEdit();
+
+    if (!f.fullName.trim() || !f.email.trim() || !f.roleKey || (!editing && !f.password)) {
+      this.formError.set('يرجى ملء جميع الحقول المطلوبة');
+      return;
     }
-  });
-}
-
-closeAddModal(): void {
-  this.showAddModal.set(false);
-  this.editingId.set(null);
-  this.editLoading.set(false);
-}
-
-submitForm(): void {
-  if (this.editLoading()) return;
-  const f = this.form();
-  const editing = this.isEdit();
-
-  if (!f.fullName.trim() || !f.email.trim() || !f.roleKey || (!editing && !f.password)) {
-    this.formError.set('يرجى ملء جميع الحقول المطلوبة');
-    return;
-  }
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.email)) {
-    this.formError.set('صيغة البريد الإلكتروني غير صحيحة');
-    return;
-  }
-  if (!editing && f.password.length < 6) {
-    this.formError.set('كلمة المرور يجب ألا تقل عن 6 أحرف');
-    return;
-  }
-
-  const body = {
-    fullName: f.fullName.trim(),
-    email:    f.email.trim(),
-    roleId:   Number(f.roleKey),
-    isActive: f.status === 'active'
-  };
-
-  const request$ = editing
-    ? this.userManagement.updateUser(this.editingId()!, body)
-    : this.userManagement.createUser({ ...body, password: f.password });
-
-  request$.subscribe({
-    next: () => {
-      this.formError.set('');
-      this.closeAddModal();
-      this.loadUsers();
-    },
-    error: err => {
-      console.error('Save user error:', err);
-      this.formError.set(
-        err?.error?.message ??
-        (editing ? 'حدث خطأ أثناء تعديل المستخدم' : 'حدث خطأ أثناء إضافة المستخدم')
-      );
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.email)) {
+      this.formError.set('صيغة البريد الإلكتروني غير صحيحة');
+      return;
     }
-  });
-}
+    if (!editing && f.password.length < 6) {
+      this.formError.set('كلمة المرور يجب ألا تقل عن 6 أحرف');
+      return;
+    }
+
+    const body = {
+      fullName: f.fullName.trim(),
+      email:    f.email.trim(),
+      roleId:   Number(f.roleKey),
+      isActive: f.status === 'active'
+    };
+
+    const request$ = editing
+      ? this.userManagement.updateUser(this.editingId()!, body)
+      : this.userManagement.createUser({ ...body, password: f.password });
+
+    request$.subscribe({
+      next: () => {
+        this.formError.set('');
+        this.closeAddModal();
+        this.loadUsers();
+      },
+      error: err => {
+        console.error('Save user error:', err);
+        this.formError.set(
+          err?.error?.message ??
+          (editing ? 'حدث خطأ أثناء تعديل المستخدم' : 'حدث خطأ أثناء إضافة المستخدم')
+        );
+      }
+    });
+  }
+
+  // ---------- SET PASSWORD ----------
+  openPasswordModal(u: AppUser): void {
+    this.passwordTarget.set(u);
+    this.passwordError.set('');
+    this.passwordSaving.set(false);
+    this.passwordForm.reset();
+    this.passwordForm.patchValue({ email: u.email });   // patch email
+    this.showPasswordModal.set(true);
+  }
+
+  closePasswordModal(): void {
+    this.showPasswordModal.set(false);
+    this.passwordTarget.set(null);
+    this.passwordForm.reset();
+    this.passwordSaving.set(false);
+  }
+
+  submitPassword(): void {
+    if (this.passwordSaving()) return;
+
+    if (this.passwordForm.invalid) {
+      this.passwordForm.markAllAsTouched();
+      return;
+    }
+
+    // getRawValue because the email control is disabled (not included in .value)
+    const body: any = this.passwordForm.getRawValue();
+
+    this.passwordSaving.set(true);
+    this.passwordError.set('');
+
+    this.authService.ChangePassword(body).subscribe({
+      next: () => this.closePasswordModal(),
+      error: err => {
+        console.error('Change password error:', err);
+        this.passwordSaving.set(false);
+        this.passwordError.set(err?.error?.message ?? 'حدث خطأ أثناء تعيين كلمة المرور');
+      }
+    });
+  }
 
   // ---------- TOGGLE STATUS (PUT) ----------
   toggleStatus(u: AppUser): void {
@@ -385,7 +483,8 @@ submitForm(): void {
   isNumber(v: number | '...'): boolean {
     return typeof v === 'number';
   }
+
   toneFor(roleName: string): string {
-  return this.toneForRole[roleName] ?? 'navy';
+    return this.toneForRole[roleName] ?? 'navy';
+  }
 }
- }

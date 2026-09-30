@@ -9,7 +9,7 @@ import { AppConfigService } from './shared/services/app-config.service';
 import { HTTP_INTERCEPTORS,withInterceptorsFromDi } from '@angular/common/http';
 import { LoadingInterceptor } from './core/interceptors/loading.interceptor';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
-import { authInterceptor } from './core/interceptor/auth-interceptor';
+import { authInterceptor } from './core/interceptors/auth-interceptor';
 
 export const appConfig: ApplicationConfig = {
   providers: [
