@@ -6,12 +6,15 @@ import Aura from '@primeng/themes/aura';
 
 import { routes } from './app.routes';
 import { AppConfigService } from './shared/services/app-config.service';
-import { provideHttpClient } from '@angular/common/http';
+import { HTTP_INTERCEPTORS, provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
+import { LoadingInterceptor } from './core/interceptors/loading.interceptor';
 
 export const appConfig: ApplicationConfig = {
   providers: [
     provideZoneChangeDetection({ eventCoalescing: true }),
-    provideRouter(routes),provideHttpClient(),
+    provideRouter(routes),provideHttpClient(
+  withInterceptorsFromDi()
+),
     provideAnimationsAsync(),
     providePrimeNG({
       ripple: true,
@@ -34,6 +37,11 @@ export const appConfig: ApplicationConfig = {
       deps: [AppConfigService],
       multi: true
     },
+     {
+      provide: HTTP_INTERCEPTORS,
+      useClass: LoadingInterceptor,
+      multi: true
+    }
   ]
 };
 

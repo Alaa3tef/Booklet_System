@@ -51,6 +51,7 @@ export default class PlanningComponent {
   // ==========================================
 // PAGINATION
 // ==========================================
+committeeNumber!: string;
 
 readonly pageSize = signal(5);
 
@@ -219,16 +220,20 @@ onPageSizeChange(): void {
 
 
   // ==========================================
-  // SEARCH
-  // ==========================================
+// SEARCH
+// ==========================================
 
-  selectedGovernorate = 'all';
+selectedGovernorate = 'all';
 
-  selectedSubject = 'all';
+selectedSubject = 'all';
 
-  readonly searchGovernorate = signal('all');
+selectedCommitteeNumber = '';
 
-  readonly searchSubject = signal('all');
+readonly searchGovernorate = signal('all');
+
+readonly searchSubject = signal('all');
+
+readonly searchCommitteeNumber = signal('');
 
 
   // ==========================================
@@ -247,59 +252,64 @@ onPageSizeChange(): void {
   // ==========================================
 
   readonly rows = signal<WorkflowStatusRow[]>([
-    {
-      index: 1,
-      subject: 'اللغة العربية',
-      governorate: 'القاهرة',
-      status: 'جاهز للطباعة',
-      statusTone: 'success'
-    },
+  {
+    index: 1,
+    committeeNumber: 'COM-1001',
+    subject: 'اللغة العربية',
+    governorate: 'القاهرة',
+    status: 'جاهز للطباعة',
+    statusTone: 'success'
+  },
 
-    {
-      index: 2,
-      subject: 'الرياضيات',
-      governorate: 'الجيزة',
-      status: 'قيد الإعداد',
-      statusTone: 'warning'
-    },
+  {
+    index: 2,
+    committeeNumber: 'COM-1002',
+    subject: 'الرياضيات',
+    governorate: 'الجيزة',
+    status: 'قيد الإعداد',
+    statusTone: 'warning'
+  },
 
-    {
-      index: 3,
-      subject: 'العلوم',
-      governorate: 'الإسكندرية',
-      status: 'مرفوض',
-      statusTone: 'danger',
+  {
+    index: 3,
+    committeeNumber: 'COM-1003',
+    subject: 'العلوم',
+    governorate: 'الإسكندرية',
+    status: 'مرفوض',
+    statusTone: 'danger',
+    rejectionReason:
+      'يوجد بعض الأخطاء في محتوى المادة، كما أن بعض الأسئلة تحتاج إلى مراجعة قبل اعتماد الخطة.'
+  },
 
-      rejectionReason:
-        'يوجد بعض الأخطاء في محتوى المادة، كما أن بعض الأسئلة تحتاج إلى مراجعة قبل اعتماد الخطة.'
-    },
-    {
-      index: 1,
-      subject: 'اللغة العربية',
-      governorate: 'القاهرة',
-      status: 'جاهز للطباعة',
-      statusTone: 'success'
-    },
+  {
+    index: 4,
+    committeeNumber: 'COM-1004',
+    subject: 'اللغة العربية',
+    governorate: 'القاهرة',
+    status: 'جاهز للطباعة',
+    statusTone: 'success'
+  },
 
-    {
-      index: 2,
-      subject: 'الرياضيات',
-      governorate: 'الجيزة',
-      status: 'قيد الإعداد',
-      statusTone: 'warning'
-    },
+  {
+    index: 5,
+    committeeNumber: 'COM-1005',
+    subject: 'الرياضيات',
+    governorate: 'الجيزة',
+    status: 'قيد الإعداد',
+    statusTone: 'warning'
+  },
 
-    {
-      index: 3,
-      subject: 'العلوم',
-      governorate: 'الإسكندرية',
-      status: 'مرفوض',
-      statusTone: 'danger',
-
-      rejectionReason:
-        'يوجد بعض الأخطاء في محتوى المادة، كما أن بعض الأسئلة تحتاج إلى مراجعة قبل اعتماد الخطة.'
-    },
-  ]);
+  {
+    index: 6,
+    committeeNumber: 'COM-1006',
+    subject: 'العلوم',
+    governorate: 'الإسكندرية',
+    status: 'مرفوض',
+    statusTone: 'danger',
+    rejectionReason:
+      'يوجد بعض الأخطاء في محتوى المادة، كما أن بعض الأسئلة تحتاج إلى مراجعة قبل اعتماد الخطة.'
+  }
+]);
 
 
   // ==========================================
@@ -308,23 +318,36 @@ onPageSizeChange(): void {
 
   readonly filteredRows = computed(() => {
 
-    const governorate = this.searchGovernorate();
+  const governorate = this.searchGovernorate();
 
-    const subject = this.searchSubject();
+  const subject = this.searchSubject();
 
-    return this.rows().filter(row => {
+  const committeeNumber =
+    this.searchCommitteeNumber().trim().toLowerCase();
 
-      const governorateMatch =
-        governorate === 'all' ||
-        this.getGovernorateValue(row.governorate) === governorate;
+  return this.rows().filter(row => {
 
-      const subjectMatch =
-        subject === 'all' ||
-        this.getSubjectValue(row.subject) === subject;
+    const governorateMatch =
+      governorate === 'all' ||
+      this.getGovernorateValue(row.governorate) === governorate;
 
-      return governorateMatch && subjectMatch;
-    });
+    const subjectMatch =
+      subject === 'all' ||
+      this.getSubjectValue(row.subject) === subject;
+
+    const committeeMatch =
+      !committeeNumber ||
+      String(row.committeeNumber)
+        .toLowerCase()
+        .includes(committeeNumber);
+
+    return (
+      governorateMatch &&
+      subjectMatch &&
+      committeeMatch
+    );
   });
+});
 
 
   // ==========================================
@@ -372,11 +395,30 @@ search(): void {
     this.selectedSubject
   );
 
+  this.searchCommitteeNumber.set(
+    this.selectedCommitteeNumber.trim()
+  );
+
   // Reset pagination after filtering
   this.currentPage.set(1);
 }
 
+resetSearch(): void {
 
+  this.selectedCommitteeNumber = '';
+
+  this.selectedGovernorate = 'all';
+
+  this.selectedSubject = 'all';
+
+  this.searchCommitteeNumber.set('');
+
+  this.searchGovernorate.set('all');
+
+  this.searchSubject.set('all');
+
+  this.currentPage.set(1);
+}
   // ==========================================
   // BUILD STATUS MENU
   // ==========================================
