@@ -28,7 +28,11 @@ export class AuthService {
   readonly currentUser = signal<AuthUser | null>(this.getStoredUser());
   readonly userRole = computed(() => this.currentUser()?.role || '');
   readonly userRoleKey = computed(() => this.currentUser()?.roleKey || 'it');
+  private readonly _profile = signal<any | null>(null);
+  readonly profileData = this._profile.asReadonly();
+  readonly profileRole = computed(() => this._profile()?.roleName ?? '');
 
+  private profileLoading = false;
   // Temporary storage for generated password reset tokens
   private activeResetTokens = new Map<string, { emailOrUsername: string; expiresAt: number }>();
 
@@ -107,6 +111,28 @@ profile():Observable<any>{
 
 return this.http.get<any>(`${this.appConfig.baseURL}api/Account/profile`);
 }
+
+ loadProfile(forceRefresh = false): void {
+    if (this.profileLoading) return;
+    if (this._profile() && !forceRefresh) return;
+
+    this.profileLoading = true;
+
+    this.http
+      .get<any>(`${this.appConfig.baseURL}api/Account/profile`)
+      .pipe(finalize(() => (this.profileLoading = false)))
+      .subscribe({
+        next: (res) => this._profile.set(res?.data ?? null),
+        error: (err) => {
+          console.error('Failed to load profile', err);
+          this._profile.set(null);
+        }
+      });
+  }
+
+  clearProfile(): void {
+    this._profile.set(null);
+  }
 
     login(event: { email: string; password: string }) {
 
@@ -196,21 +222,20 @@ return this.http.post<any>(`${this.appConfig.baseURL}api/Account/change-password
    * Log out current user and redirect to login
    */
 logout(): Observable<any> {
-  return this.http
-    .post<any>(
-      `${this.appConfig.baseURL}api/Account/logout`,
-        {}
-    )
-    .pipe(
-      finalize(() => {
-        localStorage.removeItem('accessToken');
-        localStorage.removeItem('userName');
-        localStorage.removeItem('emailAddress');
-        localStorage.removeItem('isActive');
-        localStorage.removeItem('roleId');
-      })
-    );
-    }
+    return this.http
+      .post<any>(`${this.appConfig.baseURL}api/Account/logout`, {})
+      .pipe(
+        finalize(() => {
+          localStorage.removeItem('accessToken');
+          localStorage.removeItem('userName');
+          localStorage.removeItem('emailAddress');
+          localStorage.removeItem('isActive');
+          localStorage.removeItem('roleId');
+          this.clearProfile(); // مهم عشان اليوزر الجديد ما يشوفش داتا القديم
+        })
+      );
+  }
+
   /**
    * Request password reset link / verification token
    */

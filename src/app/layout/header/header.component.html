@@ -1,6 +1,5 @@
 <header class="topbar">
 
-
   <!-- ==========================================
        LEFT / BRAND
   =========================================== -->
@@ -8,32 +7,23 @@
   <div class="topbar-left">
 
     <!-- Mobile Menu -->
-
     <button
       type="button"
       class="mobile-menu-btn"
       aria-label="فتح القائمة"
       (click)="toggleMenu()"
     >
-
       <i class="pi pi-bars"></i>
-
     </button>
 
-
     <!-- Brand -->
-
     <div class="brand-block">
 
       <div class="brand-icon">
-
         <i class="pi pi-book"></i>
-
       </div>
 
-
       <div class="brand-titles">
-
         <h1>
           منظومة إنتاج البوكليت
         </h1>
@@ -41,7 +31,6 @@
         <p>
           متابعة شاملة .. لإنتاج أكثر دقة وتنظيمًا
         </p>
-
       </div>
 
     </div>
@@ -55,15 +44,11 @@
 
   <div class="topbar-right">
 
-
     <!-- DATE -->
-
     <div class="current-date">
 
       <div class="date-icon">
-
         <i class="pi pi-calendar"></i>
-
       </div>
 
       <div class="date-info">
@@ -82,7 +67,6 @@
 
 
     <!-- USER -->
-
     <div class="user-menu-wrapper">
       <button
         type="button"
@@ -98,10 +82,10 @@
 
         <span class="user-info">
           <span class="user-name">
-            {{ profileData?.fullName }}
+            {{ profileData()?.fullName }}
           </span>
           <span class="user-role">
-          مسؤول النظام  {{ profileData?.roleName }}
+            مسؤول النظام {{ profileData()?.roleName }}
           </span>
         </span>
 
@@ -115,10 +99,9 @@
       @if (showUserDropdown()) {
         <div class="user-dropdown-panel" (click)="$event.stopPropagation()">
           <div class="dropdown-user-header">
-            <span class="dropdown-full-name">{{ profileData?.fullName }}</span>
-            <span class="dropdown-role-badge"> مسؤول النظام {{ profileData?.roleName }}</span>
-              <span class="dropdown-email">{{ profileData?.email }}</span>
-           
+            <span class="dropdown-full-name">{{ profileData()?.fullName }}</span>
+            <span class="dropdown-role-badge">مسؤول النظام {{ profileData()?.roleName }}</span>
+            <span class="dropdown-email">{{ profileData()?.email }}</span>
           </div>
 
           <div class="dropdown-divider"></div>
@@ -130,12 +113,6 @@
                 <span>إدارة المستخدمين</span>
               </a>
             </li>
-            <!-- <li>
-              <a routerLink="/settings" class="dropdown-item" (click)="closeUserMenu()">
-                <i class="pi pi-cog"></i>
-                <span>الإعدادات والصلاحيات</span>
-              </a>
-            </li> -->
           </ul>
 
           <div class="dropdown-divider"></div>
@@ -162,7 +139,6 @@
 >
 
   <i class="pi pi-home breadcrumb-home"></i>
-
 
   @for (
     crumb of breadcrumbs;
