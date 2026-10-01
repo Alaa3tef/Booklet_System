@@ -4,13 +4,14 @@ import {
   HostListener,
   Input,
   OnDestroy,
+  OnInit,
   Output,
   inject,
   signal
 } from '@angular/core';
 
 import { CommonModule } from '@angular/common';
-import { ActivatedRoute, Router, RouterLink  } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 
 import { AvatarModule } from 'primeng/avatar';
 import { AuthService } from '../../core/services/auth.service';
@@ -18,14 +19,6 @@ import { AuthService } from '../../core/services/auth.service';
 export interface Breadcrumb {
   label: string;
   route?: string;
-}
-
-interface HeaderNotification {
-  id: number;
-  title: string;
-  message: string;
-  icon: string;
-  read: boolean;
 }
 
 @Component({
@@ -39,10 +32,10 @@ interface HeaderNotification {
   templateUrl: './header.component.html',
   styleUrl: './header.component.scss'
 })
-export class HeaderComponent implements OnDestroy {
+export class HeaderComponent implements OnInit, OnDestroy {
   private readonly authService = inject(AuthService);
-  private midnightTimer?: ReturnType<typeof setTimeout>;
   private readonly router = inject(Router);
+  private midnightTimer?: ReturnType<typeof setTimeout>;
 
   /* =====================================================
      INPUTS
@@ -76,22 +69,38 @@ export class HeaderComponent implements OnDestroy {
   menuToggle = new EventEmitter<void>();
 
   /* =====================================================
+     PROFILE (مشترك من AuthService - signal)
+  ===================================================== */
+
+  readonly profileData = this.authService.profileData;
+
+  /* =====================================================
      NOTIFICATIONS
   ===================================================== */
 
   readonly showNotifications = signal(false);
 
+  /* =====================================================
+     DATE
+  ===================================================== */
 
   readonly currentDate = signal(new Date());
-  profileData!: any;
+
+  /* =====================================================
+     USER DROPDOWN
+  ===================================================== */
+
+  readonly showUserDropdown = signal(false);
 
   constructor() {
     this.scheduleDateRefresh();
   }
 
-ngOnInit(): void {
-  this.profile()
-}
+  ngOnInit(): void {
+    // مش هيبعت request تاني لو الـ Sidebar أو أي حد حمّلها قبله
+    this.authService.loadProfile();
+  }
+
   get currentDayLabel(): string {
     return new Intl.DateTimeFormat('ar-EG', { weekday: 'long' }).format(this.currentDate());
   }
@@ -104,11 +113,6 @@ ngOnInit(): void {
     }).format(this.currentDate());
   }
 
-  /* =====================================================
-     USER DROPDOWN
-  ===================================================== */
-  showUserDropdown = signal(false);
-
   get currentUser() {
     return this.authService.currentUser();
   }
@@ -120,8 +124,6 @@ ngOnInit(): void {
   toggleMenu(): void {
     this.menuToggle.emit();
   }
-
-
 
   private scheduleDateRefresh(): void {
     const now = new Date();
@@ -146,36 +148,22 @@ ngOnInit(): void {
     this.showUserDropdown.set(false);
   }
 
-logout(): void {
-  this.closeUserMenu();
+  logout(): void {
+    this.closeUserMenu();
 
-  this.authService.logout().subscribe({
-    next: (response) => {
-      console.log('Logout response:', response);
-      this.router.navigate(['/login']);
-    },
-    error: (error) => {
-      console.error('Logout error:', error);
+    this.authService.logout().subscribe({
+      next: (response) => {
+        console.log('Logout response:', response);
+        this.router.navigate(['/login']);
+      },
+      error: (error) => {
+        console.error('Logout error:', error);
+        // الـ finalize في الـ service بيمسح الـ session، فنروح للـ login برضه
+        this.router.navigate(['/login']);
+      }
+    });
+  }
 
-      // Still clear local session and go to login
-      // this.router.navigate(['/login']);
-    }
-  });
-}
-profile() {
-  this.closeUserMenu();
-  this.authService.profile().subscribe({
-        next: (response) => {
-      console.log('Logout response:', response);
-      this.profileData = response.data;
-    },
-    error: (error) => {
-      console.error('Logout error:', error);
-
-    }
-  });
-
-}
   @HostListener('document:click', ['$event'])
   onDocumentClick(event: MouseEvent): void {
     const target = event.target as HTMLElement;

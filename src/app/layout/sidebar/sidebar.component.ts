@@ -5,6 +5,7 @@ import {
   OnInit,
   Output,
   computed,
+  inject,
   signal
 } from '@angular/core';
 
@@ -33,6 +34,8 @@ import { AuthService } from '../../core/services/auth.service';
 })
 export class SidebarComponent implements OnInit {
 
+  private readonly authService = inject(AuthService);
+
   // ==================================================
   // INPUTS
   // ==================================================
@@ -48,15 +51,13 @@ export class SidebarComponent implements OnInit {
   closeMobile = new EventEmitter<void>();
 
   // ==================================================
-  // ROLE
+  // ROLE (مشترك من AuthService - signal)
   // ==================================================
-
-  private readonly roleSignal = signal<string>('');
 
   /**
    * الدور الحالي القادم من Profile API
    */
-  readonly role = computed(() => this.roleSignal());
+  readonly role = computed(() => this.authService.profileRole());
 
   // ==================================================
   // NAVIGATION ITEMS
@@ -64,72 +65,72 @@ export class SidebarComponent implements OnInit {
 
   readonly navItems = signal<NavItem[]>([
 
-  // الرئيسية
-  {
-    label: 'الرئيسية',
-    icon: 'pi pi-home',
-    route: '/dashboard'
-  },
+    // الرئيسية
+    {
+      label: 'الرئيسية',
+      icon: 'pi pi-home',
+      route: '/dashboard'
+    },
 
-  // إدارة البيانات الأساسية (IT فقط)
-  {
-    label: 'إدارة البيانات الأساسية',
-    icon: 'pi pi-database',
-    expanded: true,
-    role: 'it',
+    // إدارة البيانات الأساسية (IT فقط)
+    {
+      label: 'إدارة البيانات الأساسية',
+      icon: 'pi pi-database',
+      expanded: true,
+      role: 'it',
 
-    children: [
-      {
-        label: 'إدارة اللجان',
-        icon: 'pi pi-circle-fill',
-        route: '/committees/setup'
-      }
-    ]
-  },
+      children: [
+        {
+          label: 'إدارة اللجان',
+          icon: 'pi pi-circle-fill',
+          route: '/committees/setup'
+        }
+      ]
+    },
 
-  {
-    label: 'الإعداد',
-    icon: 'pi pi-sliders-h',
-    route: '/workflow/planning',
-    role: 'planning'
-  },
+    {
+      label: 'الإعداد',
+      icon: 'pi pi-sliders-h',
+      route: '/workflow/planning',
+      role: 'planning'
+    },
 
-  {
-    label: 'الطباعة',
-    icon: 'pi pi-print',
-    route: '/workflow/printing',
-    role: 'printing'
-  },
+    {
+      label: 'الطباعة',
+      icon: 'pi pi-print',
+      route: '/workflow/printing',
+      role: 'printing'
+    },
 
-  {
-    label: 'الجودة',
-    icon: 'pi pi-verified',
-    route: '/workflow/quality',
-    role: 'quality'
-  },
+    {
+      label: 'الجودة',
+      icon: 'pi pi-verified',
+      route: '/workflow/quality',
+      role: 'quality'
+    },
 
-  {
-    label: 'التغليف',
-    icon: 'pi pi-box',
-    route: '/workflow/packing',
-    role: 'packing'
-  },
+    {
+      label: 'التغليف',
+      icon: 'pi pi-box',
+      route: '/workflow/packing',
+      role: 'packing'
+    },
 
-  {
-    label: 'التخزين',
-    icon: 'pi pi-database',
-    route: '/workflow/archiving',
-    role: 'archive'
-  },
+    {
+      label: 'التخزين',
+      icon: 'pi pi-database',
+      route: '/workflow/archiving',
+      role: 'archive'
+    },
 
-  {
-    label: 'إدارة المستخدمين',
-    icon: 'pi pi-users',
-    route: '/users',
-    role: 'it'
-  }
+    {
+      label: 'إدارة المستخدمين',
+      icon: 'pi pi-users',
+      route: '/users',
+      role: 'it'
+    }
 
-] as any[]);
+  ] as any[]);
 
   // ==================================================
   // VISIBLE NAV ITEMS
@@ -142,43 +143,43 @@ export class SidebarComponent implements OnInit {
    * Workflow users:
    * Dashboard + الصفحة الخاصة بالـ role فقط
    */
-readonly visibleNavItems = computed(() => {
+  readonly visibleNavItems = computed(() => {
 
-  const currentRole = this.normalizeRole(this.role());
+    const currentRole = this.normalizeRole(this.role());
 
-  // IT / ADMIN: يشوف كل حاجة
-  if (this.isITRole(currentRole)) {
-    return this.navItems();
-  }
-
-  const roleRouteMap: Record<string, string> = {
-    planning: '/workflow/planning',
-    printing: '/workflow/printing',
-    quality: '/workflow/quality',
-    packing: '/workflow/packing',
-    archiving: '/workflow/archiving',
-    archive: '/workflow/archiving'
-  };
-
-  const workflowRoute = roleRouteMap[currentRole];
-
-  return this.navItems().filter(item => {
-
-    // الرئيسية دايمًا ظاهرة
-    if (item.route === '/dashboard') {
-      return true;
+    // IT / ADMIN: يشوف كل حاجة
+    if (this.isITRole(currentRole)) {
+      return this.navItems();
     }
 
-    // المجموعات (فيها children) تظهر لـ IT فقط، وهنا المستخدم مش IT
-    if (item.children) {
-      return false;
-    }
+    const roleRouteMap: Record<string, string> = {
+      planning: '/workflow/planning',
+      printing: '/workflow/printing',
+      quality: '/workflow/quality',
+      packing: '/workflow/packing',
+      archiving: '/workflow/archiving',
+      archive: '/workflow/archiving'
+    };
 
-    // صفحة الـ workflow الخاصة بالمستخدم فقط
-    return !!workflowRoute && item.route === workflowRoute;
+    const workflowRoute = roleRouteMap[currentRole];
+
+    return this.navItems().filter(item => {
+
+      // الرئيسية دايمًا ظاهرة
+      if (item.route === '/dashboard') {
+        return true;
+      }
+
+      // المجموعات (فيها children) تظهر لـ IT فقط
+      if (item.children) {
+        return false;
+      }
+
+      // صفحة الـ workflow الخاصة بالمستخدم فقط
+      return !!workflowRoute && item.route === workflowRoute;
+    });
+
   });
-
-});
 
   // ==================================================
   // ROLE THEME
@@ -186,7 +187,6 @@ readonly visibleNavItems = computed(() => {
 
   /**
    * Workflow users فقط يأخذوا الـ Light Sidebar
-   *
    * IT يأخذ الـ Dark Sidebar
    */
   isWorkflowUser(): boolean {
@@ -255,62 +255,27 @@ readonly visibleNavItems = computed(() => {
   // INIT
   // ==================================================
 
-  constructor(
-    private readonly authService: AuthService
-  ) {}
-
   ngOnInit(): void {
-
-    this.authService.profile().subscribe({
-
-      next: (response) => {
-
-        const roleFromProfile =
-          response?.data?.roleName ||
-          '';
-
-        console.log(
-          'Sidebar Role:',
-          roleFromProfile
-        );
-
-        this.roleSignal.set(
-          roleFromProfile
-        );
-
-      },
-
-      error: (error) => {
-
-        console.error(
-          'Failed to load user profile',
-          error
-        );
-
-        this.roleSignal.set('');
-
-      }
-
-    });
-
+    // مش هيبعت request تاني لو الـ Header حمّلها قبله
+    this.authService.loadProfile();
   }
 
   // ==================================================
   // GROUP TOGGLE
   // ==================================================
 
- toggle(item: NavItem): void {
+  toggle(item: NavItem): void {
 
-  if (!item.children) return;
+    if (!item.children) return;
 
-  this.navItems.update(items =>
-    items.map(i =>
-      i.label === item.label
-        ? { ...i, expanded: !i.expanded }
-        : i
-    )
-  );
-}
+    this.navItems.update(items =>
+      items.map(i =>
+        i.label === item.label
+          ? { ...i, expanded: !i.expanded }
+          : i
+      )
+    );
+  }
 
   // ==================================================
   // MOBILE SIDEBAR
