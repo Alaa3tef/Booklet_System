@@ -32,6 +32,7 @@ import { AppUserResponse } from './interfaces/useManagementResponse';
 import { UserForm } from './interfaces/UserForm';
 import { AuthService } from '../../core/services/auth.service';
 import { TableModule } from 'primeng/table';
+import { ToastService } from '../../core/services/toast.service';
 
 
 /** Validator: newPassword must equal confirmNewPassword */
@@ -66,10 +67,10 @@ const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 })
 
 export default class UserManagementComponent {
-
-
+  private readonly toast = inject(ToastService);
   private readonly userManagement = inject(UserManagement);
   private readonly authService = inject(AuthService);
+
   // ---------- STATE ----------
   searchQuery    = signal('');
   selectedRole   = signal('all');
@@ -438,10 +439,14 @@ if (!this.formValid()) {
       : this.userManagement.createUser({ ...body, password: f.password });
 
     request$.subscribe({
-      next: () => {
+      next: (res) => {
         this.formError.set('');
         this.closeAddModal();
         this.loadUsers();
+        this.toast.success(
+          res.message ?? (editing ? 'تم تعديل المستخدم بنجاح' : 'تم إضافة المستخدم بنجاح'),
+          editing ? 'تعديل مستخدم' : 'إضافة مستخدم'
+        );
       },
       error: err => {
         console.error('Save user error:', err);
