@@ -93,7 +93,6 @@
       [ngModel]="selectedRole()"
       (onChange)="onRoleChange($event.value)"
       [fluid]="true"
-      [showClear]="true"
       appendTo="body">
     </p-select>
 
@@ -106,14 +105,19 @@
       [ngModel]="selectedStatus()"
       (onChange)="onStatusChange($event.value)"
       [fluid]="true"
-      [showClear]="true"
       appendTo="body">
     </p-select>
 
-    <!-- Count badge -->
-    <span class="um-count-badge">
-      {{ paged().length }} من {{ totalRecords() }} مستخدم
-    </span>
+ <!-- Count badge -->
+    <!-- <span class="um-count-badge"> -->
+<p-button
+    label="مسح الفلاتر"
+    icon="pi pi-filter-slash"
+    severity="secondary"
+    [outlined]="true"
+    id="btn-clear-filters"
+    (onClick)="clearFilters()" />
+     <!-- </span> -->
 
   </section>
 
@@ -121,160 +125,132 @@
   <!-- ==================================================
        TABLE
   =================================================== -->
-  <section class="um-table-wrap">
+ <p-table
+  [value]="paged()"
+  dataKey="id"
+  styleClass="um-table-wrap"
+  tableStyleClass="um-table">
 
-    <table class="um-table">
+  <ng-template #header>
+    <tr>
+      <th class="col-idx">م</th>
+      <th class="col-user">المستخدم</th>
+      <th class="col-role">الدور</th>
+      <th class="col-email">البريد الإلكتروني</th>
+      <th class="col-status">الحالة</th>
+      <th class="col-date">تاريخ الإضافة</th>
+      <th class="col-actions">الإجراءات</th>
+    </tr>
+  </ng-template>
 
-      <thead>
-        <tr>
-          <th class="col-idx">م</th>
-          <th class="col-user">المستخدم</th>
-          <th class="col-role">الدور</th>
-          <th class="col-email">البريد الإلكتروني</th>
-          <th class="col-status">الحالة</th>
-          <th class="col-date">تاريخ الإضافة</th>
-          <th class="col-actions">الإجراءات</th>
-        </tr>
-      </thead>
+  <ng-template #body let-user let-i="rowIndex">
+    <tr class="um-row" [class.inactive-row]="!user.isActive">
 
-      <tbody>
+      <td class="col-idx" data-label="م">
+        {{ (currentPage() - 1) * pageSize() + i + 1 }}
+      </td>
 
-        @if (paged().length === 0) {
-          <tr>
-            <td colspan="7" class="um-empty">
-              <i class="pi pi-inbox"></i>
-              <span>لا يوجد مستخدمون مطابقون للبحث</span>
-            </td>
-          </tr>
-        }
+      <td class="col-user">
+        <div class="user-cell">
+          <div class="avatar" [class]="'avatar-' + toneFor(user.roleName)">
+            {{ initials(user.fullName) }}
+          </div>
+          <div class="user-info">
+            <span class="user-uname">&#64;{{ user.fullName }}</span>
+          </div>
+        </div>
+      </td>
 
-        @for (user of paged(); track user.id; let i = $index) {
+      <td class="col-role" data-label="الدور">
+        <span class="role-badge" [class]="'role-tone-' + toneFor(user.roleName)">
+          {{ user.roleName }}
+        </span>
+      </td>
 
-          <tr class="um-row" [class.inactive-row]="!user.isActive">
+      <td class="col-email" data-label="البريد الإلكتروني">
+        <span class="email-text">{{ user.email }}</span>
+      </td>
 
-            <!-- Index -->
-            <td class="col-idx">
-              {{ (currentPage() - 1) * pageSize() + i + 1 }}
-            </td>
+      <td class="col-status" data-label="الحالة">
+        <span class="status-chip"
+          [class.chip-active]="user.isActive"
+          [class.chip-inactive]="!user.isActive">
+          <span class="chip-dot"></span>
+          {{ user.isActive ? 'نشط' : 'معطل' }}
+        </span>
+      </td>
 
-            <!-- User info -->
-            <td class="col-user">
-              <div class="user-cell">
+      <td class="col-date" data-label="تاريخ الإضافة" dir="ltr">
+        {{ user.createdAt | date:'d MMM yyyy' }}
+      </td>
 
-                <div class="avatar" [class]="'avatar-' + toneFor(user.roleName)">
-                  {{ initials(user.fullName) }}
-                </div>
+      <td class="col-actions">
+        <button type="button" class="action-btn" title="الإجراءات"
+          aria-haspopup="true"
+          (click)="openMenu($event, user, menu)">
+          <i class="pi pi-ellipsis-v"></i>
+        </button>
+      </td>
 
-                <div class="user-info">
-                  <span class="user-uname">&#64;{{ user.fullName }}</span>
-                </div>
+    </tr>
+  </ng-template>
 
-              </div>
-            </td>
+  <ng-template #emptymessage>
+    <tr>
+      <td colspan="7" class="um-empty">
+        <i class="pi pi-inbox"></i>
+        <span>لا يوجد مستخدمون مطابقون للبحث</span>
+      </td>
+    </tr>
+  </ng-template>
 
-            <!-- Role -->
-            <td class="col-role">
-              <span class="role-badge" [class]="'role-tone-' + toneFor(user.roleName)">
-                {{ user.roleName }}
-              </span>
-            </td>
-
-            <!-- Email -->
-            <td class="col-email">
-              <span class="email-text">{{ user.email }}</span>
-            </td>
-
-            <!-- Status -->
-            <td class="col-status">
-              <span
-                class="status-chip"
-                [class.chip-active]="user.isActive === true"
-                [class.chip-inactive]="user.isActive === false">
-                <span class="chip-dot"></span>
-                {{ user.isActive === true ? 'نشط' : 'معطل' }}
-              </span>
-            </td>
-
-            <!-- Date -->
-            <td class="col-date">{{ user.createdAt | date }}</td>
-
-            <!-- Actions -->
-            <td class="col-actions">
-              <button
-                type="button"
-                class="action-btn"
-                title="الإجراءات"
-                aria-haspopup="true"
-                (click)="openMenu($event, user, menu)">
-                <i class="pi pi-ellipsis-v"></i>
-              </button>
-            </td>
-
-          </tr>
-
-        }
-
-      </tbody>
-
-    </table>
-
-  </section>
-
+</p-table>
   <p-menu #menu [model]="menuItems()" [popup]="true" appendTo="body" />
 
   <!-- ==================================================
        PAGINATION
   =================================================== -->
+
   @if (totalPages() > 1) {
+  <nav class="um-pagination" aria-label="التنقل بين الصفحات">
 
-    <nav class="um-pagination" aria-label="التنقل بين الصفحات">
+    <span class="pag-summary">
+      عرض <b>{{ rangeFrom() }}</b> – <b>{{ rangeTo() }}</b>
+      من <b>{{ totalRecords() }}</b> مستخدم
+    </span>
 
-      <!-- Prev -->
-      <button
-        type="button"
-        class="pag-btn pag-prev"
+    <div class="pag-controls">
+
+      <button type="button" class="pag-btn pag-nav"
         [disabled]="currentPage() === 1"
+        aria-label="السابق"
         (click)="prevPage()">
         <i class="pi pi-angle-right"></i>
       </button>
 
-
-      <!-- Page numbers -->
       @for (p of pageNumbers(); track $index) {
-
         @if (p === '...') {
           <span class="pag-dots">…</span>
         } @else {
-          <button
-            type="button"
-            class="pag-btn pag-num"
+          <button type="button" class="pag-btn pag-num"
             [class.pag-active]="p === currentPage()"
+            [attr.aria-current]="p === currentPage() ? 'page' : null"
             (click)="goToPage(p)">
             {{ p }}
           </button>
         }
-
       }
 
-
-      <!-- Next -->
-      <button
-        type="button"
-        class="pag-btn pag-next"
+      <button type="button" class="pag-btn pag-nav"
         [disabled]="currentPage() === totalPages()"
+        aria-label="التالي"
         (click)="nextPage()">
         <i class="pi pi-angle-left"></i>
       </button>
 
-
-      <!-- Info -->
-      <span class="pag-info">
-        صفحة {{ currentPage() }} من {{ totalPages() }}
-      </span>
-
-    </nav>
-
-  }
+    </div>
+  </nav>
+}
 
 
 </div>
@@ -319,12 +295,12 @@
     <!-- BODY -->
     <div class="modal-body">
 
-      @if (formError()) {
-        <div class="form-error-banner">
-          <i class="pi pi-exclamation-triangle"></i>
-          {{ formError() }}
-        </div>
-      }
+     @if (liveError() || formError()) {
+  <div class="form-error-banner">
+    <i class="pi pi-exclamation-triangle"></i>
+    {{ liveError() || formError() }}
+  </div>
+}
 
       <div class="form-grid">
 
@@ -355,7 +331,6 @@
             [ngModel]="form().roleKey"
             (onChange)="updateForm('roleKey', $event.value)"
             [fluid]="true"
-            [showClear]="true"
             appendTo="body">
           </p-select>
 

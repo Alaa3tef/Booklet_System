@@ -31,6 +31,7 @@ import { AppRole } from './interfaces/role';
 import { AppUserResponse } from './interfaces/useManagementResponse';
 import { UserForm } from './interfaces/UserForm';
 import { AuthService } from '../../core/services/auth.service';
+import { TableModule } from 'primeng/table';
 
 
 /** Validator: newPassword must equal confirmNewPassword */
@@ -39,7 +40,9 @@ export function passwordsMatch(group: AbstractControl): ValidationErrors | null 
   const confirm = group.get('confirmNewPassword')?.value;
   return pass && confirm && pass !== confirm ? { mismatch: true } : null;
 }
-
+// letters (any language) + spaces + combining marks (Arabic diacritics)
+const NAME_REGEX  = /^[\p{L}\p{M}]+(?:\s[\p{L}\p{M}]+)*$/u;
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
 @Component({
   selector: 'app-user-management',
@@ -55,8 +58,9 @@ export function passwordsMatch(group: AbstractControl): ValidationErrors | null 
     FloatLabelModule,
     MessageModule,
     MenuModule,
-    PasswordModule
-  ],
+    PasswordModule,
+    TableModule
+],
   templateUrl: './user-management.component.html',
   styleUrl: './user-management.component.scss'
 })
@@ -207,6 +211,13 @@ export default class UserManagementComponent {
     management: this.managementUsersCount()
   }));
 
+  readonly rangeFrom = computed(() =>
+  this.totalRecords() === 0 ? 0 : (this.currentPage() - 1) * this.pageSize() + 1
+);
+
+readonly rangeTo = computed(() =>
+  Math.min(this.currentPage() * this.pageSize(), this.totalRecords())
+);
   readonly statusOptions = [
     { value: 'all',      label: 'جميع الحالات' },
     { value: 'active',   label: 'نشط' },
@@ -226,6 +237,50 @@ export default class UserManagementComponent {
     Packing:          'purple',
     TopManagment:     'navy'
   };
+  touched = signal<Partial<Record<keyof UserForm, boolean>>>({});
+
+
+
+readonly fieldErrors = computed(() => {
+  const f = this.form();
+  const editing = this.isEdit();
+  const name  = f.fullName.trim();
+  const email = f.email.trim();
+  const e: Partial<Record<keyof UserForm, string>> = {};
+
+  if (!name)                          e.fullName = 'الاسم مطلوب';
+  else if (!NAME_REGEX.test(name))    e.fullName = 'الاسم يجب أن يحتوي على حروف فقط (بدون أرقام أو رموز)';
+  else if (name.length < 2)           e.fullName = 'الاسم قصير جدًا';
+
+  if (!email)                                     e.email = 'البريد الإلكتروني مطلوب';
+  else if (!EMAIL_REGEX.test(email))              e.email = 'صيغة البريد الإلكتروني غير صحيحة';
+  else if (/^\d+$/.test(email.split('@')[0]))     e.email = 'لا يمكن أن يتكوّن البريد من أرقام فقط قبل @';
+
+  if (!f.roleKey) e.roleKey = 'يرجى اختيار الدور';
+
+  if (!editing) {
+    if (!f.password)                 e.password = 'كلمة المرور مطلوبة';
+    else if (f.password.length < 6)  e.password = 'كلمة المرور يجب ألا تقل عن 6 أحرف';
+  }
+  return e;
+});
+// First visible validation error, in field order
+readonly liveError = computed(() => {
+  const order: (keyof UserForm)[] = ['fullName', 'email', 'roleKey', 'password'];
+  for (const key of order) {
+    const msg = this.showError(key);
+    if (msg) return msg;
+  }
+  return '';
+});
+readonly formValid = computed(() => Object.keys(this.fieldErrors()).length === 0);
+
+// Show the error once the user typed something or left the field
+showError(key: keyof UserForm): string | null {
+  const msg = this.fieldErrors()[key];
+  if (!msg) return null;
+  return (this.touched()[key] || this.form()[key] !== '') ? msg : null;
+}
 
   // ---------- FILTERS / PAGING ----------
   onSearch(value: string): void {
@@ -246,6 +301,17 @@ export default class UserManagementComponent {
     this.loadUsers();
   }
 
+  clearFilters(): void {
+  this.searchQuery.set('');
+  this.selectedRole.set('all');
+  this.selectedStatus.set('all');
+  this.currentPage.set(1);
+  this.loadUsers();
+}
+onFullNameInput(event: Event): void {
+  const value = (event.target as HTMLInputElement).value.replace(/\s{2,}/g, ' ');
+  this.updateForm('fullName', value);
+}
   openMenu(event: Event, u: AppUser, menu: Menu): void {
     this.menuItems.set([
       {
@@ -296,12 +362,14 @@ export default class UserManagementComponent {
   }
 
   // ---------- ADD / EDIT ----------
-  updateForm<K extends keyof UserForm>(key: K, value: UserForm[K] | null): void {
-    this.form.update(f => ({ ...f, [key]: value ?? '' }));
-  }
+ updateForm<K extends keyof UserForm>(key: K, value: UserForm[K] | null): void {
+  this.form.update(f => ({ ...f, [key]: value ?? '' }));
+  this.formError.set('');
+}
 
   openAddModal(): void {
     this.editingId.set(null);
+    this.touched.set({});
     this.form.set(this.emptyForm());
     this.formError.set('');
     this.showAddModal.set(true);
@@ -309,6 +377,7 @@ export default class UserManagementComponent {
 
   openEditModal(u: AppUser): void {
     this.editingId.set(u.id);
+    this.touched.set({});
     this.formError.set('');
     this.form.set(this.emptyForm());
     this.editLoading.set(true);
@@ -336,12 +405,15 @@ export default class UserManagementComponent {
 
   closeAddModal(): void {
     this.showAddModal.set(false);
+    this.touched.set({});
     this.editingId.set(null);
     this.editLoading.set(false);
   }
 
   submitForm(): void {
-    if (this.editLoading()) return;
+if (this.editLoading()) return;
+
+
     const f = this.form();
     const editing = this.isEdit();
 
@@ -349,14 +421,10 @@ export default class UserManagementComponent {
       this.formError.set('يرجى ملء جميع الحقول المطلوبة');
       return;
     }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.email)) {
-      this.formError.set('صيغة البريد الإلكتروني غير صحيحة');
-      return;
-    }
-    if (!editing && f.password.length < 6) {
-      this.formError.set('كلمة المرور يجب ألا تقل عن 6 أحرف');
-      return;
-    }
+if (!this.formValid()) {
+  this.touched.set({ fullName: true, email: true, roleKey: true, password: true });
+  return;
+}
 
     const body = {
       fullName: f.fullName.trim(),
