@@ -1,38 +1,39 @@
+import { Component, inject, signal } from "@angular/core";
+import { CommonModule } from "@angular/common";
+import { FormsModule } from "@angular/forms";
+import { ActivatedRoute, Router, RouterLink } from "@angular/router";
 
-import { Component, inject, signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
-import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { ButtonModule } from "primeng/button";
+import { InputTextModule } from "primeng/inputtext";
 
-import { ButtonModule } from 'primeng/button';
-import { InputTextModule } from 'primeng/inputtext';
-
-import { AuthService } from '../../../core/services/auth.service';
-import { DemoAccount } from '../../../core/models/auth.model';
+import { AuthService } from "../../../core/services/auth.service";
+import { DemoAccount } from "../../../core/models/auth.model";
+import { ToastComponent } from "../../../shared/components/toaster/toaster.component";
+import { ToastService } from "../../../core/services/toast.service";
 
 @Component({
-  selector: 'app-login',
+  selector: "app-login",
   standalone: true,
   imports: [
     CommonModule,
     FormsModule,
     ButtonModule,
-    InputTextModule
+    InputTextModule,
   ],
-  templateUrl: './login.component.html',
-  styleUrl: './login.component.scss'
+  templateUrl: "./login.component.html",
+  styleUrl: "./login.component.scss",
 })
 export default class LoginComponent {
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
-
+  private readonly toast = inject(ToastService);
   // ==========================================
   // Form Model
   // ==========================================
 
-  identifier = signal('');
-  password = signal('');
+  identifier = signal("");
+  password = signal("");
   rememberMe = signal(true);
 
   // ==========================================
@@ -41,11 +42,11 @@ export default class LoginComponent {
 
   showPassword = signal(false);
   isLoading = signal(false);
-  errorMessage = signal('');
+  errorMessage = signal("");
 
   // Email validation state
   emailTouched = signal(false);
-  emailError = signal('');
+  emailError = signal("");
 
   // ==========================================
   // Email Validation
@@ -61,13 +62,13 @@ export default class LoginComponent {
 
     // Clear validation when empty
     if (!value.trim()) {
-      this.emailError.set('');
+      this.emailError.set("");
       return;
     }
 
     // Don't show validation too early
     if (value.trim().length < 3) {
-      this.emailError.set('');
+      this.emailError.set("");
       return;
     }
 
@@ -78,10 +79,10 @@ export default class LoginComponent {
 
     if (!emailRegex.test(email)) {
       this.emailError.set(
-        'يرجى إدخال بريد إلكتروني صحيح، مثال: name@moe.gov.eg'
+        "يرجى إدخال بريد إلكتروني صحيح، مثال: name@moe.gov.eg",
       );
     } else {
-      this.emailError.set('');
+      this.emailError.set("");
     }
   }
 
@@ -94,7 +95,7 @@ export default class LoginComponent {
     const email = this.identifier().trim();
 
     if (!email) {
-      this.emailError.set('يرجى إدخال البريد الإلكتروني.');
+      this.emailError.set("يرجى إدخال البريد الإلكتروني.");
       return;
     }
 
@@ -103,7 +104,7 @@ export default class LoginComponent {
 
     if (!emailRegex.test(email)) {
       this.emailError.set(
-        'يرجى إدخال بريد إلكتروني صحيح، مثال: name@moe.gov.eg'
+        "يرجى إدخال بريد إلكتروني صحيح، مثال: name@moe.gov.eg",
       );
     }
   }
@@ -129,7 +130,7 @@ export default class LoginComponent {
   // ==========================================
 
   onSubmit(): void {
-    this.errorMessage.set('');
+    this.errorMessage.set("");
 
     const id = this.identifier().trim();
     const pass = this.password();
@@ -139,57 +140,66 @@ export default class LoginComponent {
 
     // Required email
     if (!id) {
-      this.emailError.set('يرجى إدخال البريد الإلكتروني.');
+      this.emailError.set("يرجى إدخال البريد الإلكتروني.");
       return;
     }
 
     // Invalid email
     if (!this.isEmailValid()) {
       this.emailError.set(
-        'يرجى إدخال بريد إلكتروني صحيح، مثال: name@moe.gov.eg'
+        "يرجى إدخال بريد إلكتروني صحيح، مثال: name@moe.gov.eg",
       );
       return;
     }
 
     // Required password
     if (!pass) {
-      this.errorMessage.set('يرجى إدخال كلمة المرور.');
+      this.errorMessage.set("يرجى إدخال كلمة المرور.");
       return;
     }
 
     this.isLoading.set(true);
 
-    this.authService.login({
-      email: id,
-      password: pass
-    }).subscribe({
-      next: (response) => {
-        this.isLoading.set(false);
+    this.authService
+      .login({
+        email: id,
+        password: pass,
+      })
+      .subscribe({
+     next: (response) => {
 
-        console.log('Login successful:', response);
-        console.log(
-          'Access token:',
-          sessionStorage.getItem('accessToken')
-        );
+  this.isLoading.set(false);
 
-        const returnUrl =
-          this.route.snapshot.queryParams['returnUrl'] || '/dashboard';
+  this.toast.success(
+    response.message,
+    'مرحبًا بك'
+  );
 
-        this.router.navigateByUrl(returnUrl);
-      },
+  console.log(
+    'Access token:',
+    sessionStorage.getItem('accessToken')
+  );
 
-      error: (err) => {
-        this.isLoading.set(false);
+  const returnUrl =
+    this.route.snapshot.queryParams['returnUrl']
+    || '/dashboard';
 
-        console.error('Login error:', err);
+  this.router.navigateByUrl(returnUrl);
 
-        this.errorMessage.set(
-          err?.error?.message ||
-          err?.message ||
-          'حدث خطأ أثناء تسجيل الدخول. يرجى المحاولة لاحقاً.'
-        );
-      }
-    });
+},
+
+        error: (err) => {
+          this.isLoading.set(false);
+
+          console.error("Login error:", err);
+
+          this.errorMessage.set(
+            err?.error?.message ||
+              err?.message ||
+              "حدث خطأ أثناء تسجيل الدخول. يرجى المحاولة لاحقاً.",
+          );
+        },
+      });
   }
 
   // ==========================================

@@ -1,52 +1,34 @@
-/* ==================================================
-   SIDEBAR
-================================================== */
+
+/* =========================================================
+   SIDEBAR - BASE
+========================================================= */
 
 .sidebar {
-
   width: var(--ebs-sidebar-width, 188px);
   min-width: var(--ebs-sidebar-width, 188px);
-
   height: 100vh;
 
   position: fixed;
-
   top: 0;
-
-  /*
-    RTL
-    Sidebar is on the RIGHT
-  */
   right: 0;
   left: auto;
 
   display: flex;
   flex-direction: column;
 
-  /*
-    DEFAULT THEME
-    IT / SUPER ADMIN
-  */
-
-  background:
-    linear-gradient(
-      180deg,
-      #193b66 0%,
-      #102f55 48%,
-      #0b294b 100%
-    );
+  background: linear-gradient(
+    180deg,
+    #193b66 0%,
+    #102f55 48%,
+    #0b294b 100%
+  );
 
   color: #ffffff;
-
+  direction: rtl;
   z-index: 2100;
-
   overflow: hidden;
 
-  direction: rtl;
-
-  box-shadow:
-    -3px 0 15px
-    rgba(9, 35, 66, 0.12);
+  box-shadow: -3px 0 15px rgba(9, 35, 66, 0.12);
 
   transition:
     background 0.25s ease,
@@ -55,246 +37,201 @@
 }
 
 
-/* ==================================================
+/* =========================================================
    BRAND
-================================================== */
+========================================================= */
 
 .sidebar-brand {
-
   min-height: 115px;
+  flex-shrink: 0;
 
   display: flex;
   flex-direction: column;
-
   align-items: center;
   justify-content: center;
 
   padding: 1rem 0.7rem;
 
-  border-bottom:
-    1px solid
-    rgba(255, 255, 255, 0.09);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.09);
 
   position: relative;
 }
 
-
-.ministry-logo {
-
-  width: 48px;
-  height: 48px;
-
-  display: flex;
-
-  align-items: center;
-  justify-content: center;
-
-  margin-bottom: 0.35rem;
-}
-
-
-/* ==================================================
-   EGYPT EAGLE LOGO
-================================================== */
+/* Logo container */
 
 .ministry-logo {
   width: 58px;
   height: 58px;
+  flex-shrink: 0;
 
   display: flex;
   align-items: center;
   justify-content: center;
 
   margin-bottom: 0.35rem;
-
   position: relative;
+  isolation: isolate;
 }
 
-
-/*
-  خلفية بسيطة خلف النسر
-*/
+/* Circular background behind the eagle */
 
 .ministry-logo::before {
   content: '';
 
   position: absolute;
-
-  width: 54px;
-  height: 54px;
+  inset: 2px;
 
   border-radius: 50%;
+  background: #ffffff;
 
-  background:
-    rgba(255, 255, 255, 0.96);
+  border: 1px solid rgba(220, 233, 244, 0.9);
 
   box-shadow:
-    0 5px 16px
-    rgba(0, 0, 0, 0.14);
+    0 4px 14px rgba(0, 0, 0, 0.12);
+
+  z-index: -1;
 }
 
-
-/*
-  صورة النسر
-*/
+/* Egypt eagle image */
 
 .egypt-eagle {
   position: relative;
-
-  width: 47px;
-  height: 47px;
-
-  object-fit: contain;
+  z-index: 1;
 
   display: block;
 
-  z-index: 1;
+  width: 43px;
+  height: 43px;
 
-  filter:
-    drop-shadow(
-      0 2px 3px
-      rgba(0, 0, 0, 0.15)
-    );
+  max-width: 100%;
+  object-fit: contain;
+  object-position: center;
 
-  transition:
-    transform 0.2s ease;
+  background: transparent;
+  border: none;
+  border-radius: 50%;
+
+  filter: drop-shadow(
+    0 1px 2px rgba(0, 0, 0, 0.12)
+  );
+
+  transition: transform 0.2s ease;
 }
-
 
 .sidebar-brand:hover .egypt-eagle {
   transform: scale(1.04);
 }
 
+/* Ministry text */
 
 .ministry-text {
-
   display: flex;
-
   flex-direction: column;
-
   align-items: center;
 
+  width: 100%;
   text-align: center;
 }
 
-
 .arabic-name {
-
   font-size: 0.73rem;
-
   font-weight: 800;
-
   color: #ffffff;
-
   white-space: nowrap;
 }
-
 
 .english-name {
-
   margin-top: 2px;
-
   font-size: 0.53rem;
-
-  color:
-    rgba(255, 255, 255, 0.62);
-
+  color: rgba(255, 255, 255, 0.62);
   white-space: nowrap;
 }
 
 
-/* ==================================================
+/* =========================================================
    NAVIGATION
-================================================== */
+========================================================= */
 
 .sidebar-nav {
-
   flex: 1;
+  min-height: 0;
 
   overflow-y: auto;
+  overflow-x: hidden;
 
-  padding:
-    0.85rem 0.65rem;
+  padding: 0.85rem 0.65rem;
 
   scrollbar-width: thin;
-
-  scrollbar-color:
-    rgba(255,255,255,0.18)
-    transparent;
+  scrollbar-color: rgba(255, 255, 255, 0.18) transparent;
 }
-
 
 .sidebar-nav::-webkit-scrollbar {
   width: 4px;
 }
 
-
 .sidebar-nav::-webkit-scrollbar-thumb {
-
-  background:
-    rgba(255,255,255,0.18);
-
+  background: rgba(255, 255, 255, 0.18);
   border-radius: 20px;
 }
 
+.sidebar-nav::-webkit-scrollbar-track {
+  background: transparent;
+}
 
-/* ==================================================
+
+/* =========================================================
    NAV LIST
-================================================== */
+========================================================= */
 
 .nav-list {
-
   list-style: none;
-
   padding: 0;
   margin: 0;
 
   display: flex;
-
   flex-direction: column;
-
   gap: 0.18rem;
 }
 
+.nav-item {
+  width: 100%;
+  min-width: 0;
+}
 
-/* ==================================================
+.nav-item.has-children {
+  display: flex;
+  flex-direction: column;
+}
+
+
+/* =========================================================
    NAV LINK
-================================================== */
+========================================================= */
 
 .nav-link {
-
   width: 100%;
-
+  min-width: 0;
   min-height: 43px;
+  box-sizing: border-box;
 
   display: flex;
-
   align-items: center;
-
   gap: 0.7rem;
 
-  padding:
-    0.65rem 0.7rem;
+  padding: 0.65rem 0.7rem;
 
   border: none;
-
   border-radius: 9px;
 
   background: transparent;
-
-  color:
-    rgba(255, 255, 255, 0.83);
+  color: rgba(255, 255, 255, 0.83);
 
   text-decoration: none;
-
   font-family: inherit;
-
   font-size: 0.79rem;
-
   font-weight: 500;
 
   cursor: pointer;
-
   text-align: right;
 
   transition:
@@ -302,143 +239,108 @@
     color 0.2s ease,
     box-shadow 0.2s ease;
 
-
   &:hover {
-
-    background:
-      rgba(255,255,255,0.08);
-
+    background: rgba(255, 255, 255, 0.08);
     color: #ffffff;
   }
 
-
   &.active {
-
-    background:
-      linear-gradient(
-        90deg,
-        #2e80ed,
-        #347fdb
-      );
+    background: linear-gradient(
+      90deg,
+      #2e80ed,
+      #347fdb
+    );
 
     color: #ffffff;
 
-    box-shadow:
-      0 5px 12px
-      rgba(31, 105, 196, 0.25);
+    box-shadow: 0 5px 12px rgba(31, 105, 196, 0.25);
+  }
+
+  &:focus-visible {
+    outline: 2px solid #8ecaff;
+    outline-offset: 2px;
   }
 }
 
-
-/* ==================================================
-   NAV ICON
-================================================== */
+/* Navigation icon */
 
 .nav-icon {
-
   width: 22px;
-
-  display: flex;
-
-  align-items: center;
-
-  justify-content: center;
-
   flex-shrink: 0;
 
+  display: flex;
+  align-items: center;
+  justify-content: center;
 
   i {
     font-size: 0.95rem;
   }
 }
 
-
-/* ==================================================
-   LABEL
-================================================== */
+/* Navigation label */
 
 .nav-label {
-
   flex: 1;
-
+  min-width: 0;
   white-space: nowrap;
 }
 
 
-/* ==================================================
-   GROUP
-================================================== */
+/* =========================================================
+   GROUP TOGGLE
+========================================================= */
 
 .group-toggle {
-
   font-family: inherit;
 
-
   .toggle-icon {
-
+    flex-shrink: 0;
     margin-inline-start: auto;
 
     font-size: 0.63rem;
-
     opacity: 0.7;
 
     transition:
-      transform 0.2s ease;
+      transform 0.2s ease,
+      opacity 0.2s ease;
   }
-
 
   .toggle-icon.rotated {
-
-    transform:
-      rotate(180deg);
+    transform: rotate(180deg);
   }
 }
 
 
-/* ==================================================
+/* =========================================================
    SUB MENU
-================================================== */
+========================================================= */
 
 .nav-sublist {
-
   list-style: none;
 
-  margin:
-    0.2rem 0 0.35rem;
-
-  padding:
-    0 0.5rem 0 0;
+  margin: 0.2rem 0 0.35rem;
+  padding: 0 0.5rem 0 0;
 
   display: flex;
-
   flex-direction: column;
-
   gap: 2px;
 
-  border-right:
-    1px solid
-    rgba(255,255,255,0.12);
+  border-right: 1px solid rgba(255, 255, 255, 0.12);
 }
 
-
 .nav-sublink {
-
   min-height: 35px;
+  box-sizing: border-box;
 
   display: flex;
-
   align-items: center;
-
   gap: 0.55rem;
 
-  padding:
-    0.45rem 0.7rem;
+  padding: 0.45rem 0.7rem;
 
   border-radius: 7px;
 
-  color:
-    rgba(255,255,255,0.62);
-
+  color: rgba(255, 255, 255, 0.62);
   text-decoration: none;
 
   font-size: 0.72rem;
@@ -447,139 +349,143 @@
     background 0.2s ease,
     color 0.2s ease;
 
-
   &:hover {
-
-    background:
-      rgba(255,255,255,0.06);
-
+    background: rgba(255, 255, 255, 0.06);
     color: #ffffff;
   }
-
 
   &.active {
-
-    background:
-      rgba(47, 128, 237, 0.22);
-
+    background: rgba(47, 128, 237, 0.22);
     color: #ffffff;
-
     font-weight: 700;
+  }
+
+  &:focus-visible {
+    outline: 2px solid #8ecaff;
+    outline-offset: 2px;
   }
 }
 
-
-/* ==================================================
-   SUB DOT
-================================================== */
+/* Submenu dot */
 
 .sub-dot {
-
   width: 5px;
   height: 5px;
+  flex-shrink: 0;
 
   border-radius: 50%;
-
-  background:
-    rgba(255,255,255,0.35);
-
-  flex-shrink: 0;
+  background: rgba(255, 255, 255, 0.35);
 }
-
 
 .nav-sublink.active .sub-dot {
-
-  background:
-    #6eafff;
-
-  box-shadow:
-    0 0 5px
-    rgba(110,175,255,0.5);
+  background: #6eafff;
+  box-shadow: 0 0 5px rgba(110, 175, 255, 0.5);
 }
 
 
-/* ==================================================
+/* =========================================================
    SIDEBAR FOOTER
-================================================== */
+========================================================= */
 
 .sidebar-footer {
+  flex-shrink: 0;
 
-  padding:
-    1rem 0.7rem 1.25rem;
-
+  padding: 1rem 0.7rem 1.25rem;
   text-align: center;
 
-  border-top:
-    1px solid
-    rgba(255,255,255,0.08);
-
-  background:
-    rgba(0,0,0,0.06);
+  //border-top: 1px solid rgba(255, 255, 255, 0.08);
+  //background: rgba(0, 0, 0, 0.06);
 }
 
+/* Booklet illustration */
 
 .footer-books {
-
   height: 112px;
+  width: 100%;
+  max-width: 178px;
+
   margin: 0 auto 0.55rem;
   position: relative;
-  width: 178px;
 }
 
 .booklet-stack {
   bottom: 0;
-  height: 102px;
   left: 50%;
+
+  height: 102px;
+  width: 148px;
+
   position: absolute;
   transform: translateX(-50%) skewY(-9deg);
-  width: 148px;
 }
 
 .booklet-sheet {
-  background: linear-gradient(135deg, #dce7f1 0%, #9eb2c6 100%);
+  position: absolute;
+  left: 8px;
+
+  width: 128px;
+  height: 72px;
+
+  background: linear-gradient(
+    135deg,
+    #dce7f1 0%,
+    #9eb2c6 100%
+  );
+
   border: 1px solid rgba(8, 31, 56, 0.35);
   border-radius: 3px;
+
   box-shadow: 0 2px 3px rgba(0, 0, 0, 0.25);
-  height: 72px;
-  left: 8px;
-  position: absolute;
+
   transform: rotate(-7deg);
-  width: 128px;
 }
 
 .booklet-sheet::after {
-  background: repeating-linear-gradient(0deg, transparent 0 5px, rgba(24, 58, 88, 0.18) 6px 7px);
-  bottom: -24px;
   content: '';
-  height: 24px;
-  left: 0;
+
   position: absolute;
+  left: 0;
+  bottom: -24px;
+
+  width: 128px;
+  height: 24px;
+
+  background: repeating-linear-gradient(
+    0deg,
+    transparent 0 5px,
+    rgba(24, 58, 88, 0.18) 6px 7px
+  );
+
   transform: skewX(-42deg);
   transform-origin: top left;
-  width: 128px;
 }
 
 .booklet-sheet-back {
   bottom: 13px;
   opacity: 0.75;
+
   transform: rotate(-7deg) translate(-9px, 12px);
 }
 
 .booklet-sheet-middle {
   bottom: 10px;
   opacity: 0.9;
+
   transform: rotate(-7deg) translate(-4px, 7px);
 }
 
 .booklet-sheet-front {
-  align-items: center;
   bottom: 17px;
-  color: #34536d;
+
   display: flex;
   flex-direction: column;
-  font-size: 9px;
+  align-items: center;
   justify-content: center;
+
+  color: #34536d;
+  font-size: 9px;
   text-align: center;
+
   transform: rotate(-7deg);
 }
 
@@ -588,404 +494,334 @@
   margin-bottom: 3px;
 }
 
-
 .footer-text {
-
   font-size: 0.7rem;
-
-  color:
-    rgba(255,255,255,0.58);
+  color: rgba(255, 255, 255, 0.58);
 }
 
-
 .footer-subtitle {
-
   font-size: 0.72rem;
-
   color: #ffffff;
-
   font-weight: 700;
 }
 
 
-/* ==================================================
-   MOBILE CLOSE
-================================================== */
+/* =========================================================
+   MOBILE CLOSE BUTTON
+========================================================= */
 
 .sidebar-close {
-
   display: none;
 
   position: absolute;
-
   top: 0.8rem;
-
   left: 0.7rem;
 
   width: 32px;
   height: 32px;
 
-  border: none;
+  align-items: center;
+  justify-content: center;
 
+  border: none;
   border-radius: 8px;
 
-  background:
-    rgba(255,255,255,0.08);
-
+  background: rgba(255, 255, 255, 0.08);
   color: #ffffff;
 
   cursor: pointer;
 
-  align-items: center;
-  justify-content: center;
+  transition:
+    background 0.2s ease,
+    color 0.2s ease;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.16);
+  }
+
+  &:focus-visible {
+    outline: 2px solid #8ecaff;
+    outline-offset: 2px;
+  }
 }
 
 
-/* ==================================================
-   ==================================================
+/* =========================================================
    LIGHT THEME
    Planning / Printing / Quality / Packing / Archiving
-   ==================================================
-================================================== */
+========================================================= */
 
 .sidebar.workflow-theme {
-
-  /*
-    لون قريب من الصورة اللي بعتيها
-  */
-
-  background:
-    linear-gradient(
-      180deg,
-      #f8fbfe 0%,
-      #f1f7fc 50%,
-      #edf5fb 100%
-    );
+  background: linear-gradient(
+    180deg,
+    #f8fbfe 0%,
+    #f1f7fc 50%,
+    #edf5fb 100%
+  );
 
   color: #17324d;
 
-  box-shadow:
-    -3px 0 18px
-    rgba(20, 70, 110, 0.08);
+  box-shadow: -3px 0 18px rgba(20, 70, 110, 0.08);
 }
 
 
-/* ==================================================
-   LIGHT - BRAND
-================================================== */
+/* =========================================================
+   LIGHT THEME - BRAND
+========================================================= */
 
 .sidebar.workflow-theme {
-
   .sidebar-brand {
-
-    border-bottom:
-      1px solid #dce8f2;
+    border-bottom: 1px solid #dce8f2;
   }
 
+  .ministry-logo::before {
+    background: #ffffff;
 
-  .logo-eagle {
+    border-color: #e1ebf3;
 
-    background:
-      linear-gradient(
-        135deg,
-        #eaf4fc,
-        #dceefa
-      );
-
-    color: #1769aa;
-
-    box-shadow:
-      0 3px 10px
-      rgba(30, 100, 160, 0.08);
+    box-shadow: 0 4px 14px rgba(30, 100, 160, 0.10);
   }
 
+  .egypt-eagle {
+    background: transparent;
+    filter: drop-shadow(
+      0 1px 2px rgba(30, 80, 120, 0.12)
+    );
+  }
 
   .arabic-name {
-
     color: #17324d;
   }
 
-
   .english-name {
-
     color: #7a8fa3;
+  }
+
+  .sidebar-close {
+    background: #e8f3fb;
+    color: #244c6b;
+
+    &:hover {
+      background: #d9ebf8;
+    }
   }
 }
 
 
-/* ==================================================
-   LIGHT - NAV
-================================================== */
+/* =========================================================
+   LIGHT THEME - NAVIGATION
+========================================================= */
 
 .sidebar.workflow-theme {
-
   .nav-link {
-
     color: #17324d;
-
     background: transparent;
 
-
     &:hover {
-
       background: #e8f3fb;
-
       color: #1267a8;
     }
 
-
     &.active {
-
-      /*
-        اللون الأزرق الفاتح الظاهر في الصورة
-      */
-
-      background:
-        linear-gradient(
-          90deg,
-          #d9efff,
-          #cce9fb
-        );
+      background: linear-gradient(
+        90deg,
+        #d9efff,
+        #cce9fb
+      );
 
       color: #0b609d;
 
-      box-shadow:
-        0 3px 8px
-        rgba(34, 123, 184, 0.08);
+      box-shadow: 0 3px 8px rgba(34, 123, 184, 0.08);
+    }
+
+    &:focus-visible {
+      outline-color: #2f8ed1;
     }
   }
 
-
   .nav-icon {
-
     color: #244c6b;
   }
 
-
   .nav-link.active .nav-icon {
-
     color: #0b609d;
   }
 
-
   .group-toggle {
-
     .toggle-icon {
-
       color: #648096;
-
       opacity: 1;
     }
   }
 }
 
 
-/* ==================================================
-   LIGHT - SUB MENU
-================================================== */
+/* =========================================================
+   LIGHT THEME - SUB MENU
+========================================================= */
 
 .sidebar.workflow-theme {
-
   .nav-sublist {
-
-    border-right:
-      1px solid
-      #d6e4ef;
+    border-right: 1px solid #d6e4ef;
   }
-
 
   .nav-sublink {
-
-    color:
-      #60798e;
-
+    color: #60798e;
 
     &:hover {
-
-      background:
-        #e8f3fb;
-
-      color:
-        #1769aa;
+      background: #e8f3fb;
+      color: #1769aa;
     }
-
 
     &.active {
-
-      background:
-        #dceffb;
-
-      color:
-        #0b609d;
-
+      background: #dceffb;
+      color: #0b609d;
       font-weight: 700;
+    }
+
+    &:focus-visible {
+      outline: 2px solid #2f8ed1;
+      outline-offset: 2px;
     }
   }
 
-
   .sub-dot {
-
-    background:
-      #8da6b9;
+    background: #8da6b9;
   }
-
 
   .nav-sublink.active .sub-dot {
-
-    background:
-      #2f8ed1;
-
-    box-shadow:
-      0 0 5px
-      rgba(47,142,209,0.25);
+    background: #2f8ed1;
+    box-shadow: 0 0 5px rgba(47, 142, 209, 0.25);
   }
 }
 
 
-/* ==================================================
-   LIGHT - SCROLLBAR
-================================================== */
+/* =========================================================
+   LIGHT THEME - SCROLLBAR
+========================================================= */
 
 .sidebar.workflow-theme {
-
   .sidebar-nav {
-
-    scrollbar-color:
-      #c7dbe9
-      transparent;
+    scrollbar-color: #c7dbe9 transparent;
   }
-
 
   .sidebar-nav::-webkit-scrollbar-thumb {
-
-    background:
-      #c7dbe9;
+    background: #c7dbe9;
   }
 }
 
 
-/* ==================================================
-   LIGHT - FOOTER
-================================================== */
+/* =========================================================
+   LIGHT THEME - FOOTER
+========================================================= */
 
 .sidebar.workflow-theme {
-
   .sidebar-footer {
-
-    border-top:
-      1px solid
-      #dce8f2;
-
-    background:
-      rgba(225, 240, 250, 0.45);
+    //border-top: 1px solid #dce8f2;
+    //background: rgba(225, 240, 250, 0.45);
   }
-
 
   .footer-books {
-
-    color:
-      #9bb5c8;
+    color: #9bb5c8;
   }
-
 
   .footer-text {
-
-    color:
-      #71899c;
+    color: #71899c;
   }
 
-
   .footer-subtitle {
+    color: #355873;
+  }
 
-    color:
-      #355873;
+  .booklet-sheet {
+    box-shadow: 0 2px 4px rgba(30, 70, 100, 0.12);
   }
 }
 
 
-/* ==================================================
-   MOBILE
-================================================== */
+/* =========================================================
+   TABLET & MOBILE
+========================================================= */
 
 @media (max-width: 991px) {
-
   .sidebar {
-
     width: 260px;
-
     min-width: 260px;
 
     position: fixed;
-
     top: 0;
-
-    /*
-      Right side
-    */
-
     right: 0;
-
     left: auto;
 
-    transform:
-      translateX(105%);
+    transform: translateX(105%);
 
-    transition:
-      transform 0.28s
-      cubic-bezier(.4,0,.2,1);
+    transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
 
-    box-shadow:
-      -8px 0 30px
-      rgba(0,0,0,0.2);
+    box-shadow: -8px 0 30px rgba(0, 0, 0, 0.2);
   }
-
 
   .sidebar.mobile-open {
-
-    transform:
-      translateX(0);
+    transform: translateX(0);
   }
 
-
   .sidebar-close {
-
     display: flex;
   }
 
-
   .sidebar-brand {
-
     min-height: 105px;
   }
 
-
   .nav-link {
-
     min-height: 46px;
-
     font-size: 0.84rem;
   }
 
-
   .nav-sublink {
-
     font-size: 0.78rem;
   }
 
+  .footer-books {
+    max-width: 178px;
+  }
 }
 
 
-/* ==================================================
+/* =========================================================
    SMALL MOBILE
-================================================== */
+========================================================= */
 
 @media (max-width: 575px) {
-
   .sidebar {
-
     width: 285px;
-
     min-width: 285px;
   }
 
+  .sidebar-brand {
+    padding-inline: 0.5rem;
+  }
+
+  .arabic-name {
+    font-size: 0.75rem;
+  }
+
+  .english-name {
+    font-size: 0.55rem;
+  }
+}
+
+
+/* =========================================================
+   REDUCED MOTION
+========================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+  .sidebar,
+  .sidebar *,
+  .sidebar *::before,
+  .sidebar *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
 }

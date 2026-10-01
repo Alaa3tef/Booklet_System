@@ -2,7 +2,9 @@ import {
   Component,
   EventEmitter,
   Input,
+  OnInit,
   Output,
+  computed,
   signal
 } from '@angular/core';
 
@@ -14,11 +16,10 @@ import {
 } from '@angular/router';
 
 import { NavItem } from '../../core/models/nav-item.model';
-
+import { AuthService } from '../../core/services/auth.service';
 
 @Component({
   selector: 'app-sidebar',
-
   standalone: true,
 
   imports: [
@@ -28,10 +29,9 @@ import { NavItem } from '../../core/models/nav-item.model';
   ],
 
   templateUrl: './sidebar.component.html',
-
   styleUrl: './sidebar.component.scss'
 })
-export class SidebarComponent {
+export class SidebarComponent implements OnInit {
 
   // ==================================================
   // INPUTS
@@ -40,11 +40,6 @@ export class SidebarComponent {
   @Input()
   mobileOpen = false;
 
-
-  @Input()
-  userRole = 'IT';
-
-
   // ==================================================
   // OUTPUTS
   // ==================================================
@@ -52,6 +47,16 @@ export class SidebarComponent {
   @Output()
   closeMobile = new EventEmitter<void>();
 
+  // ==================================================
+  // ROLE
+  // ==================================================
+
+  private readonly roleSignal = signal<string>('');
+
+  /**
+   * الدور الحالي القادم من Profile API
+   */
+  readonly role = computed(() => this.roleSignal());
 
   // ==================================================
   // NAVIGATION ITEMS
@@ -59,113 +64,136 @@ export class SidebarComponent {
 
   readonly navItems = signal<NavItem[]>([
 
-    {
-      label: 'الرئيسية',
-      icon: 'pi pi-home',
-      route: '/dashboard'
-    },
+  // الرئيسية
+  {
+    label: 'الرئيسية',
+    icon: 'pi pi-home',
+    route: '/dashboard'
+  },
 
-    {
-      label: 'إدارة البيانات الأساسية',
-      icon: 'pi pi-database',
-      expanded: true,
+  // إدارة البيانات الأساسية (IT فقط)
+  {
+    label: 'إدارة البيانات الأساسية',
+    icon: 'pi pi-database',
+    expanded: true,
+    role: 'it',
 
-      children: [
-        // {
-        //   label: 'المحافظات',
-        //   icon: 'pi pi-circle-fill',
-        //   route: '/governorates'
-        // },
+    children: [
+      {
+        label: 'إدارة اللجان',
+        icon: 'pi pi-circle-fill',
+        route: '/committees/setup'
+      }
+    ]
+  },
 
-        // {
-        //   label: 'المواد',
-        //   icon: 'pi pi-circle-fill',
-        //   route: '/materials'
-        // },
+  {
+    label: 'الإعداد',
+    icon: 'pi pi-sliders-h',
+    route: '/workflow/planning',
+    role: 'planning'
+  },
 
-        {
-          label: 'إدارة اللجان',
-          icon: 'pi pi-circle-fill',
-          route: '/committees/setup'
-        }
-      ]
-    },
+  {
+    label: 'الطباعة',
+    icon: 'pi pi-print',
+    route: '/workflow/printing',
+    role: 'printing'
+  },
 
-    {
-      label: 'الإعداد',
-      icon: 'pi pi-sliders-h',
-      route: '/workflow/planning'
-    },
+  {
+    label: 'الجودة',
+    icon: 'pi pi-verified',
+    route: '/workflow/quality',
+    role: 'quality'
+  },
 
-    {
-      label: 'الطباعة',
-      icon: 'pi pi-print',
-      route: '/workflow/printing'
-    },
+  {
+    label: 'التغليف',
+    icon: 'pi pi-box',
+    route: '/workflow/packing',
+    role: 'packing'
+  },
 
-    {
-      label: 'الجودة',
-      icon: 'pi pi-verified',
-      route: '/workflow/quality'
-    },
+  {
+    label: 'التخزين',
+    icon: 'pi pi-database',
+    route: '/workflow/archiving',
+    role: 'archive'
+  },
 
-    {
-      label: 'التغليف',
-      icon: 'pi pi-box',
-      route: '/workflow/packing'
-    },
+  {
+    label: 'إدارة المستخدمين',
+    icon: 'pi pi-users',
+    route: '/users',
+    role: 'it'
+  }
 
-    {
-      label: 'التخزين',
-      icon: 'pi pi-database',
-      route: '/workflow/archiving'
-    },
+] as any[]);
 
-    // {
-    //   label: 'إنتاج الملفات',
-    //   icon: 'pi pi-file-export',
-    //   route: '/production'
-    // },
+  // ==================================================
+  // VISIBLE NAV ITEMS
+  // ==================================================
 
-    // {
-    //   label: 'المتابعة والتقارير',
-    //   icon: 'pi pi-chart-bar',
-    //   route: '/reports'
-    // },
+  /**
+   * IT:
+   * يشوف كل الصفحات
+   *
+   * Workflow users:
+   * Dashboard + الصفحة الخاصة بالـ role فقط
+   */
+readonly visibleNavItems = computed(() => {
 
-    {
-      label: 'إدارة المستخدمين',
-      icon: 'pi pi-users',
-      route: '/users'
-    },
+  const currentRole = this.normalizeRole(this.role());
 
-    // {
-    //   label: 'الإعدادات',
-    //   icon: 'pi pi-cog',
-    //   route: '/settings'
-    // }
+  // IT / ADMIN: يشوف كل حاجة
+  if (this.isITRole(currentRole)) {
+    return this.navItems();
+  }
 
-  ]);
+  const roleRouteMap: Record<string, string> = {
+    planning: '/workflow/planning',
+    printing: '/workflow/printing',
+    quality: '/workflow/quality',
+    packing: '/workflow/packing',
+    archiving: '/workflow/archiving',
+    archive: '/workflow/archiving'
+  };
 
+  const workflowRoute = roleRouteMap[currentRole];
+
+  return this.navItems().filter(item => {
+
+    // الرئيسية دايمًا ظاهرة
+    if (item.route === '/dashboard') {
+      return true;
+    }
+
+    // المجموعات (فيها children) تظهر لـ IT فقط، وهنا المستخدم مش IT
+    if (item.children) {
+      return false;
+    }
+
+    // صفحة الـ workflow الخاصة بالمستخدم فقط
+    return !!workflowRoute && item.route === workflowRoute;
+  });
+
+});
 
   // ==================================================
   // ROLE THEME
   // ==================================================
 
   /**
-   * Roles that should use the light sidebar theme.
+   * Workflow users فقط يأخذوا الـ Light Sidebar
    *
-   * Planning
-   * Printing
-   * Quality
-   * Packing
-   * Archiving
+   * IT يأخذ الـ Dark Sidebar
    */
   isWorkflowUser(): boolean {
 
-    const role = this.normalizeRole(this.userRole);
+    const role = this.normalizeRole(this.role());
 
-    const workflowRoles = [
+    return [
       'planning',
       'plan',
       'printing',
@@ -175,44 +203,114 @@ export class SidebarComponent {
       'packaging',
       'archiving',
       'archive',
+
       'التخطيط',
       'الإعداد',
       'الطباعة',
       'الجودة',
       'التغليف',
       'التخزين'
-    ];
+    ].includes(role);
 
-    return workflowRoles.includes(role);
   }
 
+  // ==================================================
+  // IT ROLE
+  // ==================================================
 
-  /**
-   * Normalize role value
-   */
+  private isITRole(role: string): boolean {
+
+    return [
+      'it',
+      'admin',
+      'administrator',
+      'super admin',
+      'superadmin',
+
+      'مسؤول النظام',
+      'مسؤول النظام it',
+      'مدير النظام',
+      'مدير النظام it',
+
+      'system admin',
+      'system administrator'
+    ].includes(role);
+
+  }
+
+  // ==================================================
+  // NORMALIZE ROLE
+  // ==================================================
+
   private normalizeRole(role: string): string {
 
     return (role || '')
       .trim()
       .toLowerCase()
       .replace(/\s+/g, ' ');
+
   }
 
+  // ==================================================
+  // INIT
+  // ==================================================
+
+  constructor(
+    private readonly authService: AuthService
+  ) {}
+
+  ngOnInit(): void {
+
+    this.authService.profile().subscribe({
+
+      next: (response) => {
+
+        const roleFromProfile =
+          response?.data?.roleName ||
+          '';
+
+        console.log(
+          'Sidebar Role:',
+          roleFromProfile
+        );
+
+        this.roleSignal.set(
+          roleFromProfile
+        );
+
+      },
+
+      error: (error) => {
+
+        console.error(
+          'Failed to load user profile',
+          error
+        );
+
+        this.roleSignal.set('');
+
+      }
+
+    });
+
+  }
 
   // ==================================================
   // GROUP TOGGLE
   // ==================================================
 
-  toggle(item: NavItem): void {
+ toggle(item: NavItem): void {
 
-    if (item.children) {
-     console.log("toggle")
-      item.expanded = !item.expanded;
+  if (!item.children) return;
 
-    }
-
-  }
-
+  this.navItems.update(items =>
+    items.map(i =>
+      i.label === item.label
+        ? { ...i, expanded: !i.expanded }
+        : i
+    )
+  );
+}
 
   // ==================================================
   // MOBILE SIDEBAR
