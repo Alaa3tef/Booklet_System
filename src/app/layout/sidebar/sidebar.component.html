@@ -1,69 +1,68 @@
 <aside
   class="sidebar"
   [class.mobile-open]="mobileOpen"
-  [class.workflow-theme]="isWorkflowUser()">
-
+  [class.workflow-theme]="isWorkflowUser()"
+>
 
   <!-- ==================================================
        MINISTRY BRAND
-  =================================================== -->
+  ================================================== -->
 
   <div class="sidebar-brand">
 
-  <div class="ministry-logo">
+    <div class="ministry-logo">
 
-    <img
-      src="assets/images/egypt.png"
-      alt="شعار جمهورية مصر العربية"
-      class="egypt-eagle"
-    />
+      <img
+        src="assets/images/egypt.png"
+        alt="شعار جمهورية مصر العربية"
+        class="egypt-eagle"
+      />
+
+    </div>
+
+    <div class="ministry-text">
+
+      <span class="arabic-name">
+        وزارة التربية والتعليم
+      </span>
+
+      <span class="english-name">
+        Ministry of Education
+      </span>
+
+    </div>
+
+    <button
+      type="button"
+      class="sidebar-close"
+      aria-label="إغلاق القائمة"
+      (click)="closeSidebar()"
+    >
+
+      <i class="pi pi-times"></i>
+
+    </button>
 
   </div>
-
-
-  <div class="ministry-text">
-
-    <span class="arabic-name">
-      وزارة التربية والتعليم
-    </span>
-
-    <span class="english-name">
-      Ministry of Education
-    </span>
-
-  </div>
-
-
-  <button
-    type="button"
-    class="sidebar-close"
-    aria-label="إغلاق القائمة"
-    (click)="closeSidebar()">
-
-    <i class="pi pi-times"></i>
-
-  </button>
-
-</div>
 
 
   <!-- ==================================================
        NAVIGATION
-  =================================================== -->
+  ================================================== -->
 
   <nav class="sidebar-nav">
 
     <ul class="nav-list">
 
       @for (
-        item of navItems();
+        item of visibleNavItems();
         track item.label
       ) {
 
         <li
           class="nav-item"
-          [class.has-children]="item.children">
-
+          [class.has-children]="item.children"
+        >
 
           <!-- ==========================================
                NORMAL ITEM
@@ -78,7 +77,8 @@
               [routerLinkActiveOptions]="{
                 exact: true
               }"
-              (click)="closeSidebar()">
+              (click)="closeSidebar()"
+            >
 
               <span class="nav-icon">
 
@@ -87,7 +87,9 @@
               </span>
 
               <span class="nav-label">
+
                 {{ item.label }}
+
               </span>
 
             </a>
@@ -104,7 +106,8 @@
             <button
               type="button"
               class="nav-link group-toggle"
-              (click)="toggle(item)">
+              (click)="toggle(item)"
+            >
 
               <span class="nav-icon">
 
@@ -113,18 +116,23 @@
               </span>
 
               <span class="nav-label">
+
                 {{ item.label }}
+
               </span>
 
               <i
                 class="pi pi-chevron-down toggle-icon"
-                [class.rotated]="item.expanded">
+                [class.rotated]="item.expanded"
+              >
               </i>
 
             </button>
 
 
-            <!-- Sub Menu -->
+            <!-- ========================================
+                 SUB MENU
+            ========================================= -->
 
             @if (item.expanded) {
 
@@ -141,7 +149,8 @@
                       class="nav-sublink"
                       [routerLink]="child.route"
                       routerLinkActive="active"
-                      (click)="closeSidebar()">
+                      (click)="closeSidebar()"
+                    >
 
                       <span class="sub-dot"></span>
 
@@ -172,19 +181,41 @@
 
   <!-- ==================================================
        FOOTER
-  =================================================== -->
+  ================================================== -->
 
   <div class="sidebar-footer">
 
     <div class="footer-books">
-      <div class="booklet-stack" aria-hidden="true">
-        <span class="booklet-sheet booklet-sheet-back"></span>
-        <span class="booklet-sheet booklet-sheet-middle"></span>
-        <span class="booklet-sheet booklet-sheet-front">
-          <i class="pi pi-book"></i>
-          <b>البوكليت</b>
+
+      <div
+        class="booklet-stack"
+        aria-hidden="true"
+      >
+
+        <span
+          class="booklet-sheet booklet-sheet-back"
+        >
         </span>
+
+        <span
+          class="booklet-sheet booklet-sheet-middle"
+        >
+        </span>
+
+        <span
+          class="booklet-sheet booklet-sheet-front"
+        >
+
+          <i class="pi pi-book"></i>
+
+          <b>
+            البوكليت
+          </b>
+
+        </span>
+
       </div>
+
     </div>
 
     <div class="footer-text">
