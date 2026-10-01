@@ -25,7 +25,7 @@ export class AuthService {
 
 
   // Signal State
-  readonly currentUser = signal<AuthUser | null>(this.getStoredUser());
+  readonly currentUser = signal<AuthUser | null>(null);
   readonly userRole = computed(() => this.currentUser()?.role || '');
   readonly userRoleKey = computed(() => this.currentUser()?.roleKey || 'it');
   private readonly _profile = signal<any | null>(null);
@@ -40,78 +40,13 @@ export class AuthService {
 
   }
 
-  /**
-   * Log in user by calling the real backend API.
-   * Payload: { email, password } → POST /api/Account/login
-   */
-  // login(credentials: LoginCredentials): Observable<AuthUser> {
-  //   const email = (credentials.identifier || '').trim();
-  //   const password = (credentials.password || '').trim();
-
-  //   if (!email) {
-  //     return throwError(() => new Error('يرجى إدخال البريد الإلكتروني.'));
-  //   }
-  //   if (!password) {
-  //     return throwError(() => new Error('يرجى إدخال كلمة المرور.'));
-  //   }
-
-  //   const body: LoginRequest = { email, password };
-
-  //   return this.http.post<LoginApiResponse>(`${this.apiBase}/Account/login`, body).pipe(
-  //     map((res) => {
-  //       // Guard: API returned a failure response
-  //       if (!res.success) {
-  //         throw new Error(res.message || 'فشل تسجيل الدخول. يرجى التحقق من البريد الإلكتروني وكلمة المرور.');
-  //       }
-
-  //       const { accessToken, user } = res.data;
-
-  //       const authUser: AuthUser = {
-  //         id: user.id,
-  //         fullName: user.fullName,
-  //         email: user.email,
-  //         role: 'مستخدم',       // extend once the API returns a role field
-  //         roleKey: 'it',        // extend once the API returns a roleKey field
-  //         avatarInitials: this.extractInitials(user.fullName),
-  //         avatarTone: '#1565c0',
-  //         token: accessToken,
-  //         lastLogin: new Date().toISOString()
-  //       };
-
-  //       this.storeUser(authUser, credentials.rememberMe);
-  //       this.currentUser.set(authUser);
-  //       return authUser;
-  //     }),
-  //     catchError((err: HttpErrorResponse | Error) => {
-  //       // Status 0 = browser blocked the request (self-signed cert / CORS / network)
-  //       if (err instanceof HttpErrorResponse) {
-  //         if (err.status === 0) {
-  //           return throwError(() => new Error(
-  //             'تعذّر الاتصال بالخادم. إذا كان الخادم يستخدم شهادة SSL خاصة، ' +
-  //             'يرجى فتح هذا الرابط في المتصفح وقبول الشهادة أولاً:\n' +
-  //             `${this.apiBase.replace('/api', '')}`
-  //           ));
-  //         }
-  //         if (err.status === 401 || err.status === 403) {
-  //           return throwError(() => new Error('البريد الإلكتروني أو كلمة المرور غير صحيحة.'));
-  //         }
-  //         if (err.status >= 500) {
-  //           return throwError(() => new Error('حدث خطأ في الخادم. يرجى المحاولة لاحقاً.'));
-  //         }
-  //         // API returned an error body with a message
-  //         const apiMsg = (err.error as any)?.message;
-  //         return throwError(() => new Error(apiMsg || `خطأ (${err.status}): ${err.statusText}`));
-  //       }
-  //       // Re-throw errors thrown from map() (e.g. success: false)
-  //       return throwError(() => err);
-  //     })
-  //   );
-  // }
 profile():Observable<any>{
 
 return this.http.get<any>(`${this.appConfig.baseURL}api/Account/profile`);
 }
-
+pingSession(): Observable<unknown> {
+  return this.http.get(`${this.appConfig.baseURL}api/Auth/profile`); // غيّر المسار لمسارك الفعلي
+}
  loadProfile(forceRefresh = false): void {
     if (this.profileLoading) return;
     if (this._profile() && !forceRefresh) return;
@@ -133,7 +68,16 @@ return this.http.get<any>(`${this.appConfig.baseURL}api/Account/profile`);
   clearProfile(): void {
     this._profile.set(null);
   }
+clearSession(): void {
+  // امسح من كل الأماكن المحتملة
+  localStorage.removeItem('accessToken');
+          localStorage.removeItem('userName');
+          localStorage.removeItem('emailAddress');
+          localStorage.removeItem('isActive');
+          localStorage.removeItem('roleId');
 
+  this.clearProfile();
+}
     login(event: { email: string; password: string }) {
 
     const headers = new HttpHeaders()
@@ -304,40 +248,5 @@ logout(): Observable<any> {
     }).pipe(delay(700));
   }
 
-  // --- Helpers ---
 
-  private storeUser(user: AuthUser, rememberMe: boolean): void {
-    try {
-      const serialized = JSON.stringify(user);
-      if (rememberMe) {
-        localStorage.setItem(STORAGE_KEY, serialized);
-        if (user.token) localStorage.setItem(TOKEN_KEY, user.token);
-      } else {
-        localStorage.setItem(STORAGE_KEY, serialized);
-        if (user.token) localStorage.setItem(TOKEN_KEY, user.token);
-      }
-    } catch (e) {
-      console.warn('Storage set error', e);
-    }
-  }
-
-  private getStoredUser(): AuthUser | null {
-    try {
-      const local = localStorage.getItem(STORAGE_KEY);
-      if (local) return JSON.parse(local);
-      const session = localStorage.getItem(STORAGE_KEY);
-      if (session) return JSON.parse(session);
-    } catch {
-      // Storage unavailable or JSON invalid
-    }
-    return null;
-  }
-
-  private extractInitials(fullName: string): string {
-    const parts = (fullName || '').trim().split(/\s+/);
-    if (parts.length >= 2) {
-      return `${parts[0][0]} ${parts[1][0]}`;
-    }
-    return fullName.substring(0, 2);
-  }
 }

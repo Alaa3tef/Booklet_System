@@ -180,11 +180,7 @@ export default class LoginComponent {
     sessionStorage.getItem('accessToken')
   );
 
-  const returnUrl =
-    this.route.snapshot.queryParams['returnUrl']
-    || '/dashboard';
-
-  this.router.navigateByUrl(returnUrl);
+  this.router.navigateByUrl('/dashboard');
 
 },
 

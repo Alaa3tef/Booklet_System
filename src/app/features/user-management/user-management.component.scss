@@ -199,8 +199,113 @@
     > i { background: #f3edfe; color: #7c3aed; }
     .stat-val { color: #7c3aed; }
   }
+
+}
+.um-stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1rem;
+  width: 100%;
+  margin-bottom: 1.5rem;
 }
 
+.um-stat {
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
+
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+
+  padding: 1rem 1.25rem;
+
+  border-radius: 0.875rem;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+
+  overflow: hidden;
+}
+
+.um-stat > i {
+  flex: 0 0 auto;
+
+  width: 2.75rem;
+  height: 2.75rem;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 50%;
+
+  font-size: 1.2rem;
+}
+
+.um-stat > div {
+  min-width: 0;
+  flex: 1;
+}
+
+.stat-val {
+  display: block;
+
+  font-size: 1.5rem;
+  font-weight: 700;
+
+  line-height: 1.2;
+}
+
+.stat-lbl {
+  display: block;
+
+  margin-top: 0.25rem;
+
+  font-size: 0.875rem;
+
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+
+/* =========================================
+   TABLET
+========================================= */
+
+@media (max-width: 1024px) {
+
+  .um-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+}
+
+
+/* =========================================
+   MOBILE
+========================================= */
+
+@media (max-width: 640px) {
+
+  .um-stats {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+
+  .um-stat {
+    padding: 0.875rem 1rem;
+  }
+
+  .stat-val {
+    font-size: 1.35rem;
+  }
+
+  .stat-lbl {
+    font-size: 0.8rem;
+  }
+
+}
 
 /* ==================================================
    FILTERS
@@ -541,61 +646,82 @@
 .um-pagination {
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 0.4rem;
+  justify-content: space-between;
   flex-wrap: wrap;
-  padding: 0.5rem 0 0.25rem;
+  gap: 12px;
+  margin-top: 16px;
+  padding: 10px 14px;
+  background: #fff;
+  border: 1px solid #e3e8f2;
+  border-radius: 14px;
+  box-shadow: 0 1px 3px rgba(16, 36, 80, .05);
+}
+
+.pag-summary {
+  font-size: 13px;
+  color: #64748b;
+
+  b { color: #1e3a6e; font-weight: 700; }
+}
+
+.pag-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .pag-btn {
-  min-width: 38px;
-  height: 38px;
-  padding: 0 0.6rem;
-  border: 1px solid var(--um-border);
-  border-radius: 9px;
-  background: #fff;
-  color: var(--um-text);
-  font-family: inherit;
-  font-size: 0.84rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.18s ease;
-  display: flex;
+  min-width: 36px;
+  height: 36px;
+  padding: 0 10px;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  color: #334155;
+  background: #f4f6fb;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background .15s, color .15s, transform .15s, box-shadow .15s;
 
   &:hover:not(:disabled):not(.pag-active) {
-    background: var(--um-primary-light);
-    border-color: var(--um-primary);
-    color: var(--um-primary);
+    background: #e3ebfb;
+    color: #1e3a6e;
+    transform: translateY(-1px);
   }
 
   &:disabled {
-    opacity: 0.38;
+    opacity: .4;
     cursor: not-allowed;
   }
 
-  &.pag-active {
-    background: linear-gradient(135deg, #1565c0, #2f80ed);
-    border-color: #1565c0;
-    color: #fff;
-    box-shadow: 0 3px 10px rgba(21,101,192,0.3);
+  &:focus-visible {
+    outline: 2px solid #3b82f6;
+    outline-offset: 2px;
   }
 }
 
+.pag-active {
+  background: linear-gradient(135deg, #1e3a6e, #2f5fb8);
+  color: #fff;
+  box-shadow: 0 4px 10px rgba(30, 58, 110, .3);
+  cursor: default;
+}
+
 .pag-dots {
-  color: var(--um-muted);
-  font-size: 0.9rem;
-  padding: 0 0.2rem;
-  line-height: 38px;
+  min-width: 24px;
+  text-align: center;
+  color: #94a3b8;
+  letter-spacing: 2px;
 }
 
-.pag-info {
-  font-size: 0.78rem;
-  color: var(--um-muted);
-  margin-right: 0.5rem;
+@media (max-width: 600px) {
+  .um-pagination { justify-content: center; }
+  .pag-summary { width: 100%; text-align: center; }
 }
-
 /* ==================================================
    MODAL BACKDROP
 ================================================== */

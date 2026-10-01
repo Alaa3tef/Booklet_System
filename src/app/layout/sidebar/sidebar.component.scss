@@ -28,12 +28,26 @@
   z-index: 2100;
   overflow: hidden;
 
-  box-shadow: -3px 0 15px rgba(9, 35, 66, 0.12);
+  // مقفول: برا الشاشة ناحية اليمين
+  transform: translateX(100%);
+  box-shadow: none;
 
   transition:
     background 0.25s ease,
     color 0.25s ease,
-    transform 0.28s ease;
+    transform 0.28s ease,
+    box-shadow 0.28s ease;
+
+  // مفتوح
+  &.mobile-open {
+    transform: translateX(0);
+    box-shadow: -3px 0 15px rgba(9, 35, 66, 0.12);
+  }
+}
+
+// زر الإغلاق جوه الـ sidebar يظهر دايمًا
+.sidebar-close {
+  display: inline-flex;
 }
 
 

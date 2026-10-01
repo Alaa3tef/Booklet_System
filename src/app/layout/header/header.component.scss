@@ -8,7 +8,7 @@
 
   top: 0;
 
-  right: var(--ebs-sidebar-width);
+  right: var(--ebs-sidebar-offset, 0px);
 
   left: 0;
 
@@ -44,6 +44,8 @@
   direction: rtl;
 
   overflow: visible;
+
+  transition: right 0.28s ease;
 }
 
 
@@ -69,7 +71,8 @@
 
 .mobile-menu-btn {
 
-  display: none;
+  // display: none;
+  display: inline-flex;     // ظاهر في كل الأحجام
 
   width: 40px;
 
@@ -767,8 +770,7 @@
   top:
     var(--ebs-header-height);
 
-  right:
-    var(--ebs-sidebar-width);
+  right: var(--ebs-sidebar-offset, 0px);
 
   left: 0;
 
@@ -802,6 +804,8 @@
     0.75rem;
 
   direction: rtl;
+
+  transition: right 0.28s ease;
 }
 
 
