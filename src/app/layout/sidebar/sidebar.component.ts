@@ -206,7 +206,7 @@ export class SidebarComponent {
   toggle(item: NavItem): void {
 
     if (item.children) {
-
+     console.log("toggle")
       item.expanded = !item.expanded;
 
     }
