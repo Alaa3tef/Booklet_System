@@ -119,6 +119,7 @@ export default class CommitteeSetupComponent {
 
   createFiles(): void {
     // Hook up to the backend "generate booklet files" endpoint.
+    console.info('Generating booklet files for download...');
     this.filesGenerated.set(true);
   }
 }
