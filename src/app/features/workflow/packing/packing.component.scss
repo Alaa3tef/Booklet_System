@@ -1,4 +1,4 @@
-@import '../../../shared/styles/workflow-panel';
+@use '../../../shared/styles/workflow-panel';
 :host {
 
   --packing-purple: #7c3aed;
@@ -437,19 +437,6 @@
 
 }
 
-.success-action {
-
-  color: #198754;
-
-}
-
-.rejected-action {
-
-  color: #dc3545;
-
-}
-
-
 /* =========================================================
    Scan Dialog
    ========================================================= */
@@ -556,13 +543,6 @@
 /* =========================================================
    Scan Content
    ========================================================= */
-
-.scan-dialog-content {
-
-  padding: 1.2rem;
-
-}
-
 
 /* =========================================================
    Material
@@ -749,14 +729,6 @@
   border-radius: 12px;
 
   background: var(--packing-purple-bg);
-
-}
-
-.scanner-corners {
-
-  position: absolute;
-
-  inset: 25px;
 
 }
 
@@ -1376,44 +1348,6 @@
 
 }
 
-.reject-dialog-content {
-
-  padding: 1.5rem;
-
-}
-
-.reject-intro {
-
-  display: flex;
-
-  align-items: center;
-
-  gap: 1rem;
-
-  margin-bottom: 1.25rem;
-
-}
-
-.reject-icon {
-
-  width: 48px;
-  height: 48px;
-
-  flex-shrink: 0;
-
-  display: flex;
-
-  align-items: center;
-  justify-content: center;
-
-  border-radius: 12px;
-
-  background: rgba(220, 53, 69, .1);
-
-  color: #dc3545;
-
-}
-
 .reject-intro-text h3 {
 
   margin: 0 0 .25rem;
@@ -1453,18 +1387,6 @@
   border-radius: 12px;
 
   background: var(--packing-purple-bg);
-
-}
-
-.summary-item {
-
-  display: flex;
-
-  flex-direction: column;
-
-  gap: .3rem;
-
-  text-align: center;
 
 }
 
@@ -1520,22 +1442,6 @@
 
 }
 
-.reject-textarea {
-
-  width: 100%;
-
-  min-height: 120px;
-
-  resize: vertical;
-
-  border-radius: 10px !important;
-
-  font-family: inherit;
-
-  line-height: 1.7;
-
-}
-
 .field-footer {
 
   display: flex;
@@ -1547,24 +1453,6 @@
   color: var(--ebs-muted-local);
 
   font-size: .63rem;
-
-}
-
-.reviewers-select {
-
-  width: 100%;
-
-}
-
-.selected-reviewers {
-
-  display: flex;
-
-  flex-wrap: wrap;
-
-  gap: .35rem;
-
-  margin-top: .5rem;
 
 }
 
@@ -1611,16 +1499,6 @@
   color: #fff;
 
   font-size: .62rem;
-
-}
-
-.reviewer-info {
-
-  display: flex;
-
-  flex-direction: column;
-
-  gap: .15rem;
 
 }
 

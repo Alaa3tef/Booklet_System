@@ -2,6 +2,13 @@
 // Global styles — منظومة إنتاج البوكليت (Exam Booklet System)
 // ==========================================================================
 
+// Shared component partials (badges, status chips, action buttons, pagination…)
+@use 'app/shared/styles/shared-components';
+
+// Shared scan-dialog partials (scanner visual, steps panel, material card, reject dialog…)
+// مشترك بين: quality / packing / archiving
+@use 'app/shared/styles/scan-dialog';
+
 :root {
   --ebs-navy: #0b2e4f;
   --ebs-navy-dark: #081f38;

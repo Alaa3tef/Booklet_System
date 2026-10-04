@@ -44,9 +44,9 @@ profile():Observable<any>{
 
 return this.http.get<any>(`${this.appConfig.baseURL}api/Account/profile`);
 }
-// pingSession(): Observable<unknown> {
-//   return this.http.get(`${this.appConfig.baseURL}api/Account/profile`); // غيّر المسار لمسارك الفعلي
-// }
+pingSession(): Observable<unknown> {
+  return this.http.get(`${this.appConfig.baseURL}api/Account/profile`); // غيّر المسار لمسارك الفعلي
+}
  loadProfile(forceRefresh = false): void {
     if (this.profileLoading) return;
     if (this._profile() && !forceRefresh) return;

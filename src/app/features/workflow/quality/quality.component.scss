@@ -636,88 +636,9 @@
    Progress
    ========================================================= */
 
-.scan-progress-section {
-
-  margin-bottom: 1rem;
-
-}
-
-.progress-info {
-
-  display: flex;
-
-  align-items: center;
-  justify-content: space-between;
-
-  margin-bottom: .45rem;
-
-}
-
-.progress-info div {
-
-  display: flex;
-
-  gap: .5rem;
-
-  align-items: center;
-
-}
-
-.progress-info span {
-
-  color: var(--scan-muted);
-
-  font-size: .67rem;
-
-}
-
-.progress-info strong {
-
-  color: var(--scan-text);
-
-  font-size: .7rem;
-
-}
-
-.progress-track {
-
-  height: 6px;
-
-  overflow: hidden;
-
-  border-radius: 20px;
-
-  background: var(--scan-border);
-
-}
-
-.progress-value {
-
-  height: 100%;
-
-  border-radius: inherit;
-
-  background: var(--scan-blue);
-
-  transition: width .35s ease;
-
-}
-
-
 /* =========================================================
    Workspace
    ========================================================= */
-
-.scan-workspace {
-
-  display: grid;
-
-  grid-template-columns: 260px minmax(0, 1fr);
-
-  gap: 1rem;
-
-}
-
 
 /* =========================================================
    Steps
@@ -765,16 +686,6 @@
   color: var(--scan-muted);
 
   font-size: .58rem;
-
-}
-
-.scan-steps {
-
-  display: flex;
-
-  flex-direction: column;
-
-  gap: .4rem;
 
 }
 
@@ -834,14 +745,6 @@
 
 }
 
-.scan-step.locked {
-
-  opacity: .45;
-
-  cursor: not-allowed;
-
-}
-
 .step-number {
 
   width: 30px;
@@ -863,24 +766,6 @@
   font-size: .65rem;
 
   font-weight: 800;
-
-}
-
-.step-info {
-
-  min-width: 0;
-
-  flex: 1;
-
-}
-
-.step-info strong {
-
-  display: block;
-
-  margin-bottom: .15rem;
-
-  font-size: .68rem;
 
 }
 
@@ -912,22 +797,6 @@
 /* =========================================================
    Scanner Area
    ========================================================= */
-
-.scanner-area {
-
-  min-width: 0;
-
-}
-
-.scanner-and-data {
-
-  display: grid;
-
-  grid-template-columns: minmax(280px, .9fr) minmax(280px, 1.1fr);
-
-  gap: 1rem;
-
-}
 
 
 /* =========================================================
@@ -965,20 +834,14 @@
 }
 
 .scanner-label i {
-
   color: var(--scan-blue);
-
 }
 
 .scanner-visual {
-
   position: relative;
-
   display: flex;
-
   align-items: center;
   justify-content: center;
-
   min-height: 235px;
 
   overflow: hidden;
@@ -992,14 +855,6 @@
       transparent 60%
     ),
     var(--scan-blue-bg);
-
-}
-
-.scanner-corners {
-
-  position: absolute;
-
-  inset: 25px;
 
 }
 
@@ -1135,20 +990,13 @@
 }
 
 .scanner-loading {
-
   position: absolute;
-
   bottom: 12px;
   left: 50%;
-
   transform: translateX(-50%);
-
   display: flex;
-
   align-items: center;
-
   gap: .4rem;
-
   padding: .4rem .7rem;
 
   border-radius: 20px;
@@ -1690,44 +1538,6 @@
 
 }
 
-.reject-dialog-content {
-
-  padding: 1.5rem;
-
-}
-
-.reject-intro {
-
-  display: flex;
-
-  align-items: center;
-
-  gap: 1rem;
-
-  margin-bottom: 1.25rem;
-
-}
-
-.reject-icon {
-
-  width: 48px;
-  height: 48px;
-
-  flex-shrink: 0;
-
-  display: flex;
-
-  align-items: center;
-  justify-content: center;
-
-  border-radius: 12px;
-
-  background: rgba(220, 53, 69, .10);
-
-  color: #dc3545;
-
-}
-
 .reject-intro-text h3 {
 
   margin: 0 0 .25rem;
@@ -1767,18 +1577,6 @@
   border-radius: 12px;
 
   background: var(--ebs-blue-bg);
-
-}
-
-.summary-item {
-
-  display: flex;
-
-  flex-direction: column;
-
-  gap: .3rem;
-
-  text-align: center;
 
 }
 
@@ -1834,22 +1632,6 @@
 
 }
 
-.reject-textarea {
-
-  width: 100%;
-
-  min-height: 120px;
-
-  resize: vertical;
-
-  border-radius: 10px !important;
-
-  font-family: inherit;
-
-  line-height: 1.7;
-
-}
-
 .field-footer {
 
   display: flex;
@@ -1861,24 +1643,6 @@
   color: var(--ebs-text-muted);
 
   font-size: .68rem;
-
-}
-
-.reviewers-select {
-
-  width: 100%;
-
-}
-
-.selected-reviewers {
-
-  display: flex;
-
-  flex-wrap: wrap;
-
-  gap: .35rem;
-
-  margin-top: .5rem;
 
 }
 
@@ -1895,50 +1659,6 @@
   font-size: .62rem;
 
   font-weight: 700;
-
-}
-
-.reviewer-option {
-
-  display: flex;
-
-  align-items: center;
-
-  gap: .7rem;
-
-  width: 100%;
-
-  padding: .2rem 0;
-
-}
-
-.reviewer-avatar {
-
-  width: 28px;
-  height: 28px;
-
-  display: flex;
-
-  align-items: center;
-  justify-content: center;
-
-  border-radius: 50%;
-
-  background: var(--ebs-blue);
-
-  color: #fff;
-
-  font-size: .65rem;
-
-}
-
-.reviewer-info {
-
-  display: flex;
-
-  flex-direction: column;
-
-  gap: .15rem;
 
 }
 
@@ -1981,18 +1701,6 @@
   font-size: .72rem;
 
   line-height: 1.7;
-
-}
-
-.dialog-footer {
-
-  display: flex;
-
-  align-items: center;
-
-  justify-content: flex-end;
-
-  gap: .65rem;
 
 }
 

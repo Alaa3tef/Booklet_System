@@ -1,0 +1,601 @@
+// ==========================================================================
+// Scan Dialog Shared Styles
+// مشترك بين: quality / packing / archiving
+//
+// كل component بيعرّف CSS custom properties في :host
+// وهذا الـ partial بيستخدمها تلقائيًا.
+//
+// الـ variables المستخدمة هنا (بديل لو مش معرّفة):
+//   --sd-primary     : اللون الأساسي
+//   --sd-primary-bg  : خلفية اللون الأساسي
+//   --sd-surface     : خلفية البطاقات
+//   --sd-border      : لون الحدود
+//   --sd-text        : لون النص الرئيسي
+//   --sd-muted       : لون النص الخافت
+//   --sd-navy        : لون الـ navy
+// ==========================================================================
+
+
+// ==========================================================================
+// DIALOG HEADER
+// ==========================================================================
+
+.scan-dialog-header {
+  display: flex;
+  align-items: center;
+  gap: .7rem;
+}
+
+.dialog-title-icon,
+.dialog-icon {
+  width: 42px;
+  height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 11px;
+  background: var(--sd-primary-bg, #eaf2fc);
+  color: var(--sd-primary, #1565c0);
+  font-size: .95rem;
+}
+
+.scan-dialog-header span {
+  display: block;
+  margin-bottom: .12rem;
+  color: var(--sd-primary, #1565c0);
+  font-size: .58rem;
+  font-weight: 800;
+  letter-spacing: .1em;
+}
+
+.scan-dialog-header h3 {
+  margin: 0;
+  color: var(--sd-text, #172b4d);
+  font-size: .9rem;
+  font-weight: 800;
+}
+
+.scan-dialog-content {
+  padding: 1.2rem;
+}
+
+
+// ==========================================================================
+// MATERIAL INFO CARD
+// ==========================================================================
+
+.material-info-card,
+.material-info {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  padding: .85rem 1rem;
+  border: 1px solid var(--sd-border, #e4e9ef);
+  border-radius: 13px;
+  background: var(--sd-surface, #ffffff);
+}
+
+.material-main {
+  display: flex;
+  align-items: center;
+  gap: .65rem;
+  min-width: 0;
+}
+
+.material-icon {
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  background: var(--sd-primary-bg, #eaf2fc);
+  color: var(--sd-primary, #1565c0);
+}
+
+.material-main span,
+.material-meta span,
+.material-details span {
+  display: block;
+  margin-bottom: .15rem;
+  color: var(--sd-muted, #718096);
+  font-size: .62rem;
+}
+
+.material-main strong {
+  color: var(--sd-text, #172b4d);
+  font-size: .82rem;
+}
+
+.material-meta,
+.material-details {
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+}
+
+.material-meta strong,
+.material-details strong {
+  color: var(--sd-text, #172b4d);
+  font-size: .73rem;
+}
+
+
+// ==========================================================================
+// PROGRESS
+// ==========================================================================
+
+.scan-progress-section {
+  margin-bottom: 1rem;
+}
+
+
+// ==========================================================================
+// WORKSPACE
+// ==========================================================================
+
+.scan-workspace {
+  display: grid;
+  grid-template-columns: 260px minmax(0, 1fr);
+  gap: 1rem;
+}
+
+
+// ==========================================================================
+// STEPS PANEL
+// ==========================================================================
+
+.scan-steps-panel {
+  padding: .8rem;
+  border: 1px solid var(--sd-border, #e4e9ef);
+  border-radius: 14px;
+  background: var(--sd-surface, #ffffff);
+}
+
+.steps-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: .7rem;
+  padding: .25rem .2rem .65rem;
+  border-bottom: 1px solid var(--sd-border, #e4e9ef);
+}
+
+.steps-title span {
+  color: var(--sd-text, #172b4d);
+  font-size: .72rem;
+  font-weight: 800;
+}
+
+.steps-title small {
+  color: var(--sd-muted, #718096);
+  font-size: .58rem;
+}
+
+.scan-steps {
+  display: flex;
+  flex-direction: column;
+  gap: .4rem;
+}
+
+.scan-step {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+  width: 100%;
+  padding: .65rem;
+  border: 1px solid transparent;
+  border-radius: 11px;
+  background: transparent;
+  color: var(--sd-text, #172b4d);
+  text-align: right;
+  cursor: pointer;
+  transition: all .2s ease;
+
+  &:hover   { background: var(--sd-primary-bg, #eaf2fc); }
+
+  &.active  {
+    border-color: rgba(21, 101, 192, .18);
+    background: var(--sd-primary-bg, #eaf2fc);
+  }
+
+  &.completed .step-number {
+    background: #198754;
+    color: #fff;
+  }
+
+  &.locked {
+    opacity: .45;
+    cursor: not-allowed;
+  }
+}
+
+.step-number {
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9px;
+  background: var(--sd-border, #e4e9ef);
+  color: var(--sd-muted, #718096);
+  font-size: .65rem;
+  font-weight: 800;
+}
+
+.step-info {
+  min-width: 0;
+  flex: 1;
+}
+
+.step-info strong {
+  display: block;
+  margin-bottom: .15rem;
+  font-size: .68rem;
+}
+
+.step-info small {
+  display: block;
+  overflow: hidden;
+  color: var(--sd-muted, #718096);
+  font-size: .57rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cover-icon {
+  color: var(--sd-primary, #1565c0);
+  font-size: .75rem;
+}
+
+
+// ==========================================================================
+// SCANNER AREA
+// ==========================================================================
+
+.scanner-area { min-width: 0; }
+
+.scanner-and-data {
+  display: grid;
+  grid-template-columns: minmax(280px, .9fr) minmax(280px, 1.1fr);
+  gap: 1rem;
+}
+
+.scanner-card,
+.scan-data-card {
+  min-width: 0;
+  padding: 1rem;
+  border: 1px solid var(--sd-border, #e4e9ef);
+  border-radius: 14px;
+  background: var(--sd-surface, #ffffff);
+}
+
+
+// ==========================================================================
+// SCANNER VISUAL (corners + line)
+// ==========================================================================
+
+.scanner-visual {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 235px;
+  overflow: hidden;
+  border-radius: 12px;
+  background: var(--sd-primary-bg, #eaf2fc);
+}
+
+.scanner-corners {
+  position: absolute;
+  inset: 25px;
+}
+
+.corner {
+  position: absolute;
+  width: 27px;
+  height: 27px;
+  border-color: var(--sd-primary, #1565c0);
+  border-style: solid;
+}
+
+.corner.top-right    { top: 0;    right: 0;  border-width: 3px 3px 0 0; }
+.corner.top-left     { top: 0;    left: 0;   border-width: 3px 0 0 3px; }
+.corner.bottom-right { bottom: 0; right: 0;  border-width: 0 3px 3px 0; }
+.corner.bottom-left  { bottom: 0; left: 0;   border-width: 0 0 3px 3px; }
+
+.fake-qr {
+  width: 128px;
+  height: 128px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 8px 25px rgba(11, 46, 79, .08);
+}
+
+.qr-pattern,
+.qr-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 5px;
+  width: 92px;
+  height: 92px;
+}
+
+.qr-pattern span,
+.qr-grid span {
+  display: block;
+  border-radius: 2px;
+  background: var(--sd-navy, #0b2e4f);
+}
+
+.qr-pattern span:nth-child(2),
+.qr-pattern span:nth-child(5),
+.qr-pattern span:nth-child(7),
+.qr-grid span:nth-child(2),
+.qr-grid span:nth-child(5),
+.qr-grid span:nth-child(7) {
+  background: transparent;
+}
+
+// Scan line — يستخدم --sd-primary من الـ host
+.scanner-line,
+.scan-line {
+  position: absolute;
+  left: 27px;
+  right: 27px;
+  height: 2px;
+  background: var(--sd-primary, #1565c0);
+  box-shadow: 0 0 12px rgba(21, 101, 192, .65);
+  animation: sdScanLine 1.5s ease-in-out infinite;
+}
+
+@keyframes sdScanLine {
+  0%   { top: 30px; }
+  50%  { top: calc(100% - 30px); }
+  100% { top: 30px; }
+}
+
+.scanner-loading {
+  position: absolute;
+  bottom: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+  padding: .4rem .7rem;
+  border-radius: 20px;
+  background: var(--sd-surface, #ffffff);
+  color: var(--sd-primary, #1565c0);
+  font-size: .6rem;
+  font-weight: 700;
+}
+
+
+// ==========================================================================
+// SCAN MESSAGE
+// ==========================================================================
+
+.scan-message {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  margin-top: .8rem;
+  padding: .65rem .8rem;
+  border: 1px solid rgba(21, 101, 192, .15);
+  border-radius: 10px;
+  background: var(--sd-primary-bg, #eaf2fc);
+  color: var(--sd-muted, #718096);
+  font-size: .63rem;
+}
+
+
+// ==========================================================================
+// ROW ACTION BUTTONS
+// ==========================================================================
+
+.no-action {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  font-size: .65rem;
+  font-weight: 700;
+}
+
+.success-action { color: #198754; }
+.rejected-action { color: #dc3545; }
+
+
+// ==========================================================================
+// REJECT DIALOG (shared between quality / packing / archiving)
+// ==========================================================================
+
+.reject-header {
+  display: flex;
+  align-items: center;
+  gap: .7rem;
+
+  > i    { color: #dc3545; font-size: 1.2rem; }
+  strong { display: block; }
+  span   { display: block; margin-top: .2rem; color: var(--sd-muted, #718096); font-size: .63rem; }
+}
+
+.reject-dialog-content { padding: 1.5rem; }
+
+.reject-intro {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.reject-icon {
+  width: 48px;
+  height: 48px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  background: rgba(220, 53, 69, .10);
+  color: #dc3545;
+}
+
+.reject-intro-text {
+  h3 { margin: 0 0 .25rem; color: var(--ebs-navy, #0b2e4f); font-size: .95rem; }
+  p  { margin: 0; color: var(--sd-muted, #718096); font-size: .68rem; line-height: 1.7; }
+}
+
+.summary-item {
+  display: flex;
+  flex-direction: column;
+  gap: .3rem;
+  text-align: center;
+}
+
+.summary-label {
+  color: var(--sd-muted, #718096);
+  font-size: .62rem;
+}
+
+.summary-value {
+  color: var(--sd-navy, #0b2e4f);
+  font-size: .72rem;
+}
+
+.summary-divider {
+  width: 1px;
+  height: 32px;
+  background: var(--sd-border, #e4e9ef);
+}
+
+.dialog-field {
+  margin-bottom: 1.25rem;
+
+  > label {
+    display: block;
+    margin-bottom: .45rem;
+    color: var(--sd-navy, #0b2e4f);
+    font-size: .7rem;
+    font-weight: 800;
+  }
+}
+
+.reject-textarea {
+  width: 100%;
+  min-height: 120px;
+  resize: vertical;
+  border-radius: 10px !important;
+  font-family: inherit;
+  line-height: 1.7;
+}
+
+.field-footer {
+  display: flex;
+  justify-content: space-between;
+  margin-top: .35rem;
+  color: var(--sd-muted, #718096);
+  font-size: .63rem;
+}
+
+.reviewers-select { width: 100%; }
+
+.selected-reviewers {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .35rem;
+  margin-top: .5rem;
+}
+
+.reviewer-chip {
+  padding: .35rem .55rem;
+  border-radius: 20px;
+  background: var(--sd-primary-bg, #eaf2fc);
+  color: var(--sd-primary, #1565c0);
+  font-size: .62rem;
+  font-weight: 700;
+}
+
+.reviewer-option {
+  display: flex;
+  align-items: center;
+  gap: .7rem;
+  width: 100%;
+  padding: .2rem 0;
+}
+
+.reviewer-avatar {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--ebs-blue, #1565c0);
+  color: #fff;
+  font-size: .65rem;
+}
+
+.reviewer-info {
+  display: flex;
+  flex-direction: column;
+  gap: .15rem;
+}
+
+.reviewer-name {
+  color: var(--ebs-text, #172b4d);
+  font-size: .68rem;
+  font-weight: 700;
+}
+
+.reviewer-role {
+  color: var(--sd-muted, #718096);
+  font-size: .58rem;
+}
+
+.reject-warning {
+  display: flex;
+  align-items: flex-start;
+  gap: .65rem;
+  padding: .8rem .9rem;
+  border: 1px solid rgba(21, 101, 192, .15);
+  border-radius: 10px;
+  background: var(--sd-primary-bg, #eaf2fc);
+  color: var(--sd-muted, #718096);
+  font-size: .72rem;
+  line-height: 1.7;
+}
+
+.dialog-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: .65rem;
+}
+
+
+// ==========================================================================
+// RESPONSIVE
+// ==========================================================================
+
+@media (max-width: 900px) {
+  .scan-workspace      { grid-template-columns: 1fr; }
+  .scanner-and-data    { grid-template-columns: 1fr; }
+  .scan-steps          { display: grid; grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 600px) {
+  .material-info-card,
+  .material-info       { align-items: flex-start; flex-direction: column; }
+  .material-meta       { width: 100%; justify-content: space-between; }
+  .scan-steps          { grid-template-columns: 1fr; }
+  .summary-divider     { width: 100%; height: 1px; }
+}

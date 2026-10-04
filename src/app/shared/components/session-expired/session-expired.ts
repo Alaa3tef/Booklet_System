@@ -21,28 +21,28 @@ private readonly authService = inject(AuthService);
 private lastCheck = 0;
 
 constructor() {
-  // merge(
-  //   fromEvent(document, 'visibilitychange').pipe(
-  //     filter(() => document.visibilityState === 'visible')
-  //   ),
-  //   fromEvent(window, 'focus')
-  // )
-  //   .pipe(takeUntilDestroyed())
-  //   .subscribe(() => this.checkSession());
+  merge(
+    fromEvent(document, 'visibilitychange').pipe(
+      filter(() => document.visibilityState === 'visible')
+    ),
+    fromEvent(window, 'focus')
+  )
+    .pipe(takeUntilDestroyed())
+    .subscribe(() => this.checkSession());
 }
 
-// private checkSession(): void {
-//   // مفيش جلسة أصلًا، أو النافذة ظاهرة بالفعل
-//   if (!this.authService.getToken() || this.sessionExpired.visible()) return;
+private checkSession(): void {
+  // مفيش جلسة أصلًا، أو النافذة ظاهرة بالفعل
+  if (!this.authService.getToken() || this.sessionExpired.visible()) return;
 
-//   // منع تكرار الفحص لو الحدثين اتنفذوا مع بعض
-//   const now = Date.now();
-//   if (now - this.lastCheck < 3000) return;
-//   this.lastCheck = now;
+  // منع تكرار الفحص لو الحدثين اتنفذوا مع بعض
+  const now = Date.now();
+  if (now - this.lastCheck < 3000) return;
+  this.lastCheck = now;
 
-//   // أي 401 "revoked" هيتعالج في الـ interceptor ويفتح النافذة
-//   // this.authService.pingSession().subscribe({ error: () => {} });
-// }
+  // أي 401 "revoked" هيتعالج في الـ interceptor ويفتح النافذة
+  this.authService.pingSession().subscribe({ error: () => {} });
+}
 goToLogin(): void {
   this.sessionExpired.hide();
   this.router.navigate(['/login']);

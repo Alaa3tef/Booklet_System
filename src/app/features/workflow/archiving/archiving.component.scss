@@ -1,14 +1,9 @@
-@import '../../../shared/styles/workflow-panel';
+@use '../../../shared/styles/workflow-panel';
 
 :host {
   display: block;
   direction: rtl;
 }
-
-
-/* =========================================================
-   SEARCH
-========================================================= */
 
 .search-card {
   background: #fff;
@@ -48,7 +43,6 @@
   padding: 9px 14px;
   cursor: pointer;
   transition: 0.2s;
-
   display: inline-flex;
   align-items: center;
   gap: 7px;
@@ -125,17 +119,12 @@
     .p-select-placeholder {
       color: #94a3b8;
     }
+  }
 
-    .p-select-dropdown {
-      color: #64748b;
-    }
+  .p-select-dropdown {
+    color: #64748b;
   }
 }
-
-
-/* =========================================================
-   TABLE
-========================================================= */
 
 .table-card {
   background: #fff;
@@ -526,66 +515,10 @@
    PROGRESS
 ========================================================= */
 
-.scan-progress-section {
-  margin-bottom: 1rem;
-}
-
-.progress-info {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-
-  margin-bottom: 0.45rem;
-}
-
-.progress-info div {
-  display: flex;
-  gap: 0.5rem;
-  align-items: center;
-}
-
-.progress-info span {
-  color: var(--scan-muted);
-  font-size: 0.67rem;
-}
-
-.progress-info strong {
-  color: var(--scan-text);
-  font-size: 0.7rem;
-}
-
-.progress-track {
-  height: 6px;
-
-  overflow: hidden;
-
-  border-radius: 20px;
-
-  background: var(--scan-border);
-}
-
-.progress-value {
-  height: 100%;
-
-  border-radius: inherit;
-
-  background: var(--scan-blue);
-
-  transition: width 0.35s ease;
-}
-
 
 /* =========================================================
    WORKSPACE
 ========================================================= */
-
-.scan-workspace {
-  display: grid;
-
-  grid-template-columns: 260px minmax(0, 1fr);
-
-  gap: 1rem;
-}
 
 
 /* =========================================================
@@ -621,12 +554,6 @@
 .steps-title small {
   color: var(--scan-muted);
   font-size: 0.58rem;
-}
-
-.scan-steps {
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
 }
 
 .scan-step {
@@ -695,19 +622,6 @@
   font-weight: 800;
 }
 
-.step-info {
-  min-width: 0;
-  flex: 1;
-}
-
-.step-info strong {
-  display: block;
-
-  margin-bottom: 0.15rem;
-
-  font-size: 0.68rem;
-}
-
 .step-info small {
   display: block;
 
@@ -730,18 +644,6 @@
 /* =========================================================
    SCANNER AREA
 ========================================================= */
-
-.scanner-area {
-  min-width: 0;
-}
-
-.scanner-and-data {
-  display: grid;
-
-  grid-template-columns: minmax(280px, 0.9fr) minmax(280px, 1.1fr);
-
-  gap: 1rem;
-}
 
 .scanner-card {
   padding: 1rem;
@@ -795,11 +697,6 @@
       transparent 60%
     ),
     var(--scan-blue-bg);
-}
-
-.scanner-corners {
-  position: absolute;
-  inset: 25px;
 }
 
 .corner {

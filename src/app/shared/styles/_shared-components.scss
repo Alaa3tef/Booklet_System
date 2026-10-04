@@ -1,0 +1,192 @@
+﻿// ==========================================================================
+// Shared Component Styles
+// مكوّنات مشتركة بين عدة صفحات
+// يُستورد مرة واحدة من styles.scss العام
+// ==========================================================================
+
+
+// ==========================================================================
+// STATUS CHIP  — used in: user-management, user-permissions
+// ==========================================================================
+
+.status-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.28rem 0.75rem;
+  border-radius: 99px;
+  font-size: 0.76rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.chip-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.chip-active {
+  background: #e6f7ed;
+  color: #16a34a;
+
+  .chip-dot { background: #16a34a; }
+}
+
+.chip-inactive {
+  background: #fef0f0;
+  color: #b91c1c;
+
+  .chip-dot { background: #b91c1c; }
+}
+
+
+// ==========================================================================
+// ROLE BADGE  — used in: user-management, user-permissions
+// ==========================================================================
+
+.role-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.7rem;
+  border-radius: 7px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.role-admin    { background: #ede3fc; color: #5b21b6; }
+.role-it       { background: #dceeff; color: #0b5db5; }
+.role-planning { background: #d5f3f1; color: #0b6e66; }
+.role-printing { background: #d8f5e4; color: #116633; }
+.role-quality  { background: #fff0dc; color: #8a4700; }
+.role-packing  { background: #ede3fc; color: #5b21b6; }
+.role-archiving{ background: #e0e8f2; color: #0b2e4f; }
+
+.role-badge {
+  &.role-tone-navy   { background: #e0e7f5; color: #1e3a6e; }
+  &.role-tone-blue   { background: #dbeafe; color: #1d4ed8; }
+  &.role-tone-teal   { background: #d5f5f0; color: #0f6b5f; }
+  &.role-tone-green  { background: #d7f5e0; color: #166534; }
+  &.role-tone-orange { background: #fde8d7; color: #9a4a12; }
+  &.role-tone-purple { background: #ede3fb; color: #5b2ea6; }
+}
+
+
+// ==========================================================================
+// ACTION BUTTONS  — used in: user-management, archiving
+// ==========================================================================
+
+.action-btns {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.action-btn {
+  width: 34px;
+  height: 34px;
+  border: none;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: background 0.18s, transform 0.15s;
+
+  &:hover  { transform: scale(1.1); }
+  &:active { transform: scale(0.96); }
+}
+
+.btn-deactivate {
+  background: #fff3e0;
+  color: #e65100;
+  &:hover { background: #ffe0b2; }
+}
+
+.btn-activate {
+  background: #e6f7ed;
+  color: #16a34a;
+  &:hover { background: #c6f0d5; }
+}
+
+.btn-delete {
+  background: #fff0f0;
+  color: #dc2626;
+  &:hover { background: #ffd5d5; }
+}
+
+
+// ==========================================================================
+// PROGRESS BAR  — used in: quality, archiving
+// ==========================================================================
+
+.progress-track {
+  height: 6px;
+  overflow: hidden;
+  border-radius: 20px;
+  background: var(--scan-border, var(--ebs-border, #e3e8ef));
+}
+
+.progress-value {
+  height: 100%;
+  border-radius: inherit;
+  background: var(--scan-blue, var(--ebs-blue, #1565c0));
+  transition: width 0.35s ease;
+}
+
+.progress-info {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.45rem;
+
+  div    { display: flex; gap: 0.5rem; align-items: center; }
+  span   { color: var(--scan-muted, var(--ebs-text-muted, #6b7280)); font-size: 0.67rem; }
+  strong { color: var(--scan-text, var(--ebs-text, #1f2937)); font-size: 0.7rem; }
+}
+
+
+// ==========================================================================
+// PAGINATION  — used in: user-management, planning
+// ==========================================================================
+
+.pag-btn {
+  min-width: 36px;
+  height: 36px;
+  padding: 0 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  color: #334155;
+  background: #f4f6fb;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, transform 0.15s, box-shadow 0.15s;
+
+  &:hover:not(:disabled):not(.pag-active) {
+    background: #e3ebfb;
+    color: #1e3a6e;
+    transform: translateY(-1px);
+  }
+  &:disabled { opacity: 0.4; cursor: not-allowed; }
+  &:focus-visible { outline: 2px solid #3b82f6; outline-offset: 2px; }
+}
+
+.pag-active {
+  background: linear-gradient(135deg, #1e3a6e, #2f5fb8);
+  color: #fff;
+  box-shadow: 0 4px 10px rgba(30, 58, 110, 0.3);
+  cursor: default;
+}
+
+.pag-dots    { min-width: 24px; text-align: center; color: #94a3b8; letter-spacing: 2px; }
+.pag-controls { display: flex; align-items: center; gap: 6px; }
+.pag-summary  { font-size: 13px; color: #64748b; b { color: #1e3a6e; font-weight: 700; } }

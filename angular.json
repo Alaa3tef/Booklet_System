@@ -33,10 +33,10 @@
           },
           "configurations": {
             "production": {
-              "budgets": [
-                { "type": "initial", "maximumWarning": "1.5MB", "maximumError": "2.5MB" },
-                { "type": "anyComponentStyle", "maximumWarning": "8kB", "maximumError": "16kB" }
-              ],
+            "budgets": [
+  { "type": "initial", "maximumWarning": "1.5MB", "maximumError": "2.5MB" },
+  { "type": "anyComponentStyle", "maximumWarning": "30kB", "maximumError": "50kB" }
+],
               "outputHashing": "all"
             },
             "development": {

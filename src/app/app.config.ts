@@ -16,12 +16,11 @@ export const appConfig: ApplicationConfig = {
   providers: [
     MessageService,
     provideZoneChangeDetection({ eventCoalescing: true }),
-    provideRouter(routes),provideHttpClient(
-  withInterceptorsFromDi()
-),
     provideRouter(routes),
-    provideHttpClient(withInterceptors([authInterceptor]),
-),
+    provideHttpClient(
+      withInterceptors([authInterceptor]),
+      withInterceptorsFromDi()
+    ),
     provideAnimationsAsync(),
     providePrimeNG({
       ripple: true,
