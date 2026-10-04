@@ -10,7 +10,7 @@
     <button
       type="button"
       class="mobile-menu-btn"
-      aria-label="فتح القائمة"
+      [attr.aria-label]="sidebarOpen ? 'طي القائمة' : 'فتح القائمة'"
       (click)="toggleMenu()"
     >
       <i class="pi pi-bars"></i>

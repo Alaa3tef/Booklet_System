@@ -270,9 +270,9 @@
   [resizable]="false"
   [dismissableMask]="true"
   [contentStyle]="{ padding: '0', overflow: 'visible' }"
-  [style]="{ background: 'transparent', border: 'none', 'box-shadow': 'none', width: '760px', maxWidth: '95vw' }">
+  [style]="{ background: 'transparent', border: 'none', 'box-shadow': 'none', width: '860px', maxWidth: '95vw' }">
 
-  <div class="um-modal um-modal-add" dir="rtl">
+  <div class="um-modal um-modal-add" [class.um-modal-edit]="isEdit()" dir="rtl">
 
     <!-- HEADER -->
     <div class="modal-header">
@@ -344,6 +344,7 @@
             [options]="formStatusOptions"
             optionLabel="label"
             optionValue="value"
+
             [ngModel]="form().status"
             (onChange)="updateForm('status', $event.value)"
             [fluid]="true"

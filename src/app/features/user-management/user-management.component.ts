@@ -499,17 +499,15 @@ if (!this.formValid()) {
     });
   }
 
-  // ---------- TOGGLE STATUS (PUT) ----------
+  // ---------- TOGGLE STATUS ----------
   toggleStatus(u: AppUser): void {
-    this.userManagement.updateUser(u.id, {
-      fullName: u.fullName,
-      email:    u.email,
-      roleId:   u.roleId,
-      isActive: !u.isActive
-    }).subscribe({
-      next: () => {
+    this.userManagement.changeStatus(u.id, !u.isActive).subscribe({
+      next: (res) => {
         this.loadUsers();
-        //this.loadStats();
+        this.toast.success(
+         res.message ?? (u.isActive ? 'تم تعطيل المستخدم بنجاح' : 'تم تفعيل المستخدم بنجاح'),
+         u.isActive ? 'تعطيل مستخدم' : 'تفعيل مستخدم'
+        );
       },
       error: err => console.error('Update user error:', err)
     });

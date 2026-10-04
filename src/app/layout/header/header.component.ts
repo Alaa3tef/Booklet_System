@@ -61,6 +61,9 @@ export class HeaderComponent implements OnInit, OnDestroy {
   @Input()
   userRole = 'Super Admin';
 
+  @Input()
+  sidebarOpen = false;
+
   /* =====================================================
      OUTPUT
   ===================================================== */

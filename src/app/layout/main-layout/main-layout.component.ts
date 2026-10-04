@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, HostListener, OnInit, inject } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { ActivatedRoute, NavigationEnd, Router } from '@angular/router';
 import { filter } from 'rxjs';
@@ -15,7 +15,8 @@ import { AuthService } from '../../core/services/auth.service';
 })
 export class MainLayoutComponent implements OnInit {
   private readonly authService = inject(AuthService);
-  sidebarOpen = false;
+  private isDesktopLayout = typeof window !== 'undefined' && window.innerWidth >= 992;
+  sidebarOpen = this.isDesktopLayout;
 
   get userName(): string {
     return this.authService.currentUser()?.fullName || 'أحمد محمد';
@@ -67,6 +68,18 @@ export class MainLayoutComponent implements OnInit {
    * غلق الـ Sidebar
    */
   closeSidebar(): void {
-    this.sidebarOpen = false;
+    if (!this.isDesktopLayout) {
+      this.sidebarOpen = false;
+    }
+  }
+
+  @HostListener('window:resize')
+  onWindowResize(): void {
+    const isDesktopLayout = window.innerWidth >= 992;
+
+    if (isDesktopLayout !== this.isDesktopLayout) {
+      this.isDesktopLayout = isDesktopLayout;
+      this.sidebarOpen = isDesktopLayout;
+    }
   }
 }
