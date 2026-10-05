@@ -257,7 +257,7 @@
             </label>
 
 
-            <button
+            <!-- <button
               type="button"
               class="template-btn"
               (click)="downloadTemplate()"
@@ -269,7 +269,7 @@
 
               <i class="pi pi-download"></i>
 
-            </button>
+            </button> -->
 
           </div>
 
@@ -385,7 +385,29 @@
 
           </div>
 
+<!-- Result message -->
+@if (filesGenerated() || saveError()) {
+  <div
+    class="result-banner"
+    [class.is-success]="filesGenerated()"
+    [class.is-error]="!!saveError()"
+    role="status">
 
+    <span class="result-banner-icon">
+      <i class="pi" [class.pi-check]="filesGenerated()" [class.pi-exclamation-triangle]="!!saveError()"></i>
+    </span>
+
+    <div class="result-banner-text">
+      @if (filesGenerated()) {
+        <b>تم إنشاء الملفات بنجاح</b>
+        <small>وأصبحت جاهزة لمرحلة الطباعة</small>
+      } @else {
+        <b>{{ saveError() }}</b>
+      }
+    </div>
+
+  </div>
+}
           <!-- =================================================
                FOOTER
           ================================================== -->
@@ -428,19 +450,15 @@
 
 
               <button
-                type="button"
-                class="btn btn-primary"
-                (click)="createFiles()"
-              >
+  type="button"
+  class="btn btn-primary"
+  [disabled]="!uploadedFile() || saving()"
+  (click)="createFiles()">
 
-                <span>
-                  تم إنشاء الملفات
-                </span>
+  <span>{{ saving() ? 'جارٍ الحفظ...' : 'تم إنشاء الملفات' }}</span>
+  <i class="pi" [class.pi-cog]="!saving()" [class.pi-spin]="saving()" [class.pi-spinner]="saving()"></i>
 
-                <i class="pi pi-cog"></i>
-
-              </button>
-
+</button>
             </div>
 
           </div>
@@ -562,34 +580,7 @@
       </section>
 
 
-      <!-- RESULT -->
-      @if (filesGenerated()) {
 
-        <section class="side-card result-card">
-
-          <div class="result-icon">
-            <i class="pi pi-check"></i>
-          </div>
-
-          <div>
-
-            <h4>
-              النتيجة
-            </h4>
-
-            <p class="result-title">
-              تم إنشاء الملفات بنجاح
-            </p>
-
-            <p class="result-sub">
-              وأصبحت جاهزة لمرحلة الطباعة
-            </p>
-
-          </div>
-
-        </section>
-
-      }
 
     </aside>
 

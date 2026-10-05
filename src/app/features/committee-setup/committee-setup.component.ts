@@ -1,4 +1,4 @@
-import { Component, computed, signal } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 
@@ -10,6 +10,8 @@ import { TooltipModule } from 'primeng/tooltip';
 import { CardModule } from 'primeng/card';
 import { DividerModule } from 'primeng/divider';
 import { CommitteeRow, SelectOption, StepItem } from '../../core/models/committee.model';
+import { MessageService } from 'primeng/api';
+import { CommitteeService } from './service/committee-service';
 
 @Component({
   selector: 'app-committee-setup',
@@ -78,23 +80,9 @@ export default class CommitteeSetupComponent {
   selectedGovernorate = this.governorates[0].value;
 
   // ---- File upload state ----
-  readonly uploadedFile = signal<{ name: string; sizeKb: number } | null>({
-    name: 'اللجان_القاهرة_لغة_عربية.xlsx',
-    sizeKb: 125
-  });
 
-  onFileSelected(event: Event): void {
-    const input = event.target as HTMLInputElement;
-    const file = input.files?.[0];
-    if (file) {
-      this.uploadedFile.set({ name: file.name, sizeKb: Math.round(file.size / 1024) });
-    }
-  }
 
-  downloadTemplate(): void {
-    // Hook up to a real template URL / API endpoint.
-    console.info('Downloading committees Excel template...');
-  }
+
 
   // ---- Preview table ----
   readonly rows = signal<CommitteeRow[]>([
@@ -110,16 +98,68 @@ export default class CommitteeSetupComponent {
     this.rows().reduce((sum, row) => sum + row.bookletCount, 0)
   );
 
-  readonly filesGenerated = signal(true);
 
-  cancel(): void {
-    this.uploadedFile.set(null);
-    this.rows.set([]);
-  }
+ private readonly committeeService = inject(CommitteeService);
+private readonly toast = inject(MessageService);
 
-  createFiles(): void {
-    // Hook up to the backend "generate booklet files" endpoint.
-    console.info('Generating booklet files for download...');
-    this.filesGenerated.set(true);
-  }
+private selectedFile: File | null = null;
+
+readonly uploadedFile  = signal<{ name: string; sizeKb: number } | null>(null);  // كان فيه ملف وهمي
+readonly saving        = signal(false);
+readonly filesGenerated = signal(false);                                          // كانت true
+readonly saveError     = signal('');
+
+onFileSelected(event: Event): void {
+  const input = event.target as HTMLInputElement;
+  const file = input.files?.[0];
+  if (!file) return;
+
+  this.selectedFile = file;
+  this.uploadedFile.set({ name: file.name, sizeKb: Math.round(file.size / 1024) });
+  this.filesGenerated.set(false);
+  this.saveError.set('');
+
+  input.value = '';   // يسمح باختيار نفس الملف تاني
+}
+
+cancel(): void {
+  this.selectedFile = null;
+  this.uploadedFile.set(null);
+  this.rows.set([]);
+  this.filesGenerated.set(false);
+  this.saveError.set('');
+}
+
+createFiles(): void {
+  if (!this.selectedFile || this.saving()) return;
+
+  this.saving.set(true);
+  this.saveError.set('');
+
+  this.committeeService
+    .uploadCommittees(
+      this.selectedFile,
+      this.selectedGovernorate,
+      this.selectedSubject,
+      this.selectedRound
+    )
+    .subscribe({
+      next: () => {
+        this.saving.set(false);
+        this.filesGenerated.set(true);
+        this.toast.add({
+          severity: 'success',
+          summary: 'تمت العملية',
+          detail: 'تم إنشاء الملفات بنجاح',
+          life: 3500
+        });
+      },
+      error: err => {
+        console.error('Upload error:', err);
+        this.saving.set(false);
+        this.filesGenerated.set(false);
+        this.saveError.set(err?.error?.message ?? 'تعذّر حفظ الملف. حاول مرة أخرى.');
+      }
+    });
+}
 }
