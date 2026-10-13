@@ -10,7 +10,7 @@ import { TooltipModule } from 'primeng/tooltip';
 import { CardModule } from 'primeng/card';
 import { DividerModule } from 'primeng/divider';
 import { CommitteeRow, SelectOption, StepItem } from '../../core/models/committee.model';
-
+import { InputTextModule } from 'primeng/inputtext';
 @Component({
   selector: 'app-committee-setup',
   standalone: true,
@@ -23,7 +23,7 @@ imports: [
   ButtonModule,
   DividerModule,
   TagModule,
-  TooltipModule
+  TooltipModule , InputTextModule
 ],
   templateUrl: './committee-setup.component.html',
   styleUrl: './committee-setup.component.scss'
@@ -55,27 +55,33 @@ export default class CommitteeSetupComponent {
     }
   ]);
 
-  // ---- Filters ----
-  readonly rounds: SelectOption[] = [
-    { label: 'الدور الأول 2026', value: 'round1-2026' },
-    { label: 'الدور الثاني 2026', value: 'round2-2026' }
-  ];
-  readonly subjects: SelectOption[] = [
-    { label: 'اللغة العربية', value: 'arabic' },
-    { label: 'اللغة الإنجليزية', value: 'english' },
-    { label: 'الرياضيات', value: 'math' },
-    { label: 'العلوم', value: 'science' }
-  ];
-  readonly governorates: SelectOption[] = [
-    { label: 'القاهرة', value: 'cairo' },
-    { label: 'الجيزة', value: 'giza' },
-    { label: 'الإسكندرية', value: 'alexandria' },
-    { label: 'الدقهلية', value: 'dakahlia' }
-  ];
+// ---- Filters ----
 
-  selectedRound = this.rounds[0].value;
-  selectedSubject = this.subjects[0].value;
-  selectedGovernorate = this.governorates[0].value;
+readonly rounds: SelectOption[] = [
+  { label: 'الدور الأول', value: 'round1' },
+  { label: 'الدور الثاني', value: 'round2' }
+];
+
+readonly subjects: SelectOption[] = [
+  { label: 'اللغة العربية', value: 'arabic' },
+  { label: 'اللغة الإنجليزية', value: 'english' },
+  { label: 'الرياضيات', value: 'math' },
+  { label: 'العلوم', value: 'science' }
+];
+
+readonly governorates: SelectOption[] = [
+  { label: 'القاهرة', value: 'cairo' },
+  { label: 'الجيزة', value: 'giza' },
+  { label: 'الإسكندرية', value: 'alexandria' },
+  { label: 'الدقهلية', value: 'dakahlia' }
+];
+
+selectedRound = this.rounds[0].value;
+selectedSubject = this.subjects[0].value;
+selectedGovernorate = this.governorates[0].value;
+
+// السنة الافتراضية
+selectedYear: number = 27;
 
   // ---- File upload state ----
   readonly uploadedFile = signal<{ name: string; sizeKb: number } | null>({

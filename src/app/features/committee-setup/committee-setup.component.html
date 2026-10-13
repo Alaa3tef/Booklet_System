@@ -129,65 +129,94 @@
         <!-- ===================================================
              FILTERS
         ==================================================== -->
-        <!-- <div class="filters-grid">
+      
+<!-- FILTERS -->
+<section class="committee-filters">
 
-          <div class="field">
+  <div class="filters-header">
+    <div class="filters-title">
+      <i class="pi pi-sliders-h"></i>
 
-            <label>
-              المحافظة
-              <span class="required">*</span>
-            </label>
+      <div>
+        <h4>بيانات إعداد اللجان</h4>
+        <p>حددي المحافظة والدور والسنة قبل رفع ملف اللجان</p>
+      </div>
+    </div>
 
-            <p-select
-              [options]="governorates"
-              [(ngModel)]="selectedGovernorate"
-              optionLabel="label"
-              optionValue="value"
-              placeholder="اختر المحافظة"
-              styleClass="w-full"
-            ></p-select>
+    <span class="required-hint">
+      <span class="required">*</span>
+      حقول مطلوبة
+    </span>
+  </div>
 
-          </div>
+  <div class="filters-grid">
 
+    <!-- Governorate -->
+    <div class="field">
+      <label for="governorate">
+        المحافظة
+        <span class="required">*</span>
+      </label>
 
-          <div class="field">
+      <p-select
+        inputId="governorate"
+        [options]="governorates"
+        [(ngModel)]="selectedGovernorate"
+        optionLabel="label"
+        optionValue="value"
+        placeholder="اختر المحافظة"
+        styleClass="w-full"
+        appendTo="body"
+      ></p-select>
+    </div>
 
-            <label>
-              المادة
-              <span class="required">*</span>
-            </label>
+    <!-- Round -->
+    <div class="field">
+      <label for="round">
+        الدور
+        <span class="required">*</span>
+      </label>
 
-            <p-select
-              [options]="subjects"
-              [(ngModel)]="selectedSubject"
-              optionLabel="label"
-              optionValue="value"
-              placeholder="اختر المادة"
-              styleClass="w-full"
-            ></p-select>
+      <p-select
+        inputId="round"
+        [options]="rounds"
+        [(ngModel)]="selectedRound"
+        optionLabel="label"
+        optionValue="value"
+        placeholder="اختر الدور"
+        styleClass="w-full"
+        appendTo="body"
+      ></p-select>
+    </div>
 
-          </div>
+    <!-- Year -->
+    <div class="field year-field">
+      <label for="examYear">
+        رقم السنة
+        <span class="required">*</span>
+      </label>
 
+      <div class="year-input-wrapper">
+        <i class="pi pi-calendar"></i>
 
-          <div class="field">
+        <input
+          id="examYear"
+          type="number"
+          pInputText
+          [(ngModel)]="selectedYear"
+          placeholder="أدخل رقم السنة"
+          min="1"
+          max="99"
+          step="1"
+          class="year-input"
+        />
+      </div>
 
-            <label>
-              الدور
-              <span class="required">*</span>
-            </label>
+    </div>
 
-            <p-select
-              [options]="rounds"
-              [(ngModel)]="selectedRound"
-              optionLabel="label"
-              optionValue="value"
-              placeholder="اختر الدور"
-              styleClass="w-full"
-            ></p-select>
+  </div>
+</section>
 
-          </div>
-
-        </div> -->
 
 
         <!-- ===================================================
@@ -504,7 +533,7 @@
 
           <li>
             <i class="pi pi-check"></i>
-            اختيار المادة
+            اختيار الدور
           </li>
 
           <li>

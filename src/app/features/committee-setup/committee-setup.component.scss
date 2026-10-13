@@ -1360,3 +1360,182 @@ margin-bottom: 14px;
   }
 
 }
+
+
+/* ==============================
+   Committee Filters
+============================== */
+
+.committee-filters {
+  margin: 1.5rem 0;
+  padding: 1.5rem;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  direction: rtl;
+}
+
+.filters-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.filters-title {
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+}
+
+.filters-title > i {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  border-radius: 12px;
+  background: #e8f1fc;
+  color: #1565c0;
+  font-size: 1.25rem;
+}
+
+.filters-title h4 {
+  margin: 0 0 0.35rem;
+  color: #0b2e4f;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.filters-title p {
+  margin: 0;
+  color: #64748b;
+  font-size: 0.85rem;
+  line-height: 1.6;
+}
+
+.required-hint {
+  color: #64748b;
+  font-size: 0.8rem;
+  white-space: nowrap;
+}
+
+.required {
+  color: #dc2626;
+  margin-inline-start: 3px;
+}
+
+.filters-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1.25rem;
+}
+
+.committee-filters .field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  min-width: 0;
+}
+
+.committee-filters .field label {
+  color: #334155;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.committee-filters p-select {
+  width: 100%;
+}
+
+.committee-filters
+  :host ::ng-deep .p-select {
+  width: 100%;
+  min-height: 44px;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  background: #fff;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.year-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-width: 0;
+}
+
+.year-input-wrapper > i {
+  position: absolute;
+  right: 12px;
+  z-index: 1;
+  color: #64748b;
+  font-size: 0.85rem;
+  pointer-events: none;
+}
+
+.year-input {
+  width: 100%;
+  height: 39px;
+  min-height: 39px;
+  padding: 0.4rem 2.25rem 0.4rem 0.65rem;
+  border: 1px solid #c8d9e8;
+  border-radius: 7px;
+  background: #fff;
+  color: #123b69;
+  font-size: 13px;
+  box-sizing: border-box;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.year-input:focus {
+  border-color: #0875d1;
+  outline: none;
+  box-shadow: 0 0 0 3px rgb(8 117 209 / 12%);
+}
+
+.year-input::placeholder {
+  color: #94a3b8;
+}
+
+.field-hint {
+  color: #64748b;
+  font-size: 0.75rem;
+}
+
+/* Responsive */
+
+@media (max-width: 900px) {
+  .filters-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .year-field {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 576px) {
+  .committee-filters {
+    padding: 1rem;
+    border-radius: 12px;
+  }
+
+  .filters-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 1rem;
+  }
+
+  .year-field {
+    grid-column: auto;
+  }
+
+  .filters-header {
+    align-items: flex-start;
+  }
+}
+
