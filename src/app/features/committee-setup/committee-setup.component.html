@@ -1,5 +1,7 @@
-
 <div class="committee-setup-page" dir="rtl">
+
+ <!-- PAGE BODY (الـ hero جوه الـ grid عشان الـ side يبدأ جنبه) -->
+ <div class="page-body">
 
   <!-- HERO -->
   <section class="hero-banner">
@@ -49,14 +51,10 @@
 
   </section>
 
-  <!-- PAGE BODY -->
-  <div class="page-body">
-
     <!-- MAIN COLUMN -->
     <main class="main-column">
 
       <section class="setup-card">
-
 
         <!-- SETUP + UPLOAD -->
         <section class="committee-filters setup-form-section">
@@ -68,7 +66,7 @@
 
               <div>
                 <h4>بيانات إعداد اللجان</h4>
-                <p>حددي بيانات الامتحان ثم ارفعي ملف اللجان.</p>
+                <p>حدد بيانات الامتحان ثم ارفع ملف اللجان.</p>
               </div>
             </div>
 
@@ -79,273 +77,212 @@
 
           </div>
 
-          <div class="setup-fields-grid">
+          <!-- FIELDS (1 column) + UPLOAD (2 columns) -->
+          <div class="setup-layout">
 
-            <div class="field">
-              <label for="governorate">
-                المحافظة <span class="required">*</span>
-              </label>
+            <div class="setup-fields-grid">
 
-              <p-select
-                inputId="governorate"
-                [options]="governorates"
-                [(ngModel)]="selectedGovernorate"
-                optionLabel="label"
-                optionValue="value"
-                placeholder="اختر المحافظة"
-                appendTo="body"
-                styleClass="w-full">
-              </p-select>
-            </div>
+              <div class="field">
+                <label for="governorate">
+                  المحافظة <span class="required">*</span>
+                </label>
 
-            <div class="field">
-              <label for="subject">
-                المادة <span class="required">*</span>
-              </label>
-
-              <p-select
-                inputId="subject"
-                [options]="subjects"
-                [(ngModel)]="selectedSubject"
-                optionLabel="label"
-                optionValue="value"
-                placeholder="اختر المادة"
-                appendTo="body"
-                styleClass="w-full">
-              </p-select>
-            </div>
-
-            <div class="field">
-              <label for="round">
-                الدور <span class="required">*</span>
-              </label>
-
-              <p-select
-                inputId="round"
-                [options]="rounds"
-                [(ngModel)]="selectedRound"
-                optionLabel="label"
-                optionValue="value"
-                placeholder="اختر الدور"
-                appendTo="body"
-                styleClass="w-full">
-              </p-select>
-            </div>
-
-            <div class="field year-field">
-              <label for="examYear">
-                 السنة الدراسية <span class="required">*</span>
-              </label>
-
-              <div class="year-input-wrapper">
-                <i class="pi pi-calendar"></i>
-
-                <input
-                  id="examYear"
-                  type="number"
-                  pInputText
-                  [(ngModel)]="selectedYear"
-                  min="1"
-                  max="99"
-                  step="1"
-                  class="year-input"
-                  placeholder="أدخل رقم السنة">
+                <p-select
+                  inputId="governorate"
+                  [options]="governorates"
+                  [(ngModel)]="selectedGovernorate"
+                  optionLabel="label"
+                  optionValue="value"
+                  placeholder="اختر المحافظة"
+                  appendTo="body"
+                  styleClass="w-full">
+                </p-select>
               </div>
+
+              <div class="field">
+                <label for="round">
+                  الدور <span class="required">*</span>
+                </label>
+
+                <p-select
+                  inputId="round"
+                  [options]="rounds"
+                  [(ngModel)]="selectedRound"
+                  optionLabel="label"
+                  optionValue="value"
+                  placeholder="اختر الدور"
+                  appendTo="body"
+                  styleClass="w-full">
+                </p-select>
+              </div>
+
+              <div class="field year-field">
+                <label for="examYear">
+                  السنة الدراسية <span class="required">*</span>
+                </label>
+
+                <div class="year-input-wrapper">
+                  <i class="pi pi-calendar"></i>
+
+                  <input
+                    id="examYear"
+                    type="number"
+                    pInputText
+                    [(ngModel)]="selectedYear"
+                    min="1"
+                    max="99"
+                    step="1"
+                    class="year-input"
+                    placeholder="أدخل رقم السنة">
+                </div>
+              </div>
+
+            </div>
+
+            <!-- PROFESSIONAL FILE UPLOAD -->
+            <div class="upload-column">
+              <section
+                class="upload-panel"
+                [class.is-dragging]="isDragOver()"
+                [class.has-file]="!!uploadedFile()"
+                [class.is-disabled]="saving()"
+                (dragover)="onDragOver($event)"
+                (dragleave)="onDragLeave($event)"
+                (drop)="onFileDrop($event)"
+              >
+                <!-- Upload header -->
+                <div class="upload-panel-header">
+                  <div class="upload-heading">
+                    <span class="upload-heading-icon">
+                      <i class="pi pi-cloud-upload"></i>
+                    </span>
+
+                    <div>
+                      <h4>رفع ملف بيانات اللجان</h4>
+                      <p>ارفع ملف Excel لمراجعة بيانات اللجان وتجهيزها على المنظومة.</p>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Hidden file input -->
+                <input
+                  #excelInput
+                  id="committeeExcelFile"
+                  class="native-file-input"
+                  type="file"
+                  accept=".xlsx,.xls"
+                  [disabled]="saving()"
+                  (change)="onFileSelected($event)"
+                />
+
+                <!-- Empty state -->
+                @if (!uploadedFile()) {
+                  <label
+                    for="committeeExcelFile"
+                    class="upload-dropzone"
+                    [class.dropzone-disabled]="saving()"
+                  >
+                    <span class="dropzone-illustration">
+                      <i class="pi pi-file-excel"></i>
+                      <span class="upload-arrow">
+                        <i class="pi pi-arrow-up"></i>
+                      </span>
+                    </span>
+
+                    <span class="dropzone-title">
+                      اسحب ملف Excel
+                    </span>
+
+                    <span class="dropzone-description">
+                      أو اختار الملف من جهازك لبدء رفع البيانات
+                    </span>
+
+                    <span class="browse-file-btn">
+                      <i class="pi pi-folder-open"></i>
+                      تصفح الملفات
+                    </span>
+
+                    <span class="file-format-info">
+                      <span class="format-chip">XLS</span>
+                      <span class="format-chip">XLSX</span>
+                      <span class="format-separator"></span>
+                      الحد الأقصى للحجم حسب إعدادات الخادم
+                    </span>
+                  </label>
+                }
+
+                <!-- Selected file state -->
+                @if (uploadedFile(); as file) {
+                  <div class="selected-file-card">
+                    <div class="selected-file-icon">
+                      <i class="pi pi-file-excel"></i>
+                    </div>
+
+                    <div class="selected-file-details">
+                      <span class="file-status">
+                        <i class="pi pi-check-circle"></i>
+                        الملف جاهز للإرسال
+                      </span>
+
+                      <strong class="selected-file-name" [title]="file.name">
+                        {{ file.name }}
+                      </strong>
+
+                      <div class="selected-file-meta">
+                        <span>
+                          <i class="pi pi-database"></i>
+                          {{ file.sizeKb }} KB
+                        </span>
+
+                        <span class="file-meta-divider"></span>
+
+                        <span class="file-extension">
+                          {{ file.name.toLowerCase().endsWith('.xlsx') ? 'XLSX' : 'XLS' }}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div class="selected-file-actions">
+                      <label
+                        for="committeeExcelFile"
+                        class="change-file-btn"
+                        [class.action-disabled]="saving()"
+                        [attr.aria-disabled]="saving()"
+                        [attr.tabindex]="saving() ? -1 : 0"
+                        (keydown.enter)="!saving() && excelInput.click()"
+                        (keydown.space)="!saving() && $event.preventDefault(); !saving() && excelInput.click()"
+                      >
+                        <i class="pi pi-sync"></i>
+                        تغيير الملف
+                      </label>
+
+                      <button
+                        type="button"
+                        class="remove-file-btn"
+                        [disabled]="saving()"
+                        (click)="removeSelectedFile(); excelInput.value = ''"
+                      >
+                        <i class="pi pi-trash"></i>
+                        إزالة
+                      </button>
+                    </div>
+                  </div>
+                }
+
+                <!-- Error message -->
+                @if (saveError()) {
+                  <div class="upload-inline-error" role="alert">
+                    <i class="pi pi-exclamation-circle"></i>
+                    <span>{{ saveError() }}</span>
+                  </div>
+                }
+              </section>
             </div>
 
           </div>
-
-          <!-- FILE UPLOAD -->
-       
-<!-- PROFESSIONAL FILE UPLOAD -->
-<section
-  class="upload-panel"
-  [class.is-dragging]="isDragOver()"
-  [class.has-file]="!!uploadedFile()"
-  [class.is-disabled]="saving()"
-  (dragover)="onDragOver($event)"
-  (dragleave)="onDragLeave($event)"
-  (drop)="onFileDrop($event)"
->
-  <!-- Upload header -->
-  <div class="upload-panel-header">
-    <div class="upload-heading">
-      <span class="upload-heading-icon">
-        <i class="pi pi-cloud-upload"></i>
-      </span>
-
-      <div>
-        <h4>رفع ملف بيانات اللجان</h4>
-        <p>ارفعي ملف Excel لمراجعة بيانات اللجان وتجهيزها على المنظومة.</p>
-      </div>
-    </div>
-
-    
-  </div>
-
-  <!-- Hidden file input -->
-  <input
-    #excelInput
-    id="committeeExcelFile"
-    class="native-file-input"
-    type="file"
-    accept=".xlsx,.xls"
-    [disabled]="saving()"
-    (change)="onFileSelected($event)"
-  />
-
-  <!-- Empty state -->
-  @if (!uploadedFile()) {
-    <label
-      for="committeeExcelFile"
-      class="upload-dropzone"
-      [class.dropzone-disabled]="saving()"
-    >
-      <span class="dropzone-illustration">
-        <i class="pi pi-file-excel"></i>
-        <span class="upload-arrow">
-          <i class="pi pi-arrow-up"></i>
-        </span>
-      </span>
-
-      <span class="dropzone-title">
-        اسحب ملف Excel 
-      </span>
-
-      <span class="dropzone-description">
-        أو اختاري الملف من جهازك لبدء رفع البيانات
-      </span>
-
-      <span class="browse-file-btn">
-        <i class="pi pi-folder-open"></i>
-        تصفح الملفات
-      </span>
-
-      <span class="file-format-info">
-        <span class="format-chip">XLS</span>
-        <span class="format-chip">XLSX</span>
-        <span class="format-separator"></span>
-        الحد الأقصى للحجم حسب إعدادات الخادم
-      </span>
-    </label>
-  }
-
-  <!-- Selected file state -->
-  @if (uploadedFile(); as file) {
-    <div class="selected-file-card">
-      <div class="selected-file-icon">
-        <i class="pi pi-file-excel"></i>
-      </div>
-
-      <div class="selected-file-details">
-        <span class="file-status">
-          <i class="pi pi-check-circle"></i>
-          الملف جاهز للإرسال
-        </span>
-
-        <strong class="selected-file-name" [title]="file.name">
-          {{ file.name }}
-        </strong>
-
-        <div class="selected-file-meta">
-          <span>
-            <i class="pi pi-database"></i>
-            {{ file.sizeKb }} KB
-          </span>
-
-          <span class="file-meta-divider"></span>
-
-          <span class="file-extension">
-            {{ file.name.toLowerCase().endsWith('.xlsx') ? 'XLSX' : 'XLS' }}
-          </span>
-        </div>
-      </div>
-
-      <div class="selected-file-actions">
-        <label
-          for="committeeExcelFile"
-          class="change-file-btn"
-          [class.action-disabled]="saving()"
-          [attr.aria-disabled]="saving()"
-          [attr.tabindex]="saving() ? -1 : 0"
-          (keydown.enter)="!saving() && excelInput.click()"
-          (keydown.space)="!saving() && $event.preventDefault(); !saving() && excelInput.click()"
-        >
-          <i class="pi pi-sync"></i>
-          تغيير الملف
-        </label>
-
-        <button
-          type="button"
-          class="remove-file-btn"
-          [disabled]="saving()"
-          (click)="removeSelectedFile(); excelInput.value = ''"
-        >
-          <i class="pi pi-trash"></i>
-          إزالة
-        </button>
-      </div>
-    </div>
-  }
-
-  <!-- Error message -->
-  @if (saveError()) {
-    <div class="upload-inline-error" role="alert">
-      <i class="pi pi-exclamation-circle"></i>
-      <span>{{ saveError() }}</span>
-    </div>
-  }
-
-  <!-- Footer -->
-  <!-- <div class="upload-panel-footer">
-    <div class="upload-security-note">
-      <i class="pi pi-shield"></i>
-      <span>
-        الصيغ المدعومة XLS وXLSX. تأكدي من صحة الملف قبل الإرسال.
-      </span>
-    </div>
-
-    <div class="upload-footer-status">
-      <span
-        class="upload-status-dot"
-        [class.status-ready]="!!uploadedFile()"
-      ></span>
-
-      {{ uploadedFile() ? 'تم اختيار الملف' : 'في انتظار اختيار الملف' }}
-    </div>
-  </div> -->
-</section>
-
-
-@if (filesGenerated()) {
-  <div class="result-banner is-success" role="status">
-    <span class="result-banner-icon">
-      <i class="pi pi-check"></i>
-    </span>
-
-    <div class="result-banner-text">
-      <b>تم تنفيذ العملية بنجاح</b>
-      <small>تم استلام استجابة نجاح من الخدمة.</small>
-    </div>
-  </div>
-}
-
-<!-- 
-          @if (saveError()) {
-
-            <div class="inline-error" role="alert">
-              <i class="pi pi-exclamation-circle"></i>
-              <span>{{ saveError() }}</span>
-            </div>
-
-          } -->
+          <!-- /SETUP LAYOUT -->
 
           <div class="setup-form-footer">
-
-            <div class="upload-summary">
-              <i class="pi pi-info-circle"></i>
-              تأكدي من صحة البيانات قبل تنفيذ العملية.
-            </div>
 
             <button
               type="button"
@@ -390,9 +327,11 @@
           }
 
         </section>
-</section>
-<br>
-<section class="setup-card">
+      </section>
+
+      <br>
+
+      <section class="setup-card">
         <!-- TABLE -->
         <section class="preview-section">
 
@@ -404,9 +343,9 @@
                 بيانات اللجان
               </h4>
 
-              <p>
+              <!-- <p>
                 ابحثي وفلّتري النتائج ثم صدّري التقرير المطلوب.
-              </p>
+              </p> -->
             </div>
 
             <button
@@ -478,20 +417,6 @@
                   styleClass="w-full">
                 </p-select>
               </div>
-
-              <!-- <div class="filter-reset">
-
-                <button
-                  type="button"
-                  class="reset-filters-btn"
-                  (click)="resetTableFilters()">
-
-                  <i class="pi pi-refresh"></i>
-                  إعادة ضبط الفلاتر
-
-                </button>
-
-              </div> -->
 
             </div>
 
@@ -582,35 +507,14 @@
 
           </div>
 
-          <!-- TABLE FOOTER -->
-          <div class="preview-footer">
-
-            <div class="totals">
-
-              <span>
-                إجمالي اللجان في الجدول:
-                <strong>{{ filteredTotalCommittees() }}</strong>
-              </span>
-
-              <span class="divider"></span>
-
-              <span>
-                إجمالي البوكليتات:
-                <strong>{{ filteredTotalBooklets() | number }}</strong>
-              </span>
-
-            </div>
-
-          </div>
-
         </section>
-</section>
-    
+      </section>
 
     </main>
 
-    <!-- SIDE COLUMN -->
+    <!-- SIDE COLUMN (sticky) -->
     <aside class="side-column">
+     <div class="side-fixed">
 
       <section class="side-card">
 
@@ -691,6 +595,7 @@
 
       </section>
 
+     </div>
     </aside>
 
   </div>
