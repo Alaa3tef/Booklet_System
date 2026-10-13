@@ -8,7 +8,10 @@ import {
   ResetPasswordRequest
 } from '../models/auth.model';
 import { AppConfigService } from '../../shared/services/app-config.service';
-
+import {
+  catchError,
+  shareReplay,
+} from 'rxjs';
 const STORAGE_KEY = 'ebs_current_user';
 const TOKEN_KEY = 'ebs_auth_token';
 
@@ -20,6 +23,11 @@ export class AuthService {
   private readonly router = inject(Router);
   private readonly appConfig = inject(AppConfigService);
 
+
+  private readonly ACCESS_TOKEN_KEY = 'accessToken';
+private readonly REFRESH_TOKEN_KEY = 'refreshToken';
+
+private refreshRequest$: Observable<string> | null = null;
 
   // Demo accounts for instant one-click login and testing
 
@@ -47,6 +55,76 @@ return this.http.get<any>(`${this.appConfig.baseURL}api/Account/profile`);
 pingSession(): Observable<unknown> {
   return this.http.get(`${this.appConfig.baseURL}api/Account/profile`); // غيّر المسار لمسارك الفعلي
 }
+
+getRefreshToken(): string | null {
+  return localStorage.getItem(this.REFRESH_TOKEN_KEY);
+}
+
+
+refreshAccessToken(): Observable<string> {
+  // لو فيه Refresh شغال بالفعل، استخدمي نفس الطلب
+  if (this.refreshRequest$) {
+    return this.refreshRequest$;
+  }
+
+  const refreshToken = this.getRefreshToken();
+
+  if (!refreshToken) {
+    return throwError(
+      () => new Error('Refresh token غير متوفر')
+    );
+  }
+
+  this.refreshRequest$ = this.http
+    .post<any>(
+      `${this.appConfig.baseURL}api/Account/refresh-token`,
+      { refreshToken }
+    )
+    .pipe(
+      map((response) => {
+        const data = response?.data ?? response;
+
+        if (!data?.accessToken) {
+          throw new Error(
+            'لم يرجع السيرفر Access Token جديد'
+          );
+        }
+
+        return data;
+      }),
+
+      tap((data) => {
+        localStorage.setItem(
+          this.ACCESS_TOKEN_KEY,
+          data.accessToken
+        );
+
+        // بعض الـ APIs بترجع Refresh Token جديد
+        if (data.refreshToken) {
+          localStorage.setItem(
+            this.REFRESH_TOKEN_KEY,
+            data.refreshToken
+          );
+        }
+      }),
+
+      map((data) => data.accessToken as string),
+
+      catchError((error) => {
+        this.clearSession();
+        return throwError(() => error);
+      }),
+
+      finalize(() => {
+        this.refreshRequest$ = null;
+      }),
+
+      shareReplay(1)
+    );
+
+  return this.refreshRequest$;
+}
+
  loadProfile(forceRefresh = false): void {
     if (this.profileLoading) return;
     if (this._profile() && !forceRefresh) return;
@@ -69,13 +147,14 @@ pingSession(): Observable<unknown> {
     this._profile.set(null);
   }
 clearSession(): void {
-  // امسح من كل الأماكن المحتملة
-  localStorage.removeItem('accessToken');
-          localStorage.removeItem('userName');
-          localStorage.removeItem('emailAddress');
-          localStorage.removeItem('isActive');
-          localStorage.removeItem('roleId');
+  localStorage.removeItem(this.ACCESS_TOKEN_KEY);
+  localStorage.removeItem(this.REFRESH_TOKEN_KEY);
+  localStorage.removeItem('userName');
+  localStorage.removeItem('emailAddress');
+  localStorage.removeItem('isActive');
+  localStorage.removeItem('roleId');
 
+  this.currentUser.set(null);
   this.clearProfile();
 }
     login(event: { email: string; password: string }) {
@@ -112,13 +191,21 @@ clearSession(): void {
 
             const data = response.data;
 
-       if (data.accessToken) {
+       
+if (data.accessToken) {
+  localStorage.setItem(
+    this.ACCESS_TOKEN_KEY,
+    data.accessToken
+  );
+}
 
-              localStorage.setItem(
-                'accessToken',
-                data.accessToken
-              );
-            }
+if (data.refreshToken) {
+  localStorage.setItem(
+    this.REFRESH_TOKEN_KEY,
+    data.refreshToken
+  );
+}
+
 
             // ==================================================
             // User information
@@ -156,9 +243,9 @@ ChangePassword(data:any):Observable<any>{
 return this.http.post<any>(`${this.appConfig.baseURL}api/Account/change-password`, data);
 }
 
- getToken(): string | null {
-    return localStorage.getItem('accessToken');
-  }
+getToken(): string | null {
+  return localStorage.getItem(this.ACCESS_TOKEN_KEY);
+}
  isAuthenticated(): boolean {
     return !!this.getToken();
   }
