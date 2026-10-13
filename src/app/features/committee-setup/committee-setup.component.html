@@ -467,13 +467,12 @@
 
                 <p-select
                   inputId="tableAdministration"
-                  [options]="administrationOptions()"
+                  [options]="administrations"
                   [ngModel]="filterAdministration()"
                   (ngModelChange)="onFilterAdministrationChange($event)"
                   optionLabel="label"
                   optionValue="value"
                   placeholder="كل الإدارات"
-                  [disabled]="!filterGovernorate()"
                   [showClear]="true"
                   appendTo="body"
                   styleClass="w-full">
