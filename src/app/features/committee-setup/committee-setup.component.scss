@@ -1154,74 +1154,62 @@ margin-bottom: 14px;
 /* ============================================================
    RESULT
 ============================================================ */
-
-.result-card {
-  display: flex;
-
-  align-items: flex-start;
-
-  gap: 10px;
-
-  border-color: #ccefe0;
-
-  background:
-    linear-gradient(
-      135deg,
-      #f1fcf7,
-      #e5f8ef
-    );
-}
-
-.result-icon {
-  width: 30px;
-  height: 30px;
-
-  flex-shrink: 0;
-
+.result-banner {
   display: flex;
   align-items: center;
-  justify-content: center;
+  gap: 12px;
+  width: 100%;
+  margin: 14px 0 4px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  font-size: 14px;
+  line-height: 1.5;
+  animation: banner-in .2s ease;
 
-  border-radius: 50%;
+  .result-banner-icon {
+    flex-shrink: 0;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+  }
 
-  background: #16865b;
+  .result-banner-text {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
 
-  color: #ffffff;
+    b     { font-size: 14px; font-weight: 700; }
+    small { font-size: 12px; font-weight: 500; opacity: .85; }
+  }
 
-  font-size: 16px;
+  // نفس ألوان status-pill الأخضر
+  &.is-success {
+    background: #e8f8ee;
+    border-color: #b7e4c7;
+    color: #15803d;
+
+    .result-banner-icon { background: #15803d; color: #fff; }
+  }
+
+  // نفس نمط الأحمر
+  &.is-error {
+    background: #fdecec;
+    border-color: #f5c2c2;
+    color: #b91c1c;
+
+    .result-banner-icon { background: #b91c1c; color: #fff; }
+  }
 }
 
-.result-card h4 {
-  margin: 0 0 2px;
-
-  padding: 0;
-
-  border: 0;
-
-  color: #147449;
-
-  font-size: 15px;
+@keyframes banner-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
-
-.result-title {
-  margin: 0;
-
-  color: #147449;
-
-  font-size: 13px;
-  font-weight: 800;
-}
-
-.result-sub {
-  margin: 1px 0 0;
-
-  color: #3b6655;
-
-  font-size: 11px;
-  font-weight: 600;
-}
-
-
 /* ============================================================
    RESPONSIVE
 ============================================================ */
