@@ -337,23 +337,7 @@
           <label for="f-role">الدور</label>
         </p-floatlabel>
 
-        <!-- Status -->
-        <p-floatlabel variant="on">
-          <p-select
-            id="f-status"
-            [options]="formStatusOptions"
-            optionLabel="label"
-            optionValue="value"
-
-            [ngModel]="form().status"
-            (onChange)="updateForm('status', $event.value)"
-            [fluid]="true"
-            appendTo="body">
-          </p-select>
-
-          <label for="f-status">الحالة</label>
-        </p-floatlabel>
-
+      
         <!-- Email -->
         <div class="span-2">
           <p-floatlabel variant="on">

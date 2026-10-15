@@ -431,7 +431,7 @@ if (!this.formValid()) {
       fullName: f.fullName.trim(),
       email:    f.email.trim(),
       roleId:   Number(f.roleKey),
-      isActive: f.status === 'active'
+      //isActive: f.status === 'active'
     };
 
     const request$ = editing

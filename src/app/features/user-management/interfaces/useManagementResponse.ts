@@ -30,7 +30,7 @@ export interface UserRequest {
   fullName: string;
   email: string;
   roleId: number;
-  isActive: boolean;
+  //isActive: boolean;
   password?: string; // required on create only
 }
 
