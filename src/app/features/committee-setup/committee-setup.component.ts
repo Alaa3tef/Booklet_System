@@ -188,6 +188,49 @@ readonly isDragOver = signal(false);
   readonly first = signal(0);
   readonly pageSize = signal(5);
 
+readonly currentPage = computed(
+  () => Math.floor(this.first() / this.pageSize()) + 1
+);
+
+readonly totalPages = computed(() =>
+  Math.max(1, Math.ceil(this.filteredRows().length / this.pageSize()))
+);
+
+readonly visiblePages = computed<(number | 'dots')[]>(() => {
+  const total = this.totalPages();
+  const current = this.currentPage();
+
+  // لو 3 صفحات أو أقل، اعرضيهم كلهم
+  if (total <= 3) {
+    return Array.from({ length: total }, (_, i) => i + 1);
+  }
+
+  // أول 3 صفحات
+  if (current <= 2) {
+    return [1, 2, 3, 'dots', total];
+  }
+
+  // آخر 3 صفحات
+  if (current >= total - 1) {
+    return [1, 'dots', total - 2, total - 1, total];
+  }
+
+  // الصفحات في المنتصف
+  return [1, 'dots', current, 'dots', total];
+});
+
+goToPage(page: number): void {
+  const total = this.totalPages();
+
+  if (page < 1 || page > total) return;
+
+  this.first.set((page - 1) * this.pageSize());
+}
+
+changePageSize(size: number): void {
+  this.pageSize.set(size);
+  this.first.set(0);
+}
   readonly administrationOptions = computed<SelectOption[]>(() => {
     const governorate = this.filterGovernorate();
 
@@ -278,9 +321,226 @@ readonly isDragOver = signal(false);
       status: 'valid',
       governorate: 'dakahlia',
       subject: 'math'
-    }
+    },
+     {
+      index: 1,
+      committeeNumber: '101',
+      schoolName: 'مدرسة مصطفى كامل',
+      educationalAdministration: 'شرق القاهرة',
+      bookletCount: 20,
+      status: 'valid',
+      governorate: 'cairo',
+      subject: 'arabic'
+    },
+    {
+      index: 2,
+      committeeNumber: '102',
+      schoolName: 'مدرسة روض الفرج',
+      educationalAdministration: 'روض الفرج',
+      bookletCount: 20,
+      status: 'valid',
+      governorate: 'cairo',
+      subject: 'arabic'
+    },
+    {
+      index: 3,
+      committeeNumber: '103',
+      schoolName: 'مدرسة العباسية',
+      educationalAdministration: 'غرب القاهرة',
+      bookletCount: 25,
+      status: 'valid',
+      governorate: 'cairo',
+      subject: 'english'
+    },
+    {
+      index: 4,
+      committeeNumber: '104',
+      schoolName: 'مدرسة شبرا الثانوية',
+      educationalAdministration: 'شبرا',
+      bookletCount: 20,
+      status: 'valid',
+      governorate: 'cairo',
+      subject: 'math'
+    },
+    {
+      index: 5,
+      committeeNumber: '105',
+      schoolName: 'مدرسة الحلمية',
+      educationalAdministration: 'مصر الجديدة',
+      bookletCount: 30,
+      status: 'invalid',
+      governorate: 'cairo',
+      subject: 'science'
+    },
+    {
+      index: 6,
+      committeeNumber: '201',
+      schoolName: 'مدرسة الجيزة الثانوية',
+      educationalAdministration: 'شمال الجيزة',
+      bookletCount: 25,
+      status: 'valid',
+      governorate: 'giza',
+      subject: 'arabic'
+    },
+    {
+      index: 7,
+      committeeNumber: '301',
+      schoolName: 'مدرسة المنصورة الرسمية',
+      educationalAdministration: 'شرق المنصورة',
+      bookletCount: 20,
+      status: 'valid',
+      governorate: 'dakahlia',
+      subject: 'math'
+    },
+    {
+      index: 1,
+      committeeNumber: '101',
+      schoolName: 'مدرسة مصطفى كامل',
+      educationalAdministration: 'شرق القاهرة',
+      bookletCount: 20,
+      status: 'valid',
+      governorate: 'cairo',
+      subject: 'arabic'
+    },
+    {
+      index: 2,
+      committeeNumber: '102',
+      schoolName: 'مدرسة روض الفرج',
+      educationalAdministration: 'روض الفرج',
+      bookletCount: 20,
+      status: 'valid',
+      governorate: 'cairo',
+      subject: 'arabic'
+    },
+    {
+      index: 3,
+      committeeNumber: '103',
+      schoolName: 'مدرسة العباسية',
+      educationalAdministration: 'غرب القاهرة',
+      bookletCount: 25,
+      status: 'valid',
+      governorate: 'cairo',
+      subject: 'english'
+    },
+    {
+      index: 4,
+      committeeNumber: '104',
+      schoolName: 'مدرسة شبرا الثانوية',
+      educationalAdministration: 'شبرا',
+      bookletCount: 20,
+      status: 'valid',
+      governorate: 'cairo',
+      subject: 'math'
+    },
+    {
+      index: 5,
+      committeeNumber: '105',
+      schoolName: 'مدرسة الحلمية',
+      educationalAdministration: 'مصر الجديدة',
+      bookletCount: 30,
+      status: 'invalid',
+      governorate: 'cairo',
+      subject: 'science'
+    },
+    {
+      index: 6,
+      committeeNumber: '201',
+      schoolName: 'مدرسة الجيزة الثانوية',
+      educationalAdministration: 'شمال الجيزة',
+      bookletCount: 25,
+      status: 'valid',
+      governorate: 'giza',
+      subject: 'arabic'
+    },
+    {
+      index: 7,
+      committeeNumber: '301',
+      schoolName: 'مدرسة المنصورة الرسمية',
+      educationalAdministration: 'شرق المنصورة',
+      bookletCount: 20,
+      status: 'valid',
+      governorate: 'dakahlia',
+      subject: 'math'
+    },
+     {
+      index: 1,
+      committeeNumber: '101',
+      schoolName: 'مدرسة مصطفى كامل',
+      educationalAdministration: 'شرق القاهرة',
+      bookletCount: 20,
+      status: 'valid',
+      governorate: 'cairo',
+      subject: 'arabic'
+    },
+    {
+      index: 2,
+      committeeNumber: '102',
+      schoolName: 'مدرسة روض الفرج',
+      educationalAdministration: 'روض الفرج',
+      bookletCount: 20,
+      status: 'valid',
+      governorate: 'cairo',
+      subject: 'arabic'
+    },
+    {
+      index: 3,
+      committeeNumber: '103',
+      schoolName: 'مدرسة العباسية',
+      educationalAdministration: 'غرب القاهرة',
+      bookletCount: 25,
+      status: 'valid',
+      governorate: 'cairo',
+      subject: 'english'
+    },
+    {
+      index: 4,
+      committeeNumber: '104',
+      schoolName: 'مدرسة شبرا الثانوية',
+      educationalAdministration: 'شبرا',
+      bookletCount: 20,
+      status: 'valid',
+      governorate: 'cairo',
+      subject: 'math'
+    },
+    {
+      index: 5,
+      committeeNumber: '105',
+      schoolName: 'مدرسة الحلمية',
+      educationalAdministration: 'مصر الجديدة',
+      bookletCount: 30,
+      status: 'invalid',
+      governorate: 'cairo',
+      subject: 'science'
+    },
+    {
+      index: 6,
+      committeeNumber: '201',
+      schoolName: 'مدرسة الجيزة الثانوية',
+      educationalAdministration: 'شمال الجيزة',
+      bookletCount: 25,
+      status: 'valid',
+      governorate: 'giza',
+      subject: 'arabic'
+    },
+    {
+      index: 7,
+      committeeNumber: '301',
+      schoolName: 'مدرسة المنصورة الرسمية',
+      educationalAdministration: 'شرق المنصورة',
+      bookletCount: 20,
+      status: 'valid',
+      governorate: 'dakahlia',
+      subject: 'math'
+    },
   ]);
 
+  readonly paginatedRows = computed<CommitteeTableRow[]>(() => {
+  const rows = this.filteredRows();
+  const start = this.first();
+  const end = start + this.pageSize();
+
+  return rows.slice(start, end);
+});
   // =========================================================
   // COMPUTED TABLE RESULTS
   // =========================================================

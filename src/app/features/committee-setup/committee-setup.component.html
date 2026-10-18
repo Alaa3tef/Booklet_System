@@ -426,18 +426,11 @@
           <div class="table-wrapper">
 
             <p-table
-              [value]="filteredRows()"
-              dataKey="committeeNumber"
-              styleClass="committee-table"
-              responsiveLayout="scroll"
-              [paginator]="true"
-              [first]="first()"
-              [rows]="pageSize()"
-              [rowsPerPageOptions]="[5, 10, 20, 50]"
-              [showCurrentPageReport]="true"
-              currentPageReportTemplate="عرض {first} إلى {last} من إجمالي {totalRecords} لجنة"
-              [alwaysShowPaginator]="false"
-              (onPage)="onPage($event)">
+              [value]="paginatedRows()"
+  dataKey="committeeNumber"
+  styleClass="committee-table"
+  responsiveLayout="scroll"
+  [paginator]="false">
 
               <ng-template pTemplate="header">
                 <tr>
@@ -503,6 +496,79 @@
               </ng-template>
 
             </p-table>
+
+            @if (filteredRows().length > 0) {
+  <div class="custom-paginator" dir="rtl">
+
+    <!-- عدد الصفوف -->
+    <div class="paginator-size">
+      <span>عدد الصفوف</span>
+
+      <p-select
+        [options]="[
+          { label: '5', value: 5 },
+          { label: '10', value: 10 },
+          { label: '20', value: 20 },
+          { label: '50', value: 50 }
+        ]"
+        [ngModel]="pageSize()"
+        (ngModelChange)="changePageSize($event)"
+        optionLabel="label"
+        optionValue="value"
+        appendTo="body"
+        styleClass="page-size-select"
+      />
+    </div>
+
+    <!-- أرقام الصفحات -->
+    <div class="paginator-pages">
+
+      <button
+        type="button"
+        class="page-nav"
+        [disabled]="currentPage() === 1"
+        (click)="goToPage(currentPage() - 1)"
+        aria-label="الصفحة السابقة"
+      >
+        <i class="pi pi-chevron-right"></i>
+      </button>
+
+      @for (page of visiblePages(); track $index) {
+        @if (page === 'dots') {
+          <span class="page-dots">...</span>
+        } @else {
+          <button
+            type="button"
+            class="page-number"
+            [class.active]="currentPage() === page"
+            [attr.aria-current]="currentPage() === page ? 'page' : null"
+            (click)="goToPage(page)"
+          >
+            {{ page }}
+          </button>
+        }
+      }
+
+      <button
+        type="button"
+        class="page-nav"
+        [disabled]="currentPage() === totalPages()"
+        (click)="goToPage(currentPage() + 1)"
+        aria-label="الصفحة التالية"
+      >
+        <i class="pi pi-chevron-left"></i>
+      </button>
+
+    </div>
+
+    <span class="paginator-info">
+      صفحة {{ currentPage() }} من {{ totalPages() }}
+    </span>
+
+  </div>
+}
+
+
 
           </div>
 
