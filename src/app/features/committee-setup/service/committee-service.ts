@@ -8,7 +8,6 @@ import { AppConfigService } from '../../../shared/services/app-config.service';
 export class CommitteeService {
   private readonly http = inject(HttpClient);
   private readonly appConfig = inject(AppConfigService);
-
   private readonly baseUrl = `${this.appConfig.baseURL}api/Committees`;
 
   uploadCommittees(
