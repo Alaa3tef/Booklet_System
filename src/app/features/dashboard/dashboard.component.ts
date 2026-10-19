@@ -442,6 +442,7 @@ export default class DashboardComponent implements AfterViewChecked, AfterViewIn
   }
 
   ngOnDestroy(): void {
+    console.log("hello")
     if (this.chartInitTimer) {
       window.clearTimeout(this.chartInitTimer);
     }
