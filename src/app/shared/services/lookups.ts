@@ -8,7 +8,7 @@ import { HttpClient } from '@angular/common/http';
 export class Lookups {
   private readonly http = inject(HttpClient);
   private readonly appConfig = inject(AppConfigService);
-  private readonly baseUrl = `${this.appConfig.baseURL}api/Lookups`;
+  private readonly baseUrl = `${this.appConfig.baseURL}api`;
 
   getLookupGovernorateData() {
     return this.http.get(`${this.baseUrl}/Governorates`);
