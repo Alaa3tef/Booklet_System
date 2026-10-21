@@ -1,0 +1,282 @@
+<p-toast position="top-center" />
+
+<div class="us-page" dir="rtl">
+
+  <!-- ==================================================
+       HERO
+  =================================================== -->
+  <section class="us-hero">
+    <div class="us-hero-icon">
+      <i class="pi pi-shield"></i>
+    </div>
+    <div class="us-hero-text">
+      <h2>جلسات المستخدمين</h2>
+      <p>مراقبة جلسات الدخول وإنهاء الجلسات النشطة فورياً</p>
+    </div>
+    <button class="us-refresh-btn" id="btn-refresh-sessions" (click)="load()">
+      <i class="pi pi-refresh" [class.pi-spin]="loading()"></i>
+      <span>تحديث</span>
+    </button>
+  </section>
+
+
+  <!-- ==================================================
+       STATS
+  =================================================== -->
+  <section class="us-stats">
+
+    <div class="us-stat total">
+      <div class="stat-icon"><i class="pi pi-users"></i></div>
+      <div>
+        <span class="stat-val">{{ rows().length }}</span>
+        <span class="stat-lbl">إجمالي المستخدمين</span>
+      </div>
+    </div>
+
+    <div class="us-stat online">
+      <div class="stat-icon online-pulse">
+        <i class="pi pi-wifi"></i>
+      </div>
+      <div>
+        <span class="stat-val">{{ onlineCount() }}</span>
+        <span class="stat-lbl">توكن نشط (متصل)</span>
+      </div>
+    </div>
+
+    <div class="us-stat offline">
+      <div class="stat-icon"><i class="pi pi-wifi-off"></i></div>
+      <div>
+        <span class="stat-val">{{ offlineCount() }}</span>
+        <span class="stat-lbl">مسجّل الخروج</span>
+      </div>
+    </div>
+
+  </section>
+
+
+  <!-- ==================================================
+       FILTERS
+  =================================================== -->
+  <section class="us-filters">
+
+    <div class="us-search-wrap">
+      <i class="pi pi-search"></i>
+      <input
+        pInputText
+        type="text"
+        id="input-search-sessions"
+        placeholder="بحث بالاسم أو البريد أو الـ IP..."
+        [value]="searchInput()"
+        (input)="onSearchInput($any($event.target).value)"
+      />
+    </div>
+
+    <p-select
+      id="filter-session-status"
+      [options]="statusOptions"
+      optionLabel="label"
+      optionValue="value"
+      [ngModel]="statusFilter()"
+      (ngModelChange)="onStatusChange($event)"
+      styleClass="us-select"
+    />
+
+    @if (hasActiveFilters()) {
+      <button class="us-clear-btn" (click)="clearFilters()">
+        <i class="pi pi-filter-slash"></i>
+        <span>مسح الفلاتر</span>
+      </button>
+    }
+
+  </section>
+
+
+  <!-- ==================================================
+       INFO BANNER
+  =================================================== -->
+  <div class="us-info-banner">
+    <i class="pi pi-info-circle"></i>
+    <span>
+      <strong>ملاحظة:</strong>
+      المستخدم يُعدّ متصلاً (<em>online</em>) إذا كان التوكن بتاعته لا يزال نشطاً
+      — حتى لو أغلق المتصفح بدون تسجيل خروج صريح.
+      يمكنك إنهاء الجلسة يدوياً لإجباره على إعادة تسجيل الدخول.
+    </span>
+  </div>
+
+
+  <!-- ==================================================
+       TABLE
+  =================================================== -->
+  <section class="us-table-wrap">
+
+    @if (loading()) {
+      <div class="us-loading">
+        <i class="pi pi-spin pi-spinner"></i>
+        <span>جاري التحميل...</span>
+      </div>
+    }
+
+    @if (!loading() && loadError()) {
+      <div class="us-empty">
+        <i class="pi pi-exclamation-triangle"></i>
+        <p>تعذّر تحميل البيانات</p>
+        <button class="us-retry-btn" (click)="load()">إعادة المحاولة</button>
+      </div>
+    }
+
+    @if (!loading() && !loadError() && filtered().length === 0) {
+      <div class="us-empty">
+        <i class="pi pi-inbox"></i>
+        <p>لا توجد نتائج مطابقة</p>
+      </div>
+    }
+
+    @if (!loading() && !loadError() && filtered().length > 0) {
+      <table class="us-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>المستخدم</th>
+            <th>البريد الإلكتروني</th>
+            <th>الحالة</th>
+            <th>IP الحالي</th>
+            <th>آخر IP</th>
+            <th>وقت الدخول</th>
+            <th>انتهاء التوكن</th>
+            <th>آخر خروج</th>
+            <th>الإجراءات</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (s of filtered(); track s.userId; let i = $index) {
+            <tr [class.row-online]="s.isActive">
+              <td class="col-num">{{ i + 1 }}</td>
+
+              <td>
+                <div class="us-user-cell">
+                  <div class="us-avatar" [class.avatar-online]="s.isActive">
+                    {{ initials(s.fullName) }}
+                    @if (s.isActive) {
+                      <span class="online-dot"></span>
+                    }
+                  </div>
+                  <span class="user-name">{{ s.fullName }}</span>
+                </div>
+              </td>
+
+              <td class="col-email">{{ s.email }}</td>
+
+              <td>
+                @if (s.isActive) {
+                  <span class="session-badge badge-online">
+                    <span class="badge-dot pulse"></span>
+                    متصل
+                  </span>
+                } @else {
+                  <span class="session-badge badge-offline">
+                    <span class="badge-dot"></span>
+                    مسجّل الخروج
+                  </span>
+                }
+              </td>
+
+              <td>
+                @if (s.currentSessionIp) {
+                  <span class="ip-chip">{{ s.currentSessionIp }}</span>
+                } @else {
+                  <span class="col-muted">—</span>
+                }
+              </td>
+
+              <td>
+                @if (s.lastSessionIp) {
+                  <span class="ip-chip secondary">{{ s.lastSessionIp }}</span>
+                } @else {
+                  <span class="col-muted">—</span>
+                }
+              </td>
+
+              <td class="col-date">{{ formatDate(s.loginAt) }}</td>
+              <td class="col-date">{{ formatDate(s.expiresAt) }}</td>
+              <td class="col-date">{{ formatDate(s.lastLogoutAt) }}</td>
+
+              <td>
+                <div class="action-btns">
+                  @if (s.isActive) {
+                    <button
+                      class="action-btn btn-revoke"
+                      pTooltip="إنهاء الجلسة"
+                      tooltipPosition="top"
+                      (click)="openRevoke(s)"
+                    >
+                      <i class="pi pi-sign-out"></i>
+                    </button>
+                  } @else {
+                    <span class="no-action">—</span>
+                  }
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    }
+
+  </section>
+
+
+  <!-- ==================================================
+       REVOKE CONFIRM DIALOG
+  =================================================== -->
+  <p-dialog
+    [(visible)]="revokeVisible"
+    [modal]="true"
+    [draggable]="false"
+    [resizable]="false"
+    [closable]="!revoking()"
+    [style]="{ width: '440px' }"
+    styleClass="us-dialog"
+    dir="rtl"
+  >
+    <ng-template pTemplate="header">
+      <div class="dialog-header danger">
+        <div class="dialog-header-icon danger">
+          <i class="pi pi-sign-out"></i>
+        </div>
+        <span>تأكيد إنهاء الجلسة</span>
+      </div>
+    </ng-template>
+
+    <div class="revoke-body">
+      <div class="revoke-user">
+        <div class="us-avatar large avatar-online">
+          {{ initials(revokeTarget()?.fullName ?? '') }}
+        </div>
+        <div>
+          <strong>{{ revokeTarget()?.fullName }}</strong>
+          <span>{{ revokeTarget()?.email }}</span>
+        </div>
+      </div>
+      <p class="revoke-desc">
+        سيتم إلغاء توكن الجلسة فوراً وسيُجبر المستخدم على إعادة تسجيل الدخول.
+        هل أنت متأكد؟
+      </p>
+    </div>
+
+    <ng-template pTemplate="footer">
+      <div class="dialog-footer">
+        <button class="btn-cancel" [disabled]="revoking()" (click)="closeRevoke()">إلغاء</button>
+        <button class="btn-danger" [disabled]="revoking()" (click)="confirmRevoke()">
+          @if (revoking()) {
+            <i class="pi pi-spin pi-spinner"></i>
+          } @else {
+            <i class="pi pi-sign-out"></i>
+          }
+          {{ revoking() ? 'جاري الإنهاء...' : 'إنهاء الجلسة' }}
+        </button>
+      </div>
+    </ng-template>
+  </p-dialog>
+
+</div>

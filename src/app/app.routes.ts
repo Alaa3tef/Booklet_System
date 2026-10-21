@@ -69,6 +69,12 @@ export const routes: Routes = [
           import('./features/committee-setup/committee-setup.component'),
         data: { breadcrumb: 'إعداد بيانات اللجان' }
       },
+       {
+        path: 'warehouses',
+        loadComponent: () =>
+          import('./features/warehouses/warehouses.component'),
+        data: { breadcrumb: ' ادارة المخازن' }
+      },
       {
         path: 'workflow/planning',
         loadComponent: () =>
@@ -107,12 +113,18 @@ export const routes: Routes = [
       },
       {
         path: 'storage-locations',
-  loadComponent: () => import('./features/storage-locations/storage-locations.component') 
+  loadComponent: () => import('./features/storage-locations/storage-locations.component')
       },
-       { path: '**', redirectTo: 'dashboard' }
-     
+
+      {
+        path: 'user-sessions',
+        loadComponent: () =>
+          import('./features/user-sessions/user-sessions.component'),
+        data: { breadcrumb: 'جلسات المستخدمين' }
+      },
+      { path: '**', redirectTo: 'dashboard' }
     ]
   }
- 
+
 ];
 
