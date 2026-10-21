@@ -85,6 +85,24 @@
   </div>
 
   <div class="filters-grid">
+  <!-- المحافظة -->
+    <div class="filter-field">
+      <label>المحافظة</label>
+
+      <p-select
+        [options]="governorateOptions()"
+        optionLabel="label"
+        optionValue="value"
+        placeholder="كل المحافظات"
+        [ngModel]="governorateFilter()"
+        (ngModelChange)="governorateFilter.set($event)"
+        [showClear]="true"
+        [filter]="true"
+        filterPlaceholder="ابحث عن محافظة..."
+        appendTo="body"
+        styleClass="filter-select"
+      />
+    </div>
 
     <!-- المادة -->
     <div class="filter-field">
@@ -100,25 +118,6 @@
         [showClear]="true"
         [filter]="true"
         filterPlaceholder="ابحث عن مادة..."
-        appendTo="body"
-        styleClass="filter-select"
-      />
-    </div>
-
-    <!-- المحافظة -->
-    <div class="filter-field">
-      <label>المحافظة</label>
-
-      <p-select
-        [options]="governorateOptions()"
-        optionLabel="label"
-        optionValue="value"
-        placeholder="كل المحافظات"
-        [ngModel]="governorateFilter()"
-        (ngModelChange)="governorateFilter.set($event)"
-        [showClear]="true"
-        [filter]="true"
-        filterPlaceholder="ابحث عن محافظة..."
         appendTo="body"
         styleClass="filter-select"
       />

@@ -1,5 +1,12 @@
 import { CommonModule } from '@angular/common';
-import { Component, computed, signal } from '@angular/core';
+import {
+  Component,
+  OnInit,
+  computed,
+  inject,
+  signal
+} from '@angular/core';
+
 import { FormsModule } from '@angular/forms';
 
 import { ButtonModule } from 'primeng/button';
@@ -12,6 +19,7 @@ import { WorkflowStepLayoutComponent } from '../../../shared/workflow-step-layou
 import { WorkflowStatusRow } from '../../../core/models/workflow.model';
 import { TooltipModule } from 'primeng/tooltip';
 import { SelectModule } from 'primeng/select';
+import { Lookups } from '../../../shared/services/lookups';
 
 interface QualityRow extends WorkflowStatusRow {
   committeeNumber: string;
@@ -60,15 +68,124 @@ interface ScanResult {
   templateUrl: './quality.component.html',
   styleUrl: './quality.component.scss'
 })
-export default class QualityComponent {
+export default class QualityComponent implements OnInit {
+  private readonly lookupsService = inject(Lookups);
   // ==========================================
 // PAGINATION
 // ==========================================
 
+readonly governorateOptions = signal<
+    { label: string; value: string }[]
+  >([]);
+
+  readonly subjectOptions = signal<
+    { label: string; value: string }[]
+  >([]);
+ governoratesLoading = signal(false);
+  subjectsLoading = signal(false);
 readonly pageSize = signal(5);
 
 readonly currentPage = signal(1);
 
+ngOnInit(): void {
+    this.loadGovernorates();
+    this.loadSubjects();
+  }
+
+  private extractItems(response: any): any[] {
+    // يدعم أكثر من شكل شائع لاستجابة الـ API
+    if (Array.isArray(response)) {
+      return response;
+    }
+
+    if (Array.isArray(response?.data)) {
+      return response.data;
+    }
+
+    if (Array.isArray(response?.data?.data)) {
+      return response.data.data;
+    }
+
+    if (Array.isArray(response?.result)) {
+      return response.result;
+    }
+
+    return [];
+  }
+
+  loadGovernorates(): void {
+    this.governoratesLoading.set(true);
+
+    this.lookupsService.getLookupGovernorateData().subscribe({
+      next: (response: any) => {
+        const items = this.extractItems(response);
+
+        this.governorateOptions.set(
+          items
+            .map((item: any) => {
+              const id =
+                item.id ??
+                item.governorateId ??
+                item.governorateID;
+
+              const name =
+                item.name ??
+                item.governorateName ??
+                item.governorate;
+
+              return {
+                label: String(name ?? ''),
+                value: String(id ?? '')
+              };
+            })
+            .filter(item => item.label && item.value)
+        );
+
+        this.governoratesLoading.set(false);
+      },
+      error: (error) => {
+        console.error('Error loading governorates:', error);
+        this.governoratesLoading.set(false);
+      }
+    });
+  }
+
+  loadSubjects(): void {
+    this.subjectsLoading.set(true);
+
+    this.lookupsService.getLookupSubjectData().subscribe({
+      next: (response: any) => {
+        const items = this.extractItems(response);
+
+        this.subjectOptions.set(
+          items
+            .map((item: any) => {
+              const id =
+                item.id ??
+                item.subjectId ??
+                item.subjectID;
+
+              const name =
+                item.name ??
+                item.subjectName ??
+                item.subject;
+
+              return {
+                label: String(name ?? ''),
+                value: String(id ?? '')
+              };
+            })
+            .filter(item => item.label && item.value)
+        );
+
+        this.subjectsLoading.set(false);
+      },
+      error: (error) => {
+        console.error('Error loading subjects:', error);
+        this.subjectsLoading.set(false);
+      }
+    });
+  }
 readonly totalPages = computed(() => {
   return Math.max(
     1,
@@ -237,17 +354,6 @@ onPageSizeChange(): void {
     governorate: null as string | null,
     committee: ''
   });
-
-  // خيارات الـ dropdown بتتولد تلقائيًا من البيانات
-  readonly subjectOptions = computed(() =>
-    [...new Set(this.rows().map(r => r.subject))]
-      .map(value => ({ label: value, value }))
-  );
-
-  readonly governorateOptions = computed(() =>
-    [...new Set(this.rows().map(r => r.governorate))]
-      .map(value => ({ label: value, value }))
-  );
 
   readonly filteredRows = computed(() => {
     const { subject, governorate, committee } = this.appliedFilters();
