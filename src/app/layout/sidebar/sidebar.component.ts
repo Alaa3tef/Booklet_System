@@ -77,14 +77,16 @@ export class SidebarComponent implements OnInit {
       label: 'إدارة البيانات الأساسية',
       icon: 'pi pi-database',
       expanded: true,
-      roles: ['it'],
+          roles: ['it'],
 
       children: [
         {
           label: 'إدارة اللجان',
           icon: 'pi pi-circle-fill',
-          route: '/committees/setup'
-        }
+          route: '/committees/setup',
+
+        },
+
       ]
     },
 
@@ -92,60 +94,61 @@ export class SidebarComponent implements OnInit {
       label: 'الإعداد',
       icon: 'pi pi-sliders-h',
       route: '/workflow/planning',
-      roles: ['planning']
+      roles: ['planning' , 'superadmin']
     },
 
     {
       label: 'الطباعة',
       icon: 'pi pi-print',
       route: '/workflow/printing',
-      roles: ['printing']
+      roles: ['printing' , 'superadmin']
     },
 
     {
       label: 'الجودة',
       icon: 'pi pi-verified',
       route: '/workflow/quality',
-      roles: ['quality']
+      roles: ['quality' , 'superadmin']
     },
 
     {
       label: 'التغليف',
       icon: 'pi pi-box',
       route: '/workflow/packing',
-      roles: ['packing']
+      roles: ['packing' , 'packaging']
     },
 
     {
       label: 'التخزين',
       icon: 'pi pi-database',
       route: '/workflow/archiving',
-      roles: ['archive']
+      roles: ['archive' , 'superadmin']
     },
 
     {
       label: 'إدارة المستخدمين',
       icon: 'pi pi-users',
       route: '/users',
-      role: 'it'
+      roles: ['it']
+    },
+         {
+      label:  'ادارة المخازن',
+      icon: 'pi pi-building',
+      route: '/warehouses',
+      roles: ['superadmin']
     },
      {
       label: 'إدارة الأرفف',
       icon: 'pi pi-users',
       route: '/storage-locations',
-      role: 'SuperAdmin'
+      roles: ['superadmin']
     },
-    {
-      label: 'المخازن',
-      icon: 'pi pi-building',
-      route: '/warehouses',
-      role: 'it'
-    },
+
     {
       label: 'جلسات المستخدمين',
       icon: 'pi pi-shield',
       route: '/user-sessions',
-      role: 'it'
+      roles: ['superadmin']
     }
 
   ] as any[]);
@@ -240,30 +243,30 @@ private isITRole(role: string): boolean {
   // IT ROLE
   // ==================================================
 
-  private isITRole(role: string): boolean {
+  // private isITRole(role: string): boolean {
 
-    return [
-      'it',
-      'admin',
-      'administrator',
-      'super admin',
-      'superadmin',
-      'superman',
-      'super_admin',
-      'topmanagment',
-      'top managment',
-      'top management',
+  //   return [
+  //     'it',
+  //     'admin',
+  //     'administrator',
+  //     'super admin',
+  //     'superadmin',
+  //     'superman',
+  //     'super_admin',
+  //     'topmanagment',
+  //     'top managment',
+  //     'top management',
 
-      'مسؤول النظام',
-      'مسؤول النظام it',
-      'مدير النظام',
-      'مدير النظام it',
+  //     'مسؤول النظام',
+  //     'مسؤول النظام it',
+  //     'مدير النظام',
+  //     'مدير النظام it',
 
-      'system admin',
-      'system administrator'
-    ].includes(role);
+  //     'system admin',
+  //     'system administrator'
+  //   ].includes(role);
 
-  }
+  // }
 
   // ==================================================
   // NORMALIZE ROLE

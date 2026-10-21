@@ -73,7 +73,7 @@ export const routes: Routes = [
         path: 'warehouses',
         loadComponent: () =>
           import('./features/warehouses/warehouses.component'),
-        data: { breadcrumb: 'المخازن' }
+        data: { breadcrumb: ' ادارة المخازن' }
       },
       {
         path: 'workflow/planning',
