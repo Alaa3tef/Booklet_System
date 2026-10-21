@@ -1,0 +1,610 @@
+<p-toast position="top-left" />
+
+<div class="sl-page">
+
+  <!-- ========================= -->
+  <!-- Header -->
+  <!-- ========================= -->
+
+  <section class="sl-header">
+
+    <div>
+      <span class="section-eyebrow">STORAGE LOCATIONS</span>
+      <h2>مواقع التخزين</h2>
+      <p>إدارة مواقع التخزين (المنطقة، الرف، الدور، الصندوق) لكل مخزن.</p>
+    </div>
+
+    <div class="sl-summary">
+      <div class="summary-icon">
+        <i class="pi pi-warehouse"></i>
+      </div>
+      <div>
+        <strong>{{ totalCount() }}</strong>
+        <span>موقع تخزين</span>
+      </div>
+    </div>
+
+  </section>
+
+  <!-- ========================= -->
+  <!-- Filters -->
+  <!-- ========================= -->
+
+  <section class="filters-card">
+
+    <div class="filters-header">
+      <div class="filters-title">
+        <i class="pi pi-filter"></i>
+        <span>بحث وتصفية</span>
+      </div>
+
+      <button
+        *ngIf="hasActiveFilters()"
+        type="button"
+        class="filters-clear-link"
+        (click)="clearFilters()"
+      >
+        <i class="pi pi-filter-slash"></i>
+        مسح الفلاتر
+      </button>
+    </div>
+
+    <div class="filters-grid">
+
+      <div class="filter-field">
+        <label>المخزن</label>
+
+        <p-select
+          [options]="warehouses()"
+          optionLabel="name"
+          optionValue="id"
+          placeholder="كل المخازن"
+          [ngModel]="warehouseFilter()"
+          (ngModelChange)="onWarehouseChange($event)"
+          [showClear]="true"
+          [filter]="true"
+          filterPlaceholder="ابحث عن مخزن..."
+          appendTo="body"
+          styleClass="filter-select"
+        />
+      </div>
+
+      <div class="filter-field">
+        <label>بحث</label>
+
+        <div class="filter-input-wrapper">
+          <i class="pi pi-search"></i>
+
+          <input
+            pInputText
+            type="text"
+            class="filter-input"
+            placeholder="ابحث بالكود أو المنطقة أو الرف..."
+            [ngModel]="searchInput()"
+            (ngModelChange)="onSearchInput($event)"
+          />
+        </div>
+      </div>
+
+      <div class="filter-actions">
+
+        <button
+          pButton
+          type="button"
+          class="filter-reset-btn"
+          [pTooltip]="ascending() ? 'ترتيب تصاعدي' : 'ترتيب تنازلي'"
+          tooltipPosition="top"
+          (click)="toggleSort()"
+        >
+          <i
+            class="pi"
+            [class.pi-sort-amount-up]="ascending()"
+            [class.pi-sort-amount-down]="!ascending()"
+          ></i>
+          <span>{{ ascending() ? 'تصاعدي' : 'تنازلي' }}</span>
+        </button>
+
+        <button
+          pButton
+          type="button"
+          class="filter-reset-btn"
+          (click)="clearFilters()"
+        >
+          <i class="pi pi-refresh"></i>
+          <span>إعادة تعيين</span>
+        </button>
+
+      </div>
+
+    </div>
+
+  </section>
+
+  <!-- ========================= -->
+  <!-- Table -->
+  <!-- ========================= -->
+
+  <section class="table-section">
+
+    <div class="table-header">
+
+      <div>
+        <span class="table-eyebrow">المواقع</span>
+        <h3>قائمة مواقع التخزين</h3>
+      </div>
+
+      <div class="table-header-actions">
+        <div class="results-badge">{{ totalCount() }} موقع</div>
+
+        <button
+          pButton
+          type="button"
+          class="add-btn"
+          (click)="openAdd()"
+        >
+          <i class="pi pi-plus"></i>
+          <span>إضافة موقع</span>
+        </button>
+      </div>
+
+    </div>
+
+    <div class="sl-table-wrapper">
+
+      <p-table
+        [value]="rows()"
+        [loading]="loading()"
+        [tableStyle]="{ 'min-width': '900px' }"
+        styleClass="sl-table"
+      >
+
+        <ng-template pTemplate="header">
+          <tr>
+            <th class="index-column">#</th>
+            <th>الكود</th>
+            <th>المنطقة</th>
+            <th>الرف</th>
+            <th>الدور</th>
+            <th>الصندوق</th>
+            <th>المخزن</th>
+            <th class="action-column">الإجراءات</th>
+          </tr>
+        </ng-template>
+
+        <ng-template pTemplate="body" let-row let-i="rowIndex">
+          <tr>
+
+            <td>
+              <span class="row-index">{{ rowNumber(i) }}</span>
+            </td>
+
+            <td>
+              <span class="code-chip">
+                <i class="pi pi-tag"></i>
+                {{ row.code }}
+              </span>
+            </td>
+
+            <td>{{ row.area }}</td>
+            <td>{{ row.rack }}</td>
+            <td>{{ row.shelf }}</td>
+            <td>{{ row.bin }}</td>
+
+            <td>
+              <span class="warehouse-name">{{ warehouseName(row) }}</span>
+            </td>
+
+            <td>
+              <div class="row-actions">
+
+                <button
+                  type="button"
+                  class="status-menu-btn"
+                  aria-label="تعديل"
+                  pTooltip="تعديل"
+                  tooltipPosition="top"
+                  (click)="openEdit(row)"
+                >
+                  <i class="pi pi-pencil"></i>
+                </button>
+
+                <button
+                  type="button"
+                  class="status-menu-btn danger"
+                  aria-label="حذف"
+                  pTooltip="حذف"
+                  tooltipPosition="top"
+                  (click)="openDelete(row)"
+                >
+                  <i class="pi pi-trash"></i>
+                </button>
+
+              </div>
+            </td>
+
+          </tr>
+        </ng-template>
+
+        <ng-template pTemplate="emptymessage">
+          <tr>
+            <td colspan="8" class="empty-state">
+
+              <ng-container *ngIf="loadError(); else noData">
+                <i class="pi pi-exclamation-triangle error"></i>
+                <strong>تعذر تحميل البيانات</strong>
+                <span>حدث خطأ أثناء الاتصال بالخادم.</span>
+
+                <button
+                  pButton
+                  type="button"
+                  class="retry-btn"
+                  (click)="load()"
+                >
+                  <i class="pi pi-refresh"></i>
+                  <span>إعادة المحاولة</span>
+                </button>
+              </ng-container>
+
+              <ng-template #noData>
+                <ng-container *ngIf="!loading()">
+                  <i class="pi pi-inbox"></i>
+                  <strong>لا توجد مواقع تخزين</strong>
+                  <span>
+                    {{ hasActiveFilters()
+                      ? 'لا توجد نتائج مطابقة للبحث الحالي.'
+                      : 'ابدأ بإضافة أول موقع تخزين.' }}
+                  </span>
+                </ng-container>
+              </ng-template>
+
+            </td>
+          </tr>
+        </ng-template>
+
+      </p-table>
+
+      <!-- ========================= -->
+      <!-- Pagination -->
+      <!-- ========================= -->
+
+      <div class="sl-pagination" *ngIf="totalCount() > 0">
+
+        <div class="pagination-info">
+          <span class="pagination-info-icon">
+            <i class="pi pi-list"></i>
+          </span>
+
+          <span>
+            عرض
+            <strong>{{ paginationStart() }}</strong>
+            -
+            <strong>{{ paginationEnd() }}</strong>
+            من
+            <strong>{{ totalCount() }}</strong>
+            موقع
+            (صفحة <strong>{{ pageNumber() }}</strong> من <strong>{{ totalPages() }}</strong>)
+          </span>
+        </div>
+
+        <div class="pagination-size">
+          <span>عدد الصفوف</span>
+
+          <p-select
+            [options]="pageSizeOptions"
+            optionLabel="label"
+            optionValue="value"
+            [ngModel]="pageSize()"
+            (ngModelChange)="onPageSizeChange($event)"
+            styleClass="pagination-size-select"
+          />
+        </div>
+
+        <div class="pagination-controls">
+
+          <button
+            type="button"
+            class="pagination-arrow"
+            [disabled]="pageNumber() === 1"
+            (click)="previousPage()"
+            pTooltip="الصفحة السابقة"
+            tooltipPosition="top"
+          >
+            <i class="pi pi-chevron-right"></i>
+          </button>
+
+          <ng-container *ngFor="let page of paginationPages()">
+
+            <span *ngIf="page === 'dots'" class="pagination-dots">...</span>
+
+            <button
+              *ngIf="page !== 'dots'"
+              type="button"
+              class="pagination-page"
+              [class.active]="page === pageNumber()"
+              (click)="goToPage(+page)"
+            >
+              {{ page }}
+            </button>
+
+          </ng-container>
+
+          <button
+            type="button"
+            class="pagination-arrow"
+            [disabled]="pageNumber() === totalPages()"
+            (click)="nextPage()"
+            pTooltip="الصفحة التالية"
+            tooltipPosition="top"
+          >
+            <i class="pi pi-chevron-left"></i>
+          </button>
+
+        </div>
+
+      </div>
+
+    </div>
+
+  </section>
+
+</div>
+
+<!-- ====================================================== -->
+<!-- ADD / EDIT DIALOG -->
+<!-- ====================================================== -->
+
+<p-dialog
+  [(visible)]="formVisible"
+  [modal]="true"
+  [baseZIndex]="10000"
+  [draggable]="false"
+  [resizable]="false"
+  [closable]="!saving()"
+  [dismissableMask]="!saving()"
+  [style]="{ width: '720px', maxWidth: 'calc(100vw - 2rem)' }"
+  appendTo="body"
+  styleClass="sl-dialog"
+>
+
+  <ng-template pTemplate="header">
+    <div class="dialog-header">
+      <div class="dialog-title-icon">
+        <i class="pi" [class.pi-plus]="!editingId()" [class.pi-pencil]="editingId()"></i>
+      </div>
+
+      <div>
+        <span>STORAGE LOCATION</span>
+        <h3>{{ editingId() ? 'تعديل موقع تخزين' : 'إضافة موقع تخزين' }}</h3>
+      </div>
+    </div>
+  </ng-template>
+
+  <div class="dialog-body">
+
+    <div class="form-loading" *ngIf="loadingForm()">
+      <i class="pi pi-spin pi-spinner"></i>
+      <span>جاري تحميل البيانات...</span>
+    </div>
+
+    <form
+      *ngIf="!loadingForm()"
+      [formGroup]="form"
+      (ngSubmit)="save()"
+      class="form-grid"
+    >
+
+      <!-- Warehouse -->
+      <div class="dialog-field">
+        <label>المخزن <span class="required">*</span></label>
+
+        <p-select
+          formControlName="warehouseId"
+          [options]="warehouses()"
+          optionLabel="name"
+          optionValue="id"
+          placeholder="اختر المخزن"
+          [filter]="true"
+          filterPlaceholder="ابحث عن مخزن..."
+          appendTo="body"
+          styleClass="form-select"
+          [class.ng-invalid-touched]="invalid('warehouseId')"
+        />
+
+        <small class="field-error" *ngIf="invalid('warehouseId')">المخزن مطلوب</small>
+        <small class="field-hint" *ngIf="editingId()">لا يمكن تغيير المخزن عند التعديل.</small>
+      </div>
+
+      <!-- Code -->
+      <div class="dialog-field">
+        <label>الكود <span class="required">*</span></label>
+
+        <input
+          pInputText
+          type="text"
+          formControlName="code"
+          class="form-input"
+          maxlength="50"
+          placeholder="مثال: A1-R1-S1-B1"
+        />
+
+        <small class="field-error" *ngIf="invalid('code')">
+          {{ form.controls.code.hasError('maxlength') ? 'الحد الأقصى 50 حرفًا' : 'الكود مطلوب' }}
+        </small>
+      </div>
+
+      <!-- Area -->
+      <div class="dialog-field">
+        <label>المنطقة <span class="required">*</span></label>
+
+        <p-select
+          formControlName="area"
+          [options]="areaOptions"
+          optionLabel="label"
+          optionValue="value"
+          placeholder="اختر المنطقة"
+          appendTo="body"
+          styleClass="form-select"
+        />
+
+        <small class="field-error" *ngIf="invalid('area')">المنطقة مطلوبة</small>
+      </div>
+
+      <!-- Rack -->
+      <div class="dialog-field">
+        <label>الرف <span class="required">*</span></label>
+
+        <p-select
+          formControlName="rack"
+          [options]="rackOptions"
+          optionLabel="label"
+          optionValue="value"
+          placeholder="اختر الرف"
+          appendTo="body"
+          styleClass="form-select"
+        />
+
+        <small class="field-error" *ngIf="invalid('rack')">الرف مطلوب</small>
+      </div>
+
+      <!-- Shelf -->
+      <div class="dialog-field">
+        <label>الدور <span class="required">*</span></label>
+
+        <p-select
+          formControlName="shelf"
+          [options]="shelfOptions"
+          optionLabel="label"
+          optionValue="value"
+          placeholder="اختر الدور"
+          appendTo="body"
+          styleClass="form-select"
+        />
+
+        <small class="field-error" *ngIf="invalid('shelf')">الدور مطلوب</small>
+      </div>
+
+      <!-- Bin -->
+      <div class="dialog-field">
+        <label>الصندوق <span class="required">*</span></label>
+
+        <p-select
+          formControlName="bin"
+          [options]="binOptions"
+          optionLabel="label"
+          optionValue="value"
+          placeholder="اختر الصندوق"
+          appendTo="body"
+          styleClass="form-select"
+        />
+
+        <small class="field-error" *ngIf="invalid('bin')">الصندوق مطلوب</small>
+      </div>
+
+    </form>
+
+  </div>
+
+  <ng-template pTemplate="footer">
+    <div class="dialog-footer">
+
+      <button
+        pButton
+        type="button"
+        class="cancel-btn"
+        label="إلغاء"
+        [disabled]="saving()"
+        (click)="closeForm()"
+      ></button>
+
+      <button
+        pButton
+        type="button"
+        class="save-btn"
+        [disabled]="form.invalid || saving() || loadingForm()"
+        (click)="save()"
+      >
+        <i
+          class="pi"
+          [class.pi-check]="!saving()"
+          [class.pi-spin]="saving()"
+          [class.pi-spinner]="saving()"
+        ></i>
+        {{ saving() ? 'جاري الحفظ...' : 'حفظ' }}
+      </button>
+
+    </div>
+  </ng-template>
+
+</p-dialog>
+
+<!-- ====================================================== -->
+<!-- DELETE CONFIRMATION DIALOG -->
+<!-- ====================================================== -->
+
+<p-dialog
+  [(visible)]="deleteVisible"
+  [modal]="true"
+  [baseZIndex]="10000"
+  [draggable]="false"
+  [resizable]="false"
+  [closable]="!deleting()"
+  [dismissableMask]="!deleting()"
+  [style]="{ width: '480px', maxWidth: 'calc(100vw - 2rem)' }"
+  appendTo="body"
+  styleClass="sl-dialog"
+  (onHide)="closeDelete()"
+>
+
+  <ng-template pTemplate="header">
+    <div class="dialog-header">
+      <div class="dialog-title-icon danger">
+        <i class="pi pi-trash"></i>
+      </div>
+
+      <div>
+        <span>DELETE</span>
+        <h3>حذف موقع التخزين</h3>
+      </div>
+    </div>
+  </ng-template>
+
+  <div class="dialog-body">
+    <p class="delete-text">
+      هل أنت متأكد من حذف موقع التخزين
+      <strong class="delete-code">{{ deleteTarget()?.code }}</strong>؟
+      لا يمكن التراجع عن هذا الإجراء.
+    </p>
+  </div>
+
+  <ng-template pTemplate="footer">
+    <div class="dialog-footer">
+
+      <button
+        pButton
+        type="button"
+        class="cancel-btn"
+        label="إلغاء"
+        [disabled]="deleting()"
+        (click)="closeDelete()"
+      ></button>
+
+      <button
+        pButton
+        type="button"
+        class="delete-btn"
+        [disabled]="deleting()"
+        (click)="confirmDelete()"
+      >
+        <i
+          class="pi"
+          [class.pi-trash]="!deleting()"
+          [class.pi-spin]="deleting()"
+          [class.pi-spinner]="deleting()"
+        ></i>
+        {{ deleting() ? 'جاري الحذف...' : 'تأكيد الحذف' }}
+      </button>
+
+    </div>
+  </ng-template>
+
+</p-dialog>
