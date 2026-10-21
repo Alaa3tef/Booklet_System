@@ -1,11 +1,11 @@
-import { Component, computed, signal } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 
 import { SelectModule } from 'primeng/select';
 import { TableModule } from 'primeng/table';
 import { MenuModule } from 'primeng/menu';
-import { MenuItem } from 'primeng/api';
+import { MenuItem, MessageService } from 'primeng/api';
 import { DialogModule } from 'primeng/dialog';
 import { ButtonModule } from 'primeng/button';
 import { TextareaModule } from 'primeng/textarea';
@@ -14,8 +14,10 @@ import { TooltipModule } from 'primeng/tooltip';
 
 import { WorkflowStepLayoutComponent } from '../../../shared/workflow-step-layout/workflow-step-layout.component';
 
-import { SelectOption } from '../../../core/models/committee.model';
+// import { SelectOption } from '../../../core/models/committee.model';
 import { WorkflowStatusRow } from '../../../core/models/workflow.model';
+import { forkJoin } from 'rxjs';
+import { Lookups } from '../../../shared/services/lookups';
 
 interface ReviewUser {
   id: number;
@@ -23,6 +25,12 @@ interface ReviewUser {
   role: string;
   avatar?: string;
 }
+
+interface SelectOption {
+  label: string;
+  value: string | number;
+}
+
 
 @Component({
   selector: 'app-planning',
@@ -48,6 +56,9 @@ interface ReviewUser {
   styleUrl: './planning.component.scss'
 })
 export default class PlanningComponent {
+   private lookupService = inject(Lookups);
+  private messageService = inject(MessageService);
+
   // ==========================================
 // PAGINATION
 // ==========================================
@@ -152,45 +163,55 @@ onPageSizeChange(): void {
   // FILTER OPTIONS
   // ==========================================
 
-  readonly governorates: SelectOption[] = [
-    {
-      label: 'كل المحافظات',
-      value: 'all'
+  governorates: SelectOption[] = [];
+  subjects: SelectOption[] = [];
+
+  ngOnInit(): void {
+    this.loadLookups();
+  }
+
+ loadLookups(): void {
+  forkJoin({
+    governorates: this.lookupService.getLookupGovernorateData(),
+    subjects: this.lookupService.getLookupSubjectData()
+  }).subscribe({
+    next: (res: any) => {
+      // Governorates
+      const governoratesData = res.governorates?.data?.data ?? [];
+
+      this.governorates = [
+        { label: 'كل المحافظات', value: 'all' },
+        ...governoratesData.map((item: any) => ({
+          label: item.nameAr ?? item.name,
+          value: item.id
+        }))
+      ];
+
+      // Subjects
+      const subjectsData = res.subjects?.data?.data ?? [];
+
+      this.subjects = [
+        { label: 'كل المواد', value: 'all' },
+        ...subjectsData.map((item: any) => ({
+          label: item.name,
+          value: item.id
+        }))
+      ];
+
+      console.log('Governorates:', this.governorates);
+      console.log('Subjects:', this.subjects);
     },
-    {
-      label: 'القاهرة',
-      value: 'cairo'
-    },
-    {
-      label: 'الجيزة',
-      value: 'giza'
-    },
-    {
-      label: 'الإسكندرية',
-      value: 'alexandria'
+    error: (err) => {
+      console.error('Error loading lookups:', err);
+      this.messageService.add({
+        severity: 'error',
+        summary: 'خطأ',
+        detail: err.error?.message || 'فشل تحميل بيانات القوائم',
+        life: 3000
+      });
     }
-  ];
-
-  readonly subjects: SelectOption[] = [
-    {
-      label: 'كل المواد',
-      value: 'all'
-    },
-    {
-      label: 'اللغة العربية',
-      value: 'arabic'
-    },
-    {
-      label: 'الرياضيات',
-      value: 'math'
-    },
-    {
-      label: 'العلوم',
-      value: 'science'
-    }
-  ];
-
-
+  });
+}
   // ==========================================
   // REVIEW USERS
   // ==========================================
