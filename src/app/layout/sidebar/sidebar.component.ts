@@ -77,7 +77,7 @@ export class SidebarComponent implements OnInit {
       label: 'إدارة البيانات الأساسية',
       icon: 'pi pi-database',
       expanded: true,
-      role: 'it',
+      roles: ['it'],
 
       children: [
         {
@@ -92,48 +92,48 @@ export class SidebarComponent implements OnInit {
       label: 'الإعداد',
       icon: 'pi pi-sliders-h',
       route: '/workflow/planning',
-      role: 'planning'
+      roles: ['planning']
     },
 
     {
       label: 'الطباعة',
       icon: 'pi pi-print',
       route: '/workflow/printing',
-      role: 'printing'
+      roles: ['printing']
     },
 
     {
       label: 'الجودة',
       icon: 'pi pi-verified',
       route: '/workflow/quality',
-      role: 'quality'
+      roles: ['quality']
     },
 
     {
       label: 'التغليف',
       icon: 'pi pi-box',
       route: '/workflow/packing',
-      role: 'packing'
+      roles: ['packing']
     },
 
     {
       label: 'التخزين',
       icon: 'pi pi-database',
       route: '/workflow/archiving',
-      role: 'archive'
+      roles: ['archive']
     },
 
     {
       label: 'إدارة المستخدمين',
       icon: 'pi pi-users',
       route: '/users',
-      role: 'it'
+      roles: ['it']
     }, 
      {
-      label: 'إدارة الأرفف',
-      icon: 'pi pi-users',
+      label: 'مواقع التخزين',
+      icon: 'pi pi-map-marker',
       route: '/storage-locations',
-      role: 'SuperAdmin'
+      roles: ['superadmin']
     }
 
   ] as any[]);
@@ -149,43 +149,47 @@ export class SidebarComponent implements OnInit {
    * Workflow users:
    * Dashboard + الصفحة الخاصة بالـ role فقط
    */
-  readonly visibleNavItems = computed(() => {
 
-    const currentRole = this.normalizeRole(this.role());
+readonly visibleNavItems = computed(() => {
+  const currentRole = this.normalizeRole(this.role());
 
-    // IT / ADMIN: يشوف كل حاجة
-    if (this.isITRole(currentRole)) {
-      return this.navItems();
+  return this.navItems().filter(item => {
+    // الرئيسية متاحة للجميع
+    if (item.route === '/dashboard') {
+      return true;
     }
 
-    const roleRouteMap: Record<string, string> = {
-      planning: '/workflow/planning',
-      printing: '/workflow/printing',
-      quality: '/workflow/quality',
-      packing: '/workflow/packing',
-      archiving: '/workflow/archiving',
-      archive: '/workflow/archiving'
-    };
+    // مواقع التخزين للـ SuperAdmin فقط
+    if (item.route === '/storage-locations') {
+      return currentRole === 'superadmin' ||
+             currentRole === 'super admin';
+    }
 
-    const workflowRoute = roleRouteMap[currentRole];
+    // إدارة البيانات الأساسية: IT فقط
+    if (item.label === 'إدارة البيانات الأساسية') {
+      return currentRole === 'it';
+    }
 
-    return this.navItems().filter(item => {
+    // باقي العناصر حسب الدور المحدد لها
+    if (item.roles?.length) {
+      return item.roles.some(
+        role => this.normalizeRole(role) === currentRole
+      );
+    }
 
-      // الرئيسية دايمًا ظاهرة
-      if (item.route === '/dashboard') {
-        return true;
-      }
-
-      // المجموعات (فيها children) تظهر لـ IT فقط
-      if (item.children) {
-        return false;
-      }
-
-      // صفحة الـ workflow الخاصة بالمستخدم فقط
-      return !!workflowRoute && item.route === workflowRoute;
-    });
-
+    // إخفاء العناصر غير المحددة
+    return false;
   });
+});
+
+private isITRole(role: string): boolean {
+  return [
+    'it',
+    'مسؤول النظام it',
+    'مدير النظام it'
+  ].includes(this.normalizeRole(role));
+}
+
 
   // ==================================================
   // ROLE THEME
@@ -224,25 +228,7 @@ export class SidebarComponent implements OnInit {
   // IT ROLE
   // ==================================================
 
-  private isITRole(role: string): boolean {
-
-    return [
-      'it',
-      'admin',
-      'administrator',
-      'super admin',
-      'superadmin',
-
-      'مسؤول النظام',
-      'مسؤول النظام it',
-      'مدير النظام',
-      'مدير النظام it',
-
-      'system admin',
-      'system administrator'
-    ].includes(role);
-
-  }
+  
 
   // ==================================================
   // NORMALIZE ROLE
