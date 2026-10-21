@@ -128,12 +128,24 @@ export class SidebarComponent implements OnInit {
       icon: 'pi pi-users',
       route: '/users',
       role: 'it'
-    }, 
-     {
+    },
+    {
       label: 'إدارة الأرفف',
-      icon: 'pi pi-users',
+      icon: 'pi pi-th-large',
       route: '/storage-locations',
       role: 'SuperAdmin'
+    },
+    {
+      label: 'المخازن',
+      icon: 'pi pi-building',
+      route: '/warehouses',
+      role: 'it'
+    },
+    {
+      label: 'جلسات المستخدمين',
+      icon: 'pi pi-shield',
+      route: '/user-sessions',
+      role: 'it'
     }
 
   ] as any[]);
@@ -232,6 +244,11 @@ export class SidebarComponent implements OnInit {
       'administrator',
       'super admin',
       'superadmin',
+      'superman',
+      'super_admin',
+      'topmanagment',
+      'top managment',
+      'top management',
 
       'مسؤول النظام',
       'مسؤول النظام it',

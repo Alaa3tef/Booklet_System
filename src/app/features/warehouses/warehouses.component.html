@@ -1,0 +1,267 @@
+<div class="wh-page" dir="rtl">
+
+  <!-- HERO (the only header) -->
+  <section class="wh-hero">
+    <div class="wh-hero-icon"><i class="pi pi-warehouse"></i></div>
+
+    <div class="wh-hero-text">
+      <h2>إدارة المخازن</h2>
+      <p>إضافة وتعديل وحذف المخازن المستخدمة في مرحلة التخزين والتسليم</p>
+    </div>
+
+    <p-button label="إضافة مخزن" icon="pi pi-plus" styleClass="wh-add-btn"
+      id="btn-add-warehouse" (onClick)="openAddModal()" />
+  </section>
+
+  <!-- SUMMARY TILES -->
+  <section class="wh-tiles">
+    <div class="tile tile-blue">
+      <span class="tile-icon"><i class="pi pi-warehouse"></i></span>
+      <div><strong>{{ totalRecords() }}</strong><small>إجمالي المخازن</small></div>
+    </div>
+
+    <div class="tile tile-green">
+      <span class="tile-icon"><i class="pi pi-check"></i></span>
+      <div>
+        <strong dir="ltr">{{ latest()?.code ?? '—' }}</strong>
+        <small>آخر كود مضاف</small>
+      </div>
+    </div>
+
+    <div class="tile tile-amber">
+      <span class="tile-icon"><i class="pi pi-calendar"></i></span>
+      <div>
+        <strong dir="ltr">{{ latest() ? (latest()!.dateCreated | date:'d MMM yyyy') : '—' }}</strong>
+        <small>تاريخ آخر إضافة</small>
+      </div>
+    </div>
+  </section>
+
+  <!-- FILTERS -->
+  <section class="wh-filters">
+    <div class="wh-search-wrap">
+      <i class="pi pi-search"></i>
+      <input pInputText type="text" id="input-search-warehouses" class="wh-search"
+        placeholder="البحث بكود المخزن أو اسمه..."
+        [value]="searchQuery()"
+        (input)="onSearch($any($event.target).value)" />
+    </div>
+
+    <p-button label="مسح الفلاتر" icon="pi pi-filter-slash" severity="secondary"
+      [outlined]="true" [disabled]="!searchQuery()" (onClick)="clearSearch()" />
+  </section>
+
+  <!-- CARDS -->
+  <section class="wh-grid" [class.is-loading]="loading() && items().length > 0" aria-live="polite">
+
+    @if (loading() && items().length === 0) {
+      @for (n of [1,2,3]; track n) {
+        <div class="wh-card wh-skeleton"><span></span><span></span></div>
+      }
+    }
+
+    @if (loadError()) {
+      <div class="wh-state">
+        <i class="pi pi-exclamation-circle"></i>
+        <strong>تعذّر تحميل المخازن</strong>
+        <p-button label="إعادة المحاولة" icon="pi pi-refresh" size="small"
+          [outlined]="true" (onClick)="load()" />
+      </div>
+    } @else if (!loading() && items().length === 0 && searchQuery()) {
+      <div class="wh-state">
+        <i class="pi pi-search"></i>
+        <strong>لا توجد مخازن مطابقة للبحث</strong>
+        <small>جرّب كودًا أو اسمًا آخر</small>
+      </div>
+    }
+
+    @for (w of items(); track w.id) {
+      <article class="wh-card">
+
+        <div class="card-head">
+          <span class="card-icon"><i class="pi pi-warehouse"></i></span>
+
+          <div class="card-title">
+            <strong>{{ w.name }}</strong>
+            <small>مخزن</small>
+          </div>
+
+          <button type="button" class="action-btn" title="الإجراءات"
+            [attr.aria-label]="'إجراءات ' + w.name" aria-haspopup="true"
+            (click)="openMenu($event, w, menu)">
+            <i class="pi pi-ellipsis-v"></i>
+          </button>
+        </div>
+
+        <div class="card-foot">
+          <span class="code-chip" dir="ltr">{{ w.code }}</span>
+          <span class="card-date">
+            أُضيف في <span dir="ltr">{{ w.dateCreated | date:'d MMM yyyy' }}</span>
+          </span>
+        </div>
+
+      </article>
+    }
+
+    @if (!loadError() && !loading() && !searchQuery()) {
+      <button type="button" class="wh-card wh-add-card" (click)="openAddModal()">
+        <span class="add-circle"><i class="pi pi-plus"></i></span>
+        <strong>{{ items().length === 0 ? 'إضافة أول مخزن' : 'إضافة مخزن جديد' }}</strong>
+      </button>
+    }
+
+  </section>
+
+  <p-menu #menu [model]="menuItems()" [popup]="true" appendTo="body" />
+
+  <!-- PAGINATION -->
+  @if (totalPages() > 1) {
+    <nav class="wh-pagination" aria-label="التنقل بين الصفحات">
+      <span class="pag-summary">
+        عرض <b>{{ rangeFrom() }}</b> – <b>{{ rangeTo() }}</b> من <b>{{ totalRecords() }}</b> مخزن
+      </span>
+
+      <div class="pag-controls">
+        <button type="button" class="pag-btn" [disabled]="currentPage() === 1"
+          aria-label="السابق" (click)="prevPage()"><i class="pi pi-angle-right"></i></button>
+
+        @for (p of pageNumbers(); track $index) {
+          @if (p === '...') {
+            <span class="pag-dots">…</span>
+          } @else {
+            <button type="button" class="pag-btn" [class.pag-active]="p === currentPage()"
+              [attr.aria-current]="p === currentPage() ? 'page' : null"
+              (click)="goToPage(p)">{{ p }}</button>
+          }
+        }
+
+        <button type="button" class="pag-btn" [disabled]="currentPage() === totalPages()"
+          aria-label="التالي" (click)="nextPage()"><i class="pi pi-angle-left"></i></button>
+      </div>
+    </nav>
+  }
+</div>
+
+
+<!-- ADD / EDIT DIALOG -->
+<p-dialog
+  [visible]="showFormModal()"
+  (visibleChange)="!$event && closeFormModal()"
+  appendTo="body"
+  [baseZIndex]="10000"
+  [modal]="true"
+  [showHeader]="false"
+  [draggable]="false"
+  [resizable]="false"
+  [dismissableMask]="true"
+  [contentStyle]="{ padding: '0', overflow: 'visible' }"
+  [style]="{ background: 'transparent', border: 'none', 'box-shadow': 'none', width: '520px', maxWidth: '95vw' }">
+
+  <div class="wh-modal" dir="rtl">
+
+    <div class="modal-header">
+      <div class="modal-header-icon">
+        <i [class]="isEdit() ? 'pi pi-pencil' : 'pi pi-plus'"></i>
+      </div>
+      <h3>{{ isEdit() ? 'تعديل المخزن' : 'إضافة مخزن جديد' }}</h3>
+      <button type="button" class="modal-close" aria-label="إغلاق" (click)="closeFormModal()">
+        <i class="pi pi-times"></i>
+      </button>
+    </div>
+
+    <div class="modal-body">
+
+      @if (liveError() || formError()) {
+        <div class="form-error-banner" role="alert">
+          <i class="pi pi-exclamation-triangle"></i>
+          {{ liveError() || formError() }}
+        </div>
+      }
+
+      @if (formLoading()) {
+        <div class="form-loading"><i class="pi pi-spin pi-spinner"></i> جارٍ تحميل البيانات...</div>
+      }
+
+      <div class="form-grid">
+
+        <p-floatlabel variant="on">
+          <input pInputText id="f-code" type="text" class="w-full" placeholder=" "
+            dir="ltr" maxlength="20" autocomplete="off"
+            [class.field-invalid]="showError('code')"
+            [ngModel]="form().code"
+            (ngModelChange)="updateForm('code', $event)"
+            (blur)="markTouched('code')" />
+          <label for="f-code">كود المخزن <span class="text-red-500">*</span></label>
+        </p-floatlabel>
+
+        <p-floatlabel variant="on">
+          <input pInputText id="f-name" type="text" class="w-full" placeholder=" "
+            maxlength="60" autocomplete="off"
+            [class.field-invalid]="showError('name')"
+            [ngModel]="form().name"
+            (ngModelChange)="updateForm('name', $event)"
+            (blur)="markTouched('name')" />
+          <label for="f-name">اسم المخزن <span class="text-red-500">*</span></label>
+        </p-floatlabel>
+
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <p-button label="إلغاء" icon="pi pi-times" styleClass="modal-btn modal-cancel"
+        (onClick)="closeFormModal()" />
+      <p-button id="btn-save-warehouse"
+        [label]="isEdit() ? 'حفظ التعديلات' : 'حفظ المخزن'"
+        icon="pi pi-check" styleClass="modal-btn modal-save"
+        [loading]="saving()" [disabled]="formLoading()"
+        (onClick)="submitForm()" />
+    </div>
+
+  </div>
+</p-dialog>
+
+
+<!-- DELETE DIALOG -->
+<p-dialog
+  [visible]="showDeleteModal()"
+  (visibleChange)="!$event && cancelDelete()"
+  appendTo="body"
+  [baseZIndex]="10000"
+  [modal]="true"
+  [showHeader]="false"
+  [draggable]="false"
+  [resizable]="false"
+  [dismissableMask]="true"
+  [contentStyle]="{ padding: '0', overflow: 'visible' }"
+  [style]="{ background: 'transparent', border: 'none', 'box-shadow': 'none', width: '440px', maxWidth: '95vw' }">
+
+  @if (deleteTarget(); as target) {
+    <div class="wh-modal" dir="rtl">
+
+      <div class="modal-header danger-header">
+        <div class="modal-header-icon danger-icon"><i class="pi pi-trash"></i></div>
+        <h3>تأكيد الحذف</h3>
+        <button type="button" class="modal-close" aria-label="إغلاق" (click)="cancelDelete()">
+          <i class="pi pi-times"></i>
+        </button>
+      </div>
+
+      <div class="modal-body confirm-body">
+        <p>هل أنت متأكد من حذف المخزن</p>
+        <strong>{{ target.name }} <span class="code-chip" dir="ltr">{{ target.code }}</span></strong>
+        <p class="confirm-warning">
+          <i class="pi pi-exclamation-triangle"></i>
+          لا يمكن التراجع عن هذا الإجراء
+        </p>
+      </div>
+
+      <div class="modal-footer">
+        <p-button label="إلغاء" icon="pi pi-times" styleClass="modal-btn modal-cancel"
+          (onClick)="cancelDelete()" />
+        <p-button id="btn-confirm-delete" label="نعم، احذف المخزن" icon="pi pi-trash"
+          styleClass="modal-btn modal-danger" [loading]="deleting()" (onClick)="executeDelete()" />
+      </div>
+
+    </div>
+  }
+</p-dialog>

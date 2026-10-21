@@ -69,6 +69,12 @@ export const routes: Routes = [
           import('./features/committee-setup/committee-setup.component'),
         data: { breadcrumb: 'إعداد بيانات اللجان' }
       },
+       {
+        path: 'warehouses',
+        loadComponent: () =>
+          import('./features/warehouses/warehouses.component'),
+        data: { breadcrumb: 'المخازن' }
+      },
       {
         path: 'workflow/planning',
         loadComponent: () =>
@@ -104,6 +110,13 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./features/user-management/user-management.component'),
         data: { breadcrumb: 'إدارة المستخدمين' }
+      },
+
+      {
+        path: 'user-sessions',
+        loadComponent: () =>
+          import('./features/user-sessions/user-sessions.component'),
+        data: { breadcrumb: 'جلسات المستخدمين' }
       },
       { path: '**', redirectTo: 'dashboard' }
     ]
