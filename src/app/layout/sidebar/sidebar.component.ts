@@ -128,6 +128,12 @@ export class SidebarComponent implements OnInit {
       icon: 'pi pi-users',
       route: '/users',
       role: 'it'
+    }, 
+     {
+      label: 'إدارة الأرفف',
+      icon: 'pi pi-users',
+      route: '/storage-locations',
+      role: 'SuperAdmin'
     }
 
   ] as any[]);
