@@ -115,7 +115,7 @@ export class SidebarComponent implements OnInit {
       label: 'التغليف',
       icon: 'pi pi-box',
       route: '/workflow/packing',
-      roles: ['packing' , 'packaging']
+      roles: ['packing' , 'superadmin']
     },
 
     {
@@ -129,7 +129,7 @@ export class SidebarComponent implements OnInit {
       label: 'إدارة المستخدمين',
       icon: 'pi pi-users',
       route: '/users',
-      roles: ['it']
+      roles: ['superadmin']
     },
          {
       label:  'ادارة المخازن',
@@ -138,7 +138,7 @@ export class SidebarComponent implements OnInit {
       roles: ['superadmin']
     },
      {
-      label: 'إدارة الأرفف',
+      label: 'مواقع التخزين',
       icon: 'pi pi-users',
       route: '/storage-locations',
       roles: ['superadmin']

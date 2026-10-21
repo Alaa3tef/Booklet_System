@@ -30,6 +30,7 @@ import { WorkflowStepLayoutComponent } from '../../../shared/workflow-step-layou
 import { SelectOption } from '../../../core/models/committee.model';
 import { WorkflowStatusRow } from '../../../core/models/workflow.model';
 import { PrintingService } from './service/printing-service';
+import { Lookups } from '../../../shared/services/lookups';
 
 interface ReviewUser {
   id: number;
@@ -62,27 +63,19 @@ interface ReviewUser {
 })
 export default class PrintingComponent {
   private readonly service = inject(PrintingService);
-
+  private readonly lookupsService = inject(Lookups);
   private readonly reload$ = new Subject<void>();
   private readonly committeeInput$ = new Subject<string>();
+  readonly governorates = signal<SelectOption[]>([
+  { label: 'كل المحافظات', value: '' }
+]);
 
-  // ==========================================
-  // FILTER OPTIONS
-  // ==========================================
+readonly subjects = signal<SelectOption[]>([
+  { label: 'كل المواد', value: '' }
+]);
 
-  readonly governorates: SelectOption[] = [
-    { label: 'كل المحافظات', value: 'all' },
-    { label: 'القاهرة', value: 'cairo' },
-    { label: 'الجيزة', value: 'giza' },
-    { label: 'المنوفية', value: 'monufia' }
-  ];
-
-  readonly subjects: SelectOption[] = [
-    { label: 'كل المواد', value: 'all' },
-    { label: 'اللغة العربية', value: 'arabic' },
-    { label: 'الرياضيات', value: 'math' },
-    { label: 'العلوم', value: 'science' }
-  ];
+readonly governoratesLoading = signal(false);
+readonly subjectsLoading = signal(false);
 
   readonly pageSizeOptions = [
     { label: '5', value: 5 },
@@ -94,8 +87,8 @@ export default class PrintingComponent {
   // SEARCH
   // ==========================================
 
-  selectedGovernorate = 'all';
-  selectedSubject = 'all';
+  selectedGovernorate = '';
+  selectedSubject = '';
   selectedCommittee = '';
 
   // ==========================================
@@ -153,6 +146,8 @@ export default class PrintingComponent {
   );
 
   constructor() {
+    this.loadGovernorates();
+this.loadSubjects();
     // تحميل الداتا (فوري) عند أول فتح وعند أي تغيير في الفلاتر/الصفحة
     this.reload$
       .pipe(
@@ -218,6 +213,107 @@ export default class PrintingComponent {
     this.pageSize.set(size);
     this.onFilterChange();
   }
+
+
+  private extractItems(response: any): any[] {
+  if (Array.isArray(response)) {
+    return response;
+  }
+
+  const possibleArrays = [
+    response?.data,
+    response?.data?.data,
+    response?.result,
+    response?.result?.data,
+    response?.items
+  ];
+
+  return possibleArrays.find(Array.isArray) ?? [];
+}
+
+loadGovernorates(): void {
+  this.governoratesLoading.set(true);
+
+  this.lookupsService
+    .getLookupGovernorateData()
+    .pipe(
+      catchError(error => {
+        console.error('Error loading governorates:', error);
+        return of([]);
+      }),
+      finalize(() => this.governoratesLoading.set(false)),
+      takeUntilDestroyed()
+    )
+    .subscribe(response => {
+      const items = this.extractItems(response);
+
+      const options: SelectOption[] = items
+        .map((item: any) => {
+          const id =
+            item.id ??
+            item.governorateId ??
+            item.governorateID;
+
+          const name =
+            item.name ??
+            item.governorateName ??
+            item.governorate;
+
+          return {
+            label: String(name ?? ''),
+            value: String(id ?? '')
+          };
+        })
+        .filter(item => item.label && item.value);
+
+      this.governorates.set([
+        { label: 'كل المحافظات', value: '' },
+        ...options
+      ]);
+    });
+}
+
+loadSubjects(): void {
+  this.subjectsLoading.set(true);
+
+  this.lookupsService
+    .getLookupSubjectData()
+    .pipe(
+      catchError(error => {
+        console.error('Error loading subjects:', error);
+        return of([]);
+      }),
+      finalize(() => this.subjectsLoading.set(false)),
+      takeUntilDestroyed()
+    )
+    .subscribe(response => {
+      const items = this.extractItems(response);
+
+      const options: SelectOption[] = items
+        .map((item: any) => {
+          const id =
+            item.id ??
+            item.subjectId ??
+            item.subjectID;
+
+          const name =
+            item.name ??
+            item.subjectName ??
+            item.subject;
+
+          return {
+            label: String(name ?? ''),
+            value: String(id ?? '')
+          };
+        })
+        .filter(item => item.label && item.value);
+
+      this.subjects.set([
+        { label: 'كل المواد', value: '' },
+        ...options
+      ]);
+    });
+}
 
   // ==========================================
   // STATUS MENU

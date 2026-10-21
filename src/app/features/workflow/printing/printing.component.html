@@ -41,26 +41,42 @@
 
             <div class="field">
               <label for="printing-governorate">المحافظة</label>
-              <p-select
-                inputId="printing-governorate"
-                [options]="governorates"
-                [(ngModel)]="selectedGovernorate"
-                (ngModelChange)="onFilterChange()"
-                optionLabel="label"
-                optionValue="value"
-                styleClass="w-full" />
+             <p-select
+  inputId="printing-governorate"
+  [options]="governorates()"
+  [(ngModel)]="selectedGovernorate"
+  (ngModelChange)="onFilterChange()"
+  optionLabel="label"
+  optionValue="value"
+  placeholder="كل المحافظات"
+  [loading]="governoratesLoading()"
+  [filter]="true"
+  filterPlaceholder="ابحث عن محافظة..."
+  [showClear]="false"
+  emptyMessage="لا توجد محافظات"
+  appendTo="body"
+  styleClass="w-full"
+/>
             </div>
 
             <div class="field">
               <label for="printing-subject">المادة</label>
-              <p-select
-                inputId="printing-subject"
-                [options]="subjects"
-                [(ngModel)]="selectedSubject"
-                (ngModelChange)="onFilterChange()"
-                optionLabel="label"
-                optionValue="value"
-                styleClass="w-full" />
+             <p-select
+  inputId="printing-subject"
+  [options]="subjects()"
+  [(ngModel)]="selectedSubject"
+  (ngModelChange)="onFilterChange()"
+  optionLabel="label"
+  optionValue="value"
+  placeholder="كل المواد"
+  [loading]="subjectsLoading()"
+  [filter]="true"
+  filterPlaceholder="ابحث عن مادة..."
+  [showClear]="false"
+  emptyMessage="لا توجد مواد"
+  appendTo="body"
+  styleClass="w-full"
+/>
             </div>
 
             <div class="field">
