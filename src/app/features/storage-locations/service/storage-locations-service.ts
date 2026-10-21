@@ -1,6 +1,6 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable } from 'rxjs';
+import { map, Observable } from 'rxjs';
 import { StorageLocationQuery, PagedResult, StorageLocation, CreateStorageLocationPayload, UpdateStorageLocationPayload, LookupItem } from '../model/storageLocation.model';
 import { AppConfigService } from '../../../shared/services/app-config.service';
 
@@ -46,7 +46,9 @@ export class StorageLocationsService {
   }
 
   // TODO: adjust to the real warehouses endpoint
-  getWarehouses(): Observable<LookupItem[]> {
-    return this.http.get<LookupItem[]>(`${this.appConfig.baseURL}api/Warehouses`);
-  }
+    getWarehouses(): Observable<LookupItem[]> {
+  return this.http
+    .get<any>(`${this.appConfig.baseURL}api/Warehouses`)
+    .pipe(map(res => res?.data?.data ?? res?.data ?? res ?? []));
+}
 }

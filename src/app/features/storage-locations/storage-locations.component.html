@@ -1,47 +1,97 @@
-<p-toast position="top-left" />
 
-<div class="sl-page">
+<p-toast position="top-left"></p-toast>
 
-  <!-- ========================= -->
-  <!-- Header -->
-  <!-- ========================= -->
+<div class="sl-page" dir="rtl">
 
-  <section class="sl-header">
+  <!-- Page heading -->
+  <header class="sl-header">
+    <div class="sl-heading">
+      <div class="sl-heading-icon">
+        <i class="pi pi-map-marker"></i>
+      </div>
 
-    <div>
-      <span class="section-eyebrow">STORAGE LOCATIONS</span>
-      <h2>مواقع التخزين</h2>
-      <p>إدارة مواقع التخزين (المنطقة، الرف، الدور، الصندوق) لكل مخزن.</p>
+      <div>
+        <span class="section-eyebrow">إدارة المخازن</span>
+        <h1>مواقع التخزين</h1>
+        <p>إدارة وتنظيم مواقع التخزين حسب المنطقة والرف والدور والصندوق.</p>
+      </div>
     </div>
 
-    <div class="sl-summary">
-      <div class="summary-icon">
+    <button
+      pButton
+      type="button"
+      class="add-btn"
+      (click)="openAdd()"
+    >
+      <i class="pi pi-plus"></i>
+      <span>إضافة موقع تخزين</span>
+    </button>
+  </header>
+
+  <!-- Statistics -->
+  <!-- <section class="stats-grid">
+    <article class="stat-card stat-card-primary">
+      <div class="stat-content">
+        <span>إجمالي مواقع التخزين</span>
+        <strong>{{ totalCount() | number }}</strong>
+        <small>حسب نتائج النظام الحالية</small>
+      </div>
+      <div class="stat-icon">
+        <i class="pi pi-map-marker"></i>
+      </div>
+    </article>
+
+    <article class="stat-card">
+      <div class="stat-content">
+        <span>المخازن المسجلة</span>
+        <strong>{{ warehouseCount() | number }}</strong>
+        <small>المخازن المتاحة للاختيار</small>
+      </div>
+      <div class="stat-icon icon-blue">
         <i class="pi pi-warehouse"></i>
       </div>
-      <div>
-        <strong>{{ totalCount() }}</strong>
-        <span>موقع تخزين</span>
+    </article>
+
+    <article class="stat-card">
+      <div class="stat-content">
+        <span>المواقع المعروضة</span>
+        <strong>{{ visibleLocationCount() | number }}</strong>
+        <small>في الصفحة الحالية</small>
       </div>
-    </div>
+      <div class="stat-icon icon-cyan">
+        <i class="pi pi-list"></i>
+      </div>
+    </article>
 
-  </section>
+    <article class="stat-card">
+      <div class="stat-content">
+        <span>المناطق المعروضة</span>
+        <strong>{{ visibleAreaCount() | number }}</strong>
+        <small>المناطق المختلفة في الصفحة الحالية</small>
+      </div>
+      <div class="stat-icon icon-sky">
+        <i class="pi pi-th-large"></i>
+      </div>
+    </article>
+  </section> -->
 
-  <!-- ========================= -->
   <!-- Filters -->
-  <!-- ========================= -->
-
   <section class="filters-card">
-
-    <div class="filters-header">
-      <div class="filters-title">
-        <i class="pi pi-filter"></i>
-        <span>بحث وتصفية</span>
+    <div class="section-card-heading">
+      <div class="section-heading-title">
+        <span class="heading-icon">
+          <i class="pi pi-sliders-h"></i>
+        </span>
+        <div>
+          <h2>البحث والتصفية</h2>
+          <p>استخدم الفلاتر للوصول إلى موقع التخزين المطلوب.</p>
+        </div>
       </div>
 
       <button
         *ngIf="hasActiveFilters()"
         type="button"
-        class="filters-clear-link"
+        class="clear-filters"
         (click)="clearFilters()"
       >
         <i class="pi pi-filter-slash"></i>
@@ -50,11 +100,11 @@
     </div>
 
     <div class="filters-grid">
-
       <div class="filter-field">
-        <label>المخزن</label>
+        <label for="warehouseFilter">المخزن</label>
 
         <p-select
+          inputId="warehouseFilter"
           [options]="warehouses()"
           optionLabel="name"
           optionValue="id"
@@ -66,18 +116,18 @@
           filterPlaceholder="ابحث عن مخزن..."
           appendTo="body"
           styleClass="filter-select"
-        />
+        ></p-select>
       </div>
 
       <div class="filter-field">
-        <label>بحث</label>
+        <label for="locationSearch">بحث عن موقع</label>
 
-        <div class="filter-input-wrapper">
+        <div class="search-wrapper">
           <i class="pi pi-search"></i>
-
           <input
+            id="locationSearch"
             pInputText
-            type="text"
+            type="search"
             class="filter-input"
             placeholder="ابحث بالكود أو المنطقة أو الرف..."
             [ngModel]="searchInput()"
@@ -87,14 +137,12 @@
       </div>
 
       <div class="filter-actions">
-
         <button
           pButton
           type="button"
-          class="filter-reset-btn"
-          [pTooltip]="ascending() ? 'ترتيب تصاعدي' : 'ترتيب تنازلي'"
-          tooltipPosition="top"
+          class="secondary-btn"
           (click)="toggleSort()"
+          [pTooltip]="ascending() ? 'ترتيب تصاعدي' : 'ترتيب تنازلي'"
         >
           <i
             class="pi"
@@ -107,61 +155,46 @@
         <button
           pButton
           type="button"
-          class="filter-reset-btn"
+          class="secondary-btn"
           (click)="clearFilters()"
         >
           <i class="pi pi-refresh"></i>
           <span>إعادة تعيين</span>
         </button>
-
       </div>
-
     </div>
-
   </section>
 
-  <!-- ========================= -->
   <!-- Table -->
-  <!-- ========================= -->
-
   <section class="table-section">
-
     <div class="table-header">
-
       <div>
-        <span class="table-eyebrow">المواقع</span>
-        <h3>قائمة مواقع التخزين</h3>
+        <div class="table-title-line">
+          <span class="table-title-icon">
+            <i class="pi pi-database"></i>
+          </span>
+          <h2>قائمة مواقع التخزين</h2>
+        </div>
+        <p>عرض وإدارة مواقع التخزين المسجلة بالنظام.</p>
       </div>
 
-      <div class="table-header-actions">
-        <div class="results-badge">{{ totalCount() }} موقع</div>
-
-        <button
-          pButton
-          type="button"
-          class="add-btn"
-          (click)="openAdd()"
-        >
-          <i class="pi pi-plus"></i>
-          <span>إضافة موقع</span>
-        </button>
-      </div>
-
+      <span class="results-badge">
+        <i class="pi pi-map-marker"></i>
+        {{ totalCount() | number }} موقع
+      </span>
     </div>
 
-    <div class="sl-table-wrapper">
-
+    <div class="table-responsive">
       <p-table
         [value]="rows()"
         [loading]="loading()"
-        [tableStyle]="{ 'min-width': '900px' }"
+        [tableStyle]="{ 'min-width': '940px' }"
         styleClass="sl-table"
       >
-
         <ng-template pTemplate="header">
           <tr>
             <th class="index-column">#</th>
-            <th>الكود</th>
+            <th>كود الموقع</th>
             <th>المنطقة</th>
             <th>الرف</th>
             <th>الدور</th>
@@ -173,7 +206,6 @@
 
         <ng-template pTemplate="body" let-row let-i="rowIndex">
           <tr>
-
             <td>
               <span class="row-index">{{ rowNumber(i) }}</span>
             </td>
@@ -181,27 +213,34 @@
             <td>
               <span class="code-chip">
                 <i class="pi pi-tag"></i>
-                {{ row.code }}
+                <bdi>{{ row.code }}</bdi>
               </span>
             </td>
 
-            <td>{{ row.area }}</td>
+            <td>
+              <span class="location-value">{{ row.area }}</span>
+            </td>
+
             <td>{{ row.rack }}</td>
             <td>{{ row.shelf }}</td>
             <td>{{ row.bin }}</td>
 
             <td>
-              <span class="warehouse-name">{{ warehouseName(row) }}</span>
+              <div class="warehouse-cell">
+                <span class="warehouse-icon">
+                  <i class="pi pi-warehouse"></i>
+                </span>
+                <span class="warehouse-name">{{ warehouseName(row) }}</span>
+              </div>
             </td>
 
             <td>
               <div class="row-actions">
-
                 <button
                   type="button"
-                  class="status-menu-btn"
-                  aria-label="تعديل"
-                  pTooltip="تعديل"
+                  class="action-btn edit-action"
+                  aria-label="تعديل موقع التخزين"
+                  pTooltip="تعديل الموقع"
                   tooltipPosition="top"
                   (click)="openEdit(row)"
                 >
@@ -210,34 +249,32 @@
 
                 <button
                   type="button"
-                  class="status-menu-btn danger"
-                  aria-label="حذف"
-                  pTooltip="حذف"
+                  class="action-btn delete-action"
+                  aria-label="حذف موقع التخزين"
+                  pTooltip="حذف الموقع"
                   tooltipPosition="top"
                   (click)="openDelete(row)"
                 >
                   <i class="pi pi-trash"></i>
                 </button>
-
               </div>
             </td>
-
           </tr>
         </ng-template>
 
         <ng-template pTemplate="emptymessage">
           <tr>
             <td colspan="8" class="empty-state">
-
               <ng-container *ngIf="loadError(); else noData">
-                <i class="pi pi-exclamation-triangle error"></i>
-                <strong>تعذر تحميل البيانات</strong>
-                <span>حدث خطأ أثناء الاتصال بالخادم.</span>
-
+                <div class="empty-icon error-icon">
+                  <i class="pi pi-exclamation-triangle"></i>
+                </div>
+                <h3>تعذر تحميل البيانات</h3>
+                <p>حدث خطأ أثناء الاتصال بالخادم. حاول مرة أخرى.</p>
                 <button
                   pButton
                   type="button"
-                  class="retry-btn"
+                  class="add-btn retry-btn"
                   (click)="load()"
                 >
                   <i class="pi pi-refresh"></i>
@@ -247,112 +284,102 @@
 
               <ng-template #noData>
                 <ng-container *ngIf="!loading()">
-                  <i class="pi pi-inbox"></i>
-                  <strong>لا توجد مواقع تخزين</strong>
-                  <span>
-                    {{ hasActiveFilters()
-                      ? 'لا توجد نتائج مطابقة للبحث الحالي.'
-                      : 'ابدأ بإضافة أول موقع تخزين.' }}
-                  </span>
+                  <div class="empty-icon">
+                    <i class="pi pi-inbox"></i>
+                  </div>
+                  <h3>لا توجد مواقع تخزين</h3>
+                  <p>
+                    {{
+                      hasActiveFilters()
+                        ? 'لا توجد نتائج مطابقة للفلاتر الحالية.'
+                        : 'يمكنك البدء بإضافة أول موقع تخزين.'
+                    }}
+                  </p>
+                  <button
+                    *ngIf="!hasActiveFilters()"
+                    pButton
+                    type="button"
+                    class="add-btn"
+                    (click)="openAdd()"
+                  >
+                    <i class="pi pi-plus"></i>
+                    <span>إضافة موقع تخزين</span>
+                  </button>
                 </ng-container>
               </ng-template>
-
             </td>
           </tr>
         </ng-template>
-
       </p-table>
-
-      <!-- ========================= -->
-      <!-- Pagination -->
-      <!-- ========================= -->
-
-      <div class="sl-pagination" *ngIf="totalCount() > 0">
-
-        <div class="pagination-info">
-          <span class="pagination-info-icon">
-            <i class="pi pi-list"></i>
-          </span>
-
-          <span>
-            عرض
-            <strong>{{ paginationStart() }}</strong>
-            -
-            <strong>{{ paginationEnd() }}</strong>
-            من
-            <strong>{{ totalCount() }}</strong>
-            موقع
-            (صفحة <strong>{{ pageNumber() }}</strong> من <strong>{{ totalPages() }}</strong>)
-          </span>
-        </div>
-
-        <div class="pagination-size">
-          <span>عدد الصفوف</span>
-
-          <p-select
-            [options]="pageSizeOptions"
-            optionLabel="label"
-            optionValue="value"
-            [ngModel]="pageSize()"
-            (ngModelChange)="onPageSizeChange($event)"
-            styleClass="pagination-size-select"
-          />
-        </div>
-
-        <div class="pagination-controls">
-
-          <button
-            type="button"
-            class="pagination-arrow"
-            [disabled]="pageNumber() === 1"
-            (click)="previousPage()"
-            pTooltip="الصفحة السابقة"
-            tooltipPosition="top"
-          >
-            <i class="pi pi-chevron-right"></i>
-          </button>
-
-          <ng-container *ngFor="let page of paginationPages()">
-
-            <span *ngIf="page === 'dots'" class="pagination-dots">...</span>
-
-            <button
-              *ngIf="page !== 'dots'"
-              type="button"
-              class="pagination-page"
-              [class.active]="page === pageNumber()"
-              (click)="goToPage(+page)"
-            >
-              {{ page }}
-            </button>
-
-          </ng-container>
-
-          <button
-            type="button"
-            class="pagination-arrow"
-            [disabled]="pageNumber() === totalPages()"
-            (click)="nextPage()"
-            pTooltip="الصفحة التالية"
-            tooltipPosition="top"
-          >
-            <i class="pi pi-chevron-left"></i>
-          </button>
-
-        </div>
-
-      </div>
-
     </div>
 
-  </section>
+    <!-- Pagination -->
+    <footer class="sl-pagination" *ngIf="totalCount() > 0">
+      <div class="pagination-info">
+        عرض
+        <strong>{{ paginationStart() }}</strong>
+        -
+        <strong>{{ paginationEnd() }}</strong>
+        من
+        <strong>{{ totalCount() }}</strong>
+        موقع
+      </div>
 
+      <div class="pagination-size">
+        <label for="pageSize">عدد الصفوف</label>
+        <p-select
+          inputId="pageSize"
+          [options]="pageSizeOptions"
+          optionLabel="label"
+          optionValue="value"
+          [ngModel]="pageSize()"
+          (ngModelChange)="onPageSizeChange($event)"
+          appendTo="body"
+          styleClass="pagination-size-select"
+        ></p-select>
+      </div>
+
+      <nav class="pagination-controls" aria-label="التنقل بين الصفحات">
+        <button
+          type="button"
+          class="pagination-arrow"
+          [disabled]="pageNumber() === 1"
+          (click)="previousPage()"
+          aria-label="الصفحة التالية"
+        >
+          <i class="pi pi-chevron-right"></i>
+        </button>
+
+        <ng-container *ngFor="let page of paginationPages()">
+          <span *ngIf="page === 'dots'" class="pagination-dots">…</span>
+
+          <button
+            *ngIf="page !== 'dots'"
+            type="button"
+            class="pagination-page"
+            [class.active]="page === pageNumber()"
+            [attr.aria-current]="page === pageNumber() ? 'page' : null"
+            (click)="goToPage(+page)"
+          >
+            {{ page }}
+          </button>
+        </ng-container>
+
+        <button
+          type="button"
+          class="pagination-arrow"
+          [disabled]="pageNumber() === totalPages()"
+          (click)="nextPage()"
+          aria-label="الصفحة السابقة"
+        >
+          <i class="pi pi-chevron-left"></i>
+        </button>
+      </nav>
+    </footer>
+  </section>
 </div>
 
-<!-- ====================================================== -->
 <!-- ADD / EDIT DIALOG -->
-<!-- ====================================================== -->
-
 <p-dialog
   [(visible)]="formVisible"
   [modal]="true"
@@ -363,184 +390,223 @@
   [dismissableMask]="!saving()"
   [style]="{ width: '720px', maxWidth: 'calc(100vw - 2rem)' }"
   appendTo="body"
-  styleClass="sl-dialog"
+  styleClass="sl-dialog sl-form-dialog"
 >
-
   <ng-template pTemplate="header">
     <div class="dialog-header">
       <div class="dialog-title-icon">
-        <i class="pi" [class.pi-plus]="!editingId()" [class.pi-pencil]="editingId()"></i>
+        <i
+          class="pi"
+          [class.pi-plus]="editingId() === null"
+          [class.pi-pencil]="editingId() !== null"
+        ></i>
       </div>
 
-      <div>
-        <span>STORAGE LOCATION</span>
-        <h3>{{ editingId() ? 'تعديل موقع تخزين' : 'إضافة موقع تخزين' }}</h3>
+      <div class="dialog-heading-text">
+        <span class="dialog-eyebrow">مواقع التخزين</span>
+        <h2>{{ editingId() !== null ? 'تعديل موقع التخزين' : 'إضافة موقع تخزين جديد' }}</h2>
+        <p>أدخل بيانات الموقع وتأكد من صحة الكود.</p>
       </div>
     </div>
   </ng-template>
 
   <div class="dialog-body">
-
     <div class="form-loading" *ngIf="loadingForm()">
       <i class="pi pi-spin pi-spinner"></i>
-      <span>جاري تحميل البيانات...</span>
+      <span>جاري تحميل بيانات الموقع...</span>
     </div>
 
     <form
       *ngIf="!loadingForm()"
       [formGroup]="form"
       (ngSubmit)="save()"
-      class="form-grid"
+      class="location-form"
+      novalidate
     >
-
-      <!-- Warehouse -->
-      <div class="dialog-field">
-        <label>المخزن <span class="required">*</span></label>
-
-        <p-select
-          formControlName="warehouseId"
-          [options]="warehouses()"
-          optionLabel="name"
-          optionValue="id"
-          placeholder="اختر المخزن"
-          [filter]="true"
-          filterPlaceholder="ابحث عن مخزن..."
-          appendTo="body"
-          styleClass="form-select"
-          [class.ng-invalid-touched]="invalid('warehouseId')"
-        />
-
-        <small class="field-error" *ngIf="invalid('warehouseId')">المخزن مطلوب</small>
-        <small class="field-hint" *ngIf="editingId()">لا يمكن تغيير المخزن عند التعديل.</small>
+      <div class="form-section-heading">
+        <i class="pi pi-info-circle"></i>
+        <span>البيانات الأساسية</span>
       </div>
 
-      <!-- Code -->
-      <div class="dialog-field">
-        <label>الكود <span class="required">*</span></label>
+      <div class="form-grid">
+        <div class="dialog-field">
+          <label for="formWarehouse">
+            المخزن <span class="required">*</span>
+          </label>
+          <p-select
+            inputId="formWarehouse"
+            formControlName="warehouseId"
+            [options]="warehouses()"
+            optionLabel="name"
+            optionValue="id"
+            placeholder="اختر المخزن"
+            [filter]="true"
+            filterPlaceholder="ابحث عن مخزن..."
+            appendTo="body"
+            styleClass="form-select"
+          ></p-select>
+          <small class="field-error" *ngIf="invalid('warehouseId')">
+            يجب اختيار المخزن.
+          </small>
+          <small class="field-hint" *ngIf="editingId() !== null">
+            لا يمكن تغيير المخزن عند تعديل الموقع.
+          </small>
+        </div>
 
-        <input
-          pInputText
-          type="text"
-          formControlName="code"
-          class="form-input"
-          maxlength="50"
-          placeholder="مثال: A1-R1-S1-B1"
-        />
-
-        <small class="field-error" *ngIf="invalid('code')">
-          {{ form.controls.code.hasError('maxlength') ? 'الحد الأقصى 50 حرفًا' : 'الكود مطلوب' }}
-        </small>
+        <div class="dialog-field">
+          <label for="formCode">
+            كود الموقع <span class="required">*</span>
+          </label>
+          <input
+            id="formCode"
+            pInputText
+            type="text"
+            formControlName="code"
+            class="form-input"
+            maxlength="50"
+            placeholder="مثال: A1-R1-S1-B1"
+            dir="auto"
+          />
+          <small class="field-error" *ngIf="invalid('code')">
+            {{
+              form.controls.code.hasError('maxlength')
+                ? 'الحد الأقصى للكود 50 حرفًا.'
+                : 'كود الموقع مطلوب.'
+            }}
+          </small>
+        </div>
       </div>
 
-      <!-- Area -->
-      <div class="dialog-field">
-        <label>المنطقة <span class="required">*</span></label>
-
-        <p-select
-          formControlName="area"
-          [options]="areaOptions"
-          optionLabel="label"
-          optionValue="value"
-          placeholder="اختر المنطقة"
-          appendTo="body"
-          styleClass="form-select"
-        />
-
-        <small class="field-error" *ngIf="invalid('area')">المنطقة مطلوبة</small>
+      <div class="form-section-heading location-section-heading">
+        <i class="pi pi-sitemap"></i>
+        <span>تفاصيل موقع التخزين</span>
       </div>
 
-      <!-- Rack -->
-      <div class="dialog-field">
-        <label>الرف <span class="required">*</span></label>
+      <div class="form-grid">
+        <div class="dialog-field">
+          <label for="formArea">
+            المنطقة <span class="required">*</span>
+          </label>
+          <p-select
+            inputId="formArea"
+            formControlName="area"
+            [options]="areaOptions"
+            optionLabel="label"
+            optionValue="value"
+            placeholder="اختر المنطقة"
+            appendTo="body"
+            styleClass="form-select"
+          ></p-select>
+          <small class="field-error" *ngIf="invalid('area')">
+            المنطقة مطلوبة.
+          </small>
+        </div>
 
-        <p-select
-          formControlName="rack"
-          [options]="rackOptions"
-          optionLabel="label"
-          optionValue="value"
-          placeholder="اختر الرف"
-          appendTo="body"
-          styleClass="form-select"
-        />
+        <div class="dialog-field">
+          <label for="formRack">
+            الرف <span class="required">*</span>
+          </label>
+          <p-select
+            inputId="formRack"
+            formControlName="rack"
+            [options]="rackOptions"
+            optionLabel="label"
+            optionValue="value"
+            placeholder="اختر الرف"
+            appendTo="body"
+            styleClass="form-select"
+          ></p-select>
+          <small class="field-error" *ngIf="invalid('rack')">
+            الرف مطلوب.
+          </small>
+        </div>
 
-        <small class="field-error" *ngIf="invalid('rack')">الرف مطلوب</small>
+        <div class="dialog-field">
+          <label for="formShelf">
+            الدور <span class="required">*</span>
+          </label>
+          <p-select
+            inputId="formShelf"
+            formControlName="shelf"
+            [options]="shelfOptions"
+            optionLabel="label"
+            optionValue="value"
+            placeholder="اختر الدور"
+            appendTo="body"
+            styleClass="form-select"
+          ></p-select>
+          <small class="field-error" *ngIf="invalid('shelf')">
+            الدور مطلوب.
+          </small>
+        </div>
+
+        <div class="dialog-field">
+          <label for="formBin">
+            الصندوق <span class="required">*</span>
+          </label>
+          <p-select
+            inputId="formBin"
+            formControlName="bin"
+            [options]="binOptions"
+            optionLabel="label"
+            optionValue="value"
+            placeholder="اختر الصندوق"
+            appendTo="body"
+            styleClass="form-select"
+          ></p-select>
+          <small class="field-error" *ngIf="invalid('bin')">
+            الصندوق مطلوب.
+          </small>
+        </div>
       </div>
 
-      <!-- Shelf -->
-      <div class="dialog-field">
-        <label>الدور <span class="required">*</span></label>
-
-        <p-select
-          formControlName="shelf"
-          [options]="shelfOptions"
-          optionLabel="label"
-          optionValue="value"
-          placeholder="اختر الدور"
-          appendTo="body"
-          styleClass="form-select"
-        />
-
-        <small class="field-error" *ngIf="invalid('shelf')">الدور مطلوب</small>
+      <div class="form-note">
+        <i class="pi pi-shield"></i>
+        <span>الحقول التي بجوارها علامة النجمة إلزامية.</span>
       </div>
-
-      <!-- Bin -->
-      <div class="dialog-field">
-        <label>الصندوق <span class="required">*</span></label>
-
-        <p-select
-          formControlName="bin"
-          [options]="binOptions"
-          optionLabel="label"
-          optionValue="value"
-          placeholder="اختر الصندوق"
-          appendTo="body"
-          styleClass="form-select"
-        />
-
-        <small class="field-error" *ngIf="invalid('bin')">الصندوق مطلوب</small>
-      </div>
-
     </form>
-
   </div>
 
   <ng-template pTemplate="footer">
     <div class="dialog-footer">
-
-      <button
-        pButton
-        type="button"
-        class="cancel-btn"
-        label="إلغاء"
-        [disabled]="saving()"
-        (click)="closeForm()"
-      ></button>
-
-      <button
+         <button
         pButton
         type="button"
         class="save-btn"
         [disabled]="form.invalid || saving() || loadingForm()"
+        [loading]="saving()"
         (click)="save()"
       >
         <i
+          *ngIf="!saving()"
           class="pi"
-          [class.pi-check]="!saving()"
-          [class.pi-spin]="saving()"
-          [class.pi-spinner]="saving()"
+          [class.pi-plus]="editingId() === null"
+          [class.pi-save]="editingId() !== null"
         ></i>
-        {{ saving() ? 'جاري الحفظ...' : 'حفظ' }}
+        <span>
+          {{
+            saving()
+              ? 'جاري الحفظ...'
+              : (editingId() !== null ? 'حفظ التعديلات' : 'إضافة الموقع')
+          }}
+        </span>
+      </button>
+      <button
+        pButton
+        type="button"
+        class="p-button-text cancel-btn"
+        [disabled]="saving()"
+        (click)="closeForm()"
+      >
+        <i class="pi pi-times"></i>
+        <span>إلغاء</span>
       </button>
 
     </div>
   </ng-template>
-
 </p-dialog>
 
-<!-- ====================================================== -->
-<!-- DELETE CONFIRMATION DIALOG -->
-<!-- ====================================================== -->
-
+<!-- DELETE DIALOG -->
 <p-dialog
   [(visible)]="deleteVisible"
   [modal]="true"
@@ -549,62 +615,68 @@
   [resizable]="false"
   [closable]="!deleting()"
   [dismissableMask]="!deleting()"
-  [style]="{ width: '480px', maxWidth: 'calc(100vw - 2rem)' }"
+  [style]="{ width: '460px', maxWidth: 'calc(100vw - 2rem)' }"
   appendTo="body"
-  styleClass="sl-dialog"
-  (onHide)="closeDelete()"
+  styleClass="sl-dialog sl-delete-dialog"
 >
-
   <ng-template pTemplate="header">
     <div class="dialog-header">
       <div class="dialog-title-icon danger">
         <i class="pi pi-trash"></i>
       </div>
-
-      <div>
-        <span>DELETE</span>
-        <h3>حذف موقع التخزين</h3>
+      <div class="dialog-heading-text">
+        <span class="dialog-eyebrow danger-text">تأكيد الإجراء</span>
+        <h2>حذف موقع التخزين</h2>
+        <p>يرجى مراجعة الموقع قبل تأكيد الحذف.</p>
       </div>
     </div>
   </ng-template>
 
-  <div class="dialog-body">
+  <div class="dialog-body delete-dialog-body">
+    <div class="delete-illustration">
+      <i class="pi pi-trash"></i>
+    </div>
+
+    <h3>هل أنت متأكد من الحذف؟</h3>
     <p class="delete-text">
-      هل أنت متأكد من حذف موقع التخزين
-      <strong class="delete-code">{{ deleteTarget()?.code }}</strong>؟
-      لا يمكن التراجع عن هذا الإجراء.
+      سيتم حذف موقع التخزين
+      <strong class="delete-code">
+        <bdi>{{ deleteTarget()?.code }}</bdi>
+      </strong>
+      من النظام.
     </p>
+
+    <div class="delete-warning">
+      <i class="pi pi-exclamation-triangle"></i>
+      <span>تأكد من عدم ارتباط الموقع ببيانات أخرى قبل المتابعة.</span>
+    </div>
   </div>
 
   <ng-template pTemplate="footer">
     <div class="dialog-footer">
-
+<button
+  pButton
+  type="button"
+  class="reject-submit-btn"
+  [disabled]="deleting() || !deleteTarget()"
+  [loading]="deleting()"
+  (click)="confirmDelete()"
+>
+  <i *ngIf="!deleting()" class="pi pi-trash"></i>
+  <span>
+    {{ deleting() ? 'جاري الحذف...' : 'تأكيد الحذف' }}
+  </span>
+</button>
       <button
         pButton
         type="button"
-        class="cancel-btn"
-        label="إلغاء"
+        class="p-button-text cancel-btn"
         [disabled]="deleting()"
         (click)="closeDelete()"
-      ></button>
-
-      <button
-        pButton
-        type="button"
-        class="delete-btn"
-        [disabled]="deleting()"
-        (click)="confirmDelete()"
       >
-        <i
-          class="pi"
-          [class.pi-trash]="!deleting()"
-          [class.pi-spin]="deleting()"
-          [class.pi-spinner]="deleting()"
-        ></i>
-        {{ deleting() ? 'جاري الحذف...' : 'تأكيد الحذف' }}
+        <i class="pi pi-times"></i>
+        <span>إلغاء</span>
       </button>
-
     </div>
   </ng-template>
-
 </p-dialog>
