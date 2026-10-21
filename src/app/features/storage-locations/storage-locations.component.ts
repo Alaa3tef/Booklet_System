@@ -175,7 +175,7 @@ export default class StorageLocationsComponent implements OnInit {
     this.listSub?.unsubscribe();
     this.loading.set(true);
     this.loadError.set(false);
-
+    
     this.listSub = this.api
       .getAll({
         warehouseId: this.warehouseFilter(),
@@ -185,17 +185,20 @@ export default class StorageLocationsComponent implements OnInit {
         ascending: this.ascending()
       })
       .subscribe({
-        next: res => {
-          this.rows.set(res.items);
-          this.totalCount.set(res.totalCount);
-          this.loading.set(false);
+       next: (res: any) => {
+  const items = res.data?.data ?? [];
+  const total = res.data?.totalCount ?? 0;
 
-          // current page became empty (e.g. last item deleted) -> go back
-          if (res.items.length === 0 && this.pageNumber() > 1 && res.totalCount > 0) {
-            this.pageNumber.set(this.totalPages());
-            this.load();
-          }
-        },
+  this.rows.set(items);
+  this.totalCount.set(total);
+  this.loading.set(false);
+
+  // current page became empty (e.g. last item deleted) -> go back
+  if (items.length === 0 && this.pageNumber() > 1 && total > 0) {
+    this.pageNumber.set(this.totalPages());
+    this.load();
+  }
+},
         error: () => {
           this.rows.set([]);
           this.totalCount.set(0);

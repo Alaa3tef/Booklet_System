@@ -105,12 +105,14 @@ export const routes: Routes = [
           import('./features/user-management/user-management.component'),
         data: { breadcrumb: 'إدارة المستخدمين' }
       },
-      { path: '**', redirectTo: 'dashboard' }
+      {
+        path: 'storage-locations',
+  loadComponent: () => import('./features/storage-locations/storage-locations.component') 
+      },
+       { path: '**', redirectTo: 'dashboard' }
+     
     ]
   }
-  , {
-  path: 'storage-locations',
-  loadComponent: () => import('./features/storage-locations/storage-locations.component') , canActivate: [authGuard]
-}
+ 
 ];
 
