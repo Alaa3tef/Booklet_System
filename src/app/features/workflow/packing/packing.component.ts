@@ -1,4 +1,4 @@
-import { Component, computed, signal } from '@angular/core';
+import { Component, computed, DestroyRef, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 
@@ -11,6 +11,9 @@ import { TextareaModule } from 'primeng/textarea';
 import { WorkflowStepLayoutComponent } from '../../../shared/workflow-step-layout/workflow-step-layout.component';
 import { WorkflowStatusRow } from '../../../core/models/workflow.model';
 import { SelectModule } from 'primeng/select';
+import { Lookups } from '../../../shared/services/lookups';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { catchError, of, finalize } from 'rxjs';
 
 interface PackingRow extends WorkflowStatusRow {
   governorate: string;
@@ -43,7 +46,173 @@ interface PackingScanResult {
   styleUrl: './packing.component.scss'
 })
 export default class PackingComponent {
+ private readonly lookupsService = inject(Lookups);
+private readonly destroyRef = inject(DestroyRef);
 
+readonly subjectOptions = signal<any[]>([]);
+readonly governorateOptions = signal<any[]>([]);
+
+readonly subjectsLoading = signal(false);
+readonly governoratesLoading = signal(false);
+
+
+ngOnInit(): void {
+  this.loadSubjects();
+  this.loadGovernorates();
+}
+
+readonly subjectFilter = signal<string | null>(null);
+readonly governorateFilter = signal<string | null>(null);
+readonly committeeFilter = signal('');
+
+private readonly appliedFilters = signal({
+  subject: null as string | null,
+  governorate: null as string | null,
+  committee: ''
+});
+
+// يدعم أكثر من شكل شائع لاستجابة الـ API
+private extractItems(response: any): any[] {
+  if (Array.isArray(response)) {
+    return response;
+  }
+
+  const candidates = [
+    response?.data,
+    response?.data?.data,
+    response?.result,
+    response?.result?.data,
+    response?.items
+  ];
+
+  return candidates.find(item => Array.isArray(item)) ?? [];
+}
+
+// ==========================================
+// LOAD SUBJECTS
+// ==========================================
+
+loadSubjects(): void {
+  this.subjectsLoading.set(true);
+
+  this.lookupsService
+    .getLookupSubjectData()
+    .pipe(
+      catchError(error => {
+        console.error('Error loading subjects:', error);
+        return of([]);
+      }),
+      finalize(() => this.subjectsLoading.set(false)),
+      takeUntilDestroyed(this.destroyRef)
+    )
+    .subscribe(response => {
+      const options = this.extractItems(response)
+        .map((item: any): any => {
+          const name =
+            item.name ??
+            item.subjectName ??
+            item.subject;
+
+          return {
+            label: String(name ?? ''),
+            value: String(name ?? '')
+          };
+        })
+        .filter(item => item.label.trim() !== '');
+
+      this.subjectOptions.set(options);
+    });
+}
+
+// ==========================================
+// LOAD GOVERNORATES
+// ==========================================
+
+loadGovernorates(): void {
+  this.governoratesLoading.set(true);
+
+  this.lookupsService
+    .getLookupGovernorateData()
+    .pipe(
+      catchError(error => {
+        console.error('Error loading governorates:', error);
+        return of([]);
+      }),
+      finalize(() => this.governoratesLoading.set(false)),
+      takeUntilDestroyed(this.destroyRef)
+    )
+    .subscribe(response => {
+      const options = this.extractItems(response)
+        .map((item: any): any => {
+          const name =
+            item.name ??
+            item.governorateName ??
+            item.governorate;
+
+          return {
+            label: String(name ?? ''),
+            value: String(name ?? '')
+          };
+        })
+        .filter(item => item.label.trim() !== '');
+
+      this.governorateOptions.set(options);
+    });
+}
+
+// ==========================================
+// FILTERED ROWS
+// ==========================================
+
+readonly filteredRows = computed(() => {
+  const { subject, governorate, committee } =
+    this.appliedFilters();
+
+  const committeeTerm = committee.trim();
+
+  return this.rows().filter(row =>
+    (!subject || row.subject === subject) &&
+    (!governorate || row.governorate === governorate) &&
+    (
+      !committeeTerm ||
+      String(row.committeeNumber ?? '').includes(committeeTerm)
+    )
+  );
+});
+
+readonly hasActiveFilters = computed(() => {
+  const filters = this.appliedFilters();
+
+  return !!(
+    filters.subject ||
+    filters.governorate ||
+    filters.committee.trim()
+  );
+});
+
+applyFilters(): void {
+  this.appliedFilters.set({
+    subject: this.subjectFilter(),
+    governorate: this.governorateFilter(),
+    committee: this.committeeFilter()
+  });
+
+  this.currentPage.set(1);
+}
+
+resetFilters(): void {
+  this.subjectFilter.set(null);
+  this.governorateFilter.set(null);
+  this.committeeFilter.set('');
+
+  this.appliedFilters.set({
+    subject: null,
+    governorate: null,
+    committee: ''
+  });
+
+  this.currentPage.set(1);
+}
   // =====================================================
   // Page essentials
   // =====================================================
@@ -102,67 +271,6 @@ export default class PackingComponent {
   // SEARCH FILTERS
   // ==========================================
 
-  // القيم اللي المستخدم بيختارها/بيكتبها (لسه مطبقتش)
-  readonly subjectFilter = signal<string | null>(null);
-  readonly governorateFilter = signal<string | null>(null);
-  readonly committeeFilter = signal('');
-
-  // القيم المطبقة فعليًا بعد الضغط على "بحث"
-  private readonly appliedFilters = signal({
-    subject: null as string | null,
-    governorate: null as string | null,
-    committee: ''
-  });
-
-  // خيارات الـ dropdown بتتولد تلقائيًا من البيانات
-  readonly subjectOptions = computed(() =>
-    [...new Set(this.rows().map(r => r.subject))]
-      .map(value => ({ label: value, value }))
-  );
-
-  readonly governorateOptions = computed(() =>
-    [...new Set(this.rows().map(r => r.governorate))]
-      .map(value => ({ label: value, value }))
-  );
-
-  readonly filteredRows = computed(() => {
-    const { subject, governorate, committee } = this.appliedFilters();
-    const committeeTerm = committee.trim();
-
-    return this.rows().filter(row =>
-      (!subject || row.subject === subject) &&
-      (!governorate || row.governorate === governorate) &&
-(!committeeTerm || (row.committeeNumber ?? '').includes(committeeTerm))    );
-  });
-
-  readonly hasActiveFilters = computed(() => {
-    const f = this.appliedFilters();
-    return !!(f.subject || f.governorate || f.committee.trim());
-  });
-
-  applyFilters(): void {
-    this.appliedFilters.set({
-      subject: this.subjectFilter(),
-      governorate: this.governorateFilter(),
-      committee: this.committeeFilter()
-    });
-
-    this.currentPage.set(1);
-  }
-
-  resetFilters(): void {
-    this.subjectFilter.set(null);
-    this.governorateFilter.set(null);
-    this.committeeFilter.set('');
-
-    this.appliedFilters.set({
-      subject: null,
-      governorate: null,
-      committee: ''
-    });
-
-    this.currentPage.set(1);
-  }
 
 // ==========================================
 // PAGINATION

@@ -96,18 +96,20 @@
       <label>المادة</label>
 
       <p-select
-        [options]="subjectOptions()"
-        optionLabel="label"
-        optionValue="value"
-        placeholder="كل المواد"
-        [ngModel]="subjectFilter()"
-        (ngModelChange)="subjectFilter.set($event)"
-        [showClear]="true"
-        [filter]="true"
-        filterPlaceholder="ابحث عن مادة..."
-        appendTo="body"
-        styleClass="filter-select"
-      />
+  [options]="subjectOptions()"
+  optionLabel="label"
+  optionValue="value"
+  placeholder="كل المواد"
+  [ngModel]="subjectFilter()"
+  (ngModelChange)="subjectFilter.set($event)"
+  [loading]="subjectsLoading()"
+  [showClear]="true"
+  [filter]="true"
+  filterPlaceholder="ابحث عن مادة..."
+  emptyMessage="لا توجد مواد"
+  appendTo="body"
+  styleClass="filter-select"
+/>
     </div>
 
     <!-- المحافظة -->
@@ -115,18 +117,20 @@
       <label>المحافظة</label>
 
       <p-select
-        [options]="governorateOptions()"
-        optionLabel="label"
-        optionValue="value"
-        placeholder="كل المحافظات"
-        [ngModel]="governorateFilter()"
-        (ngModelChange)="governorateFilter.set($event)"
-        [showClear]="true"
-        [filter]="true"
-        filterPlaceholder="ابحث عن محافظة..."
-        appendTo="body"
-        styleClass="filter-select"
-      />
+  [options]="governorateOptions()"
+  optionLabel="label"
+  optionValue="value"
+  placeholder="كل المحافظات"
+  [ngModel]="governorateFilter()"
+  (ngModelChange)="governorateFilter.set($event)"
+  [loading]="governoratesLoading()"
+  [showClear]="true"
+  [filter]="true"
+  filterPlaceholder="ابحث عن محافظة..."
+  emptyMessage="لا توجد محافظات"
+  appendTo="body"
+  styleClass="filter-select"
+/>
     </div>
 
     <!-- رقم اللجنة -->
