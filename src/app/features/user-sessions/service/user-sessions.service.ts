@@ -9,22 +9,21 @@ export class UserSessionsService {
   private readonly http = inject(HttpClient);
   private readonly appConfig = inject(AppConfigService);
 
-  private get url(): string {
-    return `${this.appConfig.baseURL}api/UserSessions`;
-  }
+  private readonly baseUrl = `${this.appConfig.baseURL}api/UserSessions`;
+
 
   /** GET /api/UserSessions — all active sessions */
   getAll(): Observable<UserSessionsResponse> {
-    return this.http.get<UserSessionsResponse>(this.url);
+    return this.http.get<UserSessionsResponse>(this.baseUrl);
   }
 
   /** GET /api/UserSessions/{userId} — single user session */
   getByUserId(userId: number): Observable<UserSession> {
-    return this.http.get<UserSession>(`${this.url}/${userId}`);
+    return this.http.get<UserSession>(`${this.baseUrl}/${userId}`);
   }
 
   /** DELETE /api/UserSessions/{userId} — force-logout a user */
   revokeSession(userId: number): Observable<unknown> {
-    return this.http.delete(`${this.url}/${userId}`);
+    return this.http.delete(`${this.baseUrl}/${userId}`);
   }
 }

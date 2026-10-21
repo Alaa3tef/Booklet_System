@@ -107,12 +107,14 @@
           <div class="dropdown-divider"></div>
 
           <ul class="dropdown-menu-list">
-            <li>
-              <a routerLink="/users" class="dropdown-item" (click)="closeUserMenu()">
-                <i class="pi pi-users"></i>
-                <span>إدارة المستخدمين</span>
-              </a>
-            </li>
+            @if (isSuperAdmin()) {
+              <li>
+                <a routerLink="/users" class="dropdown-item" (click)="closeUserMenu()">
+                  <i class="pi pi-users"></i>
+                  <span>إدارة المستخدمين</span>
+                </a>
+              </li>
+            }
           </ul>
 
           <div class="dropdown-divider"></div>

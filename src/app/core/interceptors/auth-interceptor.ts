@@ -8,7 +8,6 @@ import { inject } from '@angular/core';
 
 import {
   catchError,
-  switchMap,
   throwError,
 } from 'rxjs';
 
@@ -25,14 +24,12 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const isLoginRequest =
     /\/login(?:[/?]|$)/i.test(req.url);
 
-  const isRefreshRequest =
-    /\/refresh-token(?:[/?]|$)/i.test(req.url);
-
-  // لا نرسل Access Token قديمًا مع طلب تسجيل الدخول أو التجديد
+  // Refresh-token renewal is temporarily disabled.
+  // لا نرسل Access Token قديمًا مع طلب تسجيل الدخول
   const token = authService.getToken();
 
   const authReq =
-    !isLoginRequest && !isRefreshRequest && token
+    !isLoginRequest && token
       ? req.clone({
           setHeaders: {
             Authorization: `Bearer ${token}`,
@@ -51,52 +48,14 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
         return throwError(() => error);
       }
 
-      // لو طلب Refresh نفسه فشل، ننهي الجلسة بدون تكرار
-      if (isRefreshRequest) {
-        authService.clearSession();
+      // Refresh-token renewal is disabled, so a non-login 401 ends the session.
+      authService.clearSession();
 
-        if (!sessionExpired.visible()) {
-          sessionExpired.show();
-        }
-
-        return throwError(() => error);
+      if (!sessionExpired.visible()) {
+        sessionExpired.show();
       }
 
-      // لو مفيش Refresh Token، الجلسة لا يمكن تجديدها
-      if (!authService.getRefreshToken()) {
-        if (authService.getToken()) {
-          authService.clearSession();
-
-          if (!sessionExpired.visible()) {
-            sessionExpired.show();
-          }
-        }
-
-        return throwError(() => error);
-      }
-
-      // تجديد التوكن ثم إعادة الطلب الأصلي
-      return authService.refreshAccessToken().pipe(
-        switchMap((newAccessToken) => {
-          const retryReq = req.clone({
-            setHeaders: {
-              Authorization: `Bearer ${newAccessToken}`,
-            },
-          });
-
-          return next(retryReq);
-        }),
-
-        catchError((refreshError) => {
-          authService.clearSession();
-
-          if (!sessionExpired.visible()) {
-            sessionExpired.show();
-          }
-
-          return throwError(() => refreshError);
-        })
-      );
+      return throwError(() => error);
     })
   );
 };

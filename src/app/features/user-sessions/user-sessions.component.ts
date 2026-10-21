@@ -52,6 +52,9 @@ export default class UserSessionsComponent implements OnInit {
   // ==========================================
 
   readonly rows = signal<UserSession[]>([]);
+  readonly totalCount = signal(0);
+  readonly totalActiveSessions = signal(0);
+  readonly totalInactiveSessions = signal(0);
   readonly loading = signal(false);
   readonly loadError = signal(false);
 
@@ -90,8 +93,8 @@ export default class UserSessionsComponent implements OnInit {
     });
   });
 
-  readonly onlineCount = computed(() => this.rows().filter(s => s.isActive).length);
-  readonly offlineCount = computed(() => this.rows().filter(s => !s.isActive).length);
+  readonly onlineCount = computed(() => this.totalActiveSessions());
+  readonly offlineCount = computed(() => this.totalInactiveSessions());
 
   readonly hasActiveFilters = computed(
     () => this.statusFilter() !== 'all' || !!this.searchTerm()
@@ -130,12 +133,18 @@ export default class UserSessionsComponent implements OnInit {
 
     this.listSub = this.api.getAll().subscribe({
       next: res => {
-        const data = (res as any)?.data ?? (res as any) ?? [];
-        this.rows.set(Array.isArray(data) ? data : []);
+        const page = res.data;
+        this.rows.set(Array.isArray(page?.data) ? page.data : []);
+        this.totalCount.set(page?.totalCount ?? 0);
+        this.totalActiveSessions.set(page?.totalActiveSessions ?? 0);
+        this.totalInactiveSessions.set(page?.totalInactiveSessions ?? 0);
         this.loading.set(false);
       },
       error: () => {
         this.rows.set([]);
+        this.totalCount.set(0);
+        this.totalActiveSessions.set(0);
+        this.totalInactiveSessions.set(0);
         this.loadError.set(true);
         this.loading.set(false);
       }
