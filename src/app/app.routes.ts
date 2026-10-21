@@ -111,6 +111,10 @@ export const routes: Routes = [
           import('./features/user-management/user-management.component'),
         data: { breadcrumb: 'إدارة المستخدمين' }
       },
+      {
+        path: 'storage-locations',
+  loadComponent: () => import('./features/storage-locations/storage-locations.component')
+      },
 
       {
         path: 'user-sessions',
@@ -121,9 +125,6 @@ export const routes: Routes = [
       { path: '**', redirectTo: 'dashboard' }
     ]
   }
-  , {
-  path: 'storage-locations',
-  loadComponent: () => import('./features/storage-locations/storage-locations.component') , canActivate: [authGuard]
-}
+
 ];
 
