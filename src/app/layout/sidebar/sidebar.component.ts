@@ -76,7 +76,7 @@ export class SidebarComponent implements OnInit {
     {
       label: 'إدارة البيانات الأساسية',
       icon: 'pi pi-database',
-      expanded: true,
+      expanded: false,
           roles: ['it'],
 
       children: [
@@ -126,29 +126,40 @@ export class SidebarComponent implements OnInit {
     },
 
     {
-      label: 'إدارة المستخدمين',
-      icon: 'pi pi-users',
-      route: '/users',
-      roles: ['superadmin']
-    },
-         {
-      label:  'ادارة المخازن',
+      label: 'إدارة المخازن والتخزين',
       icon: 'pi pi-building',
-      route: '/warehouses',
-      roles: ['superadmin']
+      expanded: false,
+      roles: ['superadmin'],
+      children: [
+        {
+          label: 'إدارة المخازن',
+          icon: 'pi pi-building',
+          route: '/warehouses'
+        },
+        {
+          label: 'مواقع التخزين',
+          icon: 'pi pi-map-marker',
+          route: '/storage-locations'
+        }
+      ]
     },
-     {
-      label: 'مواقع التخزين',
-      icon: 'pi pi-users',
-      route: '/storage-locations',
-      roles: ['superadmin']
-    },
-
     {
-      label: 'جلسات المستخدمين',
-      icon: 'pi pi-shield',
-      route: '/user-sessions',
-      roles: ['superadmin']
+      label: 'إدارة المستخدمين والجلسات',
+      icon: 'pi pi-users',
+      expanded: false,
+      roles: ['superadmin'],
+      children: [
+        {
+          label: 'إدارة المستخدمين',
+          icon: 'pi pi-users',
+          route: '/users'
+        },
+        {
+          label: 'جلسات المستخدمين',
+          icon: 'pi pi-shield',
+          route: '/user-sessions'
+        }
+      ]
     }
 
   ] as any[]);

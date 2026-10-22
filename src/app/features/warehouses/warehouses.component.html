@@ -9,8 +9,8 @@
       <p>إضافة وتعديل وحذف المخازن المستخدمة في مرحلة التخزين والتسليم</p>
     </div>
 
-    <p-button label="إضافة مخزن" icon="pi pi-plus" styleClass="wh-add-btn"
-      id="btn-add-warehouse" (onClick)="openAddModal()" />
+    <!-- <p-button label="إضافة مخزن" icon="pi pi-plus" styleClass="wh-add-btn"
+      id="btn-add-warehouse" (onClick)="openAddModal()" /> -->
   </section>
 
   <!-- SUMMARY TILES -->
@@ -116,9 +116,11 @@
 
   <!-- PAGINATION -->
   @if (totalPages() > 1) {
+       <!-- @if (!loading() && !loadError()) {if i need the paganation appear by default -->
+
     <nav class="wh-pagination" aria-label="التنقل بين الصفحات">
       <span class="pag-summary">
-        عرض <b>{{ rangeFrom() }}</b> – <b>{{ rangeTo() }}</b> من <b>{{ totalRecords() }}</b> مخزن
+        عرض <b>{{ rangeFrom() }}</b> – <b>{{ rangeTo() }}</b> من <b>{{ totalRecords() }}</b> مخازن
       </span>
 
       <div class="pag-controls">
