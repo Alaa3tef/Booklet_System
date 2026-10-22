@@ -1,19 +1,24 @@
-import { Component, computed, DestroyRef, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
-
-import { TableModule } from 'primeng/table';
-import { DialogModule } from 'primeng/dialog';
-import { MultiSelectModule } from 'primeng/multiselect';
-import { ButtonModule } from 'primeng/button';
-import { TextareaModule } from 'primeng/textarea';
-
-import { WorkflowStepLayoutComponent } from '../../../shared/workflow-step-layout/workflow-step-layout.component';
-import { WorkflowStatusRow } from '../../../core/models/workflow.model';
-import { SelectModule } from 'primeng/select';
-import { Lookups } from '../../../shared/services/lookups';
+import { Component, DestroyRef, OnInit, ViewEncapsulation, WritableSignal, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { catchError, of, finalize } from 'rxjs';
+import { FormsModule } from '@angular/forms';
+import { catchError, finalize, of } from 'rxjs';
+
+import { ButtonModule } from 'primeng/button';
+import { DialogModule } from 'primeng/dialog';
+import { InputTextModule } from 'primeng/inputtext';
+import { MultiSelectModule } from 'primeng/multiselect';
+import { SelectModule } from 'primeng/select';
+import { TextareaModule } from 'primeng/textarea';
+import { TooltipModule } from 'primeng/tooltip';
+
+import { WorkflowStatusRow } from '../../../core/models/workflow.model';
+import { Lookups } from '../../../shared/services/lookups';
+import { WorkflowStepLayoutComponent } from '../../../shared/workflow-step-layout/workflow-step-layout.component';
+
+const PENDING = 'قيد التغليف';
+const DONE = 'تم التغليف';
+const REJECTED = 'مرفوض';
 
 interface PackingRow extends WorkflowStatusRow {
   governorate: string;
@@ -29,193 +34,34 @@ interface PackingScanResult {
   scannedAt: string;
 }
 
+interface Option {
+  label: string;
+  value: string;
+}
+
 @Component({
   selector: 'app-packing',
   standalone: true,
   imports: [
     CommonModule,
     FormsModule,
-    TableModule,
-    DialogModule,
-    MultiSelectModule,
     ButtonModule,
-    TextareaModule, SelectModule,
+    DialogModule,
+    InputTextModule,
+    MultiSelectModule,
+    SelectModule,
+    TextareaModule,
+    TooltipModule,
     WorkflowStepLayoutComponent
   ],
   templateUrl: './packing.component.html',
-  styleUrl: './packing.component.scss'
+  styleUrl: './packing.component.scss',
+  // الـ dialogs بتتعمل render برا الـ component، فبنستخدم None مع prefix "pk-" بدل ::ng-deep
+  encapsulation: ViewEncapsulation.None
 })
-export default class PackingComponent {
- private readonly lookupsService = inject(Lookups);
-private readonly destroyRef = inject(DestroyRef);
-
-readonly subjectOptions = signal<any[]>([]);
-readonly governorateOptions = signal<any[]>([]);
-
-readonly subjectsLoading = signal(false);
-readonly governoratesLoading = signal(false);
-
-
-ngOnInit(): void {
-  this.loadSubjects();
-  this.loadGovernorates();
-}
-
-readonly subjectFilter = signal<string | null>(null);
-readonly governorateFilter = signal<string | null>(null);
-readonly committeeFilter = signal('');
-
-private readonly appliedFilters = signal({
-  subject: null as string | null,
-  governorate: null as string | null,
-  committee: ''
-});
-
-// يدعم أكثر من شكل شائع لاستجابة الـ API
-private extractItems(response: any): any[] {
-  if (Array.isArray(response)) {
-    return response;
-  }
-
-  const candidates = [
-    response?.data,
-    response?.data?.data,
-    response?.result,
-    response?.result?.data,
-    response?.items
-  ];
-
-  return candidates.find(item => Array.isArray(item)) ?? [];
-}
-
-// ==========================================
-// LOAD SUBJECTS
-// ==========================================
-
-loadSubjects(): void {
-  this.subjectsLoading.set(true);
-
-  this.lookupsService
-    .getLookupSubjectData()
-    .pipe(
-      catchError(error => {
-        console.error('Error loading subjects:', error);
-        return of([]);
-      }),
-      finalize(() => this.subjectsLoading.set(false)),
-      takeUntilDestroyed(this.destroyRef)
-    )
-    .subscribe(response => {
-      const options = this.extractItems(response)
-        .map((item: any): any => {
-          const name =
-            item.name ??
-            item.subjectName ??
-            item.subject;
-
-          return {
-            label: String(name ?? ''),
-            value: String(name ?? '')
-          };
-        })
-        .filter(item => item.label.trim() !== '');
-
-      this.subjectOptions.set(options);
-    });
-}
-
-// ==========================================
-// LOAD GOVERNORATES
-// ==========================================
-
-loadGovernorates(): void {
-  this.governoratesLoading.set(true);
-
-  this.lookupsService
-    .getLookupGovernorateData()
-    .pipe(
-      catchError(error => {
-        console.error('Error loading governorates:', error);
-        return of([]);
-      }),
-      finalize(() => this.governoratesLoading.set(false)),
-      takeUntilDestroyed(this.destroyRef)
-    )
-    .subscribe(response => {
-      const options = this.extractItems(response)
-        .map((item: any): any => {
-          const name =
-            item.name ??
-            item.governorateName ??
-            item.governorate;
-
-          return {
-            label: String(name ?? ''),
-            value: String(name ?? '')
-          };
-        })
-        .filter(item => item.label.trim() !== '');
-
-      this.governorateOptions.set(options);
-    });
-}
-
-// ==========================================
-// FILTERED ROWS
-// ==========================================
-
-readonly filteredRows = computed(() => {
-  const { subject, governorate, committee } =
-    this.appliedFilters();
-
-  const committeeTerm = committee.trim();
-
-  return this.rows().filter(row =>
-    (!subject || row.subject === subject) &&
-    (!governorate || row.governorate === governorate) &&
-    (
-      !committeeTerm ||
-      String(row.committeeNumber ?? '').includes(committeeTerm)
-    )
-  );
-});
-
-readonly hasActiveFilters = computed(() => {
-  const filters = this.appliedFilters();
-
-  return !!(
-    filters.subject ||
-    filters.governorate ||
-    filters.committee.trim()
-  );
-});
-
-applyFilters(): void {
-  this.appliedFilters.set({
-    subject: this.subjectFilter(),
-    governorate: this.governorateFilter(),
-    committee: this.committeeFilter()
-  });
-
-  this.currentPage.set(1);
-}
-
-resetFilters(): void {
-  this.subjectFilter.set(null);
-  this.governorateFilter.set(null);
-  this.committeeFilter.set('');
-
-  this.appliedFilters.set({
-    subject: null,
-    governorate: null,
-    committee: ''
-  });
-
-  this.currentPage.set(1);
-}
-  // =====================================================
-  // Page essentials
-  // =====================================================
+export default class PackingComponent implements OnInit {
+  private readonly lookups = inject(Lookups);
+  private readonly destroyRef = inject(DestroyRef);
 
   readonly essentials = [
     'تغليف الأظرف الصغيرة للجنة في ظرف كبير',
@@ -223,534 +69,363 @@ resetFilters(): void {
     'تسجيل حالة التغليف'
   ];
 
+  readonly reviewUsers = [
+    { id: 1, name: 'أحمد محمد', role: 'مراجع أول' },
+    { id: 2, name: 'محمد علي', role: 'مراجع جودة' },
+    { id: 3, name: 'سارة أحمد', role: 'مراجع محتوى' },
+    { id: 4, name: 'محمود حسن', role: 'مراجع نهائي' }
+  ];
+
+  readonly pageSizes = [
+    { label: '5', value: 5 },
+    { label: '10', value: 10 },
+    { label: '20', value: 20 }
+  ];
 
   // =====================================================
-  // Packing rows
+  // Data
   // =====================================================
 
   readonly rows = signal<PackingRow[]>([
-    {
-      index: 1,
-      subject: 'اللغة العربية',
-      committeeNumber: '101',
-      governorate: 'القاهرة',
-      qrCode: 'QR-PACK-101',
-      status: 'تم التغليف',
-      statusTone: 'success'
-    },
-    {
-      index: 2,
-      subject: 'اللغة العربية',
-      committeeNumber: '102',
-      governorate: 'الجيزة',
-      qrCode: 'QR-PACK-102',
-      status: 'قيد التغليف',
-      statusTone: 'warning'
-    },
-    {
-      index: 3,
-      subject: 'اللغة العربية',
-      committeeNumber: '103',
-      governorate: 'القاهرة',
-      qrCode: 'QR-PACK-103',
-      status: 'قيد التغليف',
-      statusTone: 'warning'
-    },
-    {
-      index: 4,
-      subject: 'الرياضيات',
-      committeeNumber: '104',
-      governorate: 'المنوفية',
-      qrCode: 'QR-PACK-104',
-      status: 'قيد التغليف',
-      statusTone: 'warning'
-    }
+    { index: 1, subject: 'اللغة العربية', committeeNumber: '101', governorate: 'القاهرة', qrCode: 'QR-PACK-101', status: DONE, statusTone: 'success' },
+    { index: 2, subject: 'اللغة العربية', committeeNumber: '102', governorate: 'الجيزة', qrCode: 'QR-PACK-102', status: PENDING, statusTone: 'warning' },
+    { index: 3, subject: 'اللغة العربية', committeeNumber: '103', governorate: 'القاهرة', qrCode: 'QR-PACK-103', status: PENDING, statusTone: 'warning' },
+    { index: 4, subject: 'الرياضيات', committeeNumber: '104', governorate: 'المنوفية', qrCode: 'QR-PACK-104', status: PENDING, statusTone: 'warning' }
   ]);
 
-    // ==========================================
-  // SEARCH FILTERS
-  // ==========================================
+  // =====================================================
+  // Lookups (API)
+  // =====================================================
 
+  readonly subjectOptions = signal<Option[]>([]);
+  readonly governorateOptions = signal<Option[]>([]);
+  readonly subjectsLoading = signal(false);
+  readonly governoratesLoading = signal(false);
 
-// ==========================================
-// PAGINATION
-// ==========================================
-
-readonly pageSize = signal(5);
-
-readonly currentPage = signal(1);
-
-readonly totalPages = computed(() => {
-  return Math.max(
-    1,
-    Math.ceil(
-      this.filteredRows().length / this.pageSize()
-    )
-  );
-});
-
-readonly paginatedRows = computed(() => {
-
-  const page = this.currentPage();
-  const size = this.pageSize();
-
-  const start = (page - 1) * size;
-  const end = start + size;
-
-  return this.filteredRows().slice(start, end);
-});
-
-readonly paginationPages = computed(() => {
-
-  const total = this.totalPages();
-  const current = this.currentPage();
-
-  // 4 صفحات أو أقل
-  if (total <= 4) {
-    return Array.from(
-      { length: total },
-      (_, index) => index + 1
+  ngOnInit(): void {
+    this.load(
+      this.lookups.getLookupSubjectData(),
+      ['name', 'subjectName', 'subject'],
+      this.subjectOptions,
+      this.subjectsLoading
+    );
+    this.load(
+      this.lookups.getLookupGovernorateData(),
+      ['name', 'governorateName', 'governorate'],
+      this.governorateOptions,
+      this.governoratesLoading
     );
   }
 
-  // أول الصفحات
-  if (current <= 2) {
-    return [1, 2, 3, 'dots', total];
+  /** بيحمّل lookup ويحوّله لـ options (نفس المنطق للمواد والمحافظات) */
+  private load(
+    request$: any,
+    nameKeys: string[],
+    target: WritableSignal<Option[]>,
+    loading: WritableSignal<boolean>
+  ): void {
+    loading.set(true);
+
+    request$
+      .pipe(
+        catchError(error => {
+          console.error('Error loading lookup:', error);
+          return of([]);
+        }),
+        finalize(() => loading.set(false)),
+        takeUntilDestroyed(this.destroyRef)
+      )
+      .subscribe((response: any) => {
+        const options = this.extractItems(response)
+          .map((item: any) => {
+            const name = String(nameKeys.map(k => item?.[k]).find(v => v != null) ?? '');
+            return { label: name, value: name };
+          })
+          .filter(o => o.label.trim() !== '');
+
+        target.set(options);
+      });
   }
 
-  // آخر الصفحات
-  if (current >= total - 1) {
-    return [
-      1,
-      'dots',
-      total - 2,
-      total - 1,
-      total
-    ];
+  // يدعم أكثر من شكل شائع لاستجابة الـ API
+  private extractItems(response: any): any[] {
+    if (Array.isArray(response)) return response;
+
+    return (
+      [response?.data, response?.data?.data, response?.result, response?.result?.data, response?.items].find(
+        Array.isArray
+      ) ?? []
+    );
   }
 
-  // الصفحات الوسط
-  return [
-    1,
-    'dots',
-    current,
-    'dots',
-    total
-  ];
-});
-
-readonly paginationStart = computed(() => {
-
-  if (this.filteredRows().length === 0) {
-    return 0;
-  }
-
-  return (
-    (this.currentPage() - 1) *
-      this.pageSize() +
-    1
-  );
-});
-
-readonly paginationEnd = computed(() => {
-
-  return Math.min(
-    this.currentPage() * this.pageSize(),
-    this.filteredRows().length
-  );
-});
-
-
-goToPage(page: number): void {
-
-  if (
-    page < 1 ||
-    page > this.totalPages() ||
-    page === this.currentPage()
-  ) {
-    return;
-  }
-
-  this.currentPage.set(page);
-}
-
-
-previousPage(): void {
-  this.goToPage(this.currentPage() - 1);
-}
-
-
-nextPage(): void {
-  this.goToPage(this.currentPage() + 1);
-}
-
-
-onPageSizeChange(): void {
-  this.currentPage.set(1);
-}
   // =====================================================
-  // Scan Dialog
+  // Filters
+  // =====================================================
+
+  readonly subjectFilter = signal<string | null>(null);
+  readonly governorateFilter = signal<string | null>(null);
+  readonly committeeFilter = signal('');
+
+  /** تبويب الحالة بيتطبق فورًا */
+  readonly statusFilter = signal<string | null>(null);
+
+  private readonly appliedFilters = signal({
+    subject: null as string | null,
+    governorate: null as string | null,
+    committee: ''
+  });
+
+  /** الصفوف بعد البحث (قبل تبويب الحالة) - تُستخدم لعدّادات التبويبات */
+  private readonly searchedRows = computed(() => {
+    const { subject, governorate, committee } = this.appliedFilters();
+    const term = committee.trim();
+
+    return this.rows().filter(
+      r =>
+        (!subject || r.subject === subject) &&
+        (!governorate || r.governorate === governorate) &&
+        (!term || String(r.committeeNumber ?? '').includes(term))
+    );
+  });
+
+  readonly filteredRows = computed(() => {
+    const status = this.statusFilter();
+    return status ? this.searchedRows().filter(r => r.status === status) : this.searchedRows();
+  });
+
+  readonly statusTabs = computed(() => {
+    const rows = this.searchedRows();
+    const count = (s: string) => rows.filter(r => r.status === s).length;
+
+    return [
+      { key: null as string | null, label: 'الكل', icon: 'pi-th-large', tone: 'neutral', count: rows.length },
+      { key: PENDING, label: 'قيد التغليف', icon: 'pi-clock', tone: 'warning', count: count(PENDING) },
+      { key: DONE, label: 'تم التغليف', icon: 'pi-check-circle', tone: 'success', count: count(DONE) },
+      { key: REJECTED, label: 'مرفوضة', icon: 'pi-times-circle', tone: 'danger', count: count(REJECTED) }
+    ];
+  });
+
+  readonly hasActiveFilters = computed(() => {
+    const f = this.appliedFilters();
+    return !!(f.subject || f.governorate || f.committee.trim());
+  });
+
+  applyFilters(): void {
+    this.appliedFilters.set({
+      subject: this.subjectFilter(),
+      governorate: this.governorateFilter(),
+      committee: this.committeeFilter()
+    });
+    this.currentPage.set(1);
+  }
+
+  resetFilters(): void {
+    this.subjectFilter.set(null);
+    this.governorateFilter.set(null);
+    this.committeeFilter.set('');
+    this.applyFilters();
+  }
+
+  setStatus(status: string | null): void {
+    this.statusFilter.set(status);
+    this.currentPage.set(1);
+  }
+
+  // =====================================================
+  // Pagination
+  // =====================================================
+
+  readonly pageSize = signal(5);
+  readonly currentPage = signal(1);
+
+  readonly totalPages = computed(() =>
+    Math.max(1, Math.ceil(this.filteredRows().length / this.pageSize()))
+  );
+
+  readonly paginatedRows = computed(() => {
+    const start = (this.currentPage() - 1) * this.pageSize();
+    return this.filteredRows().slice(start, start + this.pageSize());
+  });
+
+  readonly paginationPages = computed<(number | 'dots')[]>(() => {
+    const total = this.totalPages();
+    const cur = this.currentPage();
+
+    if (total <= 4) return Array.from({ length: total }, (_, i) => i + 1);
+    if (cur <= 2) return [1, 2, 3, 'dots', total];
+    if (cur >= total - 1) return [1, 'dots', total - 2, total - 1, total];
+    return [1, 'dots', cur, 'dots', total];
+  });
+
+  readonly paginationStart = computed(() =>
+    this.filteredRows().length ? (this.currentPage() - 1) * this.pageSize() + 1 : 0
+  );
+
+  readonly paginationEnd = computed(() =>
+    Math.min(this.currentPage() * this.pageSize(), this.filteredRows().length)
+  );
+
+  goToPage(page: number): void {
+    if (page < 1 || page > this.totalPages() || page === this.currentPage()) return;
+    this.currentPage.set(page);
+  }
+
+  onPageSizeChange(size: number): void {
+    this.pageSize.set(size);
+    this.currentPage.set(1);
+  }
+
+  // =====================================================
+  // Card helpers
+  // =====================================================
+
+  statusIcon(row: PackingRow): string {
+    return row.status === DONE ? 'pi-check-circle' : row.status === REJECTED ? 'pi-times-circle' : 'pi-clock';
+  }
+
+  isPending(row: PackingRow): boolean {
+    return row.status === PENDING;
+  }
+
+  isDone(row: PackingRow): boolean {
+    return row.status === DONE;
+  }
+
+  isRejected(row: PackingRow): boolean {
+    return row.status === REJECTED;
+  }
+
+  // =====================================================
+  // Scan dialog
   // =====================================================
 
   scanDialogVisible = false;
-
   selectedRow: PackingRow | null = null;
-
   isScanning = false;
-
   scanCompleted = false;
-
   scanMessage = '';
-
   scanResult: PackingScanResult | null = null;
 
-
-  // =====================================================
-  // Reject Dialog
-  // =====================================================
-
-  rejectDialogVisible = false;
-
-  rejectReason = '';
-
-  selectedReviewers: any[] = [];
-
-  rejectSubmitting = false;
-
-
-  readonly reviewUsers = [
-    {
-      id: 1,
-      name: 'أحمد محمد',
-      role: 'مراجع أول'
-    },
-    {
-      id: 2,
-      name: 'محمد علي',
-      role: 'مراجع جودة'
-    },
-    {
-      id: 3,
-      name: 'سارة أحمد',
-      role: 'مراجع محتوى'
-    },
-    {
-      id: 4,
-      name: 'محمود حسن',
-      role: 'مراجع نهائي'
-    }
-  ];
-
-
-  // =====================================================
-  // Open Scan
-  // =====================================================
-
   openScanDialog(row: PackingRow): void {
-
-    if (
-      row.status === 'تم التغليف' ||
-      row.status === 'مرفوض'
-    ) {
-      return;
-    }
+    if (!this.isPending(row)) return;
 
     this.selectedRow = row;
-
     this.isScanning = false;
-
     this.scanCompleted = false;
-
     this.scanMessage = '';
-
     this.scanResult = null;
-
     this.scanDialogVisible = true;
   }
 
-
-  // =====================================================
-  // Start Scan
-  // =====================================================
-
   startScan(): void {
-
-    if (
-      this.isScanning ||
-      this.scanCompleted ||
-      !this.selectedRow
-    ) {
-      return;
-    }
+    if (this.isScanning || this.scanCompleted || !this.selectedRow) return;
 
     this.isScanning = true;
-
-    this.scanMessage =
-      'جاري قراءة QR الغلاف الخارجي...';
-
+    this.scanMessage = 'جاري قراءة QR الغلاف الخارجي...';
 
     // Mock Scan
     setTimeout(() => {
-
       const row = this.selectedRow!;
 
       this.scanResult = {
-
-        qrCode:
-          `${row.qrCode}-OUTER`,
-
-        subject:
-          row.subject,
-
-        committeeNumber:
-          row.committeeNumber,
-
-        governorate:
-          row.governorate,
-
-        scanType:
-          'الغلاف الخارجي للجنة',
-
-        scannedAt:
-          new Date().toLocaleTimeString(
-            'ar-EG',
-            {
-              hour: '2-digit',
-              minute: '2-digit'
-            }
-          )
+        qrCode: `${row.qrCode}-OUTER`,
+        subject: row.subject,
+        committeeNumber: row.committeeNumber,
+        governorate: row.governorate,
+        scanType: 'الغلاف الخارجي للجنة',
+        scannedAt: new Date().toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })
       };
 
-
       this.isScanning = false;
-
       this.scanCompleted = true;
-
-      this.scanMessage =
-        'تم قراءة QR الغلاف الخارجي بنجاح';
-
+      this.scanMessage = 'تم قراءة QR الغلاف الخارجي بنجاح';
     }, 1400);
   }
 
-
-  // =====================================================
-  // Confirm Packing
-  // =====================================================
-
   confirmPacking(): void {
-
-    if (
-      !this.selectedRow ||
-      !this.scanCompleted
-    ) {
-      return;
-    }
+    if (!this.selectedRow || !this.scanCompleted) return;
 
     const row = this.selectedRow;
-
 
     // هنا بعدين هيتحط API
-    console.info(
-      'Confirm Packing',
-      {
-        committeeNumber:
-          row.committeeNumber,
+    console.info('Confirm Packing', {
+      committeeNumber: row.committeeNumber,
+      subject: row.subject,
+      scan: this.scanResult
+    });
 
-        subject:
-          row.subject,
-
-        scan:
-          this.scanResult
-      }
-    );
-
-
-    this.rows.update(rows =>
-      rows.map(item =>
-        item.index === row.index
-          ? {
-              ...item,
-              status: 'تم التغليف',
-              statusTone: 'success'
-            }
-          : item
-      )
-    );
-
-
-    this.scanMessage =
-      `تم تغليف مادة ${row.subject} بنجاح`;
-
+    this.updateStatus(row.index, DONE, 'success');
     this.scanDialogVisible = false;
   }
-
-
-  // =====================================================
-  // Open Reject Dialog
-  // =====================================================
-
-  openRejectDialog(): void {
-
-    if (
-      !this.selectedRow ||
-      !this.scanCompleted
-    ) {
-      return;
-    }
-
-    this.rejectReason = '';
-
-    this.selectedReviewers = [];
-
-    this.rejectDialogVisible = true;
-  }
-
-
-  // =====================================================
-  // Reject Validation
-  // =====================================================
-
-  get isRejectFormValid(): boolean {
-
-    return (
-      this.rejectReason.trim().length >= 10 &&
-      this.selectedReviewers.length > 0
-    );
-  }
-
-
-  // =====================================================
-  // Submit Rejection
-  // =====================================================
-
-  submitRejection(): void {
-
-    if (
-      !this.selectedRow ||
-      !this.isRejectFormValid
-    ) {
-      return;
-    }
-
-    this.rejectSubmitting = true;
-
-    const row = this.selectedRow;
-
-
-    const rejectionData = {
-
-      rowIndex:
-        row.index,
-
-      subject:
-        row.subject,
-
-      committeeNumber:
-        row.committeeNumber,
-
-      governorate:
-        row.governorate,
-
-      scan:
-        this.scanResult,
-
-      reason:
-        this.rejectReason.trim(),
-
-      reviewerIds:
-        this.selectedReviewers.map(
-          user => user.id
-        )
-    };
-
-
-    console.info(
-      'Packing Rejection',
-      rejectionData
-    );
-
-
-    // Mock API
-    setTimeout(() => {
-
-      this.rows.update(rows =>
-        rows.map(item =>
-          item.index === row.index
-            ? {
-                ...item,
-                status: 'مرفوض',
-                statusTone: 'danger'
-              }
-            : item
-        )
-      );
-
-
-      this.rejectSubmitting = false;
-
-      this.rejectDialogVisible = false;
-
-      this.scanDialogVisible = false;
-
-      this.selectedRow = null;
-
-      this.rejectReason = '';
-
-      this.selectedReviewers = [];
-
-    }, 800);
-  }
-
-
-  // =====================================================
-  // Close Scan Dialog
-  // =====================================================
 
   closeScanDialog(): void {
-
-    if (this.isScanning) {
-      return;
-    }
+    if (this.isScanning) return;
 
     this.scanDialogVisible = false;
-
     this.selectedRow = null;
-
     this.scanResult = null;
-
     this.scanCompleted = false;
-
     this.scanMessage = '';
   }
 
-
-  // =====================================================
-  // Close Reject Dialog
-  // =====================================================
-
-  closeRejectDialog(): void {
-
-    if (this.rejectSubmitting) {
-      return;
-    }
-
-    this.rejectDialogVisible = false;
-
-    this.rejectReason = '';
-
-    this.selectedReviewers = [];
+  private updateStatus(index: number, status: string, statusTone: PackingRow['statusTone']): void {
+    this.rows.update(rows => rows.map(r => (r.index === index ? { ...r, status, statusTone } : r)));
   }
 
-
   // =====================================================
-  // Check if row has action
+  // Reject dialog
   // =====================================================
 
-  hasActions(row: PackingRow): boolean {
+  rejectDialogVisible = false;
+  rejectReason = '';
+  selectedReviewers: any[] = [];
+  rejectSubmitting = false;
 
-    return (
-      row.status !== 'تم التغليف' &&
-      row.status !== 'مرفوض'
-    );
+  openRejectDialog(): void {
+    if (!this.selectedRow || !this.scanCompleted) return;
+
+    this.rejectReason = '';
+    this.selectedReviewers = [];
+    this.rejectDialogVisible = true;
+  }
+
+  get isRejectFormValid(): boolean {
+    return this.rejectReason.trim().length >= 10 && this.selectedReviewers.length > 0;
+  }
+
+  submitRejection(): void {
+    if (!this.selectedRow || !this.isRejectFormValid) return;
+
+    this.rejectSubmitting = true;
+    const row = this.selectedRow;
+
+    console.info('Packing Rejection', {
+      rowIndex: row.index,
+      subject: row.subject,
+      committeeNumber: row.committeeNumber,
+      governorate: row.governorate,
+      scan: this.scanResult,
+      reason: this.rejectReason.trim(),
+      reviewerIds: this.selectedReviewers.map(u => u.id)
+    });
+
+    // Mock API
+    setTimeout(() => {
+      this.updateStatus(row.index, REJECTED, 'danger');
+      this.rejectSubmitting = false;
+      this.rejectDialogVisible = false;
+      this.scanDialogVisible = false;
+      this.selectedRow = null;
+      this.rejectReason = '';
+      this.selectedReviewers = [];
+    }, 800);
+  }
+
+  closeRejectDialog(): void {
+    if (this.rejectSubmitting) return;
+
+    this.rejectDialogVisible = false;
+    this.rejectReason = '';
+    this.selectedReviewers = [];
   }
 }
