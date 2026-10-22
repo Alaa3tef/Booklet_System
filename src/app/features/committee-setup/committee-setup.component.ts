@@ -1,7 +1,15 @@
 
-import { Component, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import {
+  Component,
+  OnDestroy,
+  OnInit,
+  computed,
+  inject,
+  signal
+} from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { forkJoin } from 'rxjs';
 
 import { ButtonModule } from 'primeng/button';
 import { SelectModule } from 'primeng/select';
@@ -11,7 +19,9 @@ import { TooltipModule } from 'primeng/tooltip';
 import { CardModule } from 'primeng/card';
 import { DividerModule } from 'primeng/divider';
 import { InputTextModule } from 'primeng/inputtext';
-import { MessageService } from 'primeng/api';
+import { DialogModule } from 'primeng/dialog';
+import { ToastModule } from 'primeng/toast';
+import { MessageService, MessageService as PrimeSelectOption } from 'primeng/api';
 
 import {
   CommitteeRow,
@@ -19,17 +29,16 @@ import {
   StepItem
 } from '../../core/models/committee.model';
 
+import { Lookups } from '../../shared/services/lookups';
 import { CommitteeService } from './service/committee-service';
+import { toOptions } from './to-options';
 
 interface CommitteeTableRow extends CommitteeRow {
   governorate: string;
   subject: string;
-}
-
-interface EducationalAdministration {
-  label: string;
-  value: string;
-  governorate: string;
+  fileName: string;
+  errors: string[];
+  status: 'valid' | 'invalid';
 }
 
 @Component({
@@ -45,14 +54,17 @@ interface EducationalAdministration {
     DividerModule,
     TagModule,
     TooltipModule,
-    InputTextModule
+    InputTextModule,
+    DialogModule,
+    ToastModule
   ],
   templateUrl: './committee-setup.component.html',
   styleUrl: './committee-setup.component.scss'
 })
-export default class CommitteeSetupComponent {
+export default class CommitteeSetupComponent implements OnInit, OnDestroy {
 
   private readonly committeeService = inject(CommitteeService);
+  private readonly lookups = inject(Lookups);
   private readonly toast = inject(MessageService);
 
   // =========================================================
@@ -60,550 +72,346 @@ export default class CommitteeSetupComponent {
   // =========================================================
 
   readonly steps = signal<StepItem[]>([
-    {
-      order: 1,
-      label: 'اختيار المحافظة والمادة',
-      state: 'active'
-    },
-    {
-      order: 2,
-      label: 'رفع ملف اللجان',
-      state: 'pending'
-    },
-    {
-      order: 3,
-      label: 'مراجعة البيانات',
-      state: 'pending'
-    },
-    {
-      order: 4,
-      label: 'إنشاء الملفات',
-      state: 'pending'
-    }
+    { order: 1, label: 'اختيار المحافظة والمادة', state: 'active' },
+    { order: 2, label: 'رفع ملف اللجان', state: 'pending' },
+    { order: 3, label: 'مراجعة البيانات', state: 'pending' },
+    { order: 4, label: 'إنشاء الملفات', state: 'pending' }
   ]);
 
   // =========================================================
-  // SETUP OPTIONS
+  // LOOKUPS
   // =========================================================
 
-  readonly rounds: SelectOption[] = [
-    { label: 'الدور الأول', value: 'round1' },
-    { label: 'الدور الثاني', value: 'round2' }
-  ];
+  readonly rounds = signal<SelectOption[]>([]);
+  readonly educationalStages = signal<SelectOption[]>([]);
+  readonly governorates = signal<SelectOption[]>([]);
+  readonly subjects = signal<SelectOption[]>([]);
+  readonly lookupsLoading = signal(false);
 
-  readonly subjects: SelectOption[] = [
-    { label: 'اللغة العربية', value: 'arabic' },
-    { label: 'اللغة الإنجليزية', value: 'english' },
-    { label: 'الرياضيات', value: 'math' },
-    { label: 'العلوم', value: 'science' }
-  ];
-
-  readonly governorates: SelectOption[] = [
-    { label: 'القاهرة', value: 'cairo' },
-    { label: 'الجيزة', value: 'giza' },
-    { label: 'الإسكندرية', value: 'alexandria' },
-    { label: 'الدقهلية', value: 'dakahlia' }
-  ];
-
-  selectedRound: string = 'round1';
-  selectedSubject: string = 'arabic';
-  selectedGovernorate: string = 'cairo';
+  selectedRound: string | null = null;
+  selectedEducationalStage: string | null = null;
+  selectedGovernorate: string | null = null;
   selectedYear = 27;
 
-  // =========================================================
-  // EDUCATIONAL ADMINISTRATIONS
-  // Replace this sample data with your API response.
-  // =========================================================
+  ngOnInit(): void {
+    this.loadLookups();
+    this.loadHistory();
+  }
 
-  readonly administrations: EducationalAdministration[] = [
-    {
-      label: 'شرق القاهرة',
-      value: 'شرق القاهرة',
-      governorate: 'cairo'
-    },
-    {
-      label: 'غرب القاهرة',
-      value: 'غرب القاهرة',
-      governorate: 'cairo'
-    },
-    {
-      label: 'روض الفرج',
-      value: 'روض الفرج',
-      governorate: 'cairo'
-    },
-    {
-      label: 'شبرا',
-      value: 'شبرا',
-      governorate: 'cairo'
-    },
-    {
-      label: 'مصر الجديدة',
-      value: 'مصر الجديدة',
-      governorate: 'cairo'
-    },
-    {
-      label: 'شمال الجيزة',
-      value: 'شمال الجيزة',
-      governorate: 'giza'
-    },
-    {
-      label: 'جنوب الجيزة',
-      value: 'جنوب الجيزة',
-      governorate: 'giza'
-    },
-    {
-      label: 'شرق الإسكندرية',
-      value: 'شرق الإسكندرية',
-      governorate: 'alexandria'
-    },
-    {
-      label: 'غرب الإسكندرية',
-      value: 'غرب الإسكندرية',
-      governorate: 'alexandria'
-    },
-    {
-      label: 'شرق المنصورة',
-      value: 'شرق المنصورة',
-      governorate: 'dakahlia'
-    },
-    {
-      label: 'غرب المنصورة',
-      value: 'غرب المنصورة',
-      governorate: 'dakahlia'
+  ngOnDestroy(): void {
+    if (this.searchTimer) {
+      clearTimeout(this.searchTimer);
     }
-  ];
+  }
+
+  private loadLookups(): void {
+    this.lookupsLoading.set(true);
+
+    forkJoin({
+      governorates: this.lookups.getLookupGovernorateData(),
+      subjects: this.lookups.getLookupSubjectData(),
+      rounds: this.committeeService.getRounds(),
+      stages: this.committeeService.getEducationstages()
+    }).subscribe({
+      next: ({ governorates, subjects, rounds, stages }) => {
+        this.governorates.set(toOptions(governorates));
+        this.subjects.set(toOptions(subjects));
+        this.rounds.set(toOptions(rounds));
+        this.educationalStages.set(toOptions(stages));
+        this.lookupsLoading.set(false);
+      },
+      error: err => {
+        console.error('Lookups error:', err);
+        this.lookupsLoading.set(false);
+
+        this.toast.add({
+          severity: 'error',
+          summary: 'تعذّر تحميل القوائم',
+          detail: this.extractErrorMessage(err),
+          life: 5000
+        });
+      }
+    });
+  }
 
   // =========================================================
-  // TABLE FILTERS
+  // HISTORY
   // =========================================================
+
+  readonly rows = signal<CommitteeTableRow[]>([]);
+  readonly totalRecords = signal(0);
+  readonly tableLoading = signal(false);
 
   readonly searchTerm = signal('');
-  
-readonly isDragOver = signal(false);
-
   readonly filterGovernorate = signal<string | null>(null);
   readonly filterSubject = signal<string | null>(null);
-  readonly filterAdministration = signal<string | null>(null);
 
   readonly first = signal(0);
   readonly pageSize = signal(5);
+  readonly isDragOver = signal(false);
 
-readonly currentPage = computed(
-  () => Math.floor(this.first() / this.pageSize()) + 1
-);
+  private searchTimer?: ReturnType<typeof setTimeout>;
 
-readonly totalPages = computed(() =>
-  Math.max(1, Math.ceil(this.filteredRows().length / this.pageSize()))
-);
+  readonly currentPage = computed(
+    () => Math.floor(this.first() / this.pageSize()) + 1
+  );
 
-readonly visiblePages = computed<(number | 'dots')[]>(() => {
-  const total = this.totalPages();
-  const current = this.currentPage();
+  readonly totalPages = computed(() =>
+    Math.max(1, Math.ceil(this.totalRecords() / this.pageSize()))
+  );
 
-  // لو 3 صفحات أو أقل، اعرضيهم كلهم
-  if (total <= 3) {
-    return Array.from({ length: total }, (_, i) => i + 1);
-  }
+  readonly visiblePages = computed<(number | 'dots')[]>(() => {
+    const total = this.totalPages();
+    const current = this.currentPage();
 
-  // أول 3 صفحات
-  if (current <= 2) {
-    return [1, 2, 3, 'dots', total];
-  }
-
-  // آخر 3 صفحات
-  if (current >= total - 1) {
-    return [1, 'dots', total - 2, total - 1, total];
-  }
-
-  // الصفحات في المنتصف
-  return [1, 'dots', current, 'dots', total];
-});
-
-goToPage(page: number): void {
-  const total = this.totalPages();
-
-  if (page < 1 || page > total) return;
-
-  this.first.set((page - 1) * this.pageSize());
-}
-
-changePageSize(size: number): void {
-  this.pageSize.set(size);
-  this.first.set(0);
-}
-  readonly administrationOptions = computed<SelectOption[]>(() => {
-    const governorate = this.filterGovernorate();
-
-    if (!governorate) {
-      return [];
+    if (total <= 3) {
+      return Array.from({ length: total }, (_, i) => i + 1);
     }
 
-    return this.administrations
-      .filter(item => item.governorate === governorate)
-      .map(item => ({
-        label: item.label,
-        value: item.value
-      }));
+    if (current <= 2) {
+      return [1, 2, 3, 'dots', total];
+    }
+
+    if (current >= total - 1) {
+      return [1, 'dots', total - 2, total - 1, total];
+    }
+
+    return [1, 'dots', current, 'dots', total];
   });
 
-  // =========================================================
-  // TABLE DATA
-  // Sample data: replace with actual API data.
-  // =========================================================
-
-  readonly rows = signal<CommitteeTableRow[]>([
-    {
-      index: 1,
-      committeeNumber: '101',
-      schoolName: 'مدرسة مصطفى كامل',
-      educationalAdministration: 'شرق القاهرة',
-      bookletCount: 20,
-      status: 'valid',
-      governorate: 'cairo',
-      subject: 'arabic'
-    },
-    {
-      index: 2,
-      committeeNumber: '102',
-      schoolName: 'مدرسة روض الفرج',
-      educationalAdministration: 'روض الفرج',
-      bookletCount: 20,
-      status: 'valid',
-      governorate: 'cairo',
-      subject: 'arabic'
-    },
-    {
-      index: 3,
-      committeeNumber: '103',
-      schoolName: 'مدرسة العباسية',
-      educationalAdministration: 'غرب القاهرة',
-      bookletCount: 25,
-      status: 'valid',
-      governorate: 'cairo',
-      subject: 'english'
-    },
-    {
-      index: 4,
-      committeeNumber: '104',
-      schoolName: 'مدرسة شبرا الثانوية',
-      educationalAdministration: 'شبرا',
-      bookletCount: 20,
-      status: 'valid',
-      governorate: 'cairo',
-      subject: 'math'
-    },
-    {
-      index: 5,
-      committeeNumber: '105',
-      schoolName: 'مدرسة الحلمية',
-      educationalAdministration: 'مصر الجديدة',
-      bookletCount: 30,
-      status: 'invalid',
-      governorate: 'cairo',
-      subject: 'science'
-    },
-    {
-      index: 6,
-      committeeNumber: '201',
-      schoolName: 'مدرسة الجيزة الثانوية',
-      educationalAdministration: 'شمال الجيزة',
-      bookletCount: 25,
-      status: 'valid',
-      governorate: 'giza',
-      subject: 'arabic'
-    },
-    {
-      index: 7,
-      committeeNumber: '301',
-      schoolName: 'مدرسة المنصورة الرسمية',
-      educationalAdministration: 'شرق المنصورة',
-      bookletCount: 20,
-      status: 'valid',
-      governorate: 'dakahlia',
-      subject: 'math'
-    },
-     {
-      index: 1,
-      committeeNumber: '101',
-      schoolName: 'مدرسة مصطفى كامل',
-      educationalAdministration: 'شرق القاهرة',
-      bookletCount: 20,
-      status: 'valid',
-      governorate: 'cairo',
-      subject: 'arabic'
-    },
-    {
-      index: 2,
-      committeeNumber: '102',
-      schoolName: 'مدرسة روض الفرج',
-      educationalAdministration: 'روض الفرج',
-      bookletCount: 20,
-      status: 'valid',
-      governorate: 'cairo',
-      subject: 'arabic'
-    },
-    {
-      index: 3,
-      committeeNumber: '103',
-      schoolName: 'مدرسة العباسية',
-      educationalAdministration: 'غرب القاهرة',
-      bookletCount: 25,
-      status: 'valid',
-      governorate: 'cairo',
-      subject: 'english'
-    },
-    {
-      index: 4,
-      committeeNumber: '104',
-      schoolName: 'مدرسة شبرا الثانوية',
-      educationalAdministration: 'شبرا',
-      bookletCount: 20,
-      status: 'valid',
-      governorate: 'cairo',
-      subject: 'math'
-    },
-    {
-      index: 5,
-      committeeNumber: '105',
-      schoolName: 'مدرسة الحلمية',
-      educationalAdministration: 'مصر الجديدة',
-      bookletCount: 30,
-      status: 'invalid',
-      governorate: 'cairo',
-      subject: 'science'
-    },
-    {
-      index: 6,
-      committeeNumber: '201',
-      schoolName: 'مدرسة الجيزة الثانوية',
-      educationalAdministration: 'شمال الجيزة',
-      bookletCount: 25,
-      status: 'valid',
-      governorate: 'giza',
-      subject: 'arabic'
-    },
-    {
-      index: 7,
-      committeeNumber: '301',
-      schoolName: 'مدرسة المنصورة الرسمية',
-      educationalAdministration: 'شرق المنصورة',
-      bookletCount: 20,
-      status: 'valid',
-      governorate: 'dakahlia',
-      subject: 'math'
-    },
-    {
-      index: 1,
-      committeeNumber: '101',
-      schoolName: 'مدرسة مصطفى كامل',
-      educationalAdministration: 'شرق القاهرة',
-      bookletCount: 20,
-      status: 'valid',
-      governorate: 'cairo',
-      subject: 'arabic'
-    },
-    {
-      index: 2,
-      committeeNumber: '102',
-      schoolName: 'مدرسة روض الفرج',
-      educationalAdministration: 'روض الفرج',
-      bookletCount: 20,
-      status: 'valid',
-      governorate: 'cairo',
-      subject: 'arabic'
-    },
-    {
-      index: 3,
-      committeeNumber: '103',
-      schoolName: 'مدرسة العباسية',
-      educationalAdministration: 'غرب القاهرة',
-      bookletCount: 25,
-      status: 'valid',
-      governorate: 'cairo',
-      subject: 'english'
-    },
-    {
-      index: 4,
-      committeeNumber: '104',
-      schoolName: 'مدرسة شبرا الثانوية',
-      educationalAdministration: 'شبرا',
-      bookletCount: 20,
-      status: 'valid',
-      governorate: 'cairo',
-      subject: 'math'
-    },
-    {
-      index: 5,
-      committeeNumber: '105',
-      schoolName: 'مدرسة الحلمية',
-      educationalAdministration: 'مصر الجديدة',
-      bookletCount: 30,
-      status: 'invalid',
-      governorate: 'cairo',
-      subject: 'science'
-    },
-    {
-      index: 6,
-      committeeNumber: '201',
-      schoolName: 'مدرسة الجيزة الثانوية',
-      educationalAdministration: 'شمال الجيزة',
-      bookletCount: 25,
-      status: 'valid',
-      governorate: 'giza',
-      subject: 'arabic'
-    },
-    {
-      index: 7,
-      committeeNumber: '301',
-      schoolName: 'مدرسة المنصورة الرسمية',
-      educationalAdministration: 'شرق المنصورة',
-      bookletCount: 20,
-      status: 'valid',
-      governorate: 'dakahlia',
-      subject: 'math'
-    },
-     {
-      index: 1,
-      committeeNumber: '101',
-      schoolName: 'مدرسة مصطفى كامل',
-      educationalAdministration: 'شرق القاهرة',
-      bookletCount: 20,
-      status: 'valid',
-      governorate: 'cairo',
-      subject: 'arabic'
-    },
-    {
-      index: 2,
-      committeeNumber: '102',
-      schoolName: 'مدرسة روض الفرج',
-      educationalAdministration: 'روض الفرج',
-      bookletCount: 20,
-      status: 'valid',
-      governorate: 'cairo',
-      subject: 'arabic'
-    },
-    {
-      index: 3,
-      committeeNumber: '103',
-      schoolName: 'مدرسة العباسية',
-      educationalAdministration: 'غرب القاهرة',
-      bookletCount: 25,
-      status: 'valid',
-      governorate: 'cairo',
-      subject: 'english'
-    },
-    {
-      index: 4,
-      committeeNumber: '104',
-      schoolName: 'مدرسة شبرا الثانوية',
-      educationalAdministration: 'شبرا',
-      bookletCount: 20,
-      status: 'valid',
-      governorate: 'cairo',
-      subject: 'math'
-    },
-    {
-      index: 5,
-      committeeNumber: '105',
-      schoolName: 'مدرسة الحلمية',
-      educationalAdministration: 'مصر الجديدة',
-      bookletCount: 30,
-      status: 'invalid',
-      governorate: 'cairo',
-      subject: 'science'
-    },
-    {
-      index: 6,
-      committeeNumber: '201',
-      schoolName: 'مدرسة الجيزة الثانوية',
-      educationalAdministration: 'شمال الجيزة',
-      bookletCount: 25,
-      status: 'valid',
-      governorate: 'giza',
-      subject: 'arabic'
-    },
-    {
-      index: 7,
-      committeeNumber: '301',
-      schoolName: 'مدرسة المنصورة الرسمية',
-      educationalAdministration: 'شرق المنصورة',
-      bookletCount: 20,
-      status: 'valid',
-      governorate: 'dakahlia',
-      subject: 'math'
-    },
-  ]);
-
-  readonly paginatedRows = computed<CommitteeTableRow[]>(() => {
-  const rows = this.filteredRows();
-  const start = this.first();
-  const end = start + this.pageSize();
-
-  return rows.slice(start, end);
-});
-  // =========================================================
-  // COMPUTED TABLE RESULTS
-  // =========================================================
-
-  readonly filteredRows = computed<CommitteeTableRow[]>(() => {
-    const search = this.searchTerm().trim().toLocaleLowerCase();
+  readonly visibleRows = computed<CommitteeTableRow[]>(() => {
     const governorate = this.filterGovernorate();
     const subject = this.filterSubject();
-    const administration = this.filterAdministration();
 
-    return this.rows().filter(row => {
-      const matchesSearch =
-        !search ||
-        String(row.committeeNumber)
-          .toLocaleLowerCase()
-          .includes(search) ||
-        String(row.schoolName)
-          .toLocaleLowerCase()
-          .includes(search);
-
-      const matchesGovernorate =
-        !governorate || row.governorate === governorate;
-
-      const matchesSubject =
-        !subject || row.subject === subject;
-
-      const matchesAdministration =
-        !administration ||
-        row.educationalAdministration === administration;
-
-      return (
-        matchesSearch &&
-        matchesGovernorate &&
-        matchesSubject &&
-        matchesAdministration
-      );
-    });
+    return this.rows().filter(row =>
+      (!governorate || row.governorate === governorate) &&
+      (!subject || row.subject === subject)
+    );
   });
 
-  readonly totalCommittees = computed(
-    () => this.rows().length
-  );
-
-  readonly totalBooklets = computed(
-    () => this.rows().reduce(
-      (sum, row) => sum + Number(row.bookletCount || 0),
-      0
-    )
-  );
-
-  readonly filteredTotalCommittees = computed(
-    () => this.filteredRows().length
-  );
-
-  readonly filteredTotalBooklets = computed(
-    () => this.filteredRows().reduce(
+  readonly totalBooklets = computed(() =>
+    this.visibleRows().reduce(
       (sum, row) => sum + Number(row.bookletCount || 0),
       0
     )
   );
 
   // =========================================================
-  // FILE UPLOAD STATE
+  // HISTORY API RESPONSE
+  // Supports:
+  // response.data.data
+  // response.data.totalCount
+  // =========================================================
+
+  loadHistory(): void {
+    this.tableLoading.set(true);
+
+    this.committeeService.getHistory({
+      pageNumber: this.currentPage(),
+      pageSize: this.pageSize(),
+      searchTerm: this.searchTerm()
+    }).subscribe({
+      next: response => {
+        const { items, total } = this.parseHistory(response);
+
+        this.rows.set(
+          items.map((item, index) => this.mapHistoryRow(item, index))
+        );
+
+        this.totalRecords.set(total);
+        this.tableLoading.set(false);
+      },
+      error: err => {
+        console.error('History error:', err);
+
+        this.tableLoading.set(false);
+        this.rows.set([]);
+        this.totalRecords.set(0);
+
+        this.toast.add({
+          severity: 'error',
+          summary: 'تعذّر تحميل سجل الاستيراد',
+          detail: this.extractErrorMessage(err),
+          life: 5000
+        });
+      }
+    });
+  }
+
+  private parseHistory(
+    response: unknown
+  ): { items: any[]; total: number } {
+    const raw = response as any;
+
+    // Example:
+    // raw.data.currentPage
+    // raw.data.totalCount
+    // raw.data.data = history items
+    const body = raw?.data ?? raw;
+
+    const items: any[] = Array.isArray(body)
+      ? body
+      : Array.isArray(body?.data)
+        ? body.data
+        : Array.isArray(body?.items)
+          ? body.items
+          : Array.isArray(body?.records)
+            ? body.records
+            : Array.isArray(body?.result)
+              ? body.result
+              : [];
+
+    const total = Number(
+      body?.totalCount ??
+      body?.totalRecords ??
+      body?.total ??
+      items.length
+    );
+
+    return { items, total };
+  }
+
+  private mapHistoryRow(
+    item: any,
+    index: number
+  ): CommitteeTableRow {
+    const errors = this.normalizeErrors(item?.errors);
+
+    const status = String(item?.status ?? '').toLowerCase();
+
+    const invalid =
+      status === 'rejected' ||
+      status === 'invalid' ||
+      status === 'failed' ||
+      item?.isValid === false ||
+      item?.success === false ||
+      errors.length > 0;
+
+    return {
+      index: this.first() + index + 1,
+
+      // The history endpoint is an import-history endpoint.
+      // auditLogId is used as a fallback when no committee ID exists.
+      committeeNumber: String(
+        item?.committeeNumber ??
+        item?.committeeCode ??
+        item?.auditLogId ??
+        item?.id ??
+        ''
+      ),
+
+      schoolName: String(
+        item?.schoolName ??
+        item?.committeeName ??
+        item?.fileName ??
+        ''
+      ),
+
+      educationalAdministration: String(
+        item?.educationalAdministration ??
+        item?.administrationName ??
+        ''
+      ),
+
+      bookletCount: Number(
+        item?.bookletCount ??
+        item?.booklets ??
+        item?.rowsCount ??
+        0
+      ),
+
+      status: invalid ? 'invalid' : 'valid',
+
+      governorate: String(
+        item?.governorateCode ??
+        item?.governorate ??
+        ''
+      ),
+
+      subject: String(
+        item?.subjectCode ??
+        item?.subject ??
+        ''
+      ),
+
+      fileName: String(item?.fileName ?? ''),
+
+      errors
+    } as CommitteeTableRow;
+  }
+
+  // =========================================================
+  // PAGINATION AND FILTERS
+  // =========================================================
+
+  goToPage(page: number): void {
+    if (page < 1 || page > this.totalPages()) {
+      return;
+    }
+
+    this.first.set((page - 1) * this.pageSize());
+    this.loadHistory();
+  }
+
+  changePageSize(size: number): void {
+    this.pageSize.set(size);
+    this.first.set(0);
+    this.loadHistory();
+  }
+
+  setSearchTerm(value: string): void {
+    this.searchTerm.set(value);
+    this.first.set(0);
+
+    if (this.searchTimer) {
+      clearTimeout(this.searchTimer);
+    }
+
+    this.searchTimer = setTimeout(() => {
+      this.loadHistory();
+    }, 400);
+  }
+
+  onFilterGovernorateChange(value: string | null): void {
+    this.filterGovernorate.set(value);
+  }
+
+  onFilterSubjectChange(value: string | null): void {
+    this.filterSubject.set(value);
+  }
+
+  resetTableFilters(): void {
+    this.searchTerm.set('');
+    this.filterGovernorate.set(null);
+    this.filterSubject.set(null);
+    this.first.set(0);
+
+    if (this.searchTimer) {
+      clearTimeout(this.searchTimer);
+    }
+
+    this.loadHistory();
+  }
+
+  // =========================================================
+  // ERROR DIALOG
+  // =========================================================
+
+  readonly errorsDialogVisible = signal(false);
+  readonly selectedErrorRow = signal<CommitteeTableRow | null>(null);
+
+  openErrors(row: CommitteeTableRow): void {
+    this.selectedErrorRow.set(row);
+    this.errorsDialogVisible.set(true);
+  }
+
+  closeErrors(): void {
+    this.errorsDialogVisible.set(false);
+    this.selectedErrorRow.set(null);
+  }
+
+  // =========================================================
+  // FILE UPLOAD
   // =========================================================
 
   private selectedFile: File | null = null;
@@ -617,105 +425,102 @@ changePageSize(size: number): void {
   readonly filesGenerated = signal(false);
   readonly saveError = signal('');
 
- 
-onFileSelected(event: Event): void {
-  const input = event.target as HTMLInputElement;
-  const file = input.files?.[0];
+  onFileSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
 
-  if (!file) {
-    return;
+    if (!file) {
+      return;
+    }
+
+    this.processSelectedFile(file);
+    input.value = '';
   }
 
-  this.processSelectedFile(file);
+  onDragOver(event: DragEvent): void {
+    event.preventDefault();
 
-  // Allow selecting the same file again.
-  input.value = '';
-}
+    if (this.saving()) {
+      return;
+    }
 
-onDragOver(event: DragEvent): void {
-  event.preventDefault();
-
-  if (this.saving()) {
-    return;
+    this.isDragOver.set(true);
   }
 
-  this.isDragOver.set(true);
-}
+  onDragLeave(event: DragEvent): void {
+    event.preventDefault();
 
-onDragLeave(event: DragEvent): void {
-  event.preventDefault();
+    const currentTarget = event.currentTarget as HTMLElement;
+    const nextTarget = event.relatedTarget as Node | null;
 
-  // Avoid removing the active state when moving between
-  // child elements inside the drop area.
-  const currentTarget = event.currentTarget as HTMLElement;
-  const nextTarget = event.relatedTarget as Node | null;
+    if (nextTarget && currentTarget.contains(nextTarget)) {
+      return;
+    }
 
-  if (nextTarget && currentTarget.contains(nextTarget)) {
-    return;
+    this.isDragOver.set(false);
   }
 
-  this.isDragOver.set(false);
-}
+  onFileDrop(event: DragEvent): void {
+    event.preventDefault();
+    this.isDragOver.set(false);
 
-onFileDrop(event: DragEvent): void {
-  event.preventDefault();
-  this.isDragOver.set(false);
+    if (this.saving()) {
+      return;
+    }
 
-  if (this.saving()) {
-    return;
+    const file = event.dataTransfer?.files?.[0];
+
+    if (file) {
+      this.processSelectedFile(file);
+    }
   }
 
-  const file = event.dataTransfer?.files?.[0];
+  private processSelectedFile(file: File): void {
+    const extension = file.name.split('.').pop()?.toLowerCase();
 
-  if (!file) {
-    return;
+    if (!extension || !['xlsx', 'xls'].includes(extension)) {
+      this.selectedFile = null;
+      this.uploadedFile.set(null);
+      this.filesGenerated.set(false);
+
+      this.saveError.set(
+        'صيغة الملف غير مدعومة. اختاري ملف Excel بصيغة XLS أو XLSX.'
+      );
+
+      this.toast.add({
+        severity: 'error',
+        summary: 'صيغة ملف غير مدعومة',
+        detail: this.saveError(),
+        life: 5000
+      });
+
+      return;
+    }
+
+    this.selectedFile = file;
+
+    this.uploadedFile.set({
+      name: file.name,
+      sizeKb: Math.max(1, Math.round(file.size / 1024))
+    });
+
+    this.filesGenerated.set(false);
+    this.saveError.set('');
   }
 
-  this.processSelectedFile(file);
-}
+  removeSelectedFile(): void {
+    if (this.saving()) {
+      return;
+    }
 
-private processSelectedFile(file: File): void {
-  const extension = file.name
-    .split('.')
-    .pop()
-    ?.toLowerCase();
-
-  if (!extension || !['xlsx', 'xls'].includes(extension)) {
     this.selectedFile = null;
     this.uploadedFile.set(null);
     this.filesGenerated.set(false);
-    this.saveError.set(
-      'صيغة الملف غير مدعومة. اختاري ملف Excel بصيغة XLS أو XLSX.'
-    );
-
-    return;
+    this.saveError.set('');
   }
-
-  this.selectedFile = file;
-
-  this.uploadedFile.set({
-    name: file.name,
-    sizeKb: Math.max(1, Math.round(file.size / 1024))
-  });
-
-  this.filesGenerated.set(false);
-  this.saveError.set('');
-}
-
-removeSelectedFile(): void {
-  if (this.saving()) {
-    return;
-  }
-
-  this.selectedFile = null;
-  this.uploadedFile.set(null);
-  this.filesGenerated.set(false);
-  this.saveError.set('');
-}
 
   // =========================================================
-  // UPLOAD / CREATE FILES
-  // Keeps the existing service signature.
+  // IMPORT
   // =========================================================
 
   createFiles(): void {
@@ -723,17 +528,27 @@ removeSelectedFile(): void {
       return;
     }
 
+    const year = Number(this.selectedYear);
+
     if (
       !this.selectedGovernorate ||
-      !this.selectedSubject ||
+      !this.selectedEducationalStage ||
       !this.selectedRound ||
-      !Number.isInteger(Number(this.selectedYear)) ||
-      Number(this.selectedYear) < 1 ||
-      Number(this.selectedYear) > 99
+      !Number.isInteger(year) ||
+      year < 1 ||
+      year > 99
     ) {
       this.saveError.set(
-        'يرجى مراجعة بيانات المحافظة والمادة والدور والسنة.'
+        'يرجى مراجعة بيانات المحافظة والمرحلة التعليمية والدور والسنة.'
       );
+
+      this.toast.add({
+        severity: 'warn',
+        summary: 'بيانات غير مكتملة',
+        detail: this.saveError(),
+        life: 4000
+      });
+
       return;
     }
 
@@ -741,105 +556,144 @@ removeSelectedFile(): void {
     this.saveError.set('');
     this.filesGenerated.set(false);
 
-    this.committeeService
-      .uploadCommittees(
-        this.selectedFile,
-        this.selectedGovernorate,
-        this.selectedSubject,
-        this.selectedRound
-      )
-      .subscribe({
-        next: () => {
-          this.saving.set(false);
-          this.filesGenerated.set(true);
+    this.committeeService.uploadCommittees({
+      file: this.selectedFile,
+      year,
+      roundCode: this.selectedRound,
+      governorateCode: this.selectedGovernorate,
+      educationalStageCode: this.selectedEducationalStage
+    }).subscribe({
+      next: response => {
+        this.saving.set(false);
 
-          this.toast.add({
-            severity: 'success',
-            summary: 'تمت العملية بنجاح',
-            detail: 'تم رفع الملف وتنفيذ الطلب بنجاح.',
-            life: 3500
-          });
-        },
+        // Do not treat an unsuccessful response as a success
+        // just because the HTTP status was 2xx.
+        const responseErrors = this.normalizeErrors(
+          (response as any)?.errors ??
+          (response as any)?.data?.errors
+        );
 
-        error: err => {
-          console.error('Upload error:', err);
-
-          this.saving.set(false);
+        if (
+          (response as any)?.success === false ||
+          responseErrors.length > 0
+        ) {
           this.filesGenerated.set(false);
-
           this.saveError.set(
-            this.extractErrorMessage(err)
+            `فشل استيراد الملف، وتم اكتشاف ${responseErrors.length} أخطاء.`
           );
 
-          this.toast.add({
-            severity: 'error',
-            summary: 'تعذّر تنفيذ العملية',
-            detail: this.saveError(),
-            life: 5000
-          });
+          this.showImportErrors(responseErrors);
+          this.loadHistory();
+          return;
         }
-      });
+
+        this.filesGenerated.set(true);
+
+        this.toast.add({
+          severity: 'success',
+          summary: 'تمت العملية بنجاح',
+          detail: 'تم رفع الملف وتنفيذ الطلب بنجاح.',
+          life: 3500
+        });
+
+        this.first.set(0);
+        this.loadHistory();
+      },
+
+      error: err => {
+        console.error('Upload error:', err);
+
+        this.saving.set(false);
+        this.filesGenerated.set(false);
+
+        const errors = this.extractApiErrors(err);
+
+        this.saveError.set(
+          errors.length > 1
+            ? `فشل استيراد الملف، وتم اكتشاف ${errors.length} أخطاء.`
+            : errors[0]
+        );
+
+        this.showImportErrors(errors);
+
+        // Refresh history so that the rejected import appears in the table.
+        this.first.set(0);
+        this.loadHistory();
+      }
+    });
   }
 
-  private extractErrorMessage(err: any): string {
-    const body = err?.error;
+  // =========================================================
+  // IMPORT ERRORS / TOAST
+  // =========================================================
 
-    if (typeof body === 'string' && body.trim()) {
-      return body;
+  private normalizeErrors(value: unknown): string[] {
+    if (Array.isArray(value)) {
+      return value
+        .map(item => String(item ?? '').trim())
+        .filter(Boolean);
     }
 
-    return (
+    if (typeof value === 'string' && value.trim()) {
+      return [value.trim()];
+    }
+
+    return [];
+  }
+
+  private extractApiErrors(err: any): string[] {
+    const body = err?.error;
+
+    // The backend may return the 422 body directly in error.errors.
+    const errors = this.normalizeErrors(
+      body?.errors ??
+      body?.Errors ??
+      body?.data?.errors
+    );
+
+    if (errors.length) {
+      return errors;
+    }
+
+    if (typeof body === 'string' && body.trim()) {
+      return [body.trim()];
+    }
+
+    return [
       body?.message ||
       body?.Message ||
       body?.detail ||
+      body?.title ||
       err?.message ||
-      'تعذّر رفع الملف. يرجى المحاولة مرة أخرى.'
-    );
+      'تعذّر تنفيذ الطلب. يرجى المحاولة مرة أخرى.'
+    ];
   }
 
-  // =========================================================
-  // TABLE FILTER HANDLERS
-  // =========================================================
-
-  setSearchTerm(value: string): void {
-    this.searchTerm.set(value);
-    this.resetPage();
-  }
-
-  onFilterGovernorateChange(value: string | null): void {
-    this.filterGovernorate.set(value);
-    this.filterAdministration.set(null);
-    this.resetPage();
-  }
-
-  onFilterSubjectChange(value: string | null): void {
-    this.filterSubject.set(value);
-    this.resetPage();
-  }
-
-  onFilterAdministrationChange(value: string | null): void {
-    this.filterAdministration.set(value);
-    this.resetPage();
-  }
-
-  resetTableFilters(): void {
-    this.searchTerm.set('');
-    this.filterGovernorate.set(null);
-    this.filterSubject.set(null);
-    this.filterAdministration.set(null);
-    this.resetPage();
-  }
-
-  private resetPage(): void {
-    this.first.set(0);
-  }
-
-  onPage(event: { first?: number; rows?: number }): void {
-    this.first.set(event.first ?? 0);
-
-    if (event.rows) {
-      this.pageSize.set(event.rows);
+  private showImportErrors(errors: string[]): void {
+    if (!errors.length) {
+      errors = ['تعذّر استيراد الملف. يرجى مراجعة البيانات والمحاولة مرة أخرى.'];
     }
+
+    this.toast.add({
+      severity: 'error',
+      summary: `فشل استيراد الملف (${errors.length} أخطاء)`,
+      detail: 'تفاصيل الأخطاء تظهر في الرسائل التالية.',
+      life: 6000
+    });
+
+    // One toast per backend error, preserving the original Arabic message.
+    errors.forEach((message, index) => {
+      this.toast.add({
+        severity: 'error',
+        summary: `الخطأ ${index + 1} من ${errors.length}`,
+        detail: message,
+        sticky: true
+      });
+    });
+  }
+
+  private extractErrorMessage(err: any): string {
+    return this.extractApiErrors(err)[0];
   }
 
   // =========================================================
@@ -847,24 +701,19 @@ removeSelectedFile(): void {
   // =========================================================
 
   getGovernorateLabel(value: string): string {
-    return this.governorates.find(
-      item => item.value === value
-    )?.label ?? value;
+    return this.governorates().find(item => item.value === value)?.label ?? value;
   }
 
   getSubjectLabel(value: string): string {
-    return this.subjects.find(
-      item => item.value === value
-    )?.label ?? value;
+    return this.subjects().find(item => item.value === value)?.label ?? value;
   }
 
   // =========================================================
-  // EXPORT FILTERED REPORT TO CSV / EXCEL
-  // Exports every matching row, not only the visible page.
+  // EXPORT
   // =========================================================
 
   exportReport(): void {
-    const data = this.filteredRows();
+    const data = this.visibleRows();
 
     if (!data.length) {
       this.toast.add({
@@ -877,48 +726,36 @@ removeSelectedFile(): void {
       return;
     }
 
-    const csvCell = (value: unknown): string => {
-      const text = String(value ?? '');
+    const csvCell = (value: unknown): string =>
+      `"${String(value ?? '').replace(/"/g, '""')}"`;
 
-      return `"${text.replace(/"/g, '""')}"`;
-    };
-
-    const selectedGovernorate = this.filterGovernorate()
+    const governorate = this.filterGovernorate()
       ? this.getGovernorateLabel(this.filterGovernorate()!)
       : 'كل المحافظات';
 
-    const selectedSubject = this.filterSubject()
+    const subject = this.filterSubject()
       ? this.getSubjectLabel(this.filterSubject()!)
       : 'كل المواد';
 
-    const selectedAdministration =
-      this.filterAdministration() ?? 'كل الإدارات';
-
     const reportRows: unknown[][] = [
       ['تقرير بيانات اللجان'],
-      ['المحافظة', selectedGovernorate],
-      ['المادة', selectedSubject],
-      ['الإدارة التعليمية', selectedAdministration],
+      ['المحافظة', governorate],
+      ['المادة', subject],
       ['عبارة البحث', this.searchTerm() || 'بدون بحث'],
-      ['عدد اللجان', data.length],
-      [
-        'إجمالي البوكليتات',
-        data.reduce(
-          (sum, row) => sum + Number(row.bookletCount || 0),
-          0
-        )
-      ],
+      ['عدد السجلات', data.length],
+      ['إجمالي البوكليتات', this.totalBooklets()],
       ['تاريخ التصدير', new Date().toLocaleString('ar-EG')],
       [],
       [
         'م',
-        'رقم اللجنة',
-        'اسم اللجنة / المدرسة',
+        'رقم اللجنة / السجل',
+        'اسم اللجنة / الملف',
         'المحافظة',
         'المادة',
         'الإدارة التعليمية',
         'عدد البوكليتات',
-        'الحالة'
+        'الحالة',
+        'الأخطاء'
       ],
       ...data.map((row, index) => [
         index + 1,
@@ -928,28 +765,24 @@ removeSelectedFile(): void {
         this.getSubjectLabel(row.subject),
         row.educationalAdministration,
         row.bookletCount,
-        row.status === 'valid' ? 'صحيح' : 'خطأ'
+        row.status === 'valid' ? 'صحيح' : 'مرفوض',
+        row.errors.join(' | ')
       ])
     ];
 
     const csv =
       '\uFEFF' +
-      reportRows
-        .map(row => row.map(csvCell).join(','))
-        .join('\r\n');
+      reportRows.map(row => row.map(csvCell).join(',')).join('\r\n');
 
-    const blob = new Blob(
-      [csv],
-      { type: 'text/csv;charset=utf-8;' }
+    const url = URL.createObjectURL(
+      new Blob([csv], { type: 'text/csv;charset=utf-8;' })
     );
 
-    const url = URL.createObjectURL(blob);
     const anchor = document.createElement('a');
 
-    const date = new Date().toISOString().slice(0, 10);
-
     anchor.href = url;
-    anchor.download = `تقرير-اللجان-${date}.csv`;
+    anchor.download =
+      `تقرير-اللجان-${new Date().toISOString().slice(0, 10)}.csv`;
 
     document.body.appendChild(anchor);
     anchor.click();
@@ -960,7 +793,7 @@ removeSelectedFile(): void {
     this.toast.add({
       severity: 'success',
       summary: 'تم تصدير التقرير',
-      detail: `تم تصدير ${data.length} لجنة وفقًا للفلاتر الحالية.`,
+      detail: `تم تصدير ${data.length} سجل وفقًا للفلاتر الحالية.`,
       life: 3000
     });
   }

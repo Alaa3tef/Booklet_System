@@ -1,52 +1,39 @@
+
 <div class="committee-setup-page" dir="rtl">
 
- <!-- PAGE BODY (الـ hero جوه الـ grid عشان الـ side يبدأ جنبه) -->
  <div class="page-body">
 
   <!-- HERO -->
   <section class="hero-banner">
 
     <div class="hero-visual">
-      <img
-        src="assets/images/it-committee-hero.png"
-        alt="">
+      <img src="assets/images/it-committee-hero.png" alt="">
     </div>
 
     <div class="hero-center">
-
       <div class="hero-title-row">
         <h2>مستخدم IT</h2>
-
         <div class="hero-gear">
           <i class="pi pi-cog"></i>
         </div>
       </div>
 
       <h3>إعداد بيانات اللجان للمادة</h3>
-
-      <!-- <p>
-        اختيار المحافظة والمادة ورفع بيان اللجان وإعدادها على المنظومة
-      </p> -->
-
     </div>
 
     <div class="hero-checklist">
-
       <div class="hero-check-item">
         <span>إدارة البيانات الأساسية</span>
         <i class="pi pi-check-circle"></i>
       </div>
-
       <div class="hero-check-item">
         <span>رفع بيانات اللجان</span>
         <i class="pi pi-check-circle"></i>
       </div>
-
       <div class="hero-check-item">
         <span>إعداد الملفات على المنظومة</span>
         <i class="pi pi-check-circle"></i>
       </div>
-
     </div>
 
   </section>
@@ -56,7 +43,6 @@
 
       <section class="setup-card">
 
-        <!-- SETUP + UPLOAD -->
         <section class="committee-filters setup-form-section">
 
           <div class="filters-header">
@@ -77,7 +63,6 @@
 
           </div>
 
-          <!-- FIELDS (1 column) + UPLOAD (2 columns) -->
           <div class="setup-layout">
 
             <div class="setup-fields-grid">
@@ -89,28 +74,31 @@
 
                 <p-select
                   inputId="governorate"
-                  [options]="governorates"
+                  [options]="governorates()"
                   [(ngModel)]="selectedGovernorate"
                   optionLabel="label"
                   optionValue="value"
                   placeholder="اختر المحافظة"
+                  [loading]="lookupsLoading()"
+                  [filter]="true"
                   appendTo="body"
                   styleClass="w-full">
                 </p-select>
               </div>
 
               <div class="field">
-                <label for="subject">
-                  المادة <span class="required">*</span>
+                <label for="educationalStage">
+                  المرحلة التعليمية <span class="required">*</span>
                 </label>
 
                 <p-select
-                  inputId="subject"
-                  [options]="governorates"
-                  [(ngModel)]="selectedGovernorate"
+                  inputId="educationalStage"
+                  [options]="educationalStages()"
+                  [(ngModel)]="selectedEducationalStage"
                   optionLabel="label"
                   optionValue="value"
-                  placeholder="اختر المحافظة"
+                  placeholder="اختر المرحلة التعليمية"
+                  [loading]="lookupsLoading()"
                   appendTo="body"
                   styleClass="w-full">
                 </p-select>
@@ -123,11 +111,12 @@
 
                 <p-select
                   inputId="round"
-                  [options]="rounds"
+                  [options]="rounds()"
                   [(ngModel)]="selectedRound"
                   optionLabel="label"
                   optionValue="value"
                   placeholder="اختر الدور"
+                  [loading]="lookupsLoading()"
                   appendTo="body"
                   styleClass="w-full">
                 </p-select>
@@ -156,7 +145,7 @@
 
             </div>
 
-            <!-- PROFESSIONAL FILE UPLOAD -->
+            <!-- FILE UPLOAD -->
             <div class="upload-column">
               <section
                 class="upload-panel"
@@ -167,7 +156,6 @@
                 (dragleave)="onDragLeave($event)"
                 (drop)="onFileDrop($event)"
               >
-                <!-- Upload header -->
                 <div class="upload-panel-header">
                   <div class="upload-heading">
                     <span class="upload-heading-icon">
@@ -181,7 +169,6 @@
                   </div>
                 </div>
 
-                <!-- Hidden file input -->
                 <input
                   #excelInput
                   id="committeeExcelFile"
@@ -192,7 +179,6 @@
                   (change)="onFileSelected($event)"
                 />
 
-                <!-- Empty state -->
                 @if (!uploadedFile()) {
                   <label
                     for="committeeExcelFile"
@@ -206,9 +192,7 @@
                       </span>
                     </span>
 
-                    <span class="dropzone-title">
-                      اسحب ملف Excel
-                    </span>
+                    <span class="dropzone-title">اسحب ملف Excel</span>
 
                     <span class="dropzone-description">
                       أو اختار الملف من جهازك لبدء رفع البيانات
@@ -228,7 +212,6 @@
                   </label>
                 }
 
-                <!-- Selected file state -->
                 @if (uploadedFile(); as file) {
                   <div class="selected-file-card">
                     <div class="selected-file-icon">
@@ -286,7 +269,6 @@
                   </div>
                 }
 
-                <!-- Error message -->
                 @if (saveError()) {
                   <div class="upload-inline-error" role="alert">
                     <i class="pi pi-exclamation-circle"></i>
@@ -297,7 +279,6 @@
             </div>
 
           </div>
-          <!-- /SETUP LAYOUT -->
 
           <div class="setup-form-footer">
 
@@ -315,11 +296,7 @@
               </i>
 
               <span>
-                {{
-                  saving()
-                    ? 'جارٍ معالجة الملف...'
-                    : 'رفع الملف وإنشاء الملفات'
-                }}
+                {{ saving() ? 'جارٍ معالجة الملف...' : 'رفع الملف وإنشاء الملفات' }}
               </span>
 
             </button>
@@ -327,9 +304,7 @@
           </div>
 
           @if (filesGenerated()) {
-
             <div class="result-banner is-success" role="status">
-
               <span class="result-banner-icon">
                 <i class="pi pi-check"></i>
               </span>
@@ -338,9 +313,7 @@
                 <b>تم تنفيذ العملية بنجاح</b>
                 <small>تم استلام استجابة نجاح من الخدمة.</small>
               </div>
-
             </div>
-
           }
 
         </section>
@@ -349,7 +322,6 @@
       <br>
 
       <section class="setup-card">
-        <!-- TABLE -->
         <section class="preview-section">
 
           <div class="table-section-header">
@@ -359,17 +331,12 @@
                 <i class="pi pi-table"></i>
                 بيانات اللجان
               </h4>
-
-              <!-- <p>
-                ابحثي وفلّتري النتائج ثم صدّري التقرير المطلوب.
-              </p> -->
             </div>
 
             <button
               type="button"
               class="export-btn"
               (click)="exportReport()">
-
               <i class="pi pi-file-excel"></i>
               إصدار تقرير
             </button>
@@ -382,11 +349,24 @@
             <div class="table-filters-grid">
 
               <div class="field">
+                <label for="tableSearch">بحث</label>
+
+                <input
+                  id="tableSearch"
+                  type="text"
+                  pInputText
+                  class="w-full"
+                  placeholder="ابحث..."
+                  [ngModel]="searchTerm()"
+                  (ngModelChange)="setSearchTerm($event)">
+              </div>
+
+              <div class="field">
                 <label for="tableGovernorate">المحافظة</label>
 
                 <p-select
                   inputId="tableGovernorate"
-                  [options]="governorates"
+                  [options]="governorates()"
                   [ngModel]="filterGovernorate()"
                   (ngModelChange)="onFilterGovernorateChange($event)"
                   optionLabel="label"
@@ -403,31 +383,12 @@
 
                 <p-select
                   inputId="tableSubject"
-                  [options]="subjects"
+                  [options]="subjects()"
                   [ngModel]="filterSubject()"
                   (ngModelChange)="onFilterSubjectChange($event)"
                   optionLabel="label"
                   optionValue="value"
                   placeholder="كل المواد"
-                  [showClear]="true"
-                  appendTo="body"
-                  styleClass="w-full">
-                </p-select>
-              </div>
-
-              <div class="field">
-                <label for="tableAdministration">
-                  الإدارة التعليمية
-                </label>
-
-                <p-select
-                  inputId="tableAdministration"
-                  [options]="administrations"
-                  [ngModel]="filterAdministration()"
-                  (ngModelChange)="onFilterAdministrationChange($event)"
-                  optionLabel="label"
-                  optionValue="value"
-                  placeholder="كل الإدارات"
                   [showClear]="true"
                   appendTo="body"
                   styleClass="w-full">
@@ -443,11 +404,12 @@
           <div class="table-wrapper">
 
             <p-table
-              [value]="paginatedRows()"
-  dataKey="committeeNumber"
-  styleClass="committee-table"
-  responsiveLayout="scroll"
-  [paginator]="false">
+              [value]="visibleRows()"
+              [loading]="tableLoading()"
+              dataKey="committeeNumber"
+              styleClass="committee-table"
+              responsiveLayout="scroll"
+              [paginator]="false">
 
               <ng-template pTemplate="header">
                 <tr>
@@ -459,6 +421,7 @@
                   <th>الإدارة التعليمية</th>
                   <th>عدد البوكليتات</th>
                   <th>الحالة</th>
+                  <th>الإجراءات</th>
                 </tr>
               </ng-template>
 
@@ -470,18 +433,10 @@
                 <tr>
                   <td>{{ first() + rowIndex + 1 }}</td>
                   <td>{{ row.committeeNumber }}</td>
-                  <td class="school-name-cell">
-                    {{ row.schoolName }}
-                  </td>
-                  <td>
-                    {{ getGovernorateLabel(row.governorate) }}
-                  </td>
-                  <td>
-                    {{ getSubjectLabel(row.subject) }}
-                  </td>
-                  <td>
-                    {{ row.educationalAdministration }}
-                  </td>
+                  <td class="school-name-cell">{{ row.schoolName }}</td>
+                  <td>{{ getGovernorateLabel(row.governorate) }}</td>
+                  <td>{{ getSubjectLabel(row.subject) }}</td>
+                  <td>{{ row.educationalAdministration }}</td>
                   <td>{{ row.bookletCount | number }}</td>
                   <td>
                     <span
@@ -496,9 +451,25 @@
                       </i>
 
                       {{ row.status === 'valid' ? 'صحيح' : 'خطأ' }}
-
                     </span>
                   </td>
+                  <td>
+  @if (row.status === 'invalid' && row.errors.length > 0) {
+    <button
+      type="button"
+      class="view-errors-btn"
+      (click)="openErrors(row)"
+      pTooltip="عرض تفاصيل الأخطاء"
+      tooltipPosition="top"
+    >
+      <i class="pi pi-exclamation-circle"></i>
+      <span>عرض الأخطاء</span>
+      <span class="errors-count">{{ row.errors.length }}</span>
+    </button>
+  } @else {
+    <span class="no-errors">—</span>
+  }
+</td>
                 </tr>
 
               </ng-template>
@@ -514,78 +485,74 @@
 
             </p-table>
 
-            @if (filteredRows().length > 0) {
-  <div class="custom-paginator" dir="rtl">
+            @if (totalRecords() > 0) {
+              <div class="custom-paginator" dir="rtl">
 
-    <!-- عدد الصفوف -->
-    <div class="paginator-size">
-      <span>عدد الصفوف</span>
+                <div class="paginator-size">
+                  <span>عدد الصفوف</span>
 
-      <p-select
-        [options]="[
-          { label: '5', value: 5 },
-          { label: '10', value: 10 },
-          { label: '20', value: 20 },
-          { label: '50', value: 50 }
-        ]"
-        [ngModel]="pageSize()"
-        (ngModelChange)="changePageSize($event)"
-        optionLabel="label"
-        optionValue="value"
-        appendTo="body"
-        styleClass="page-size-select"
-      />
-    </div>
+                  <p-select
+                    [options]="[
+                      { label: '5', value: 5 },
+                      { label: '10', value: 10 },
+                      { label: '20', value: 20 },
+                      { label: '50', value: 50 }
+                    ]"
+                    [ngModel]="pageSize()"
+                    (ngModelChange)="changePageSize($event)"
+                    optionLabel="label"
+                    optionValue="value"
+                    appendTo="body"
+                    styleClass="page-size-select"
+                  />
+                </div>
 
-    <!-- أرقام الصفحات -->
-    <div class="paginator-pages">
+                <div class="paginator-pages">
 
-      <button
-        type="button"
-        class="page-nav"
-        [disabled]="currentPage() === 1"
-        (click)="goToPage(currentPage() - 1)"
-        aria-label="الصفحة السابقة"
-      >
-        <i class="pi pi-chevron-right"></i>
-      </button>
+                  <button
+                    type="button"
+                    class="page-nav"
+                    [disabled]="currentPage() === 1"
+                    (click)="goToPage(currentPage() - 1)"
+                    aria-label="الصفحة السابقة"
+                  >
+                    <i class="pi pi-chevron-right"></i>
+                  </button>
 
-      @for (page of visiblePages(); track $index) {
-        @if (page === 'dots') {
-          <span class="page-dots">...</span>
-        } @else {
-          <button
-            type="button"
-            class="page-number"
-            [class.active]="currentPage() === page"
-            [attr.aria-current]="currentPage() === page ? 'page' : null"
-            (click)="goToPage(page)"
-          >
-            {{ page }}
-          </button>
-        }
-      }
+                  @for (page of visiblePages(); track $index) {
+                    @if (page === 'dots') {
+                      <span class="page-dots">...</span>
+                    } @else {
+                      <button
+                        type="button"
+                        class="page-number"
+                        [class.active]="currentPage() === page"
+                        [attr.aria-current]="currentPage() === page ? 'page' : null"
+                        (click)="goToPage(page)"
+                      >
+                        {{ page }}
+                      </button>
+                    }
+                  }
 
-      <button
-        type="button"
-        class="page-nav"
-        [disabled]="currentPage() === totalPages()"
-        (click)="goToPage(currentPage() + 1)"
-        aria-label="الصفحة التالية"
-      >
-        <i class="pi pi-chevron-left"></i>
-      </button>
+                  <button
+                    type="button"
+                    class="page-nav"
+                    [disabled]="currentPage() === totalPages()"
+                    (click)="goToPage(currentPage() + 1)"
+                    aria-label="الصفحة التالية"
+                  >
+                    <i class="pi pi-chevron-left"></i>
+                  </button>
 
-    </div>
+                </div>
 
-    <span class="paginator-info">
-      صفحة {{ currentPage() }} من {{ totalPages() }}
-    </span>
+                <span class="paginator-info">
+                  صفحة {{ currentPage() }} من {{ totalPages() }}
+                </span>
 
-  </div>
-}
-
-
+              </div>
+            }
 
           </div>
 
@@ -594,70 +561,41 @@
 
     </main>
 
-    <!-- SIDE COLUMN (sticky) -->
+    <!-- SIDE COLUMN -->
     <aside class="side-column">
      <div class="side-fixed">
 
       <section class="side-card">
-
         <h4>دور المستخدم</h4>
 
         <div class="role-block">
-
           <div class="role-icon">
             <i class="pi pi-user"></i>
           </div>
 
           <div class="role-content">
-
             <p class="role-title">مستخدم IT</p>
-
             <p class="role-desc">
               مسؤول عن إعداد بيانات اللجان ورفع الملفات ومراجعة نتائج البحث
               وتصدير التقارير المطلوبة.
             </p>
-
           </div>
-
         </div>
-
       </section>
 
       <section class="side-card">
-
         <h4>الخيارات المتاحة</h4>
 
         <ul class="check-list">
-          <li>
-            <i class="pi pi-check-circle"></i>
-            اختيار المحافظة والمادة
-          </li>
-
-          <li>
-            <i class="pi pi-check-circle"></i>
-            تحديد الدور والسنة
-          </li>
-
-          <li>
-            <i class="pi pi-check-circle"></i>
-            رفع ملف اللجان Excel
-          </li>
-
-          <li>
-            <i class="pi pi-check-circle"></i>
-            البحث والفلترة
-          </li>
-
-          <li>
-            <i class="pi pi-check-circle"></i>
-            تصدير تقرير اللجان
-          </li>
+          <li><i class="pi pi-check-circle"></i> اختيار المحافظة والمرحلة التعليمية</li>
+          <li><i class="pi pi-check-circle"></i> تحديد الدور والسنة</li>
+          <li><i class="pi pi-check-circle"></i> رفع ملف اللجان Excel</li>
+          <li><i class="pi pi-check-circle"></i> البحث والفلترة</li>
+          <li><i class="pi pi-check-circle"></i> تصدير تقرير اللجان</li>
         </ul>
-
       </section>
 
       <section class="side-card note-card">
-
         <h4>
           <i class="pi pi-info-circle"></i>
           ملاحظة
@@ -674,7 +612,6 @@
           <li>الإدارة التعليمية</li>
           <li>عدد البوكليتات</li>
         </ul>
-
       </section>
 
      </div>
@@ -683,3 +620,76 @@
   </div>
 
 </div>
+
+
+<p-dialog
+  [visible]="errorsDialogVisible()"
+  (visibleChange)="!$event && closeErrors()"
+  [modal]="true" [baseZIndex]="10000"
+  [draggable]="false"
+  [resizable]="false"
+  [dismissableMask]="true"
+  [style]="{ width: '860px', maxWidth: '95vw' }"
+  [breakpoints]="{ '640px': '96vw' }"
+  appendTo="body"
+  styleClass="committee-errors-dialog"
+  dir="rtl"
+>
+  <ng-template pTemplate="header">
+    <div class="errors-dialog-header">
+      <span class="errors-dialog-icon">
+        <i class="pi pi-exclamation-triangle"></i>
+      </span>
+      <div>
+        <h3>تفاصيل أخطاء الاستيراد</h3>
+        <p>راجعي الأخطاء التالية لتصحيح ملف Excel.</p>
+      </div>
+    </div>
+  </ng-template>
+
+  @if (selectedErrorRow(); as row) {
+    <div class="errors-dialog-content">
+      <div class="errors-file-info">
+        <span class="errors-file-icon">
+          <i class="pi pi-file-excel"></i>
+        </span>
+        <div class="errors-file-details">
+          <span>اسم الملف</span>
+          <strong>{{ row.fileName || row.schoolName || 'ملف غير محدد' }}</strong>
+        </div>
+        <span class="errors-total">{{ row.errors.length }} أخطاء</span>
+      </div>
+
+      <div class="errors-list-heading">
+        <i class="pi pi-list"></i>
+        قائمة الأخطاء
+      </div>
+
+      <div class="errors-list">
+        @for (error of row.errors; track $index) {
+          <div class="error-item">
+            <span class="error-index">{{ $index + 1 }}</span>
+            <p>{{ error }}</p>
+            <i class="pi pi-exclamation-circle"></i>
+          </div>
+        }
+      </div>
+
+      <div class="errors-dialog-note">
+        <i class="pi pi-info-circle"></i>
+        <span>صححي البيانات في ملف Excel ثم أعيدي رفعه.</span>
+      </div>
+    </div>
+  }
+
+  <ng-template pTemplate="footer">
+    <button
+      type="button"
+      class="errors-close-btn"
+      (click)="closeErrors()"
+    >
+      <i class="pi pi-check"></i>
+      إغلاق
+    </button>
+  </ng-template>
+</p-dialog>

@@ -2229,3 +2229,27 @@
     height: 32px;
   }
 }
+
+
+.view-errors-btn,.errors-close-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:9px 12px;border:0;border-radius:9px;font-weight:700;cursor:pointer}
+.view-errors-btn{background:#fff1f0;color:#b42318;border:1px solid #fecaca;font-size:12px;white-space:nowrap}
+.view-errors-btn:hover{background:#fee2e2}
+.errors-count,.errors-total{padding:4px 8px;border-radius:20px;background:#fee2e2;color:#b42318;font-size:11px;font-weight:700}
+.no-errors{color:#94a3b8}
+.errors-dialog-header,.errors-file-info{display:flex;align-items:center;gap:12px}
+.errors-dialog-header h3{margin:0 0 5px;font-size:18px}
+.errors-dialog-header p,.errors-file-details span{margin:0;color:#64748b;font-size:12px}
+.errors-dialog-icon,.errors-file-icon{display:grid;place-items:center;flex-shrink:0;width:44px;height:44px;border-radius:12px;background:#fff1f0;color:#b42318;font-size:20px}
+.errors-file-info{margin-bottom:18px;padding:14px;border:1px solid #e2e8f0;border-radius:12px;background:#f8fafc}
+.errors-file-details{display:grid;flex:1;gap:5px;min-width:0}
+.errors-file-details strong{overflow-wrap:anywhere;font-size:13px}
+.errors-list-heading{display:flex;align-items:center;gap:8px;margin:18px 0 10px;font-weight:700}
+.errors-list{display:grid;gap:9px;max-height:42vh;overflow-y:auto;padding:2px}
+.error-item{display:flex;align-items:flex-start;gap:10px;padding:12px;border:1px solid #fee2e2;border-radius:10px;background:#fffafa;color:#991b1b}
+.error-item p{flex:1;margin:0;font-size:13px;line-height:1.9;overflow-wrap:anywhere;white-space:pre-line}
+.error-index{display:grid;place-items:center;flex-shrink:0;width:25px;height:25px;border-radius:7px;background:#fee2e2;font-size:12px;font-weight:700}
+.error-item>i{margin-top:5px}
+.errors-dialog-note{display:flex;gap:8px;margin-top:15px;padding:12px;border-radius:9px;background:#eff6ff;color:#1d4ed8;font-size:12px;line-height:1.8}
+.errors-close-btn{background:#334155;color:white;padding:10px 22px}
+.errors-close-btn:hover{background:#1e293b}
+@media(max-width:600px){.errors-file-info{flex-wrap:wrap}.errors-total{margin-right:56px}.error-item{gap:8px}}
