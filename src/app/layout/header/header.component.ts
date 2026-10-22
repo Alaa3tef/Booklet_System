@@ -55,11 +55,11 @@ export class HeaderComponent implements OnInit, OnDestroy {
     }
   ];
 
-  @Input()
-  userName = 'أحمد محمد';
+  // @Input()
+  // userName = 'أحمد محمد';
 
-  @Input()
-  userRole = 'Super Admin';
+  // @Input()
+  // userRole = 'Super Admin';
 
   @Input()
   sidebarOpen = false;
@@ -76,6 +76,14 @@ export class HeaderComponent implements OnInit, OnDestroy {
   ===================================================== */
 
   readonly profileData = this.authService.profileData;
+  readonly isSuperAdmin = () => {
+    const role = (this.profileData()?.roleName ?? '')
+      .trim()
+      .toLowerCase()
+      .replace(/\s+/g, ' ');
+
+    return role === 'superadmin' || role === 'super admin';
+  };
 
   /* =====================================================
      NOTIFICATIONS

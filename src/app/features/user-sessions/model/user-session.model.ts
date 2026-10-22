@@ -11,8 +11,22 @@ export interface UserSession {
   lastLogoutAt: string | null;
 }
 
-export interface UserSessionsResponse {
+export interface UserSessionsPage {
   data: UserSession[];
+  totalCount: number;
+  totalActiveSessions: number;
+  totalInactiveSessions: number;
+  currentPage: number;
+  totalPages: number;
+  pageSize: number;
+  hasPreviousPage: boolean;
+  hasNextPage: boolean;
+}
+
+export interface UserSessionsResponse {
+  data: UserSessionsPage;
   message?: string;
   success?: boolean;
+  statusCode?: number;
+  count?: number;
 }

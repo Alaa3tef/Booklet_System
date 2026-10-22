@@ -4,7 +4,6 @@ import { ActivatedRoute, NavigationEnd, Router } from '@angular/router';
 import { filter } from 'rxjs';
 import { SidebarComponent } from '../sidebar/sidebar.component';
 import { Breadcrumb, HeaderComponent } from '../header/header.component';
-import { AuthService } from '../../core/services/auth.service';
 
 @Component({
   selector: 'app-main-layout',
@@ -14,17 +13,8 @@ import { AuthService } from '../../core/services/auth.service';
   styleUrl: './main-layout.component.scss'
 })
 export class MainLayoutComponent implements OnInit {
-  private readonly authService = inject(AuthService);
   private isDesktopLayout = typeof window !== 'undefined' && window.innerWidth >= 992;
   sidebarOpen = this.isDesktopLayout;
-
-  get userName(): string {
-    return this.authService.currentUser()?.fullName || 'أحمد محمد';
-  }
-
-  get userRole(): string {
-    return this.authService.currentUser()?.role || 'مسؤول النظام IT';
-  }
 
   breadcrumbs: Breadcrumb[] = [];
 

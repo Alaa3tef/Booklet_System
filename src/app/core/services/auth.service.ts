@@ -27,7 +27,7 @@ export class AuthService {
   private readonly ACCESS_TOKEN_KEY = 'accessToken';
 private readonly REFRESH_TOKEN_KEY = 'refreshToken';
 
-private refreshRequest$: Observable<string> | null = null;
+// private refreshRequest$: Observable<string> | null = null;
 
   // Demo accounts for instant one-click login and testing
 
@@ -56,74 +56,74 @@ pingSession(): Observable<unknown> {
   return this.http.get(`${this.appConfig.baseURL}api/Account/profile`); // غيّر المسار لمسارك الفعلي
 }
 
-getRefreshToken(): string | null {
-  return localStorage.getItem(this.REFRESH_TOKEN_KEY);
-}
+// getRefreshToken(): string | null {
+//   return localStorage.getItem(this.REFRESH_TOKEN_KEY);
+// }
 
 
-refreshAccessToken(): Observable<string> {
-  // لو فيه Refresh شغال بالفعل، استخدمي نفس الطلب
-  if (this.refreshRequest$) {
-    return this.refreshRequest$;
-  }
+// refreshAccessToken(): Observable<string> {
+//   // لو فيه Refresh شغال بالفعل، استخدمي نفس الطلب
+//   if (this.refreshRequest$) {
+//     return this.refreshRequest$;
+//   }
 
-  const refreshToken = this.getRefreshToken();
+//   const refreshToken = this.getRefreshToken();
 
-  if (!refreshToken) {
-    return throwError(
-      () => new Error('Refresh token غير متوفر')
-    );
-  }
+//   if (!refreshToken) {
+//     return throwError(
+//       () => new Error('Refresh token غير متوفر')
+//     );
+//   }
 
-  this.refreshRequest$ = this.http
-    .post<any>(
-      `${this.appConfig.baseURL}api/Account/refresh-token`,
-      { refreshToken }
-    )
-    .pipe(
-      map((response) => {
-        const data = response?.data ?? response;
+//   this.refreshRequest$ = this.http
+//     .post<any>(
+//       `${this.appConfig.baseURL}api/Account/refresh-token`,
+//       { refreshToken }
+//     )
+//     .pipe(
+//       map((response) => {
+//         const data = response?.data ?? response;
 
-        if (!data?.accessToken) {
-          throw new Error(
-            'لم يرجع السيرفر Access Token جديد'
-          );
-        }
+//         if (!data?.accessToken) {
+//           throw new Error(
+//             'لم يرجع السيرفر Access Token جديد'
+//           );
+//         }
 
-        return data;
-      }),
+//         return data;
+//       }),
 
-      tap((data) => {
-        localStorage.setItem(
-          this.ACCESS_TOKEN_KEY,
-          data.accessToken
-        );
+//       tap((data) => {
+//         localStorage.setItem(
+//           this.ACCESS_TOKEN_KEY,
+//           data.accessToken
+//         );
 
-        // بعض الـ APIs بترجع Refresh Token جديد
-        if (data.refreshToken) {
-          localStorage.setItem(
-            this.REFRESH_TOKEN_KEY,
-            data.refreshToken
-          );
-        }
-      }),
+//         // بعض الـ APIs بترجع Refresh Token جديد
+//         if (data.refreshToken) {
+//           localStorage.setItem(
+//             this.REFRESH_TOKEN_KEY,
+//             data.refreshToken
+//           );
+//         }
+//       }),
 
-      map((data) => data.accessToken as string),
+//       map((data) => data.accessToken as string),
 
-      catchError((error) => {
-        this.clearSession();
-        return throwError(() => error);
-      }),
+//       catchError((error) => {
+//         this.clearSession();
+//         return throwError(() => error);
+//       }),
 
-      finalize(() => {
-        this.refreshRequest$ = null;
-      }),
+//       finalize(() => {
+//         this.refreshRequest$ = null;
+//       }),
 
-      shareReplay(1)
-    );
+//       shareReplay(1)
+//     );
 
-  return this.refreshRequest$;
-}
+//   return this.refreshRequest$;
+// }
 
  loadProfile(forceRefresh = false): void {
     if (this.profileLoading) return;
@@ -191,7 +191,7 @@ clearSession(): void {
 
             const data = response.data;
 
-       
+
 if (data.accessToken) {
   localStorage.setItem(
     this.ACCESS_TOKEN_KEY,
@@ -199,12 +199,13 @@ if (data.accessToken) {
   );
 }
 
-if (data.refreshToken) {
-  localStorage.setItem(
-    this.REFRESH_TOKEN_KEY,
-    data.refreshToken
-  );
-}
+// Refresh-token storage is disabled together with automatic renewal.
+// if (data.refreshToken) {
+//   localStorage.setItem(
+//     this.REFRESH_TOKEN_KEY,
+//     data.refreshToken
+//   );
+// }
 
 
             // ==================================================

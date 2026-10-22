@@ -28,8 +28,8 @@
     <div class="us-stat total">
       <div class="stat-icon"><i class="pi pi-users"></i></div>
       <div>
-        <span class="stat-val">{{ rows().length }}</span>
-        <span class="stat-lbl">إجمالي المستخدمين</span>
+        <span class="stat-val">{{ totalCount() }}</span>
+        <span class="stat-lbl">إجمالي الجلسات</span>
       </div>
     </div>
 
@@ -39,15 +39,15 @@
       </div>
       <div>
         <span class="stat-val">{{ onlineCount() }}</span>
-        <span class="stat-lbl">توكن نشط (متصل)</span>
+        <span class="stat-lbl">الجلسات النشطة (متصلة)</span>
       </div>
     </div>
 
     <div class="us-stat offline">
-      <div class="stat-icon"><i class="pi pi-wifi-off"></i></div>
+      <div class="stat-icon offline-pulse"><i class="pi pi-times-circle"></i></div>
       <div>
         <span class="stat-val">{{ offlineCount() }}</span>
-        <span class="stat-lbl">مسجّل الخروج</span>
+        <span class="stat-lbl">الجلسات غير النشطة</span>
       </div>
     </div>
 
@@ -94,15 +94,15 @@
   <!-- ==================================================
        INFO BANNER
   =================================================== -->
-  <div class="us-info-banner">
-    <i class="pi pi-info-circle"></i>
-    <span>
-      <strong>ملاحظة:</strong>
-      المستخدم يُعدّ متصلاً (<em>online</em>) إذا كان التوكن بتاعته لا يزال نشطاً
-      — حتى لو أغلق المتصفح بدون تسجيل خروج صريح.
-      يمكنك إنهاء الجلسة يدوياً لإجباره على إعادة تسجيل الدخول.
-    </span>
-  </div>
+<div class="us-info-banner">
+  <i class="pi pi-info-circle"></i>
+  <span>
+    <strong>ملاحظة:</strong>
+    يُعدّ المستخدم متصلاً (<em>Online</em>) ما دام التوكن صالحًا،
+    وتنتهي الجلسة تلقائيًا عند انتهاء صلاحيته، كما يمكن إنهاؤها يدويًا
+    لإلزام المستخدم بتسجيل الدخول مجددًا.
+  </span>
+</div>
 
 
   <!-- ==================================================
@@ -134,23 +134,35 @@
 
     @if (!loading() && !loadError() && filtered().length > 0) {
       <table class="us-table">
+        <colgroup>
+          <col class="col-width-num" />
+          <col class="col-width-user" />
+          <col class="col-width-email" />
+          <col class="col-width-status" />
+          <col class="col-width-ip" />
+          <col class="col-width-ip" />
+          <col class="col-width-date" />
+          <col class="col-width-date" />
+          <col class="col-width-date" />
+          <col class="col-width-actions" />
+        </colgroup>
         <thead>
           <tr>
             <th>#</th>
             <th>المستخدم</th>
             <th>البريد الإلكتروني</th>
             <th>الحالة</th>
-            <th>IP الحالي</th>
-            <th>آخر IP</th>
-            <th>وقت الدخول</th>
-            <th>انتهاء التوكن</th>
+            <th> IP الجلسة الحالية</th>
+            <th>آخر جلسة IP </th>
+            <th>وقت تسجيل الدخول</th>
+            <th> وقت انتهاء الجلسة</th>
             <th>آخر خروج</th>
             <th>الإجراءات</th>
           </tr>
         </thead>
         <tbody>
           @for (s of filtered(); track s.userId; let i = $index) {
-            <tr [class.row-online]="s.isActive">
+            <tr [class.row-online]="s.isActive" [class.row-offline]="!s.isActive">
               <td class="col-num">{{ i + 1 }}</td>
 
               <td>
