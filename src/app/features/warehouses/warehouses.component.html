@@ -192,17 +192,17 @@
             dir="ltr" maxlength="1" inputmode="numeric" pattern="[1-9]" autocomplete="off"
             [class.field-invalid]="showError('code')"
             [ngModel]="form().code"
-            (ngModelChange)="updateForm('code', $event)"
+            (input)="onWarehouseCodeInput($event)"
             (blur)="markTouched('code')" />
           <label for="f-code">كود المخزن <span class="text-red-500">*</span></label>
         </p-floatlabel>
 
         <p-floatlabel variant="on">
           <input pInputText id="f-name" type="text" class="w-full" placeholder=" "
-            maxlength="60" autocomplete="off"
+            maxlength="60" autocomplete="off" lang="ar" dir="rtl"
             [class.field-invalid]="showError('name')"
             [ngModel]="form().name"
-            (ngModelChange)="updateForm('name', $event)"
+            (input)="onArabicNameInput($event)"
             (blur)="markTouched('name')" />
           <label for="f-name">اسم المخزن <span class="text-red-500">*</span></label>
         </p-floatlabel>

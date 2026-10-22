@@ -13,8 +13,8 @@ import { WarehouseService } from './service/warehouse.service';
 interface WarehouseForm { code: string; name: string; }
 
 const CODE_REGEX = /^[1-9]$/;
-// letters (any language), digits and single spaces
-const NAME_REGEX = /^[\p{L}\p{M}\p{N}]+(?:\s[\p{L}\p{M}\p{N}]+)*$/u;
+const ARABIC_NAME_CHARACTERS = '\u0621-\u064A\u064B-\u065F\u0670\u066E-\u06D3\u06FA-\u06FC\u0750-\u077F\u08A0-\u08FF';
+const NAME_REGEX = new RegExp(`^[${ARABIC_NAME_CHARACTERS}]+(?: [${ARABIC_NAME_CHARACTERS}]+)*$`);
 
 @Component({
   selector: 'app-warehouses',
@@ -97,7 +97,7 @@ export default class WarehousesComponent implements OnInit {
 
     if (!name)                                   e.name = 'اسم المخزن مطلوب';
     else if (name.length < 2)                    e.name = 'اسم المخزن قصير جدًا';
-    else if (!NAME_REGEX.test(name))             e.name = 'الاسم يقبل حروفًا وأرقامًا فقط (بدون رموز)';
+    else if (!NAME_REGEX.test(name))             e.name = 'اسم المخزن يقبل الحروف العربية والمسافات فقط';
     return e;
   });
 
@@ -175,11 +175,33 @@ export default class WarehousesComponent implements OnInit {
 
   // ---------- ADD / EDIT ----------
   updateForm<K extends keyof WarehouseForm>(key: K, value: string | null): void {
+    const rawValue = value ?? '';
     const nextValue = key === 'code'
-      ? (value ?? '').replace(/[^1-9]/g, '').slice(0, 1)
-      : value ?? '';
+      ? rawValue.replace(/[^1-9]/g, '').slice(0, 1)
+      : this.sanitizeArabicName(rawValue);
     this.form.update(f => ({ ...f, [key]: nextValue }));
     this.formError.set('');
+  }
+
+  onWarehouseCodeInput(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const code = input.value.replace(/[^1-9]/g, '').slice(0, 1);
+    input.value = code;
+    this.updateForm('code', code);
+  }
+
+  onArabicNameInput(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const sanitizedName = this.sanitizeArabicName(input.value);
+    input.value = sanitizedName;
+    this.updateForm('name', sanitizedName);
+  }
+
+  private sanitizeArabicName(value: string): string {
+    return value
+      .replace(new RegExp(`[^${ARABIC_NAME_CHARACTERS} ]`, 'g'), '')
+      .replace(/\s+/g, ' ')
+      .slice(0, 60);
   }
 
   private codeNumber(code: string): string {
