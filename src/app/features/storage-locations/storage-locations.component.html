@@ -1,4 +1,3 @@
-
 <p-toast position="top-left"></p-toast>
 
 <div class="sl-page" dir="rtl">
@@ -115,6 +114,7 @@
           [filter]="true"
           filterPlaceholder="ابحث عن مخزن..."
           appendTo="body"
+          panelStyleClass="sl-select-panel"
           styleClass="filter-select"
         ></p-select>
       </div>
@@ -335,6 +335,7 @@
           [ngModel]="pageSize()"
           (ngModelChange)="onPageSizeChange($event)"
           appendTo="body"
+          panelStyleClass="sl-select-panel"
           styleClass="pagination-size-select"
         ></p-select>
       </div>
@@ -345,7 +346,7 @@
           class="pagination-arrow"
           [disabled]="pageNumber() === 1"
           (click)="previousPage()"
-          aria-label="الصفحة التالية"
+          aria-label="الصفحة السابقة"
         >
           <i class="pi pi-chevron-right"></i>
         </button>
@@ -370,7 +371,7 @@
           class="pagination-arrow"
           [disabled]="pageNumber() === totalPages()"
           (click)="nextPage()"
-          aria-label="الصفحة السابقة"
+          aria-label="الصفحة التالية"
         >
           <i class="pi pi-chevron-left"></i>
         </button>
@@ -379,7 +380,9 @@
   </section>
 </div>
 
-<!-- ADD / EDIT DIALOG -->
+<!-- ============================== -->
+<!-- ADD / EDIT DIALOG              -->
+<!-- ============================== -->
 <p-dialog
   [(visible)]="formVisible"
   [modal]="true"
@@ -388,7 +391,6 @@
   [resizable]="false"
   [closable]="!saving()"
   [dismissableMask]="!saving()"
-  [style]="{ width: '720px', maxWidth: 'calc(100vw - 2rem)' }"
   appendTo="body"
   styleClass="sl-dialog sl-form-dialog"
 >
@@ -443,6 +445,7 @@
             [filter]="true"
             filterPlaceholder="ابحث عن مخزن..."
             appendTo="body"
+            panelStyleClass="sl-select-panel"
             styleClass="form-select"
           ></p-select>
           <small class="field-error" *ngIf="invalid('warehouseId')">
@@ -453,7 +456,7 @@
           </small>
         </div>
 
-        <div class="dialog-field">
+        <!-- <div class="dialog-field">
           <label for="formCode">
             كود الموقع <span class="required">*</span>
           </label>
@@ -474,7 +477,7 @@
                 : 'كود الموقع مطلوب.'
             }}
           </small>
-        </div>
+        </div> -->
       </div>
 
       <div class="form-section-heading location-section-heading">
@@ -487,16 +490,15 @@
           <label for="formArea">
             المنطقة <span class="required">*</span>
           </label>
-          <p-select
-            inputId="formArea"
+          <input
+             id="formArea"
+            pInputText
+            type="text"
             formControlName="area"
-            [options]="areaOptions"
-            optionLabel="label"
-            optionValue="value"
-            placeholder="اختر المنطقة"
-            appendTo="body"
-            styleClass="form-select"
-          ></p-select>
+            class="form-input"
+            maxlength="50"
+            dir="auto"
+          />
           <small class="field-error" *ngIf="invalid('area')">
             المنطقة مطلوبة.
           </small>
@@ -506,16 +508,15 @@
           <label for="formRack">
             الرف <span class="required">*</span>
           </label>
-          <p-select
-            inputId="formRack"
+         <input
+             id="formRack"
+            pInputText
+            type="text"
             formControlName="rack"
-            [options]="rackOptions"
-            optionLabel="label"
-            optionValue="value"
-            placeholder="اختر الرف"
-            appendTo="body"
-            styleClass="form-select"
-          ></p-select>
+            class="form-input"
+            maxlength="50"
+            dir="auto"
+          />
           <small class="field-error" *ngIf="invalid('rack')">
             الرف مطلوب.
           </small>
@@ -523,24 +524,24 @@
 
         <div class="dialog-field">
           <label for="formShelf">
-            الدور <span class="required">*</span>
+            الدولاب <span class="required">*</span>
           </label>
-          <p-select
-            inputId="formShelf"
+          <input
+             id="formShelf"
+            pInputText
+            type="text"
             formControlName="shelf"
-            [options]="shelfOptions"
-            optionLabel="label"
-            optionValue="value"
-            placeholder="اختر الدور"
-            appendTo="body"
-            styleClass="form-select"
-          ></p-select>
+            class="form-input"
+            maxlength="50"
+           
+            dir="auto"
+          />
           <small class="field-error" *ngIf="invalid('shelf')">
-            الدور مطلوب.
+            الدولاب مطلوب.
           </small>
         </div>
 
-        <div class="dialog-field">
+        <!-- <div class="dialog-field">
           <label for="formBin">
             الصندوق <span class="required">*</span>
           </label>
@@ -552,12 +553,13 @@
             optionValue="value"
             placeholder="اختر الصندوق"
             appendTo="body"
+            panelStyleClass="sl-select-panel"
             styleClass="form-select"
           ></p-select>
           <small class="field-error" *ngIf="invalid('bin')">
             الصندوق مطلوب.
           </small>
-        </div>
+        </div> -->
       </div>
 
       <div class="form-note">
@@ -569,7 +571,7 @@
 
   <ng-template pTemplate="footer">
     <div class="dialog-footer">
-         <button
+      <button
         pButton
         type="button"
         class="save-btn"
@@ -591,6 +593,7 @@
           }}
         </span>
       </button>
+
       <button
         pButton
         type="button"
@@ -601,12 +604,13 @@
         <i class="pi pi-times"></i>
         <span>إلغاء</span>
       </button>
-
     </div>
   </ng-template>
 </p-dialog>
 
-<!-- DELETE DIALOG -->
+<!-- ============================== -->
+<!-- DELETE DIALOG                  -->
+<!-- ============================== -->
 <p-dialog
   [(visible)]="deleteVisible"
   [modal]="true"
@@ -615,7 +619,6 @@
   [resizable]="false"
   [closable]="!deleting()"
   [dismissableMask]="!deleting()"
-  [style]="{ width: '460px', maxWidth: 'calc(100vw - 2rem)' }"
   appendTo="body"
   styleClass="sl-dialog sl-delete-dialog"
 >
@@ -640,33 +643,37 @@
     <h3>هل أنت متأكد من الحذف؟</h3>
     <p class="delete-text">
       سيتم حذف موقع التخزين
-      <strong class="delete-code">
-        <bdi>{{ deleteTarget()?.code }}</bdi>
-      </strong>
-      من النظام.
+      <strong class="delete-code"><bdi>{{ deleteTarget()?.code }}</bdi></strong>
+      نهائيًا من النظام.
     </p>
+
+    <dl class="delete-details" *ngIf="deleteTarget() as t">
+      <div><dt>المخزن</dt><dd>{{ warehouseName(t) }}</dd></div>
+      <div><dt>المنطقة</dt><dd>{{ t.area }}</dd></div>
+      <div><dt>الرف</dt><dd>{{ t.rack }}</dd></div>
+      <div><dt>الدور / الصندوق</dt><dd>{{ t.shelf }} / {{ t.bin }}</dd></div>
+    </dl>
 
     <div class="delete-warning">
       <i class="pi pi-exclamation-triangle"></i>
-      <span>تأكد من عدم ارتباط الموقع ببيانات أخرى قبل المتابعة.</span>
+      <span>تأكدي من عدم ارتباط الموقع ببيانات أخرى قبل المتابعة، ولا يمكن التراجع عن هذا الإجراء.</span>
     </div>
   </div>
 
   <ng-template pTemplate="footer">
     <div class="dialog-footer">
-<button
-  pButton
-  type="button"
-  class="reject-submit-btn"
-  [disabled]="deleting() || !deleteTarget()"
-  [loading]="deleting()"
-  (click)="confirmDelete()"
->
-  <i *ngIf="!deleting()" class="pi pi-trash"></i>
-  <span>
-    {{ deleting() ? 'جاري الحذف...' : 'تأكيد الحذف' }}
-  </span>
-</button>
+      <button
+        pButton
+        type="button"
+        class="delete-confirm-btn"
+        [disabled]="deleting() || !deleteTarget()"
+        [loading]="deleting()"
+        (click)="confirmDelete()"
+      >
+        <i *ngIf="!deleting()" class="pi pi-trash"></i>
+        <span>{{ deleting() ? 'جاري الحذف...' : 'تأكيد الحذف' }}</span>
+      </button>
+
       <button
         pButton
         type="button"

@@ -9,8 +9,8 @@
       <p>إضافة وتعديل وحذف المخازن المستخدمة في مرحلة التخزين والتسليم</p>
     </div>
 
-    <!-- <p-button label="إضافة مخزن" icon="pi pi-plus" styleClass="wh-add-btn"
-      id="btn-add-warehouse" (onClick)="openAddModal()" /> -->
+    <p-button label="إضافة مخزن" icon="pi pi-plus" styleClass="wh-add-btn"
+      id="btn-add-warehouse" (onClick)="openAddModal()" />
   </section>
 
   <!-- SUMMARY TILES -->
@@ -187,8 +187,9 @@
       <div class="form-grid">
 
         <p-floatlabel variant="on">
+          <span class="code-prefix" aria-hidden="true">W</span>
           <input pInputText id="f-code" type="text" class="w-full" placeholder=" "
-            dir="ltr" maxlength="20" autocomplete="off"
+            dir="ltr" maxlength="1" inputmode="numeric" pattern="[1-9]" autocomplete="off"
             [class.field-invalid]="showError('code')"
             [ngModel]="form().code"
             (ngModelChange)="updateForm('code', $event)"

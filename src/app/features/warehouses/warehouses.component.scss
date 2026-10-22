@@ -208,6 +208,22 @@ $red:    #dc2626;
 }
 .form-loading { margin-bottom: 12px; font-size: 13px; color: $muted; }
 
+.code-prefix {
+  position: absolute;
+  z-index: 2;
+  top: 50%;
+  left: 14px;
+  transform: translateY(-50%);
+  color: $muted;
+  font-weight: 700;
+  pointer-events: none;
+}
+
+#f-code {
+  padding-left: 2.25rem;
+  text-align: left;
+}
+
 .field-invalid, .field-invalid:focus {
   border-color: $red !important; box-shadow: 0 0 0 3px rgba(220, 38, 38, .12) !important;
 }
