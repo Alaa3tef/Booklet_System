@@ -1,42 +1,72 @@
-import { Component, computed, inject, signal } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
+import { Component, ViewEncapsulation, computed, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
-import {
-  Subject,
-  catchError,
-  debounceTime,
-  distinctUntilChanged,
-  finalize,
-  of,
-  startWith,
-  switchMap,
-  tap
-} from 'rxjs';
+import { Subject, debounceTime, distinctUntilChanged } from 'rxjs';
 
-import { SelectModule } from 'primeng/select';
-import { TableModule } from 'primeng/table';
-import { MenuModule } from 'primeng/menu';
-import { MenuItem } from 'primeng/api';
-import { DialogModule } from 'primeng/dialog';
 import { ButtonModule } from 'primeng/button';
-import { TextareaModule } from 'primeng/textarea';
-import { MultiSelectModule } from 'primeng/multiselect';
-import { TooltipModule } from 'primeng/tooltip';
+import { DialogModule } from 'primeng/dialog';
 import { InputTextModule } from 'primeng/inputtext';
-
-import { WorkflowStepLayoutComponent } from '../../../shared/workflow-step-layout/workflow-step-layout.component';
+import { MultiSelectModule } from 'primeng/multiselect';
+import { SelectModule } from 'primeng/select';
+import { TextareaModule } from 'primeng/textarea';
+import { TooltipModule } from 'primeng/tooltip';
 
 import { SelectOption } from '../../../core/models/committee.model';
 import { WorkflowStatusRow } from '../../../core/models/workflow.model';
-import { PrintingService } from './service/printing-service';
-import { Lookups } from '../../../shared/services/lookups';
+import { WorkflowStepLayoutComponent } from '../../../shared/workflow-step-layout/workflow-step-layout.component';
+
+const DONE = 'تم الانتهاء';
+const REJECTED = 'مرفوض';
+const PENDING = 'قيد الطباعة';
 
 interface ReviewUser {
   id: number;
   name: string;
   role: string;
-  avatar?: string;
+}
+
+/** صف static: بنضيف رقم اللجنة عشان الفلتر */
+type PrintingRow = WorkflowStatusRow & { committeeNumber: string };
+
+// ==========================================
+// Static data
+// ==========================================
+
+const STATIC_GOVERNORATES: SelectOption[] = [
+  { label: 'كل المحافظات', value: '' },
+  { label: 'عمّان', value: '1' },
+  { label: 'إربد', value: '2' },
+  { label: 'الزرقاء', value: '3' },
+  { label: 'العقبة', value: '4' }
+];
+
+const STATIC_SUBJECTS: SelectOption[] = [
+  { label: 'كل المواد', value: '' },
+  { label: 'اللغة العربية', value: '1' },
+  { label: 'الرياضيات', value: '2' },
+  { label: 'العلوم', value: '3' },
+  { label: 'اللغة الإنجليزية', value: '4' }
+];
+
+function buildStaticRows(): PrintingRow[] {
+  const govs = STATIC_GOVERNORATES.slice(1);
+  const subs = STATIC_SUBJECTS.slice(1);
+
+  return Array.from({ length: 14 }, (_, i) => {
+    const status = i % 7 === 5 ? DONE : i % 7 === 6 ? REJECTED : PENDING;
+
+    return {
+      id: i + 1,
+      index: i + 1,
+      subject: subs[i % subs.length].label,
+      governorate: govs[i % govs.length].label,
+      committeeNumber: String(100 + i),
+      status,
+      statusTone: status === DONE ? 'success' : status === REJECTED ? 'danger' : 'warning',
+      rejectionReason: status === REJECTED ? 'يوجد خطأ في ترتيب الصفحات ويجب إعادة الطباعة.' : ''
+    } as PrintingRow;
+  });
 }
 
 @Component({
@@ -45,55 +75,22 @@ interface ReviewUser {
   imports: [
     CommonModule,
     FormsModule,
-
-    SelectModule,
-    MultiSelectModule,
-    TableModule,
-    MenuModule,
-    DialogModule,
     ButtonModule,
+    DialogModule,
+    InputTextModule,
+    MultiSelectModule,
+    SelectModule,
     TextareaModule,
     TooltipModule,
-    InputTextModule,
-
     WorkflowStepLayoutComponent
   ],
   templateUrl: './printing.component.html',
-  styleUrl: './printing.component.scss'
+  styleUrl: './printing.component.scss',
+  // الـ dialogs بتتعمل render برا الـ component، فبنستخدم None مع prefix "pr-" بدل ::ng-deep
+  encapsulation: ViewEncapsulation.None
 })
 export default class PrintingComponent {
-  private readonly service = inject(PrintingService);
-  private readonly lookupsService = inject(Lookups);
-  private readonly reload$ = new Subject<void>();
   private readonly committeeInput$ = new Subject<string>();
-  readonly governorates = signal<SelectOption[]>([
-  { label: 'كل المحافظات', value: '' }
-]);
-
-readonly subjects = signal<SelectOption[]>([
-  { label: 'كل المواد', value: '' }
-]);
-
-readonly governoratesLoading = signal(false);
-readonly subjectsLoading = signal(false);
-
-  readonly pageSizeOptions = [
-    { label: '5', value: 5 },
-    { label: '10', value: 10 },
-    { label: '20', value: 20 }
-  ];
-
-  // ==========================================
-  // SEARCH
-  // ==========================================
-
-  selectedGovernorate = '';
-  selectedSubject = '';
-  selectedCommittee = '';
-
-  // ==========================================
-  // PAGE ESSENTIALS
-  // ==========================================
 
   readonly essentials = [
     'البحث بالمحافظة',
@@ -102,75 +99,77 @@ readonly subjectsLoading = signal(false);
     'تسجيل انتهاء الطباعة'
   ];
 
+  readonly reviewUsers: ReviewUser[] = [
+    { id: 1, name: 'أحمد محمد', role: 'مراجع أول' },
+    { id: 2, name: 'محمد علي', role: 'مراجع جودة' },
+    { id: 3, name: 'سارة أحمد', role: 'مراجع محتوى' },
+    { id: 4, name: 'محمود حسن', role: 'مراجع نهائي' }
+  ];
+
+  readonly pageSizes = [
+    { label: '5', value: 5 },
+    { label: '10', value: 10 },
+    { label: '20', value: 20 }
+  ];
+
   // ==========================================
-  // TABLE DATA (SERVER SIDE)
+  // Lookups (static)
   // ==========================================
+
+  readonly governorates = signal<SelectOption[]>(STATIC_GOVERNORATES);
+  readonly subjects = signal<SelectOption[]>(STATIC_SUBJECTS);
+  readonly governoratesLoading = signal(false);
+  readonly subjectsLoading = signal(false);
+
+  // ==========================================
+  // Filters
+  // ==========================================
+
+  selectedGovernorate = '';
+  selectedSubject = '';
+  selectedCommittee = '';
+
+  get hasActiveFilters(): boolean {
+    return !!(this.selectedGovernorate || this.selectedSubject || this.selectedCommittee.trim());
+  }
+
+  // ==========================================
+  // Data (static)
+  // ==========================================
+
+  private readonly allRows = signal<any[]>(buildStaticRows());
 
   readonly rows = signal<WorkflowStatusRow[]>([]);
   readonly total = signal(0);
   readonly loading = signal(false);
 
   // ==========================================
-  // PAGINATION
+  // Pagination
   // ==========================================
 
   readonly pageSize = signal(5);
   readonly currentPage = signal(1);
 
-  readonly totalPages = computed(() =>
-    Math.max(1, Math.ceil(this.total() / this.pageSize()))
-  );
+  readonly totalPages = computed(() => Math.max(1, Math.ceil(this.total() / this.pageSize())));
 
   readonly paginationPages = computed<(number | 'dots')[]>(() => {
     const total = this.totalPages();
-    const current = this.currentPage();
+    const cur = this.currentPage();
 
-    if (total <= 4) {
-      return Array.from({ length: total }, (_, i) => i + 1);
-    }
-    if (current <= 2) {
-      return [1, 2, 3, 'dots', total];
-    }
-    if (current >= total - 1) {
-      return [1, 'dots', total - 2, total - 1, total];
-    }
-    return [1, 'dots', current, 'dots', total];
+    if (total <= 4) return Array.from({ length: total }, (_, i) => i + 1);
+    if (cur <= 2) return [1, 2, 3, 'dots', total];
+    if (cur >= total - 1) return [1, 'dots', total - 2, total - 1, total];
+    return [1, 'dots', cur, 'dots', total];
   });
 
   readonly paginationStart = computed(() =>
     this.total() === 0 ? 0 : (this.currentPage() - 1) * this.pageSize() + 1
   );
 
-  readonly paginationEnd = computed(() =>
-    Math.min(this.currentPage() * this.pageSize(), this.total())
-  );
+  readonly paginationEnd = computed(() => Math.min(this.currentPage() * this.pageSize(), this.total()));
 
   constructor() {
-    this.loadGovernorates();
-this.loadSubjects();
-    // تحميل الداتا (فوري) عند أول فتح وعند أي تغيير في الفلاتر/الصفحة
-    this.reload$
-      .pipe(
-        startWith(undefined),
-        tap(() => this.loading.set(true)),
-        switchMap(() =>
-          this.service
-            .getList({
-              governorate: this.selectedGovernorate,
-              subject: this.selectedSubject,
-              committeeNumber: this.selectedCommittee,
-              page: this.currentPage(),
-              pageSize: this.pageSize()
-            })
-            .pipe(catchError(() => of({ items: [], total: 0 })))
-        ),
-        takeUntilDestroyed()
-      )
-      .subscribe(res => {
-        this.rows.set(res.items);
-        this.total.set(res.total);
-        this.loading.set(false);
-      });
+    this.reload();
 
     // البحث برقم اللجنة (بعد ما المستخدم يوقف كتابة)
     this.committeeInput$
@@ -178,8 +177,23 @@ this.loadSubjects();
       .subscribe(() => this.onFilterChange());
   }
 
+  /** فلترة + pagination على الداتا الـ static */
   reload(): void {
-    this.reload$.next();
+    const govLabel = this.governorates().find(o => o.value === this.selectedGovernorate)?.label;
+    const subLabel = this.subjects().find(o => o.value === this.selectedSubject)?.label;
+    const committee = this.selectedCommittee.trim();
+
+    const filtered = this.allRows().filter(
+      r =>
+        (!this.selectedGovernorate || r.governorate === govLabel) &&
+        (!this.selectedSubject || r.subject === subLabel) &&
+        (!committee || r.committeeNumber.includes(committee))
+    );
+
+    const start = (this.currentPage() - 1) * this.pageSize();
+
+    this.total.set(filtered.length);
+    this.rows.set(filtered.slice(start, start + this.pageSize()));
   }
 
   /** أي تغيير في الفلاتر يرجّع لأول صفحة */
@@ -193,20 +207,18 @@ this.loadSubjects();
     this.committeeInput$.next(value.trim());
   }
 
+  resetFilters(): void {
+    this.selectedGovernorate = '';
+    this.selectedSubject = '';
+    this.selectedCommittee = '';
+    this.onFilterChange();
+  }
+
   goToPage(page: number): void {
-    if (page < 1 || page > this.totalPages() || page === this.currentPage()) {
-      return;
-    }
+    if (page < 1 || page > this.totalPages() || page === this.currentPage()) return;
+
     this.currentPage.set(page);
     this.reload();
-  }
-
-  previousPage(): void {
-    this.goToPage(this.currentPage() - 1);
-  }
-
-  nextPage(): void {
-    this.goToPage(this.currentPage() + 1);
   }
 
   onPageSizeChange(size: number): void {
@@ -214,161 +226,65 @@ this.loadSubjects();
     this.onFilterChange();
   }
 
-
-  private extractItems(response: any): any[] {
-  if (Array.isArray(response)) {
-    return response;
+  /** تعديل صف في الداتا الـ static (بديل الـ API) */
+  private updateRow(id: number | string, changes: Partial<any>): void {
+    this.allRows.update(list => list.map(r => (r.id === id ? { ...r, ...changes } : r)));
+    this.reload();
   }
 
-  const possibleArrays = [
-    response?.data,
-    response?.data?.data,
-    response?.result,
-    response?.result?.data,
-    response?.items
-  ];
+  // ==========================================
+  // Card helpers
+  // ==========================================
 
-  return possibleArrays.find(Array.isArray) ?? [];
-}
+  isDone(row: WorkflowStatusRow): boolean {
+    return row.status === DONE;
+  }
 
-loadGovernorates(): void {
-  this.governoratesLoading.set(true);
+  isRejected(row: WorkflowStatusRow): boolean {
+    return row.status === REJECTED;
+  }
 
-  this.lookupsService
-    .getLookupGovernorateData()
-    .pipe(
-      catchError(error => {
-        console.error('Error loading governorates:', error);
-        return of([]);
-      }),
-      finalize(() => this.governoratesLoading.set(false)),
-      takeUntilDestroyed()
-    )
-    .subscribe(response => {
-      const items = this.extractItems(response);
+  isPending(row: WorkflowStatusRow): boolean {
+    return !this.isDone(row) && !this.isRejected(row);
+  }
 
-      const options: SelectOption[] = items
-        .map((item: any) => {
-          const id =
-            item.id ??
-            item.governorateId ??
-            item.governorateID;
-
-          const name =
-            item.name ??
-            item.governorateName ??
-            item.governorate;
-
-          return {
-            label: String(name ?? ''),
-            value: String(id ?? '')
-          };
-        })
-        .filter(item => item.label && item.value);
-
-      this.governorates.set([
-        { label: 'كل المحافظات', value: '' },
-        ...options
-      ]);
-    });
-}
-
-loadSubjects(): void {
-  this.subjectsLoading.set(true);
-
-  this.lookupsService
-    .getLookupSubjectData()
-    .pipe(
-      catchError(error => {
-        console.error('Error loading subjects:', error);
-        return of([]);
-      }),
-      finalize(() => this.subjectsLoading.set(false)),
-      takeUntilDestroyed()
-    )
-    .subscribe(response => {
-      const items = this.extractItems(response);
-
-      const options: SelectOption[] = items
-        .map((item: any) => {
-          const id =
-            item.id ??
-            item.subjectId ??
-            item.subjectID;
-
-          const name =
-            item.name ??
-            item.subjectName ??
-            item.subject;
-
-          return {
-            label: String(name ?? ''),
-            value: String(id ?? '')
-          };
-        })
-        .filter(item => item.label && item.value);
-
-      this.subjects.set([
-        { label: 'كل المواد', value: '' },
-        ...options
-      ]);
-    });
-}
+  statusIcon(row: WorkflowStatusRow): string {
+    return this.isDone(row) ? 'pi-check-circle' : this.isRejected(row) ? 'pi-times-circle' : 'pi-clock';
+  }
 
   // ==========================================
-  // STATUS MENU
+  // Finish printing (with confirmation)
   // ==========================================
 
   selectedRow: any | null = null;
 
-  readonly menuItems: MenuItem[] = [];
+  confirmDialogVisible = false;
+  finishSubmitting = false;
 
-  openStatusMenu(row: WorkflowStatusRow, menu: any, event: Event): void {
+  openConfirmDialog(row: WorkflowStatusRow): void {
+    if (!this.isPending(row)) return;
+
     this.selectedRow = row;
-
-    this.menuItems.length = 0;
-    this.menuItems.push(...this.buildMenuItems(row));
-
-    menu.toggle(event);
+    this.confirmDialogVisible = true;
   }
 
-  private buildMenuItems(row: WorkflowStatusRow): MenuItem[] {
-    const items: MenuItem[] = [
-      {
-        label: 'تسجيل انتهاء الطباعة',
-        icon: 'pi pi-check-circle',
-        command: () => this.finishSelectedPrinting()
-      }
-    ];
+  closeConfirmDialog(): void {
+    if (this.finishSubmitting) return;
 
-    if (row.status !== 'تم الانتهاء' && row.status !== 'مرفوض') {
-      items.push(
-        { separator: true },
-        {
-          label: 'رفض المادة',
-          icon: 'pi pi-times-circle',
-          styleClass: 'reject-menu-item',
-          command: () => this.openRejectDialog()
-        }
-      );
-    }
+    this.confirmDialogVisible = false;
+    this.selectedRow = null;
+  }
 
-    return items;
+  confirmFinish(): void {
+    if (!this.selectedRow || this.finishSubmitting) return;
+
+    this.updateRow(this.selectedRow.id, { status: DONE, statusTone: 'success' } as Partial<PrintingRow>);
+    this.confirmDialogVisible = false;
+    this.selectedRow = null;
   }
 
   // ==========================================
-  // REVIEW USERS
-  // ==========================================
-
-  readonly reviewUsers: ReviewUser[] = [
-    { id: 1, name: 'أحمد محمد', role: 'مراجع أول' },
-    { id: 2, name: 'محمد علي', role: 'مراجع جودة' },
-    { id: 3, name: 'سارة أحمد', role: 'مراجع محتوى' },
-    { id: 4, name: 'محمود حسن', role: 'مراجع نهائي' }
-  ];
-
-  // ==========================================
-  // REJECT DIALOG
+  // Reject dialog
   // ==========================================
 
   rejectDialogVisible = false;
@@ -380,10 +296,10 @@ loadSubjects(): void {
     return this.rejectReason.trim().length >= 10 && this.selectedReviewers.length > 0;
   }
 
-  openRejectDialog(): void {
-    if (!this.selectedRow) {
-      return;
-    }
+  openRejectDialog(row: WorkflowStatusRow): void {
+    if (!this.isPending(row)) return;
+
+    this.selectedRow = row;
     this.rejectReason = '';
     this.selectedReviewers = [];
     this.rejectSubmitting = false;
@@ -391,52 +307,41 @@ loadSubjects(): void {
   }
 
   closeRejectDialog(): void {
-    if (this.rejectSubmitting) {
-      return;
-    }
+    if (this.rejectSubmitting) return;
+
     this.rejectDialogVisible = false;
+    this.selectedRow = null;
     this.rejectReason = '';
     this.selectedReviewers = [];
   }
 
   submitRejection(): void {
-    if (!this.selectedRow || !this.isRejectFormValid) {
-      return;
-    }
+    if (!this.selectedRow || !this.isRejectFormValid) return;
 
-    this.rejectSubmitting = true;
+    this.updateRow(this.selectedRow.id, {
+      status: REJECTED,
+      statusTone: 'danger',
+      rejectionReason: this.rejectReason.trim()
+    } as Partial<PrintingRow>);
 
-    this.service
-      .reject(this.selectedRow.id, {
-        reason: this.rejectReason.trim(),
-        reviewerIds: this.selectedReviewers.map(u => u.id)
-      })
-      .pipe(finalize(() => (this.rejectSubmitting = false)))
-      .subscribe({
-        next: () => {
-          this.rejectDialogVisible = false;
-          this.selectedRow = null;
-          this.rejectReason = '';
-          this.selectedReviewers = [];
-          this.reload();
-        }
-      });
+    this.rejectDialogVisible = false;
+    this.selectedRow = null;
+    this.rejectReason = '';
+    this.selectedReviewers = [];
   }
 
   // ==========================================
-  // VIEW REJECTION REASON DIALOG
+  // View rejection reason
   // ==========================================
 
   rejectionReasonDialogVisible = false;
   selectedRejectionReason = '';
 
   openRejectionReasonDialog(row: WorkflowStatusRow): void {
-    if (row.status !== 'مرفوض') {
-      return;
-    }
+    if (!this.isRejected(row)) return;
+
     this.selectedRow = row;
-    this.selectedRejectionReason =
-      row.rejectionReason?.trim() || 'لم يتم تسجيل سبب الرفض.';
+    this.selectedRejectionReason = row.rejectionReason?.trim() || 'لم يتم تسجيل سبب الرفض.';
     this.rejectionReasonDialogVisible = true;
   }
 
@@ -444,26 +349,5 @@ loadSubjects(): void {
     this.rejectionReasonDialogVisible = false;
     this.selectedRejectionReason = '';
     this.selectedRow = null;
-  }
-
-  // ==========================================
-  // FINISH PRINTING
-  // ==========================================
-
-  finishSelectedPrinting(): void {
-    if (!this.selectedRow) {
-      return;
-    }
-
-    this.service.finish(this.selectedRow.id).subscribe({
-      next: () => {
-        this.selectedRow = null;
-        this.reload();
-      }
-    });
-  }
-
-  markSelectedRowReady(): void {
-    this.finishSelectedPrinting();
   }
 }
