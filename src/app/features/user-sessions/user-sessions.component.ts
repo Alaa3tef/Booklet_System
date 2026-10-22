@@ -55,8 +55,29 @@ export default class UserSessionsComponent implements OnInit {
   readonly totalCount = signal(0);
   readonly totalActiveSessions = signal(0);
   readonly totalInactiveSessions = signal(0);
+  readonly pageNumber = signal(1);
+  readonly pageSize = signal(10);
   readonly loading = signal(false);
   readonly loadError = signal(false);
+
+  readonly totalPages = computed(() =>
+    Math.max(1, Math.ceil(this.totalCount() / this.pageSize()))
+  );
+  readonly paginationStart = computed(() =>
+    this.totalCount() === 0 ? 0 : (this.pageNumber() - 1) * this.pageSize() + 1
+  );
+  readonly paginationEnd = computed(() =>
+    Math.min(this.pageNumber() * this.pageSize(), this.totalCount())
+  );
+  readonly paginationPages = computed<(number | 'dots')[]>(() => {
+    const total = this.totalPages();
+    const current = this.pageNumber();
+
+    if (total <= 5) return Array.from({ length: total }, (_, index) => index + 1);
+    if (current <= 3) return [1, 2, 3, 'dots', total];
+    if (current >= total - 2) return [1, 'dots', total - 2, total - 1, total];
+    return [1, 'dots', current, 'dots', total];
+  });
 
   // ==========================================
   // FILTERS
@@ -116,7 +137,10 @@ export default class UserSessionsComponent implements OnInit {
     this.search$
       .pipe(debounceTime(300), takeUntilDestroyed(this.destroyRef))
       .subscribe(term => {
+        if (term === this.searchTerm()) return;
         this.searchTerm.set(term);
+        this.pageNumber.set(1);
+        this.load();
       });
 
     this.load();
@@ -131,13 +155,15 @@ export default class UserSessionsComponent implements OnInit {
     this.loading.set(true);
     this.loadError.set(false);
 
-    this.listSub = this.api.getAll().subscribe({
+    this.listSub = this.api.getAll(this.pageNumber(), this.pageSize()).subscribe({
       next: res => {
         const page = res.data;
         this.rows.set(Array.isArray(page?.data) ? page.data : []);
         this.totalCount.set(page?.totalCount ?? 0);
         this.totalActiveSessions.set(page?.totalActiveSessions ?? 0);
         this.totalInactiveSessions.set(page?.totalInactiveSessions ?? 0);
+        this.pageNumber.set(page?.currentPage ?? this.pageNumber());
+        this.pageSize.set(page?.pageSize ?? this.pageSize());
         this.loading.set(false);
       },
       error: () => {
@@ -162,12 +188,30 @@ export default class UserSessionsComponent implements OnInit {
 
   onStatusChange(value: 'all' | 'online' | 'offline'): void {
     this.statusFilter.set(value);
+    this.pageNumber.set(1);
+    this.load();
   }
 
   clearFilters(): void {
     this.statusFilter.set('all');
     this.searchInput.set('');
     this.searchTerm.set('');
+    this.pageNumber.set(1);
+    this.load();
+  }
+
+  goToPage(page: number): void {
+    if (page < 1 || page > this.totalPages() || page === this.pageNumber()) return;
+    this.pageNumber.set(page);
+    this.load();
+  }
+
+  previousPage(): void {
+    this.goToPage(this.pageNumber() - 1);
+  }
+
+  nextPage(): void {
+    this.goToPage(this.pageNumber() + 1);
   }
 
   // ==========================================

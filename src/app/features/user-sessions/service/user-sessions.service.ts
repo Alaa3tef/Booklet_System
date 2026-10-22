@@ -1,4 +1,4 @@
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { AppConfigService } from '../../../shared/services/app-config.service';
@@ -13,8 +13,12 @@ export class UserSessionsService {
 
 
   /** GET /api/UserSessions — all active sessions */
-  getAll(): Observable<UserSessionsResponse> {
-    return this.http.get<UserSessionsResponse>(this.baseUrl);
+  getAll(pageNumber = 1, pageSize = 10): Observable<UserSessionsResponse> {
+    const params = new HttpParams()
+      .set('PageNumber', pageNumber)
+      .set('PageSize', pageSize);
+
+    return this.http.get<UserSessionsResponse>(this.baseUrl, { params });
   }
 
   /** GET /api/UserSessions/{userId} — single user session */

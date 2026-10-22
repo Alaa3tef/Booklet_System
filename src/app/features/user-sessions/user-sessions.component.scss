@@ -383,7 +383,8 @@
 .us-user-cell {
   display: flex;
   align-items: center;
-  justify-content: center;
+  // justify-content: center;
+  margin-right: 26%;
   gap: 0.6rem;
 }
 
@@ -506,6 +507,66 @@
 }
 
 .no-action { color: var(--us-muted); padding: 0 0.5rem; }
+
+.us-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.8rem 1rem;
+  border-top: 1px solid var(--us-border);
+  background: #fff;
+}
+
+.pag-summary {
+  color: var(--us-muted);
+  font-size: 0.78rem;
+  white-space: nowrap;
+
+  b { color: var(--us-text); }
+}
+
+.pag-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.pag-btn {
+  min-width: 32px;
+  height: 32px;
+  padding: 0 0.45rem;
+  border: 1px solid var(--us-border);
+  border-radius: 7px;
+  background: #fff;
+  color: var(--us-text);
+  font: inherit;
+  font-size: 0.78rem;
+  cursor: pointer;
+
+  &:hover:not(:disabled) { background: var(--us-blue-bg); }
+  &:disabled { opacity: 0.45; cursor: not-allowed; }
+  &.pag-active {
+    border-color: var(--us-blue);
+    background: var(--us-blue);
+    color: #fff;
+  }
+}
+
+.pag-dots {
+  padding: 0 0.2rem;
+  color: var(--us-muted);
+}
+
+@media (max-width: 600px) {
+  .us-pagination {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .pag-summary { text-align: center; }
+  .pag-controls { justify-content: center; }
+}
 
 /* =========================================================
    Dialogs

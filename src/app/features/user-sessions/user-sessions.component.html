@@ -153,7 +153,7 @@
             <th>البريد الإلكتروني</th>
             <th>الحالة</th>
             <th> IP الجلسة الحالية</th>
-            <th>آخر جلسة IP </th>
+            <th>IP آخر جلسة </th>
             <th>وقت تسجيل الدخول</th>
             <th> وقت انتهاء الجلسة</th>
             <th>آخر خروج</th>
@@ -163,7 +163,7 @@
         <tbody>
           @for (s of filtered(); track s.userId; let i = $index) {
             <tr [class.row-online]="s.isActive" [class.row-offline]="!s.isActive">
-              <td class="col-num">{{ i + 1 }}</td>
+              <td class="col-num">{{ (pageNumber() - 1) * pageSize() + i + 1 }}</td>
 
               <td>
                 <div class="us-user-cell">
@@ -233,6 +233,41 @@
           }
         </tbody>
       </table>
+    }
+
+    @if (!loading() && !loadError() && totalCount() > 0) {
+      <nav class="us-pagination" aria-label="التنقل بين صفحات الجلسات">
+        <span class="pag-summary">
+          عرض <b>{{ paginationStart() }}</b>–<b>{{ paginationEnd() }}</b>
+          من <b>{{ totalCount() }}</b> جلسة
+        </span>
+
+        <div class="pag-controls">
+          <button type="button" class="pag-btn"
+            [disabled]="pageNumber() === 1 || loading()"
+            aria-label="السابق" (click)="previousPage()">
+            <i class="pi pi-angle-right"></i>
+          </button>
+
+          @for (page of paginationPages(); track $index) {
+            @if (page === 'dots') {
+              <span class="pag-dots">…</span>
+            } @else {
+              <button type="button" class="pag-btn"
+                [class.pag-active]="page === pageNumber()"
+                [attr.aria-current]="page === pageNumber() ? 'page' : null"
+                [disabled]="loading()"
+                (click)="goToPage(page)">{{ page }}</button>
+            }
+          }
+
+          <button type="button" class="pag-btn"
+            [disabled]="pageNumber() === totalPages() || loading()"
+            aria-label="التالي" (click)="nextPage()">
+            <i class="pi pi-angle-left"></i>
+          </button>
+        </div>
+      </nav>
     }
 
   </section>

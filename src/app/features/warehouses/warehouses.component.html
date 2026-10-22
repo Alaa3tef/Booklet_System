@@ -116,9 +116,11 @@
 
   <!-- PAGINATION -->
   @if (totalPages() > 1) {
+       <!-- @if (!loading() && !loadError()) {if i need the paganation appear by default -->
+
     <nav class="wh-pagination" aria-label="التنقل بين الصفحات">
       <span class="pag-summary">
-        عرض <b>{{ rangeFrom() }}</b> – <b>{{ rangeTo() }}</b> من <b>{{ totalRecords() }}</b> مخزن
+        عرض <b>{{ rangeFrom() }}</b> – <b>{{ rangeTo() }}</b> من <b>{{ totalRecords() }}</b> مخازن
       </span>
 
       <div class="pag-controls">
@@ -185,8 +187,9 @@
       <div class="form-grid">
 
         <p-floatlabel variant="on">
+          <span class="code-prefix" aria-hidden="true">W</span>
           <input pInputText id="f-code" type="text" class="w-full" placeholder=" "
-            dir="ltr" maxlength="20" autocomplete="off"
+            dir="ltr" maxlength="1" inputmode="numeric" pattern="[1-9]" autocomplete="off"
             [class.field-invalid]="showError('code')"
             [ngModel]="form().code"
             (ngModelChange)="updateForm('code', $event)"

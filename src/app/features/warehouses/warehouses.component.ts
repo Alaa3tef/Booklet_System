@@ -12,8 +12,7 @@ import { WarehouseService } from './service/warehouse.service';
 
 interface WarehouseForm { code: string; name: string; }
 
-// letters / digits / dash / underscore, no spaces
-const CODE_REGEX = /^[A-Za-z0-9_-]{1,20}$/;
+const CODE_REGEX = /^[1-9]$/;
 // letters (any language), digits and single spaces
 const NAME_REGEX = /^[\p{L}\p{M}\p{N}]+(?:\s[\p{L}\p{M}\p{N}]+)*$/u;
 
@@ -93,8 +92,8 @@ export default class WarehousesComponent implements OnInit {
     const name = f.name.trim();
     const e: Partial<Record<keyof WarehouseForm, string>> = {};
 
-    if (!code)                       e.code = 'كود المخزن مطلوب';
-    else if (!CODE_REGEX.test(code)) e.code = 'الكود يقبل حروفًا إنجليزية وأرقامًا فقط (حتى 20 خانة) بدون مسافات';
+    if (!code)                       e.code = 'رقم المخزن مطلوب';
+    else if (!CODE_REGEX.test(code)) e.code = 'أدخل رقمًا واحدًا من 1 إلى 9';
 
     if (!name)                                   e.name = 'اسم المخزن مطلوب';
     else if (name.length < 2)                    e.name = 'اسم المخزن قصير جدًا';
@@ -176,8 +175,15 @@ export default class WarehousesComponent implements OnInit {
 
   // ---------- ADD / EDIT ----------
   updateForm<K extends keyof WarehouseForm>(key: K, value: string | null): void {
-    this.form.update(f => ({ ...f, [key]: value ?? '' }));
+    const nextValue = key === 'code'
+      ? (value ?? '').replace(/[^1-9]/g, '').slice(0, 1)
+      : value ?? '';
+    this.form.update(f => ({ ...f, [key]: nextValue }));
     this.formError.set('');
+  }
+
+  private codeNumber(code: string): string {
+    return /^W([1-9])$/i.exec(code.trim())?.[1] ?? '';
   }
 
   markTouched(key: keyof WarehouseForm): void {
@@ -194,7 +200,7 @@ export default class WarehousesComponent implements OnInit {
 
   openEditModal(w: Warehouse): void {
     this.editingId.set(w.id);
-    this.form.set({ code: w.code, name: w.name });     // instant, then refresh from server
+    this.form.set({ code: this.codeNumber(w.code), name: w.name });
     this.formError.set('');
     this.touched.set({});
     this.formLoading.set(true);
@@ -202,7 +208,7 @@ export default class WarehousesComponent implements OnInit {
 
     this.service.getById(w.id).subscribe({
       next: res => {
-        this.form.set({ code: res.data.code, name: res.data.name });
+        this.form.set({ code: this.codeNumber(res.data.code), name: res.data.name });
         this.formLoading.set(false);
       },
       error: err => {
@@ -229,7 +235,7 @@ export default class WarehousesComponent implements OnInit {
     }
 
     const editing = this.isEdit();
-    const body = { code: this.form().code.trim(), name: this.form().name.trim() };
+    const body = { code: `W${this.form().code.trim()}`, name: this.form().name.trim() };
 
     this.saving.set(true);
     const request$ = editing

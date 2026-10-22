@@ -2,6 +2,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  inject,
   signal
 } from '@angular/core';
 
@@ -16,6 +17,9 @@ import { ButtonModule } from 'primeng/button';
 import { TagModule } from 'primeng/tag';
 
 import { WorkflowStepLayoutComponent } from '../../../shared/workflow-step-layout/workflow-step-layout.component';
+import { MessageService } from 'primeng/api';
+import { Lookups } from '../../../shared/services/lookups';
+import { forkJoin } from 'rxjs';
 
 // =========================================================
 // TYPES
@@ -90,6 +94,8 @@ interface ScanStep {
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export default class ArchivingComponent {
+ private lookupService = inject(Lookups);
+  private messageService = inject(MessageService);
 
   // ==========================================
 // PAGINATION
@@ -215,22 +221,55 @@ onPageSizeChange(): void {
   readonly searchCommittee = signal('');
   readonly searchSubject = signal('');
 
-  readonly governorateOptions: SelectOption[] = [
-    { label: 'كل المحافظات', value: '' },
-    { label: 'الدقهلية', value: 'الدقهلية' },
-    { label: 'القاهرة', value: 'القاهرة' },
-    { label: 'الجيزة', value: 'الجيزة' },
-    { label: 'الإسكندرية', value: 'الإسكندرية' }
-  ];
+  governorates: SelectOption[] = [];
+  subjects: SelectOption[] = [];
 
-  readonly subjectOptions: SelectOption[] = [
-    { label: 'كل المواد', value: '' },
-    { label: 'اللغة العربية', value: 'اللغة العربية' },
-    { label: 'اللغة الإنجليزية', value: 'اللغة الإنجليزية' },
-    { label: 'الرياضيات', value: 'الرياضيات' },
-    { label: 'العلوم', value: 'العلوم' },
-    { label: 'الدراسات الاجتماعية', value: 'الدراسات الاجتماعية' }
-  ];
+  ngOnInit(): void {
+    this.loadLookups();
+  }
+
+ loadLookups(): void {
+  forkJoin({
+    governorates: this.lookupService.getLookupGovernorateData(),
+    subjects: this.lookupService.getLookupSubjectData()
+  }).subscribe({
+    next: (res: any) => {
+      // Governorates
+      const governoratesData = res.governorates?.data?.data ?? [];
+
+      this.governorates = [
+        { label: 'كل المحافظات', value: 'all' },
+        ...governoratesData.map((item: any) => ({
+          label: item.nameAr ?? item.name,
+          value: item.id
+        }))
+      ];
+
+      // Subjects
+      const subjectsData = res.subjects?.data?.data ?? [];
+
+      this.subjects = [
+        { label: 'كل المواد', value: 'all' },
+        ...subjectsData.map((item: any) => ({
+          label: item.name,
+          value: item.id
+        }))
+      ];
+
+      console.log('Governorates:', this.governorates);
+      console.log('Subjects:', this.subjects);
+    },
+    error: (err) => {
+      console.error('Error loading lookups:', err);
+      this.messageService.add({
+        severity: 'error',
+        summary: 'خطأ',
+        detail: err.error?.message || 'فشل تحميل بيانات القوائم',
+        life: 3000
+      });
+    }
+  });
+}
 
   // =========================================================
   // MOCK DATA
