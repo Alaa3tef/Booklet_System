@@ -418,8 +418,8 @@
                   <th>رقم اللجنة</th>
                   <th>اسم اللجنة / المدرسة</th>
                   <th>المحافظة</th>
-                  <th>المادة</th>
-                  <th>الإدارة التعليمية</th>
+                  <th>الدور</th>
+                  <th>المرحلة التعليمية</th>
                   <th>عدد البوكليتات</th>
                   <th>الحالة</th>
                   <th>الإجراءات</th>
@@ -436,8 +436,8 @@
                   <td>{{ row.committeeNumber }}</td>
                   <td class="school-name-cell">{{ row.schoolName }}</td>
                   <td>{{ getGovernorateLabel(row.governorate) }}</td>
-                  <td>{{ getSubjectLabel(row.subject) }}</td>
-                  <td>{{ row.educationalAdministration }}</td>
+                  <td>{{ getRoundLabel(row.round) }}</td>
+                  <td>{{ getEduccationalStageLabel(row.educationalStage) }}</td>
                   <td>{{ row.bookletCount | number }}</td>
                   <td>
                     <span

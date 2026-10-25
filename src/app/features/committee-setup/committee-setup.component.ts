@@ -336,6 +336,18 @@ readonly importErrors = signal<string[]>([]);
         ''
       ),
 
+       round: String(
+        item?.roundCode ??
+        item?.round ??
+        ''
+      ),
+
+      educationalStage: String(
+        item?.educationalStageCode ??
+        item?.educationalStage ??
+        ''
+      ),
+
       fileName: String(item?.fileName ?? ''),
 
       errors
@@ -719,6 +731,15 @@ closeImportErrors(): void {
 
   getGovernorateLabel(value: string): string {
     return this.governorates().find(item => item.value === value)?.label ?? value;
+  }
+
+   getRoundLabel(value: string): string {
+    console.log(value)
+    return this.rounds().find(item => item.value === value)?.label ?? value;
+  }
+
+   getEduccationalStageLabel(value: string): string {
+    return this.educationalStages().find(item => item.value === value)?.label ?? value;
   }
 
   getSubjectLabel(value: string): string {
