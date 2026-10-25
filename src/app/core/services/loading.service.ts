@@ -6,7 +6,7 @@ import { Injectable, signal } from '@angular/core';
 export class LoadingService {
   private activeRequests = 0;
 
-  readonly isLoading = signal(true);
+  readonly isLoading = signal(false);
 
   show(): void {
     this.activeRequests++;
