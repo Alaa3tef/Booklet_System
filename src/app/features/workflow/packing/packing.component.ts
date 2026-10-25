@@ -538,7 +538,7 @@ export default class PackingComponent implements OnInit {
     if (!this.isPending(row)) {
       return;
     }
-
+    console.log("edit")
     this.selectedRow = row;
     this.isScanning = false;
     this.scanCompleted = false;
