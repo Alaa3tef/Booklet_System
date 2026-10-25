@@ -18,820 +18,564 @@
   <div panel-content>
 
     <!-- =====================================================
-         SEARCH
+         SEARCH  (same filters as before)
     ====================================================== -->
-
     <section class="search-card">
 
       <div class="search-header">
-
         <div>
-          <h3>
-            البحث في سجل المواد
-          </h3>
-
-          <p>
-            ابحث بالمحافظة أو رقم اللجنة أو المادة
-          </p>
+          <h3>البحث في سجل المواد</h3>
+          <p>ابحث بالمحافظة أو رقم اللجنة أو المادة</p>
         </div>
 
-        <button
-          type="button"
-          class="clear-search-btn"
-          (click)="clearFilters()"
-        >
+        <button type="button" class="clear-search-btn" (click)="clearFilters()">
           <i class="pi pi-filter-slash"></i>
           مسح البحث
         </button>
-
       </div>
-
 
       <div class="search-grid">
 
-        <!-- المحافظة -->
-
         <div class="field">
-
-          <label>
-            المحافظة
-          </label>
-
+          <label>المحافظة</label>
           <p-select
             [options]="governorates"
-            [(ngModel)]="searchGovernorate"
+            [ngModel]="searchGovernorate()"
+            (ngModelChange)="setGovernorate($event)"
             optionLabel="label"
             optionValue="value"
             placeholder="اختر المحافظة"
             styleClass="archive-select"
           />
-
         </div>
 
- <!-- المادة -->
-
         <div class="field">
-
-          <label>
-            المادة
-          </label>
-
+          <label>المادة</label>
           <p-select
             [options]="subjects"
-            [(ngModel)]="searchSubject"
+            [ngModel]="searchSubject()"
+            (ngModelChange)="setSubject($event)"
             optionLabel="label"
             optionValue="value"
             placeholder="اختر المادة"
             styleClass="archive-select"
           />
-
         </div>
 
-        <!-- رقم اللجنة -->
-
         <div class="field">
-
-          <label>
-            رقم اللجنة
-          </label>
-
+          <label>رقم اللجنة</label>
           <div class="input-wrapper">
-
             <i class="pi pi-hashtag"></i>
-
             <input
               pInputText
               type="text"
-              [(ngModel)]="searchCommittee"
+              inputmode="numeric"
+              [ngModel]="searchCommittee()"
+              (ngModelChange)="setCommittee($event)"
               placeholder="رقم اللجنة"
             />
-
           </div>
-
         </div>
 
-
       </div>
+
+      <!-- ===== what is being filtered ===== -->
+      @if (activeFilters().length) {
+        <div class="active-filters" role="status" aria-live="polite">
+
+          <span class="af-label">
+            <i class="pi pi-filter"></i>
+            الفلاتر المطبّقة
+          </span>
+
+          @for (f of activeFilters(); track f.key) {
+            <span class="af-chip">
+              <small>{{ f.title }}:</small>
+              <b>{{ f.value }}</b>
+              <button
+                type="button"
+                [attr.aria-label]="'إزالة فلتر ' + f.title"
+                (click)="removeFilter(f.key)">
+                <i class="pi pi-times"></i>
+              </button>
+            </span>
+          }
+
+          <span class="af-count">
+            النتائج <b>{{ filteredRows().length }}</b> من <b>{{ rows().length }}</b> مادة
+          </span>
+
+        </div>
+      }
 
     </section>
 
 
     <!-- =====================================================
-         TABLE
+         RECORDS (cards)
     ====================================================== -->
-
     <section class="table-card">
 
-      <div class="table-header">
-
-        <div>
-
-          <h3>
-            سجل التخزين والتسليم
-          </h3>
-
-          <span>
-            عدد النتائج:
-            {{ filteredRows().length }}
-          </span>
-
+      <div class="list-header">
+        <div class="list-title">
+          <span class="list-title-icon"><i class="pi pi-database"></i></span>
+          <div>
+            <h3>سجل التخزين والتسليم</h3>
+            <small>تابع كل لجنة من التخزين حتى التسليم</small>
+          </div>
         </div>
+
+        <span class="results-chip"><b>{{ filteredRows().length }}</b> نتيجة</span>
+      </div>
+
+      <div class="record-grid">
+
+        @for (row of paginatedRows(); track row.index) {
+
+          <article class="record" [ngClass]="statusClass(row.status)">
+
+            <header class="record-top">
+              <span class="record-no">{{ row.index }}</span>
+
+              <div class="record-title">
+                <strong>{{ row.subject }}</strong>
+                <span class="record-meta">
+                  <span><i class="pi pi-map-marker"></i>{{ row.governorate }}</span>
+                  <span class="dot"></span>
+                  <span>لجنة <b class="committee">{{ row.committeeNumber }}</b></span>
+                </span>
+              </div>
+
+              <span class="part-pill" [ngClass]="partClass(row.scanPart)">{{ row.scanPart }}</span>
+            </header>
+
+            <ol class="tracker" [attr.aria-label]="'الحالة: ' + row.status">
+              @for (label of stages; track label; let i = $index) {
+                <li [class.done]="i < stepIndex(row.status)"
+                    [class.current]="i === stepIndex(row.status)">
+                  <span class="tracker-dot">
+                    @if (i <= stepIndex(row.status)) { <i class="pi pi-check"></i> }
+                  </span>
+                  <span class="tracker-label">{{ label }}</span>
+                </li>
+              }
+            </ol>
+
+            @if (row.storage) {
+              <div class="location">
+                <div class="loc-tile">
+                  <small>الرف</small>
+                  <strong dir="ltr"><i class="pi pi-th-large"></i>{{ row.storage.shelf }}</strong>
+                </div>
+                <i class="pi pi-arrow-left loc-arrow"></i>
+                <div class="loc-tile">
+                  <small>الصندوق</small>
+                  <strong dir="ltr"><i class="pi pi-box"></i>{{ row.storage.box }}</strong>
+                </div>
+              </div>
+            } @else {
+              <div class="location-empty">
+                <i class="pi pi-inbox"></i>
+                لم يتم تحديد مكان التخزين بعد
+              </div>
+            }
+
+            <footer class="record-action">
+              @if (row.status === 'جاهز للتخزين') {
+                <button type="button" class="action-btn storage" (click)="openStorageDialog(row)">
+                  <i class="pi pi-database"></i>
+                  <span>ابدأ التخزين</span>
+                </button>
+              }
+              @if (row.status === 'تم التخزين') {
+                <button type="button" class="action-btn delivery" (click)="openDeliveryDialog(row)">
+                  <i class="pi pi-send"></i>
+                  <span>ابدأ التسليم</span>
+                </button>
+              }
+              @if (row.status === 'تم التسليم') {
+                <div class="completed-action">
+                  <i class="pi pi-check-circle"></i>
+                  اكتملت العملية
+                </div>
+              }
+            </footer>
+
+          </article>
+
+        } @empty {
+
+          <div class="empty-state">
+            <span class="empty-icon"><i class="pi pi-search"></i></span>
+            <strong>لا توجد نتائج</strong>
+            <span>
+              @if (activeFilters().length) {
+                لا توجد مواد مطابقة للفلاتر المحددة
+              } @else {
+                لا توجد مواد في السجل حاليًا
+              }
+            </span>
+            @if (activeFilters().length) {
+              <button type="button" class="empty-clear" (click)="clearFilters()">
+                <i class="pi pi-filter-slash"></i> مسح الفلاتر
+              </button>
+            }
+          </div>
+
+        }
 
       </div>
 
 
-      <p-table
-        [value]="paginatedRows()"
-        styleClass="p-datatable-sm archive-table"
-        responsiveLayout="scroll"
-      >
+      <!-- ==========================================
+           PAGINATION
+      =========================================== -->
+      @if (filteredRows().length > 0) {
+        <div class="printing-pagination">
 
-        <ng-template pTemplate="header">
+          <div class="pagination-info">
+            <span class="pagination-info-icon"><i class="pi pi-list"></i></span>
+            <span>
+              عرض
+              <strong>{{ paginationStart() }}</strong>
+              -
+              <strong>{{ paginationEnd() }}</strong>
+              من
+              <strong>{{ filteredRows().length }}</strong>
+              مادة
+            </span>
+          </div>
 
-          <tr>
+          <div class="pagination-size">
+            <span>عدد البطاقات</span>
+            <p-select
+              [options]="[
+                { label: '2',  value: 2 },
+                { label: '4',  value: 4 },
+                { label: '6',  value: 6 },
+                { label: '12', value: 12 },
+                { label: '24', value: 24 }
+              ]"
+              optionLabel="label"
+              optionValue="value"
+              [ngModel]="pageSize()"
+              (ngModelChange)="pageSize.set($event); onPageSizeChange()"
+              styleClass="pagination-size-select"
+            />
+          </div>
 
-            <th class="index-column">
-              م
-            </th>
+          @if (totalPages() > 1) {
+            <div class="pagination-controls">
 
-            <th>
-              المحافظة
-            </th>
+              <button type="button" class="pagination-arrow"
+                [disabled]="currentPage() === 1"
+                (click)="previousPage()"
+                pTooltip="الصفحة السابقة" tooltipPosition="top">
+                <i class="pi pi-chevron-right"></i>
+              </button>
 
-            <th>
-              رقم اللجنة
-            </th>
-
-            <th>
-              المادة
-            </th>
-
-            <th>
-              الجزء
-            </th>
-
-            <th>
-              مكان التخزين
-            </th>
-
-            <th>
-              الحالة
-            </th>
-
-            <th class="actions-column">
-              الإجراءات
-            </th>
-
-          </tr>
-
-        </ng-template>
-
-
-        <ng-template
-          pTemplate="body"
-          let-row
-        >
-
-          <tr>
-
-            <td>
-
-              <span class="row-number">
-                {{ row.index }}
-              </span>
-
-            </td>
-
-
-            <td>
-
-              <div class="data-with-icon">
-
-                <i class="pi pi-map-marker"></i>
-
-                <span>
-                  {{ row.governorate }}
-                </span>
-
-              </div>
-
-            </td>
-
-
-            <td>
-
-              <span class="committee-number">
-                {{ row.committeeNumber }}
-              </span>
-
-            </td>
-
-
-            <td>
-
-              <strong>
-                {{ row.subject }}
-              </strong>
-
-            </td>
-
-
-            <td>
-
-              <span class="part-badge">
-                {{ row.scanPart }}
-              </span>
-
-            </td>
-
-
-            <td>
-
-              @if (row.storage) {
-
-                <div class="storage-location">
-
-                  <span>
-                    {{ row.storage.shelf }}
-                  </span>
-
-                  <i class="pi pi-arrow-left"></i>
-
-                  <span>
-                    {{ row.storage.box }}
-                  </span>
-
-                </div>
-
-              } @else {
-
-                <span class="empty-location">
-                  —
-                </span>
-
+              @for (page of paginationPages(); track $index) {
+                @if (page === 'dots') {
+                  <span class="pagination-dots">...</span>
+                } @else {
+                  <button type="button" class="pagination-page"
+                    [class.active]="page === currentPage()"
+                    [attr.aria-current]="page === currentPage() ? 'page' : null"
+                    (click)="goToPage(page)">
+                    {{ page }}
+                  </button>
+                }
               }
 
-            </td>
-
-
-            <td>
-
-              <p-tag
-                [value]="row.status"
-                [severity]="getStatusSeverity(row.status)"
-                [rounded]="true"
-              />
-
-            </td>
-
-
-            <td>
-
-              <div class="row-actions">
-
-                @if (row.status === 'جاهز للتخزين') {
-
-                  <button
-                    type="button"
-                    class="action-btn storage"
-                    (click)="openStorageDialog(row)"
-                  >
-
-                    <i class="pi pi-database"></i>
-
-                    <span>
-                      تخزين
-                    </span>
-
-                  </button>
-
-                }
-
-
-                @if (row.status === 'تم التخزين') {
-
-                  <button
-                    type="button"
-                    class="action-btn delivery"
-                    (click)="openDeliveryDialog(row)"
-                  >
-
-                    <i class="pi pi-send"></i>
-
-                    <span>
-                      تسليم
-                    </span>
-
-                  </button>
-
-                }
-
-
-                @if (row.status === 'تم التسليم') {
-
-                  <span class="completed-action">
-
-                    <i class="pi pi-check-circle"></i>
-
-                    مكتمل
-
-                  </span>
-
-                }
-
-              </div>
-
-            </td>
-
-          </tr>
-
-        </ng-template>
-
-
-        <ng-template pTemplate="emptymessage">
-
-          <tr>
-
-            <td
-              colspan="8"
-              class="empty-table"
-            >
-
-              <div>
-
-                <i class="pi pi-search"></i>
-
-                <strong>
-                  لا توجد نتائج
-                </strong>
-
-                <span>
-                  جرّبي تغيير معايير البحث
-                </span>
-
-              </div>
-
-            </td>
-
-          </tr>
-
-        </ng-template>
-
-      </p-table>
-
-      <!-- ==========================================
-     PAGINATION
-=========================================== -->
-
-<div
-  class="printing-pagination"
-  *ngIf="rows().length > 0"
->
-
-  <!-- RESULTS INFO -->
-
-  <div class="pagination-info">
-
-    <span class="pagination-info-icon">
-      <i class="pi pi-list"></i>
-    </span>
-
-    <span>
-      عرض
-      <strong>{{ paginationStart() }}</strong>
-      -
-      <strong>{{ paginationEnd() }}</strong>
-      من
-      <strong>{{ rows().length }}</strong>
-      مادة
-    </span>
-
-  </div>
-
-
-  <!-- PAGE SIZE -->
-
-  <div class="pagination-size">
-
-    <span>عدد الصفوف</span>
-
-    <p-select
-      [options]="[
-        { label: '5', value: 5 },
-        { label: '10', value: 10 },
-        { label: '20', value: 20 }
-      ]"
-      optionLabel="label"
-      optionValue="value"
-      [ngModel]="pageSize()"
-      (ngModelChange)="
-        pageSize.set($event);
-        onPageSizeChange()
-      "
-      styleClass="pagination-size-select"
-    />
-
-  </div>
-
-
-  <!-- PAGINATION CONTROLS -->
-
-  <div class="pagination-controls">
-
-    <!-- PREVIOUS -->
-
-    <button
-      type="button"
-      class="pagination-arrow"
-      [disabled]="currentPage() === 1"
-      (click)="previousPage()"
-      pTooltip="الصفحة السابقة"
-      tooltipPosition="top"
-    >
-      <i class="pi pi-chevron-right"></i>
-    </button>
-
-
-    <!-- PAGES -->
-
-    <ng-container
-      *ngFor="let page of paginationPages()"
-    >
-
-      <!-- DOTS -->
-
-      <span
-        *ngIf="page === 'dots'"
-        class="pagination-dots"
-      >
-        ...
-      </span>
-
-
-      <!-- PAGE -->
-
-      <button
-        *ngIf="page !== 'dots'"
-        type="button"
-        class="pagination-page"
-        [class.active]="page === currentPage()"
-        (click)="goToPage(+page)"
-      >
-        {{ page }}
-      </button>
-
-    </ng-container>
-
-
-    <!-- NEXT -->
-
-    <button
-      type="button"
-      class="pagination-arrow"
-      [disabled]="currentPage() === totalPages()"
-      (click)="nextPage()"
-      pTooltip="الصفحة التالية"
-      tooltipPosition="top"
-    >
-      <i class="pi pi-chevron-left"></i>
-    </button>
-
-  </div>
-
-</div>
+              <button type="button" class="pagination-arrow"
+                [disabled]="currentPage() === totalPages()"
+                (click)="nextPage()"
+                pTooltip="الصفحة التالية" tooltipPosition="top">
+                <i class="pi pi-chevron-left"></i>
+              </button>
+
+            </div>
+          }
+
+        </div>
+      }
 
     </section>
 
   </div>
 
 
-<p-dialog
-  [(visible)]="dialogVisible"
-  [modal]="true"
-  [draggable]="false"
-  [resizable]="false"
-  [closable]="!isScanning()"
-  [dismissableMask]="!isScanning()"
-  [closeOnEscape]="!isScanning()"
-  [baseZIndex]="10000"
-  appendTo="body"
-  [style]="{ width: '1100px', maxWidth: '95vw' }"
-  styleClass="archive-scan-dialog"
-  (onHide)="onDialogHide()"
->
+  <!-- =====================================================
+       SCAN DIALOG
+  ====================================================== -->
+  <p-dialog
+    [(visible)]="dialogVisible"
+    [modal]="true"
+    [draggable]="false"
+    [resizable]="false"
+    [closable]="!isScanning()"
+    [dismissableMask]="!isScanning()"
+    [closeOnEscape]="!isScanning()"
+    [baseZIndex]="10000"
+    appendTo="body"
+    [style]="{ width: '1100px', maxWidth: '95vw' }"
+    styleClass="archive-scan-dialog"
+    (onHide)="onDialogHide()"
+  >
 
-  <ng-template pTemplate="header">
-    <div class="scan-dialog-header">
-      <div class="dialog-title-icon">
-        <i class="pi pi-qrcode"></i>
-      </div>
-      <div>
-        <span>{{ isStorage() ? 'ARCHIVING SCAN' : 'DELIVERY SCAN' }}</span>
-        <h3>{{ isStorage() ? 'فحص التخزين' : 'فحص التسليم' }}</h3>
-      </div>
-    </div>
-  </ng-template>
-
-  @if (selectedRow(); as row) {
-    @if (currentStep(); as step) {
-
-      <div class="scan-dialog-content">
-
-        <!-- MATERIAL INFO -->
-        <div class="material-info-card">
-          <div class="material-main">
-            <div class="material-icon"><i class="pi pi-book"></i></div>
-            <div>
-              <span>المادة</span>
-              <strong>{{ row.subject }}</strong>
-            </div>
-          </div>
-
-          <div class="material-meta">
-            <div>
-              <span>رقم اللجنة</span>
-              <strong>{{ row.committeeNumber }}</strong>
-            </div>
-            <div>
-              <span>المحافظة</span>
-              <strong>{{ row.governorate }}</strong>
-            </div>
-            <div>
-              <span>الجزء</span>
-              <strong>{{ row.scanPart }}</strong>
-            </div>
-          </div>
+    <ng-template pTemplate="header">
+      <div class="scan-dialog-header">
+        <div class="dialog-title-icon"><i class="pi pi-qrcode"></i></div>
+        <div>
+          <span>{{ isStorage() ? 'ARCHIVING SCAN' : 'DELIVERY SCAN' }}</span>
+          <h3>{{ isStorage() ? 'فحص التخزين' : 'فحص التسليم' }}</h3>
         </div>
+      </div>
+    </ng-template>
 
-        <!-- PROGRESS -->
-        <div class="scan-progress-section">
-          <div class="progress-info">
-            <div>
-              <span>{{ isStorage() ? 'تقدم التخزين' : 'تقدم التسليم' }}</span>
-              <strong>{{ completedScans() }} / {{ steps().length }}</strong>
+    @if (selectedRow(); as row) {
+      @if (currentStep(); as step) {
+
+        <div class="scan-dialog-content">
+
+          <div class="material-info-card">
+            <div class="material-main">
+              <div class="material-icon"><i class="pi pi-book"></i></div>
+              <div>
+                <span>المادة</span>
+                <strong>{{ row.subject }}</strong>
+              </div>
             </div>
-            <span>{{ scanProgress() }}%</span>
+
+            <div class="material-meta">
+              <div><span>رقم اللجنة</span><strong>{{ row.committeeNumber }}</strong></div>
+              <div><span>المحافظة</span><strong>{{ row.governorate }}</strong></div>
+              <div><span>الجزء</span><strong>{{ row.scanPart }}</strong></div>
+            </div>
           </div>
-          <div class="progress-track">
-            <div class="progress-value" [style.width.%]="scanProgress()"></div>
+
+          <div class="scan-progress-section">
+            <div class="progress-info">
+              <div>
+                <span>{{ isStorage() ? 'تقدم التخزين' : 'تقدم التسليم' }}</span>
+                <strong>{{ completedScans() }} / {{ steps().length }}</strong>
+              </div>
+              <span>{{ scanProgress() }}%</span>
+            </div>
+            <div class="progress-track">
+              <div class="progress-value" [style.width.%]="scanProgress()"></div>
+            </div>
           </div>
-        </div>
 
-        <div class="scan-workspace">
+          <div class="scan-workspace">
 
-          <!-- STEPS -->
-          <aside class="scan-steps-panel">
-            <div class="steps-title">
-              <span>{{ isStorage() ? 'مراحل التخزين' : 'مراحل التسليم' }}</span>
-              <small>{{ steps().length }} عمليات</small>
-            </div>
-
-            <div class="scan-steps">
-              @for (s of steps(); track s.type; let i = $index) {
-                <button
-                  type="button"
-                  class="scan-step"
-                  [class.active]="i === currentIndex()"
-                  [class.completed]="s.scanned"
-                  [class.locked]="isLocked(i)"
-                  (click)="selectScanStep(i)"
-                >
-                  <div class="step-number">
-                    @if (s.scanned) {
-                      <i class="pi pi-check"></i>
-                    } @else {
-                      <span>{{ i + 1 }}</span>
-                    }
-                  </div>
-
-                  <div class="step-info">
-                    <strong>{{ s.title }}</strong>
-                    <small>{{ s.subtitle }}</small>
-                  </div>
-
-                  <i class="pi cover-icon" [ngClass]="stepIcon(s.type)"></i>
-                </button>
-              }
-            </div>
-          </aside>
-
-          <!-- SCANNER AREA -->
-          <section class="scanner-area">
-            <div class="scanner-and-data">
-
-              <!-- SCANNER CARD -->
-              <div class="scanner-card">
-                <div class="scanner-label">
-                  <i class="pi pi-qrcode"></i>
-                  <span>{{ step.title }}</span>
-                </div>
-
-                @if (step.type === 'zone') {
-                  <div class="zone-selection">
-                    <div class="zone-selection-icon"><i class="pi pi-map-marker"></i></div>
-                    <strong>تحديد منطقة التخزين</strong>
-                    <span>اختاري المنطقة التي سيتم تخزين الصندوق بها</span>
-
-                    <p-select
-                      [options]="zones"
-                      [(ngModel)]="selectedZone"
-                      [disabled]="step.scanned"
-                      optionLabel="label"
-                      optionValue="value"
-                      appendTo="body"
-                      styleClass="zone-select"
-                    />
-                  </div>
-                } @else {
-                  <div class="scanner-visual">
-                    <div class="scanner-corners">
-                      <span class="corner top-right"></span>
-                      <span class="corner top-left"></span>
-                      <span class="corner bottom-right"></span>
-                      <span class="corner bottom-left"></span>
-                    </div>
-
-                    <div class="fake-qr">
-                      <div class="qr-pattern">
-                        @for (n of [1,2,3,4,5,6,7,8,9]; track n) { <span></span> }
-                      </div>
-                    </div>
-
-                    @if (isScanning()) {
-                      <div class="scanner-line"></div>
-                      <div class="scanner-loading">
-                        <i class="pi pi-spin pi-spinner"></i>
-                        <span>جاري المسح...</span>
-                      </div>
-                    }
-                  </div>
-                }
-
-                <button
-                  pButton
-                  type="button"
-                  class="start-scan-button"
-                  [disabled]="isScanning() || step.scanned"
-                  (click)="startScan()"
-                >
-                  <i
-                    class="pi"
-                    [class.pi-qrcode]="!isScanning()"
-                    [class.pi-spin]="isScanning()"
-                    [class.pi-spinner]="isScanning()"
-                  ></i>
-                  <span>
-                    {{
-                      isScanning() ? 'جاري المسح...'
-                      : step.scanned ? 'تم التنفيذ'
-                      : step.type === 'zone' ? 'تأكيد المنطقة'
-                      : 'بدء Scan'
-                    }}
-                  </span>
-                </button>
-
-                @if (step.scanned) {
-                  <div class="scan-success-message">
-                    <i class="pi pi-check-circle"></i>
-                    تم تنفيذ الخطوة بنجاح
-                  </div>
-                }
+            <aside class="scan-steps-panel">
+              <div class="steps-title">
+                <span>{{ isStorage() ? 'مراحل التخزين' : 'مراحل التسليم' }}</span>
+                <small>{{ steps().length }} عمليات</small>
               </div>
 
-              <!-- RESULT CARD -->
-              <div class="scan-result-card">
-                <div class="result-card-header">
-                  <div>
-                    <span>بيانات الـ Scan</span>
-                    <strong>نتيجة القراءة</strong>
+              <div class="scan-steps">
+                @for (s of steps(); track s.type; let i = $index) {
+                  <button
+                    type="button"
+                    class="scan-step"
+                    [class.active]="i === currentIndex()"
+                    [class.completed]="s.scanned"
+                    [class.locked]="isLocked(i)"
+                    (click)="selectScanStep(i)"
+                  >
+                    <div class="step-number">
+                      @if (s.scanned) { <i class="pi pi-check"></i> } @else { <span>{{ i + 1 }}</span> }
+                    </div>
+
+                    <div class="step-info">
+                      <strong>{{ s.title }}</strong>
+                      <small>{{ s.subtitle }}</small>
+                    </div>
+
+                    <i class="pi cover-icon" [ngClass]="stepIcon(s.type)"></i>
+                  </button>
+                }
+              </div>
+            </aside>
+
+            <section class="scanner-area">
+              <div class="scanner-and-data">
+
+                <div class="scanner-card">
+                  <div class="scanner-label">
+                    <i class="pi pi-qrcode"></i>
+                    <span>{{ step.title }}</span>
                   </div>
+
+                  @if (step.type === 'zone') {
+                    <div class="zone-selection">
+                      <div class="zone-selection-icon"><i class="pi pi-map-marker"></i></div>
+                      <strong>تحديد منطقة التخزين</strong>
+                      <span>اختاري المنطقة التي سيتم تخزين الصندوق بها</span>
+
+                      <p-select
+                        [options]="zones"
+                        [(ngModel)]="selectedZone"
+                        [disabled]="step.scanned"
+                        optionLabel="label"
+                        optionValue="value"
+                        appendTo="body"
+                        styleClass="zone-select"
+                      />
+                    </div>
+                  } @else {
+                    <div class="scanner-visual">
+                      <div class="scanner-corners">
+                        <span class="corner top-right"></span>
+                        <span class="corner top-left"></span>
+                        <span class="corner bottom-right"></span>
+                        <span class="corner bottom-left"></span>
+                      </div>
+
+                      <div class="fake-qr">
+                        <div class="qr-pattern">
+                          @for (n of [1,2,3,4,5,6,7,8,9]; track n) { <span></span> }
+                        </div>
+                      </div>
+
+                      @if (isScanning()) {
+                        <div class="scanner-line"></div>
+                        <div class="scanner-loading">
+                          <i class="pi pi-spin pi-spinner"></i>
+                          <span>جاري المسح...</span>
+                        </div>
+                      }
+                    </div>
+                  }
+
+                  <button
+                    pButton
+                    type="button"
+                    class="start-scan-button"
+                    [disabled]="isScanning() || step.scanned"
+                    (click)="startScan()"
+                  >
+                    <i class="pi"
+                       [class.pi-qrcode]="!isScanning()"
+                       [class.pi-spin]="isScanning()"
+                       [class.pi-spinner]="isScanning()"></i>
+                    <span>
+                      {{
+                        isScanning() ? 'جاري المسح...'
+                        : step.scanned ? 'تم التنفيذ'
+                        : step.type === 'zone' ? 'تأكيد المنطقة'
+                        : 'بدء Scan'
+                      }}
+                    </span>
+                  </button>
+
                   @if (step.scanned) {
-                    <span class="result-status"><i class="pi pi-check"></i> ناجح</span>
+                    <div class="scan-success-message">
+                      <i class="pi pi-check-circle"></i>
+                      تم تنفيذ الخطوة بنجاح
+                    </div>
                   }
                 </div>
 
-                @if (!step.scanned) {
-                  <div class="result-empty">
-                    <div class="result-empty-icon"><i class="pi pi-database"></i></div>
-                    <strong>في انتظار الـ Scan</strong>
-                    <span>بمجرد تنفيذ الخطوة ستظهر البيانات هنا.</span>
+                <div class="scan-result-card">
+                  <div class="result-card-header">
+                    <div>
+                      <span>بيانات الـ Scan</span>
+                      <strong>نتيجة القراءة</strong>
+                    </div>
+                    @if (step.scanned) {
+                      <span class="result-status"><i class="pi pi-check"></i> ناجح</span>
+                    }
                   </div>
-                } @else {
-                  <div class="result-data">
-                    <div class="data-row">
-                      <span>نوع العملية</span>
-                      <strong>{{ step.data?.scanType }}</strong>
-                    </div>
-                    <div class="data-row">
-                      <span>QR Code</span>
-                      <strong class="data-qr">{{ step.data?.qrCode }}</strong>
-                    </div>
-                    <div class="data-row">
-                      <span>البيانات</span>
-                      <strong>{{ step.data?.name }}</strong>
-                    </div>
-                    <div class="data-row">
-                      <span>التفاصيل</span>
-                      <strong>{{ step.data?.extra }}</strong>
-                    </div>
-                  </div>
-                }
-              </div>
-            </div>
 
-            @if (scanMessage()) {
-              <div class="scan-message">
-                <i class="pi pi-info-circle"></i>
-                <span>{{ scanMessage() }}</span>
-              </div>
-            }
-
-            @if (!allScansCompleted()) {
-              <div class="scan-navigation">
-                <button
-                  pButton type="button" class="secondary-nav-button"
-                  [disabled]="currentIndex() === 0 || isScanning()"
-                  (click)="previousScan()"
-                >
-                  <i class="pi pi-arrow-right"></i>
-                  السابق
-                </button>
-
-                <div class="navigation-info">
-                  <span>المرحلة</span>
-                  <strong>{{ currentIndex() + 1 }} / {{ steps().length }}</strong>
+                  @if (!step.scanned) {
+                    <div class="result-empty">
+                      <div class="result-empty-icon"><i class="pi pi-database"></i></div>
+                      <strong>في انتظار الـ Scan</strong>
+                      <span>بمجرد تنفيذ الخطوة ستظهر البيانات هنا.</span>
+                    </div>
+                  } @else {
+                    <div class="result-data">
+                      <div class="data-row"><span>نوع العملية</span><strong>{{ step.data?.scanType }}</strong></div>
+                      <div class="data-row"><span>QR Code</span><strong class="data-qr">{{ step.data?.qrCode }}</strong></div>
+                      <div class="data-row"><span>البيانات</span><strong>{{ step.data?.name }}</strong></div>
+                      <div class="data-row"><span>التفاصيل</span><strong>{{ step.data?.extra }}</strong></div>
+                    </div>
+                  }
                 </div>
-
-                <button
-                  pButton type="button" class="secondary-nav-button"
-                  [disabled]="!step.scanned || isScanning()"
-                  (click)="nextScan()"
-                >
-                  التالي
-                  <i class="pi pi-arrow-left"></i>
-                </button>
               </div>
-            } @else {
-              <div class="final-decision">
-                <div class="decision-info">
-                  <div class="decision-icon"><i class="pi pi-check-circle"></i></div>
-                  <div>
-                    <strong>{{ isStorage() ? 'اكتمل فحص التخزين' : 'اكتمل فحص التسليم' }}</strong>
-                    <span>
-                      {{ isStorage()
-                        ? 'تم مسح الرف والصندوق وتحديد المنطقة. يمكنك الآن تأكيد التخزين.'
-                        : 'تم التحقق من اللجنة والصندوق. يمكنك الآن تأكيد التسليم.' }}
-                    </span>
-                  </div>
-                </div>
 
-              </div>
-            }
-          </section>
-        </div>
-      </div>
-    }
-  }
-
-  <ng-template pTemplate="footer">
-    <!-- <button
-      pButton type="button"
-      class="scan-close-button"
-      label="إغلاق"
-      [disabled]="isScanning()"
-      (click)="closeDialog()"
-    ></button> -->
-    @if (allScansCompleted()) {
-    <div class="decision-actions">
-                  <button
-                    pButton type="button"
-                    class="approve-material-button"
-                    [class.delivery]="!isStorage()"
-                    (click)="confirm()"
-                  >
-                    <i class="pi pi-check"></i>
-                    {{ isStorage() ? 'تأكيد التخزين' : 'تأكيد التسليم' }}
-                  </button>
+              @if (scanMessage()) {
+                <div class="scan-message">
+                  <i class="pi pi-info-circle"></i>
+                  <span>{{ scanMessage() }}</span>
                 </div>
               }
-  </ng-template>
-</p-dialog>
+
+              @if (!allScansCompleted()) {
+                <div class="scan-navigation">
+                  <button pButton type="button" class="secondary-nav-button"
+                    [disabled]="currentIndex() === 0 || isScanning()" (click)="previousScan()">
+                    <i class="pi pi-arrow-right"></i>
+                    السابق
+                  </button>
+
+                  <div class="navigation-info">
+                    <span>المرحلة</span>
+                    <strong>{{ currentIndex() + 1 }} / {{ steps().length }}</strong>
+                  </div>
+
+                  <button pButton type="button" class="secondary-nav-button"
+                    [disabled]="!step.scanned || isScanning()" (click)="nextScan()">
+                    التالي
+                    <i class="pi pi-arrow-left"></i>
+                  </button>
+                </div>
+              } @else {
+                <div class="final-decision">
+                  <div class="decision-info">
+                    <div class="decision-icon"><i class="pi pi-check-circle"></i></div>
+                    <div>
+                      <strong>{{ isStorage() ? 'اكتمل فحص التخزين' : 'اكتمل فحص التسليم' }}</strong>
+                      <span>
+                        {{ isStorage()
+                          ? 'تم مسح الرف والصندوق وتحديد المنطقة. يمكنك الآن تأكيد التخزين.'
+                          : 'تم التحقق من اللجنة والصندوق. يمكنك الآن تأكيد التسليم.' }}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              }
+            </section>
+          </div>
+        </div>
+      }
+    }
+
+    <ng-template pTemplate="footer">
+      @if (allScansCompleted()) {
+        <div class="decision-actions">
+          <button pButton type="button" class="approve-material-button"
+            [class.delivery]="!isStorage()" (click)="confirm()">
+            <i class="pi pi-check"></i>
+            {{ isStorage() ? 'تأكيد التخزين' : 'تأكيد التسليم' }}
+          </button>
+        </div>
+      }
+    </ng-template>
+  </p-dialog>
 
 
   <!-- =====================================================
        SYSTEM OPTIONS
   ====================================================== -->
-
   <ng-container system-options>
-
     <span class="workflow-summary">
-
       <i class="pi pi-database"></i>
-
       إدارة التخزين والتسليم
-
     </span>
-
   </ng-container>
 
 </app-workflow-step-layout>
