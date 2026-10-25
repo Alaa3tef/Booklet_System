@@ -77,9 +77,9 @@ export default class PackingComponent implements OnInit {
   ];
 
   readonly pageSizes = [
-    { label: '5', value: 5 },
-    { label: '10', value: 10 },
-    { label: '20', value: 20 }
+    { label: '6', value: 6 },
+    { label: '12', value: 12 },
+    { label: '24', value: 24 }
   ];
 
   // =====================================================
@@ -235,7 +235,7 @@ export default class PackingComponent implements OnInit {
   // Pagination
   // =====================================================
 
-  readonly pageSize = signal(5);
+  readonly pageSize = signal(6);
   readonly currentPage = signal(1);
 
   readonly totalPages = computed(() =>
