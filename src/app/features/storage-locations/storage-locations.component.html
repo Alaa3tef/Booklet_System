@@ -643,7 +643,7 @@
     <h3>هل أنت متأكد من الحذف؟</h3>
     <p class="delete-text">
       سيتم حذف موقع التخزين
-      <strong class="delete-code"><bdi>{{ deleteTarget()?.code }}</bdi></strong>
+      <!-- <strong class="delete-code"><bdi>{{ warehouseName(t) }}</bdi></strong> -->
       نهائيًا من النظام.
     </p>
 
@@ -651,7 +651,7 @@
       <div><dt>المخزن</dt><dd>{{ warehouseName(t) }}</dd></div>
       <div><dt>المنطقة</dt><dd>{{ t.area }}</dd></div>
       <div><dt>الرف</dt><dd>{{ t.rack }}</dd></div>
-      <div><dt>الدور / الصندوق</dt><dd>{{ t.shelf }} / {{ t.bin }}</dd></div>
+      <div><dt>الدور / الصندوق</dt><dd>{{ t.shelf  }}</dd></div>
     </dl>
 
     <div class="delete-warning">
