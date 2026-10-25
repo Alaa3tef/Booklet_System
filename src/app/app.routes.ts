@@ -1,5 +1,5 @@
 import { Routes } from '@angular/router';
-import { authGuard, guestGuard } from './core/guards/auth.guard';
+import { authGuard, dashboardRoleGuard, guestGuard } from './core/guards/auth.guard';
 
 export const routes: Routes = [
   // ==========================================
@@ -53,6 +53,7 @@ export const routes: Routes = [
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
       {
         path: 'dashboard',
+        canActivate: [dashboardRoleGuard],
         loadComponent: () =>
           import('./features/dashboard/dashboard.component'),
         data: { breadcrumb: 'الرئيسية' }

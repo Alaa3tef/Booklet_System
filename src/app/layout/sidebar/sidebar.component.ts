@@ -69,7 +69,8 @@ export class SidebarComponent implements OnInit {
     {
       label: 'الرئيسية',
       icon: 'pi pi-home',
-      route: '/dashboard'
+      route: '/dashboard',
+      roles: ['Top',  'superadmin', 'it']
     },
 
     // إدارة البيانات الأساسية (IT فقط)
@@ -123,6 +124,13 @@ export class SidebarComponent implements OnInit {
       icon: 'pi pi-database',
       route: '/workflow/archiving',
       roles: ['archive' , 'superadmin']
+    },
+
+    {
+      label: 'إدارة المخازن',
+      icon: 'pi pi-building',
+      route: '/warehouses',
+      roles: ['warehouse', 'warehouses', 'warehouse management']
     },
 
     {
@@ -180,9 +188,14 @@ readonly visibleNavItems = computed(() => {
   const currentRole = this.normalizeRole(this.role());
 
   return this.navItems().filter(item => {
-    // الرئيسية متاحة للجميع
+    // Dashboard is restricted to system administrators and top management.
     if (item.route === '/dashboard') {
-      return true;
+      return [
+        'superadmin', 'super admin', 'it',
+        'مسؤول النظام it', 'مدير النظام it',
+        'top', 'top management', 'topmanagment'
+      ]
+        .includes(currentRole);
     }
 
     // مواقع التخزين للـ SuperAdmin فقط

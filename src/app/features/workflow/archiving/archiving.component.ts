@@ -10,6 +10,8 @@ import { MessageService } from 'primeng/api';
 
 // adjust this path to where your layout component lives
 import { WorkflowStepLayoutComponent } from '../../../shared/workflow-step-layout/workflow-step-layout.component';
+import { forkJoin } from 'rxjs';
+import { Lookups } from '../../../shared/services/lookups';
 
 // ---------------------------------------------------------------- types
 export type ArchiveStatus = 'جاهز للتخزين' | 'تم التخزين' | 'تم التسليم';
@@ -47,10 +49,16 @@ interface Option { label: string; value: string; }
   templateUrl: './archiving.component.html',
   styleUrl: './archiving.component.scss'
 })
+
 export default class ArchivingComponent {
+   private lookupService = inject(Lookups);
+  private messageService = inject(MessageService);
 
-  private readonly toast = inject(MessageService);
 
+  
+  ngOnInit(): void {
+    this.loadLookups();
+  }
   // keep the value you already pass to the layout
   readonly essentials = [
     'مسح الرف والصندوق',
@@ -77,6 +85,14 @@ export default class ArchivingComponent {
       { governorate: 'الإسكندرية', committeeNumber: '409', subject: 'اللغة الإنجليزية',     scanPart: 'الجزء الثاني', status: 'تم التخزين',   storage: { shelf: 'D-01', box: 'BOX-031' } },
       { governorate: 'القاهرة',    committeeNumber: '210', subject: 'الدراسات الاجتماعية',  scanPart: 'الجزء الأول',  status: 'جاهز للتخزين', storage: null },
       { governorate: 'الجيزة',     committeeNumber: '311', subject: 'اللغة العربية',        scanPart: 'الجزء الأول',  status: 'جاهز للتخزين', storage: null },
+      { governorate: 'الدقهلية',   committeeNumber: '112', subject: 'الرياضيات',            scanPart: 'الجزء الثاني', status: 'تم التخزين',   storage: { shelf: 'A-02', box: 'BOX-044' } },
+       { governorate: 'الإسكندرية', committeeNumber: '405', subject: 'الدراسات الاجتماعية',  scanPart: 'الجزء الثاني', status: 'جاهز للتخزين', storage: null },
+      { governorate: 'القاهرة',    committeeNumber: '206', subject: 'اللغة العربية',        scanPart: 'الجزء الأول',  status: 'تم التخزين',   storage: { shelf: 'B-02', box: 'BOX-011' } },
+      { governorate: 'الجيزة',     committeeNumber: '307', subject: 'الرياضيات',            scanPart: 'الجزء الثاني', status: 'جاهز للتخزين', storage: null },
+      { governorate: 'الدقهلية',   committeeNumber: '108', subject: 'العلوم',               scanPart: 'الجزء الأول',  status: 'تم التسليم',   storage: { shelf: 'A-04', box: 'BOX-020' } },
+      { governorate: 'الإسكندرية', committeeNumber: '409', subject: 'اللغة الإنجليزية',     scanPart: 'الجزء الثاني', status: 'تم التخزين',   storage: { shelf: 'D-01', box: 'BOX-031' } },
+      { governorate: 'القاهرة',    committeeNumber: '210', subject: 'الدراسات الاجتماعية',  scanPart: 'الجزء الأول',  status: 'جاهز للتخزين', storage: null },
+      { governorate: 'الجيزة',     committeeNumber: '311', subject: 'اللغة العربية',        scanPart: 'الجزء الأول',  status: 'جاهز للتخزين', storage: null },
       { governorate: 'الدقهلية',   committeeNumber: '112', subject: 'الرياضيات',            scanPart: 'الجزء الثاني', status: 'تم التخزين',   storage: { shelf: 'A-02', box: 'BOX-044' } }
     ];
     return base.map((r, i) => ({ ...r, index: i + 1 }));
@@ -85,12 +101,9 @@ export default class ArchivingComponent {
   // ================================================================
   // FILTERS  (same three filters as before)
   // ================================================================
-  readonly governorates: Option[] = ['الدقهلية', 'القاهرة', 'الجيزة', 'الإسكندرية']
-    .map(v => ({ label: v, value: v }));
-
-  readonly subjects: Option[] = [
-    'اللغة العربية', 'اللغة الإنجليزية', 'الرياضيات', 'العلوم', 'الدراسات الاجتماعية'
-  ].map(v => ({ label: v, value: v }));
+ 
+  governorates: Option[] = [];
+  subjects: Option[] = [];
 
   readonly searchGovernorate = signal<string | null>(null);
   readonly searchSubject     = signal<string | null>(null);
@@ -134,11 +147,52 @@ export default class ArchivingComponent {
     this.searchCommittee.set('');
     this.resetPage();
   }
+ loadLookups(): void {
+  forkJoin({
+    governorates: this.lookupService.getLookupGovernorateData(),
+    subjects: this.lookupService.getLookupSubjectData()
+  }).subscribe({
+    next: (res: any) => {
+      // Governorates
+      const governoratesData = res.governorates?.data?.data ?? [];
 
+      this.governorates = [
+        { label: 'كل المحافظات', value: 'all' },
+        ...governoratesData.map((item: any) => ({
+          label: item.nameAr ?? item.name,
+          value: item.id
+        }))
+      ];
+
+      // Subjects
+      const subjectsData = res.subjects?.data?.data ?? [];
+
+      this.subjects = [
+        { label: 'كل المواد', value: 'all' },
+        ...subjectsData.map((item: any) => ({
+          label: item.name,
+          value: item.id
+        }))
+      ];
+
+      console.log('Governorates:', this.governorates);
+      console.log('Subjects:', this.subjects);
+    },
+    error: (err) => {
+      console.error('Error loading lookups:', err);
+      this.messageService.add({
+        severity: 'error',
+        summary: 'خطأ',
+        detail: err.error?.message || 'فشل تحميل بيانات القوائم',
+        life: 3000
+      });
+    }
+  });
+}
   // ================================================================
   // PAGINATION  (works on the filtered rows)
   // ================================================================
-  readonly pageSize    = signal(4);
+  readonly pageSize    = signal(6);
   readonly currentPage = signal(1);
 
   readonly totalPages = computed(() =>
@@ -157,26 +211,31 @@ export default class ArchivingComponent {
     Math.min(this.currentPage() * this.pageSize(), this.filteredRows().length));
 
   readonly paginationPages = computed<(number | 'dots')[]>(() => {
-    const total = this.totalPages(), cur = this.currentPage();
+    const total = this.totalPages();
+    const current = this.currentPage();
     const pages: (number | 'dots')[] = [];
-    if (total <= 7) {
-      for (let i = 1; i <= total; i++) pages.push(i);
+
+    if (total <= 4) {
+      for (let page = 1; page <= total; page++) pages.push(page);
+    } else if (current <= 3) {
+      pages.push(1, 2, 3, 4, 'dots', total);
+    } else if (current >= total - 2) {
+      pages.push(1, 'dots', total - 3, total - 2, total - 1, total);
     } else {
-      pages.push(1);
-      if (cur > 3) pages.push('dots');
-      for (let i = Math.max(2, cur - 1); i <= Math.min(total - 1, cur + 1); i++) pages.push(i);
-      if (cur < total - 2) pages.push('dots');
-      pages.push(total);
+      pages.push(1, 'dots', current - 1, current, current + 1, 'dots', total);
     }
+
     return pages;
   });
 
   private resetPage(): void { this.currentPage.set(1); }
 
   onPageSizeChange(): void { this.resetPage(); }
-  goToPage(p: number): void { if (p >= 1 && p <= this.totalPages()) this.currentPage.set(p); }
+  goToPage(page: number): void {
+    if (page >= 1 && page <= this.totalPages()) this.currentPage.set(page);
+  } 
   previousPage(): void { this.goToPage(this.currentPage() - 1); }
-  nextPage(): void     { this.goToPage(this.currentPage() + 1); }
+  nextPage(): void { this.goToPage(this.currentPage() + 1); }
 
   // ================================================================
   // CARD HELPERS
@@ -303,7 +362,7 @@ export default class ArchivingComponent {
           ? { ...r, status: 'تم التخزين' as ArchiveStatus, storage: { shelf, box } }
           : { ...r, status: 'تم التسليم' as ArchiveStatus }));
 
-    this.toast.add({
+    this.messageService.add({
       severity: 'success', summary: 'تمت العملية', life: 3500,
       detail: this.isStorage() ? 'تم تأكيد التخزين بنجاح' : 'تم تأكيد التسليم بنجاح'
     });

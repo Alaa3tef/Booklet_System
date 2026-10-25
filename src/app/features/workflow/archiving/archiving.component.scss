@@ -20,6 +20,8 @@ $amber:  #d99a0b;
 $blue:   #2563eb;
 $green:  #16a34a;
 
+.pagination-controls-hidden { visibility: hidden; }
+
 /* =========================================================
    SEARCH CARD (unchanged look)
 ========================================================= */
@@ -54,11 +56,15 @@ $green:  #16a34a;
   display: flex; flex-direction: column; gap: 8px;
   label { color: #475569; font-size: 13px; font-weight: 600; }
 }
-
 .input-wrapper {
   position: relative;
   i { position: absolute; right: 13px; top: 50%; transform: translateY(-50%); color: #94a3b8; z-index: 1; }
   input { width: 100%; padding-right: 38px; min-height: 42px; border-radius: 10px; }
+}
+.select-wrapper {
+  position: relative;
+  i { position: absolute; right: 13px; top: 50%; transform: translateY(-50%); color: #94a3b8; z-index: 1; }
+  p-select { width: 100%; padding-right: 29px; min-height: 42px; border-radius: 10px; }
 }
 
 :host ::ng-deep {
@@ -149,7 +155,7 @@ $green:  #16a34a;
 
 /* ---------- cards grid ---------- */
 .record-grid {
-  display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
+  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 16px; padding: 20px 22px 22px;
 }
 
