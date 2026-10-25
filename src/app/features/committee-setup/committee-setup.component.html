@@ -348,19 +348,20 @@
 
             <div class="table-filters-grid">
 
-              <div class="field">
-                <label for="tableSearch">بحث</label>
+             <div class="field">
+  <label for="tableSearch">بحث</label>
 
-                <input
-                  id="tableSearch"
-                  type="text"
-                  pInputText
-                  class="w-full"
-                  placeholder="ابحث..."
-                  [ngModel]="searchTerm()"
-                  (ngModelChange)="setSearchTerm($event)">
-              </div>
-
+  <input
+    id="tableSearch"
+    type="text"
+    pInputText
+    class="w-full"
+    placeholder="بحث ..."
+    [ngModel]="searchTerm()"
+    (ngModelChange)="setSearchTerm($event)"
+  />
+</div>
+<!-- 
               <div class="field">
                 <label for="tableGovernorate">المحافظة</label>
 
@@ -393,7 +394,7 @@
                   appendTo="body"
                   styleClass="w-full">
                 </p-select>
-              </div>
+              </div> -->
 
             </div>
 

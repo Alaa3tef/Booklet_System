@@ -359,18 +359,31 @@ export default class CommitteeSetupComponent implements OnInit, OnDestroy {
     this.loadHistory();
   }
 
-  setSearchTerm(value: string): void {
-    this.searchTerm.set(value);
-    this.first.set(0);
+  
+setSearchTerm(value: string): void {
+  const searchValue = value ?? '';
 
-    if (this.searchTimer) {
-      clearTimeout(this.searchTimer);
-    }
+  this.searchTerm.set(searchValue);
+  this.first.set(0);
 
-    this.searchTimer = setTimeout(() => {
-      this.loadHistory();
-    }, 400);
+  // إلغاء أي عملية بحث سابقة لم يتم تنفيذها
+  if (this.searchTimer) {
+    clearTimeout(this.searchTimer);
   }
+
+  const trimmedValue = searchValue.trim();
+
+  // أقل من 3 حروف: لا نرسل طلب بحث جديد
+  if (trimmedValue.length > 0 && trimmedValue.length < 3) {
+    return;
+  }
+
+  // انتظار 400 مللي ثانية بعد توقف المستخدم عن الكتابة
+  this.searchTimer = setTimeout(() => {
+    this.loadHistory();
+  }, trimmedValue.length >= 3 ? 400 : 0);
+}
+
 
   onFilterGovernorateChange(value: string | null): void {
     this.filterGovernorate.set(value);
