@@ -35,24 +35,6 @@
     <!-- ========== Filters ========== -->
     <section class="pk-box pk-filters">
       <div class="pk-field">
-        <label>المادة</label>
-        <p-select
-          [options]="subjectOptions()"
-          optionLabel="label"
-          optionValue="value"
-          placeholder="كل المواد"
-          [ngModel]="subjectFilter()"
-          (ngModelChange)="subjectFilter.set($event)"
-          [loading]="subjectsLoading()"
-          [showClear]="true"
-          [filter]="true"
-          filterPlaceholder="ابحث عن مادة..."
-          emptyMessage="لا توجد مواد"
-          styleClass="pk-input"
-        />
-      </div>
-
-      <div class="pk-field">
         <label>المحافظة</label>
         <p-select
           [options]="governorateOptions()"
@@ -66,6 +48,24 @@
           [filter]="true"
           filterPlaceholder="ابحث عن محافظة..."
           emptyMessage="لا توجد محافظات"
+          styleClass="pk-input"
+        />
+      </div>
+      
+      <div class="pk-field">
+        <label>المادة</label>
+        <p-select
+          [options]="subjectOptions()"
+          optionLabel="label"
+          optionValue="value"
+          placeholder="كل المواد"
+          [ngModel]="subjectFilter()"
+          (ngModelChange)="subjectFilter.set($event)"
+          [loading]="subjectsLoading()"
+          [showClear]="true"
+          [filter]="true"
+          filterPlaceholder="ابحث عن مادة..."
+          emptyMessage="لا توجد مواد"
           styleClass="pk-input"
         />
       </div>

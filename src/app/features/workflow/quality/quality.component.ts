@@ -1,5 +1,13 @@
+
 import { CommonModule } from '@angular/common';
-import { Component, ViewEncapsulation, computed, signal } from '@angular/core';
+import {
+  Component,
+  ViewEncapsulation,
+  computed,
+  inject,
+  signal,
+  OnInit
+} from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
 import { ButtonModule } from 'primeng/button';
@@ -12,6 +20,7 @@ import { TooltipModule } from 'primeng/tooltip';
 
 import { WorkflowStepLayoutComponent } from '../../../shared/workflow-step-layout/workflow-step-layout.component';
 import { WorkflowStatusRow } from '../../../core/models/workflow.model';
+import { Lookups } from '../../../shared/services/lookups';
 
 const PENDING = 'قيد المراجعة';
 const DONE = 'تم المراجعة';
@@ -21,6 +30,11 @@ interface QualityRow extends WorkflowStatusRow {
   committeeNumber: string;
   governorate: string;
   qrCode: string;
+}
+
+interface LookupOption {
+  label: string;
+  value: string;
 }
 
 interface ScanResult {
@@ -61,10 +75,15 @@ interface ScanStep {
   ],
   templateUrl: './quality.component.html',
   styleUrl: './quality.component.scss',
-  // الـ dialogs بتتعمل render برا الـ component، فبنستخدم None مع prefix "qc-" بدل ::ng-deep
   encapsulation: ViewEncapsulation.None
 })
-export default class QualityComponent {
+export default class QualityComponent implements OnInit {
+  private readonly lookups = inject(Lookups);
+
+  // =========================
+  // Essentials
+  // =========================
+
   readonly essentials = [
     'مسح QR الخاص بكل مادة',
     'مسح جميع أظرف اللجنة',
@@ -87,13 +106,216 @@ export default class QualityComponent {
   ];
 
   // =========================
-  // Data
+  // Lookup data from API
+  // =========================
+
+  readonly governorates = signal<LookupOption[]>([]);
+  readonly subjects = signal<LookupOption[]>([]);
+
+  readonly governoratesLoading = signal(false);
+  readonly subjectsLoading = signal(false);
+
+  readonly governoratesError = signal(false);
+  readonly subjectsError = signal(false);
+
+  ngOnInit(): void {
+    this.loadGovernorates();
+    this.loadSubjects();
+  }
+
+  /**
+   * تحميل المحافظات من:
+   * GET api/Governorates
+   */
+  loadGovernorates(): void {
+    this.governoratesLoading.set(true);
+    this.governoratesError.set(false);
+
+    this.lookups.getLookupGovernorateData().subscribe({
+      next: (response: any) => {
+        const options = this.normalizeLookupOptions(response, [
+          'governorateName',
+          'nameAr',
+          'arabicName',
+          'governorate',
+          'name',
+          'title',
+          'value'
+        ]);
+
+        this.governorates.set(options);
+        this.governoratesLoading.set(false);
+      },
+      error: (error: unknown) => {
+        console.error('Error loading governorates:', error);
+        this.governoratesError.set(true);
+        this.governoratesLoading.set(false);
+      }
+    });
+  }
+
+  /**
+   * تحميل المواد من:
+   * GET api/Subjects
+   */
+  loadSubjects(): void {
+    this.subjectsLoading.set(true);
+    this.subjectsError.set(false);
+
+    this.lookups.getLookupSubjectData().subscribe({
+      next: (response: any) => {
+        const options = this.normalizeLookupOptions(response, [
+          'subjectName',
+          'nameAr',
+          'arabicName',
+          'subject',
+          'name',
+          'title',
+          'value'
+        ]);
+
+        this.subjects.set(options);
+        this.subjectsLoading.set(false);
+      },
+      error: (error: unknown) => {
+        console.error('Error loading subjects:', error);
+        this.subjectsError.set(true);
+        this.subjectsLoading.set(false);
+      }
+    });
+  }
+
+  /**
+   * تحويل استجابة الـ API إلى:
+   * [{ label: 'القاهرة', value: 'القاهرة' }]
+   *
+   * يدعم استجابة عبارة عن Array مباشرة أو داخل data/items/result.
+   */
+  private normalizeLookupOptions(
+    response: any,
+    nameKeys: string[]
+  ): LookupOption[] {
+    const items = this.extractLookupArray(response);
+
+    const options = items
+      .map((item: any): LookupOption | null => {
+        if (typeof item === 'string' || typeof item === 'number') {
+          const name = String(item).trim();
+
+          return name
+            ? { label: name, value: name }
+            : null;
+        }
+
+        if (!item || typeof item !== 'object') {
+          return null;
+        }
+
+        let name: string | null = null;
+
+        for (const key of nameKeys) {
+          const candidate = item[key];
+
+          if (
+            candidate !== null &&
+            candidate !== undefined &&
+            String(candidate).trim() !== ''
+          ) {
+            name = String(candidate).trim();
+            break;
+          }
+        }
+
+        if (!name) {
+          return null;
+        }
+
+        return {
+          label: name,
+          value: name
+        };
+      })
+      .filter((option): option is LookupOption => option !== null);
+
+    // إزالة الأسماء المكررة
+    return [
+      ...new Map(
+        options.map(option => [option.value, option])
+      ).values()
+    ];
+  }
+
+  /**
+   * استخراج القائمة من أشكال الـ response الشائعة.
+   */
+  private extractLookupArray(response: any): any[] {
+    if (Array.isArray(response)) {
+      return response;
+    }
+
+    if (!response || typeof response !== 'object') {
+      return [];
+    }
+
+    const possibleKeys = [
+      'data',
+      'items',
+      'result',
+      'results',
+      'records'
+    ];
+
+    for (const key of possibleKeys) {
+      const value = response[key];
+
+      if (Array.isArray(value)) {
+        return value;
+      }
+
+      if (value && typeof value === 'object') {
+        const nested = this.extractLookupArray(value);
+
+        if (nested.length > 0) {
+          return nested;
+        }
+      }
+    }
+
+    return [];
+  }
+
+  // =========================
+  // Committee rows
   // =========================
 
   readonly rows = signal<QualityRow[]>([
-    { index: 1, subject: 'اللغة العربية', committeeNumber: '101', governorate: 'القاهرة', qrCode: 'QR-COMMITTEE-101', status: PENDING, statusTone: 'info' },
-    { index: 2, subject: 'الرياضيات', committeeNumber: '102', governorate: 'الجيزة', qrCode: 'QR-COMMITTEE-102', status: PENDING, statusTone: 'info' },
-    { index: 3, subject: 'اللغة الإنجليزية', committeeNumber: '103', governorate: 'القاهرة', qrCode: 'QR-COMMITTEE-103', status: DONE, statusTone: 'success' }
+    {
+      index: 1,
+      subject: 'اللغة العربية',
+      committeeNumber: '101',
+      governorate: 'القاهرة',
+      qrCode: 'QR-COMMITTEE-101',
+      status: PENDING,
+      statusTone: 'info'
+    },
+    {
+      index: 2,
+      subject: 'الرياضيات',
+      committeeNumber: '102',
+      governorate: 'الجيزة',
+      qrCode: 'QR-COMMITTEE-102',
+      status: PENDING,
+      statusTone: 'info'
+    },
+    {
+      index: 3,
+      subject: 'اللغة الإنجليزية',
+      committeeNumber: '103',
+      governorate: 'القاهرة',
+      qrCode: 'QR-COMMITTEE-103',
+      status: DONE,
+      statusTone: 'success'
+    }
   ]);
 
   // =========================
@@ -103,8 +325,6 @@ export default class QualityComponent {
   readonly subjectFilter = signal<string | null>(null);
   readonly governorateFilter = signal<string | null>(null);
   readonly committeeFilter = signal('');
-
-  /** تبويب الحالة بيتطبق فورًا */
   readonly statusFilter = signal<string | null>(null);
 
   private readonly appliedFilters = signal({
@@ -113,42 +333,94 @@ export default class QualityComponent {
     committee: ''
   });
 
-  readonly subjectOptions = computed(() => this.optionsOf(r => r.subject));
-  readonly governorateOptions = computed(() => this.optionsOf(r => r.governorate));
+  /**
+   * خيارات المواد والمحافظات تأتي من الـ API.
+   * في حالة فشل تحميل القوائم نستخدم القيم الموجودة بالصفوف
+   * حتى لا تصبح الفلاتر فارغة تماماً.
+   */
+  readonly subjectOptions = computed<LookupOption[]>(() => {
+    const apiOptions = this.subjects();
 
-  /** الصفوف بعد البحث (قبل تبويب الحالة) - تُستخدم لعدّادات التبويبات */
+    return apiOptions.length
+      ? apiOptions
+      : this.optionsOf(row => row.subject);
+  });
+
+  readonly governorateOptions = computed<LookupOption[]>(() => {
+    const apiOptions = this.governorates();
+
+    return apiOptions.length
+      ? apiOptions
+      : this.optionsOf(row => row.governorate);
+  });
+
   private readonly searchedRows = computed(() => {
-    const { subject, governorate, committee } = this.appliedFilters();
+    const { subject, governorate, committee } =
+      this.appliedFilters();
+
     const term = committee.trim();
 
-    return this.rows().filter(
-      r =>
-        (!subject || r.subject === subject) &&
-        (!governorate || r.governorate === governorate) &&
-        (!term || r.committeeNumber.includes(term))
+    return this.rows().filter(row =>
+      (!subject || row.subject === subject) &&
+      (!governorate || row.governorate === governorate) &&
+      (!term || row.committeeNumber.includes(term))
     );
   });
 
   readonly filteredRows = computed(() => {
     const status = this.statusFilter();
-    return status ? this.searchedRows().filter(r => r.status === status) : this.searchedRows();
+
+    return status
+      ? this.searchedRows().filter(row => row.status === status)
+      : this.searchedRows();
   });
 
   readonly statusTabs = computed(() => {
     const rows = this.searchedRows();
-    const count = (s: string) => rows.filter(r => r.status === s).length;
+
+    const count = (status: string) =>
+      rows.filter(row => row.status === status).length;
 
     return [
-      { key: null as string | null, label: 'الكل', icon: 'pi-th-large', tone: 'neutral', count: rows.length },
-      { key: PENDING, label: 'قيد المراجعة', icon: 'pi-clock', tone: 'info', count: count(PENDING) },
-      { key: DONE, label: 'تمت المراجعة', icon: 'pi-check-circle', tone: 'success', count: count(DONE) },
-      { key: REJECTED, label: 'مرفوضة', icon: 'pi-times-circle', tone: 'danger', count: count(REJECTED) }
+      {
+        key: null as string | null,
+        label: 'الكل',
+        icon: 'pi-th-large',
+        tone: 'neutral',
+        count: rows.length
+      },
+      {
+        key: PENDING,
+        label: 'قيد المراجعة',
+        icon: 'pi-clock',
+        tone: 'info',
+        count: count(PENDING)
+      },
+      {
+        key: DONE,
+        label: 'تمت المراجعة',
+        icon: 'pi-check-circle',
+        tone: 'success',
+        count: count(DONE)
+      },
+      {
+        key: REJECTED,
+        label: 'مرفوضة',
+        icon: 'pi-times-circle',
+        tone: 'danger',
+        count: count(REJECTED)
+      }
     ];
   });
 
   readonly hasActiveFilters = computed(() => {
-    const f = this.appliedFilters();
-    return !!(f.subject || f.governorate || f.committee.trim());
+    const filters = this.appliedFilters();
+
+    return !!(
+      filters.subject ||
+      filters.governorate ||
+      filters.committee.trim()
+    );
   });
 
   applyFilters(): void {
@@ -157,6 +429,7 @@ export default class QualityComponent {
       governorate: this.governorateFilter(),
       committee: this.committeeFilter()
     });
+
     this.currentPage.set(1);
   }
 
@@ -164,6 +437,7 @@ export default class QualityComponent {
     this.subjectFilter.set(null);
     this.governorateFilter.set(null);
     this.committeeFilter.set('');
+
     this.applyFilters();
   }
 
@@ -172,8 +446,15 @@ export default class QualityComponent {
     this.currentPage.set(1);
   }
 
-  private optionsOf(pick: (r: QualityRow) => string) {
-    return [...new Set(this.rows().map(pick))].map(value => ({ label: value, value }));
+  private optionsOf(
+    pick: (row: QualityRow) => string
+  ): LookupOption[] {
+    return [
+      ...new Set(this.rows().map(pick).filter(Boolean))
+    ].map(value => ({
+      label: value,
+      value
+    }));
   }
 
   // =========================
@@ -184,34 +465,63 @@ export default class QualityComponent {
   readonly currentPage = signal(1);
 
   readonly totalPages = computed(() =>
-    Math.max(1, Math.ceil(this.filteredRows().length / this.pageSize()))
+    Math.max(
+      1,
+      Math.ceil(this.filteredRows().length / this.pageSize())
+    )
   );
 
   readonly paginatedRows = computed(() => {
-    const start = (this.currentPage() - 1) * this.pageSize();
-    return this.filteredRows().slice(start, start + this.pageSize());
+    const start =
+      (this.currentPage() - 1) * this.pageSize();
+
+    return this.filteredRows().slice(
+      start,
+      start + this.pageSize()
+    );
   });
 
   readonly paginationPages = computed<(number | 'dots')[]>(() => {
     const total = this.totalPages();
-    const cur = this.currentPage();
+    const current = this.currentPage();
 
-    if (total <= 4) return Array.from({ length: total }, (_, i) => i + 1);
-    if (cur <= 2) return [1, 2, 3, 'dots', total];
-    if (cur >= total - 1) return [1, 'dots', total - 2, total - 1, total];
-    return [1, 'dots', cur, 'dots', total];
+    if (total <= 4) {
+      return Array.from({ length: total }, (_, i) => i + 1);
+    }
+
+    if (current <= 2) {
+      return [1, 2, 3, 'dots', total];
+    }
+
+    if (current >= total - 1) {
+      return [1, 'dots', total - 2, total - 1, total];
+    }
+
+    return [1, 'dots', current, 'dots', total];
   });
 
   readonly paginationStart = computed(() =>
-    this.filteredRows().length ? (this.currentPage() - 1) * this.pageSize() + 1 : 0
+    this.filteredRows().length
+      ? (this.currentPage() - 1) * this.pageSize() + 1
+      : 0
   );
 
   readonly paginationEnd = computed(() =>
-    Math.min(this.currentPage() * this.pageSize(), this.filteredRows().length)
+    Math.min(
+      this.currentPage() * this.pageSize(),
+      this.filteredRows().length
+    )
   );
 
   goToPage(page: number): void {
-    if (page < 1 || page > this.totalPages() || page === this.currentPage()) return;
+    if (
+      page < 1 ||
+      page > this.totalPages() ||
+      page === this.currentPage()
+    ) {
+      return;
+    }
+
     this.currentPage.set(page);
   }
 
@@ -225,7 +535,11 @@ export default class QualityComponent {
   // =========================
 
   statusIcon(row: QualityRow): string {
-    return row.status === DONE ? 'pi-check-circle' : row.status === REJECTED ? 'pi-times-circle' : 'pi-clock';
+    return row.status === DONE
+      ? 'pi-check-circle'
+      : row.status === REJECTED
+        ? 'pi-times-circle'
+        : 'pi-clock';
   }
 
   isPending(row: QualityRow): boolean {
@@ -244,7 +558,7 @@ export default class QualityComponent {
   // Scan dialog
   // =========================
 
-  selectedRow: any | null = null;
+  selectedRow: QualityRow | null = null;
   scanDialogVisible = false;
   scanSteps: ScanStep[] = [];
   currentScanIndex = 0;
@@ -252,7 +566,9 @@ export default class QualityComponent {
   isScanning = false;
 
   openScanDialog(row: QualityRow): void {
-    if (!this.isPending(row)) return;
+    if (!this.isPending(row)) {
+      return;
+    }
 
     this.selectedRow = row;
     this.currentScanIndex = 0;
@@ -263,8 +579,20 @@ export default class QualityComponent {
   }
 
   private createScanSteps(): ScanStep[] {
-    const step = (id: number, type: ScanStep['type'], title: string, subtitle: string): ScanStep => ({
-      id, type, title, subtitle, scanned: false, scanning: false, qrCode: '', data: null
+    const step = (
+      id: number,
+      type: ScanStep['type'],
+      title: string,
+      subtitle: string
+    ): ScanStep => ({
+      id,
+      type,
+      title,
+      subtitle,
+      scanned: false,
+      scanning: false,
+      qrCode: '',
+      data: null
     });
 
     return [
@@ -280,18 +608,35 @@ export default class QualityComponent {
   }
 
   startScan(): void {
-    if (this.isScanning || !this.currentStep || !this.selectedRow) return;
+    if (
+      this.isScanning ||
+      !this.currentStep ||
+      !this.selectedRow
+    ) {
+      return;
+    }
 
     const step = this.currentStep;
+
     this.isScanning = true;
     step.scanning = true;
     this.scanMessage = 'جاري قراءة بيانات الـ QR...';
 
-    // Mock scanner
+    // محاكاة مؤقتة لعملية المسح، إلى حين ربط الـ API الفعلي.
     setTimeout(() => {
-      const row = this.selectedRow!;
+      const row = this.selectedRow;
+
+      if (!row) {
+        this.isScanning = false;
+        step.scanning = false;
+        return;
+      }
+
       const isCover = step.type === 'cover';
-      const qrCode = isCover ? `${row.qrCode}-COVER` : `${row.qrCode}-ENV-${step.id}`;
+
+      const qrCode = isCover
+        ? `${row.qrCode}-COVER`
+        : `${row.qrCode}-ENV-${step.id}`;
 
       step.data = {
         qrCode,
@@ -299,25 +644,38 @@ export default class QualityComponent {
         committeeNumber: row.committeeNumber,
         governorate: row.governorate,
         envelopeNumber: isCover ? undefined : step.id,
-        scanType: isCover ? 'الغلاف النهائي' : `الظرف ${step.id}`,
-        scannedAt: new Date().toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })
+        scanType: isCover
+          ? 'الغلاف النهائي'
+          : `الظرف ${step.id}`,
+        scannedAt: new Date().toLocaleTimeString('ar-EG', {
+          hour: '2-digit',
+          minute: '2-digit'
+        })
       };
+
       step.qrCode = qrCode;
       step.scanned = true;
       step.scanning = false;
+
       this.isScanning = false;
       this.scanMessage = `تم قراءة ${step.title} بنجاح`;
 
-      // الانتقال التلقائي للمرحلة التالية
       if (this.currentScanIndex < this.scanSteps.length - 1) {
-        setTimeout(() => this.currentScanIndex++, 600);
+        setTimeout(() => {
+          if (this.scanDialogVisible) {
+            this.currentScanIndex++;
+          }
+        }, 600);
       }
     }, 1400);
   }
 
   selectScanStep(index: number): void {
-    // لا تسمح بالدخول لمرحلة لم يصل إليها المستخدم
-    if (this.scanSteps.slice(0, index).every(s => s.scanned)) {
+    if (
+      index >= 0 &&
+      index < this.scanSteps.length &&
+      this.scanSteps.slice(0, index).every(step => step.scanned)
+    ) {
       this.currentScanIndex = index;
     }
   }
@@ -337,26 +695,37 @@ export default class QualityComponent {
   }
 
   get allScansCompleted(): boolean {
-    return this.scanSteps.length > 0 && this.scanSteps.every(s => s.scanned);
+    return (
+      this.scanSteps.length > 0 &&
+      this.scanSteps.every(step => step.scanned)
+    );
   }
 
   get completedScans(): number {
-    return this.scanSteps.filter(s => s.scanned).length;
+    return this.scanSteps.filter(step => step.scanned).length;
   }
 
   get scanProgress(): number {
-    return this.scanSteps.length ? Math.round((this.completedScans / this.scanSteps.length) * 100) : 0;
+    return this.scanSteps.length
+      ? Math.round(
+          (this.completedScans / this.scanSteps.length) * 100
+        )
+      : 0;
   }
 
   approveMaterial(): void {
-    if (!this.selectedRow || !this.allScansCompleted) return;
+    if (!this.selectedRow || !this.allScansCompleted) {
+      return;
+    }
 
     this.updateStatus(this.selectedRow.index, DONE, 'success');
     this.scanDialogVisible = false;
   }
 
   closeScanDialog(): void {
-    if (this.isScanning) return;
+    if (this.isScanning) {
+      return;
+    }
 
     this.scanDialogVisible = false;
     this.selectedRow = null;
@@ -365,8 +734,18 @@ export default class QualityComponent {
     this.scanMessage = '';
   }
 
-  private updateStatus(index: number, status: string, statusTone: QualityRow['statusTone']): void {
-    this.rows.update(rows => rows.map(r => (r.index === index ? { ...r, status, statusTone } : r)));
+  private updateStatus(
+    index: number,
+    status: string,
+    statusTone: QualityRow['statusTone']
+  ): void {
+    this.rows.update(rows =>
+      rows.map(row =>
+        row.index === index
+          ? { ...row, status, statusTone }
+          : row
+      )
+    );
   }
 
   // =========================
@@ -375,11 +754,13 @@ export default class QualityComponent {
 
   rejectDialogVisible = false;
   rejectReason = '';
-  selectedReviewers: any[] = [];
+  selectedReviewers: { id: number; name: string; role: string }[] = [];
   rejectSubmitting = false;
 
   openRejectDialog(): void {
-    if (!this.selectedRow || !this.allScansCompleted) return;
+    if (!this.selectedRow || !this.allScansCompleted) {
+      return;
+    }
 
     this.rejectReason = '';
     this.selectedReviewers = [];
@@ -387,13 +768,19 @@ export default class QualityComponent {
   }
 
   get isRejectFormValid(): boolean {
-    return this.rejectReason.trim().length >= 10 && this.selectedReviewers.length > 0;
+    return (
+      this.rejectReason.trim().length >= 10 &&
+      this.selectedReviewers.length > 0
+    );
   }
 
   submitRejection(): void {
-    if (!this.selectedRow || !this.isRejectFormValid) return;
+    if (!this.selectedRow || !this.isRejectFormValid) {
+      return;
+    }
 
     this.rejectSubmitting = true;
+
     const row = this.selectedRow;
 
     console.log('QUALITY REJECTION REQUEST', {
@@ -401,14 +788,18 @@ export default class QualityComponent {
       subject: row.subject,
       committeeNumber: row.committeeNumber,
       governorate: row.governorate,
-      scans: this.scanSteps.map(s => ({ scanType: s.title, qrCode: s.qrCode })),
+      scans: this.scanSteps.map(step => ({
+        scanType: step.title,
+        qrCode: step.qrCode
+      })),
       reason: this.rejectReason.trim(),
-      reviewerIds: this.selectedReviewers.map(u => u.id)
+      reviewerIds: this.selectedReviewers.map(user => user.id)
     });
 
-    // Mock API
+    // محاكاة مؤقتة لعملية الرفض، إلى حين ربط الـ API الفعلي.
     setTimeout(() => {
       this.updateStatus(row.index, REJECTED, 'danger');
+
       this.rejectSubmitting = false;
       this.rejectDialogVisible = false;
       this.scanDialogVisible = false;
@@ -419,7 +810,9 @@ export default class QualityComponent {
   }
 
   closeRejectDialog(): void {
-    if (this.rejectSubmitting) return;
+    if (this.rejectSubmitting) {
+      return;
+    }
 
     this.rejectDialogVisible = false;
     this.rejectReason = '';
@@ -427,17 +820,23 @@ export default class QualityComponent {
   }
 
   // =========================
-  // Rejection reason (view)
+  // Rejection reason
   // =========================
 
   rejectionReasonDialogVisible = false;
   selectedRejectionReason = '';
 
   openRejectionReasonDialog(row: WorkflowStatusRow): void {
-    if (row.status !== REJECTED) return;
+    if (row.status !== REJECTED) {
+      return;
+    }
 
-    this.selectedRow = row;
-    this.selectedRejectionReason = row.rejectionReason?.trim() || 'لم يتم تسجيل سبب الرفض.';
+    this.selectedRow = row as QualityRow;
+
+    this.selectedRejectionReason =
+      row.rejectionReason?.trim() ||
+      'لم يتم تسجيل سبب الرفض.';
+
     this.rejectionReasonDialogVisible = true;
   }
 

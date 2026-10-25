@@ -1,5 +1,13 @@
+
 import { CommonModule } from '@angular/common';
-import { Component, ViewEncapsulation, computed, signal } from '@angular/core';
+import {
+  Component,
+  ViewEncapsulation,
+  computed,
+  inject,
+  signal,
+  OnInit
+} from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { Subject, debounceTime, distinctUntilChanged } from 'rxjs';
@@ -15,6 +23,7 @@ import { TooltipModule } from 'primeng/tooltip';
 import { SelectOption } from '../../../core/models/committee.model';
 import { WorkflowStatusRow } from '../../../core/models/workflow.model';
 import { WorkflowStepLayoutComponent } from '../../../shared/workflow-step-layout/workflow-step-layout.component';
+import { Lookups } from '../../../shared/services/lookups';
 
 const DONE = 'تم الانتهاء';
 const REJECTED = 'مرفوض';
@@ -26,47 +35,10 @@ interface ReviewUser {
   role: string;
 }
 
-/** صف static: بنضيف رقم اللجنة عشان الفلتر */
-type PrintingRow = WorkflowStatusRow & { committeeNumber: string };
-
-// ==========================================
-// Static data
-// ==========================================
-
-const STATIC_GOVERNORATES: SelectOption[] = [
-  { label: 'كل المحافظات', value: '' },
-  { label: 'عمّان', value: '1' },
-  { label: 'إربد', value: '2' },
-  { label: 'الزرقاء', value: '3' },
-  { label: 'العقبة', value: '4' }
-];
-
-const STATIC_SUBJECTS: SelectOption[] = [
-  { label: 'كل المواد', value: '' },
-  { label: 'اللغة العربية', value: '1' },
-  { label: 'الرياضيات', value: '2' },
-  { label: 'العلوم', value: '3' },
-  { label: 'اللغة الإنجليزية', value: '4' }
-];
-
-function buildStaticRows(): PrintingRow[] {
-  const govs = STATIC_GOVERNORATES.slice(1);
-  const subs = STATIC_SUBJECTS.slice(1);
-
-  return Array.from({ length: 14 }, (_, i) => {
-    const status = i % 7 === 5 ? DONE : i % 7 === 6 ? REJECTED : PENDING;
-
-    return {
-      id: i + 1,
-      index: i + 1,
-      subject: subs[i % subs.length].label,
-      governorate: govs[i % govs.length].label,
-      committeeNumber: String(100 + i),
-      status,
-      statusTone: status === DONE ? 'success' : status === REJECTED ? 'danger' : 'warning',
-      rejectionReason: status === REJECTED ? 'يوجد خطأ في ترتيب الصفحات ويجب إعادة الطباعة.' : ''
-    } as PrintingRow;
-  });
+interface PrintingRow extends WorkflowStatusRow {
+  id: number;
+  committeeNumber: string;
+  governorate: string;
 }
 
 @Component({
@@ -86,11 +58,15 @@ function buildStaticRows(): PrintingRow[] {
   ],
   templateUrl: './printing.component.html',
   styleUrl: './printing.component.scss',
-  // الـ dialogs بتتعمل render برا الـ component، فبنستخدم None مع prefix "pr-" بدل ::ng-deep
   encapsulation: ViewEncapsulation.None
 })
-export default class PrintingComponent {
+export default class PrintingComponent implements OnInit {
+  private readonly lookupsService = inject(Lookups);
   private readonly committeeInput$ = new Subject<string>();
+
+  // ==========================================
+  // Page configuration
+  // ==========================================
 
   readonly essentials = [
     'البحث بالمحافظة',
@@ -113,90 +89,411 @@ export default class PrintingComponent {
   ];
 
   // ==========================================
-  // Lookups (static)
+  // Lookups from API
   // ==========================================
 
-  readonly governorates = signal<SelectOption[]>(STATIC_GOVERNORATES);
-  readonly subjects = signal<SelectOption[]>(STATIC_SUBJECTS);
+  readonly governorates = signal<SelectOption[]>([]);
+  readonly subjects = signal<SelectOption[]>([]);
+
   readonly governoratesLoading = signal(false);
   readonly subjectsLoading = signal(false);
+
+  readonly governoratesError = signal(false);
+  readonly subjectsError = signal(false);
+
+  ngOnInit(): void {
+    this.loadGovernorates();
+    this.loadSubjects();
+  }
+
+  /**
+   * GET api/Governorates
+   */
+  loadGovernorates(): void {
+    this.governoratesLoading.set(true);
+    this.governoratesError.set(false);
+
+    this.lookupsService.getLookupGovernorateData().subscribe({
+      next: (response: any) => {
+        const options = this.normalizeLookupOptions(response, {
+          nameKeys: [
+            'governorateName',
+            'governorateNameAr',
+            'nameAr',
+            'arabicName',
+            'governorate',
+            'name',
+            'title',
+            'label'
+          ],
+          idKeys: [
+            'governorateId',
+            'governorateID',
+            'id',
+            'value'
+          ]
+        });
+
+        this.governorates.set(options);
+        this.governoratesLoading.set(false);
+
+        this.rebuildRows();
+      },
+      error: (error: unknown) => {
+        console.error('Failed to load governorates:', error);
+        this.governoratesError.set(true);
+        this.governoratesLoading.set(false);
+      }
+    });
+  }
+
+  /**
+   * GET api/Subjects
+   */
+  loadSubjects(): void {
+    this.subjectsLoading.set(true);
+    this.subjectsError.set(false);
+
+    this.lookupsService.getLookupSubjectData().subscribe({
+      next: (response: any) => {
+        const options = this.normalizeLookupOptions(response, {
+          nameKeys: [
+            'subjectName',
+            'subjectNameAr',
+            'nameAr',
+            'arabicName',
+            'subject',
+            'name',
+            'title',
+            'label'
+          ],
+          idKeys: [
+            'subjectId',
+            'subjectID',
+            'id',
+            'value'
+          ]
+        });
+
+        this.subjects.set(options);
+        this.subjectsLoading.set(false);
+
+        this.rebuildRows();
+      },
+      error: (error: unknown) => {
+        console.error('Failed to load subjects:', error);
+        this.subjectsError.set(true);
+        this.subjectsLoading.set(false);
+      }
+    });
+  }
+
+  /**
+   * يحول استجابة الـ API إلى SelectOption.
+   * يدعم Array مباشرة أو Array داخل data/items/result.
+   */
+  private normalizeLookupOptions(
+    response: any,
+    config: {
+      nameKeys: string[];
+      idKeys: string[];
+    }
+  ): SelectOption[] {
+    const items = this.extractLookupArray(response);
+
+    const mapped = items
+      .map((item: any): SelectOption | null => {
+        if (
+          typeof item === 'string' ||
+          typeof item === 'number'
+        ) {
+          const value = String(item).trim();
+
+          return value
+            ? { label: value, value }
+            : null;
+        }
+
+        if (!item || typeof item !== 'object') {
+          return null;
+        }
+
+        let label = '';
+
+        for (const key of config.nameKeys) {
+          const candidate = item[key];
+
+          if (
+            candidate !== null &&
+            candidate !== undefined &&
+            String(candidate).trim() !== ''
+          ) {
+            label = String(candidate).trim();
+            break;
+          }
+        }
+
+        if (!label) {
+          return null;
+        }
+
+        let value = label;
+
+for (const key of config.idKeys) {
+  const candidate = item[key];
+
+  if (
+    candidate !== null &&
+    candidate !== undefined &&
+    String(candidate).trim() !== ''
+  ) {
+    value = String(candidate);
+    break;
+  }
+}
+
+return { label, value };
+      })
+      .filter(
+        (option): option is SelectOption => option !== null
+      );
+
+    // إزالة العناصر المكررة حسب القيمة
+    return [
+      ...new Map(
+        mapped.map(option => [String(option.value), option])
+      ).values()
+    ];
+  }
+
+  private extractLookupArray(response: any): any[] {
+    if (Array.isArray(response)) {
+      return response;
+    }
+
+    if (!response || typeof response !== 'object') {
+      return [];
+    }
+
+    const keys = [
+      'data',
+      'items',
+      'result',
+      'results',
+      'records'
+    ];
+
+    for (const key of keys) {
+      const value = response[key];
+
+      if (Array.isArray(value)) {
+        return value;
+      }
+
+      if (value && typeof value === 'object') {
+        const nested = this.extractLookupArray(value);
+
+        if (nested.length) {
+          return nested;
+        }
+      }
+    }
+
+    return [];
+  }
 
   // ==========================================
   // Filters
   // ==========================================
 
-  selectedGovernorate = '';
-  selectedSubject = '';
+  selectedGovernorate: string | number = '';
+  selectedSubject: string | number = '';
   selectedCommittee = '';
 
   get hasActiveFilters(): boolean {
-    return !!(this.selectedGovernorate || this.selectedSubject || this.selectedCommittee.trim());
+    return !!(
+      this.selectedGovernorate ||
+      this.selectedSubject ||
+      this.selectedCommittee.trim()
+    );
   }
 
   // ==========================================
-  // Data (static)
+  // Rows
   // ==========================================
 
-  private readonly allRows = signal<any[]>(buildStaticRows());
+  private readonly allRows = signal<PrintingRow[]>([]);
 
-  readonly rows = signal<WorkflowStatusRow[]>([]);
+  readonly rows = signal<PrintingRow[]>([]);
   readonly total = signal(0);
   readonly loading = signal(false);
 
+  /**
+   * بيانات تجريبية للبطاقات فقط.
+   * أسماء المواد والمحافظات مأخوذة من الـ lookups المحملة.
+   *
+   * استبدلي هذه الدالة باستدعاء API اللجان عند توفر endpoint الطباعة.
+   */
+  private buildRowsFromLookups(): PrintingRow[] {
+    const governorateOptions = this.governorates();
+    const subjectOptions = this.subjects();
+
+    if (!governorateOptions.length || !subjectOptions.length) {
+      return [];
+    }
+
+    return Array.from({ length: 14 }, (_, i) => {
+      const status =
+        i % 7 === 5
+          ? DONE
+          : i % 7 === 6
+            ? REJECTED
+            : PENDING;
+
+      const governorate =
+        governorateOptions[i % governorateOptions.length];
+
+      const subject =
+        subjectOptions[i % subjectOptions.length];
+
+      return {
+        id: i + 1,
+        index: i + 1,
+        subject: subject.label,
+        governorate: governorate.label,
+        committeeNumber: String(100 + i),
+        status,
+        statusTone:
+          status === DONE
+            ? 'success'
+            : status === REJECTED
+              ? 'danger'
+              : 'warning',
+        rejectionReason:
+          status === REJECTED
+            ? 'يوجد خطأ في ترتيب الصفحات ويجب إعادة الطباعة.'
+            : ''
+      } as PrintingRow;
+    });
+  }
+
+  /**
+   * يعاد تجهيز البيانات التجريبية بعد تحميل القائمتين.
+   */
+  private rebuildRows(): void {
+    if (
+      this.governoratesLoading() ||
+      this.subjectsLoading()
+    ) {
+      return;
+    }
+
+    if (
+      !this.governorates().length ||
+      !this.subjects().length
+    ) {
+      this.allRows.set([]);
+      this.currentPage.set(1);
+      this.reload();
+      return;
+    }
+
+    this.allRows.set(this.buildRowsFromLookups());
+    this.currentPage.set(1);
+    this.reload();
+  }
+
   // ==========================================
-  // Pagination
+  // Filtering and pagination
   // ==========================================
 
   readonly pageSize = signal(6);
   readonly currentPage = signal(1);
 
-  readonly totalPages = computed(() => Math.max(1, Math.ceil(this.total() / this.pageSize())));
+  readonly totalPages = computed(() =>
+    Math.max(
+      1,
+      Math.ceil(this.total() / this.pageSize())
+    )
+  );
 
   readonly paginationPages = computed<(number | 'dots')[]>(() => {
     const total = this.totalPages();
-    const cur = this.currentPage();
+    const current = this.currentPage();
 
-    if (total <= 4) return Array.from({ length: total }, (_, i) => i + 1);
-    if (cur <= 2) return [1, 2, 3, 'dots', total];
-    if (cur >= total - 1) return [1, 'dots', total - 2, total - 1, total];
-    return [1, 'dots', cur, 'dots', total];
+    if (total <= 4) {
+      return Array.from({ length: total }, (_, i) => i + 1);
+    }
+
+    if (current <= 2) {
+      return [1, 2, 3, 'dots', total];
+    }
+
+    if (current >= total - 1) {
+      return [1, 'dots', total - 2, total - 1, total];
+    }
+
+    return [1, 'dots', current, 'dots', total];
   });
 
   readonly paginationStart = computed(() =>
-    this.total() === 0 ? 0 : (this.currentPage() - 1) * this.pageSize() + 1
+    this.total() === 0
+      ? 0
+      : (this.currentPage() - 1) * this.pageSize() + 1
   );
 
-  readonly paginationEnd = computed(() => Math.min(this.currentPage() * this.pageSize(), this.total()));
+  readonly paginationEnd = computed(() =>
+    Math.min(
+      this.currentPage() * this.pageSize(),
+      this.total()
+    )
+  );
 
   constructor() {
-    this.reload();
-
-    // البحث برقم اللجنة (بعد ما المستخدم يوقف كتابة)
     this.committeeInput$
-      .pipe(debounceTime(400), distinctUntilChanged(), takeUntilDestroyed())
+      .pipe(
+        debounceTime(400),
+        distinctUntilChanged(),
+        takeUntilDestroyed()
+      )
       .subscribe(() => this.onFilterChange());
   }
 
-  /** فلترة + pagination على الداتا الـ static */
+  /**
+   * تطبيق الفلاتر على بيانات البطاقات.
+   * قيم الـ dropdown هي IDs، لكن المقارنة تتم باستخدام الاسم.
+   */
   reload(): void {
-    const govLabel = this.governorates().find(o => o.value === this.selectedGovernorate)?.label;
-    const subLabel = this.subjects().find(o => o.value === this.selectedSubject)?.label;
+    const governorateLabel = this.governorates().find(
+      option =>
+        String(option.value) === String(this.selectedGovernorate)
+    )?.label;
+
+    const subjectLabel = this.subjects().find(
+      option =>
+        String(option.value) === String(this.selectedSubject)
+    )?.label;
+
     const committee = this.selectedCommittee.trim();
 
-    const filtered = this.allRows().filter(
-      r =>
-        (!this.selectedGovernorate || r.governorate === govLabel) &&
-        (!this.selectedSubject || r.subject === subLabel) &&
-        (!committee || r.committeeNumber.includes(committee))
+    const filtered = this.allRows().filter(row =>
+      (!this.selectedGovernorate ||
+        row.governorate === governorateLabel) &&
+      (!this.selectedSubject ||
+        row.subject === subjectLabel) &&
+      (!committee ||
+        row.committeeNumber.includes(committee))
     );
 
-    const start = (this.currentPage() - 1) * this.pageSize();
+    const start =
+      (this.currentPage() - 1) * this.pageSize();
 
     this.total.set(filtered.length);
-    this.rows.set(filtered.slice(start, start + this.pageSize()));
+    this.rows.set(
+      filtered.slice(start, start + this.pageSize())
+    );
   }
 
-  /** أي تغيير في الفلاتر يرجّع لأول صفحة */
   onFilterChange(): void {
     this.currentPage.set(1);
     this.reload();
@@ -211,11 +508,21 @@ export default class PrintingComponent {
     this.selectedGovernorate = '';
     this.selectedSubject = '';
     this.selectedCommittee = '';
+
+    // إلغاء أي قيمة بحث معلقة قبل تطبيق الفلاتر الجديدة
+    this.committeeInput$.next('');
+
     this.onFilterChange();
   }
 
   goToPage(page: number): void {
-    if (page < 1 || page > this.totalPages() || page === this.currentPage()) return;
+    if (
+      page < 1 ||
+      page > this.totalPages() ||
+      page === this.currentPage()
+    ) {
+      return;
+    }
 
     this.currentPage.set(page);
     this.reload();
@@ -226,9 +533,18 @@ export default class PrintingComponent {
     this.onFilterChange();
   }
 
-  /** تعديل صف في الداتا الـ static (بديل الـ API) */
-  private updateRow(id: number | string, changes: Partial<any>): void {
-    this.allRows.update(list => list.map(r => (r.id === id ? { ...r, ...changes } : r)));
+  private updateRow(
+    id: number | string,
+    changes: Partial<PrintingRow>
+  ): void {
+    this.allRows.update(rows =>
+      rows.map(row =>
+        String(row.id) === String(id)
+          ? { ...row, ...changes }
+          : row
+      )
+    );
+
     this.reload();
   }
 
@@ -249,36 +565,54 @@ export default class PrintingComponent {
   }
 
   statusIcon(row: WorkflowStatusRow): string {
-    return this.isDone(row) ? 'pi-check-circle' : this.isRejected(row) ? 'pi-times-circle' : 'pi-clock';
+    return this.isDone(row)
+      ? 'pi-check-circle'
+      : this.isRejected(row)
+        ? 'pi-times-circle'
+        : 'pi-clock';
   }
 
   // ==========================================
-  // Finish printing (with confirmation)
+  // Finish printing
   // ==========================================
 
-  selectedRow: any | null = null;
+  selectedRow: PrintingRow | null = null;
 
   confirmDialogVisible = false;
   finishSubmitting = false;
 
   openConfirmDialog(row: WorkflowStatusRow): void {
-    if (!this.isPending(row)) return;
+    if (!this.isPending(row)) {
+      return;
+    }
 
-    this.selectedRow = row;
+    this.selectedRow = row as PrintingRow;
     this.confirmDialogVisible = true;
   }
 
   closeConfirmDialog(): void {
-    if (this.finishSubmitting) return;
+    if (this.finishSubmitting) {
+      return;
+    }
 
     this.confirmDialogVisible = false;
     this.selectedRow = null;
   }
 
   confirmFinish(): void {
-    if (!this.selectedRow || this.finishSubmitting) return;
+    if (!this.selectedRow || this.finishSubmitting) {
+      return;
+    }
 
-    this.updateRow(this.selectedRow.id, { status: DONE, statusTone: 'success' } as Partial<PrintingRow>);
+    this.finishSubmitting = true;
+
+    // تحديث محلي مؤقت لحين ربط API تغيير الحالة.
+    this.updateRow(this.selectedRow.id, {
+      status: DONE,
+      statusTone: 'success'
+    });
+
+    this.finishSubmitting = false;
     this.confirmDialogVisible = false;
     this.selectedRow = null;
   }
@@ -293,13 +627,18 @@ export default class PrintingComponent {
   rejectSubmitting = false;
 
   get isRejectFormValid(): boolean {
-    return this.rejectReason.trim().length >= 10 && this.selectedReviewers.length > 0;
+    return (
+      this.rejectReason.trim().length >= 10 &&
+      this.selectedReviewers.length > 0
+    );
   }
 
   openRejectDialog(row: WorkflowStatusRow): void {
-    if (!this.isPending(row)) return;
+    if (!this.isPending(row)) {
+      return;
+    }
 
-    this.selectedRow = row;
+    this.selectedRow = row as PrintingRow;
     this.rejectReason = '';
     this.selectedReviewers = [];
     this.rejectSubmitting = false;
@@ -307,7 +646,9 @@ export default class PrintingComponent {
   }
 
   closeRejectDialog(): void {
-    if (this.rejectSubmitting) return;
+    if (this.rejectSubmitting) {
+      return;
+    }
 
     this.rejectDialogVisible = false;
     this.selectedRow = null;
@@ -316,14 +657,25 @@ export default class PrintingComponent {
   }
 
   submitRejection(): void {
-    if (!this.selectedRow || !this.isRejectFormValid) return;
+    if (
+      !this.selectedRow ||
+      !this.isRejectFormValid ||
+      this.rejectSubmitting
+    ) {
+      return;
+    }
 
-    this.updateRow(this.selectedRow.id, {
+    this.rejectSubmitting = true;
+
+    const rowId = this.selectedRow.id;
+
+    this.updateRow(rowId, {
       status: REJECTED,
       statusTone: 'danger',
       rejectionReason: this.rejectReason.trim()
-    } as Partial<PrintingRow>);
+    });
 
+    this.rejectSubmitting = false;
     this.rejectDialogVisible = false;
     this.selectedRow = null;
     this.rejectReason = '';
@@ -338,10 +690,16 @@ export default class PrintingComponent {
   selectedRejectionReason = '';
 
   openRejectionReasonDialog(row: WorkflowStatusRow): void {
-    if (!this.isRejected(row)) return;
+    if (!this.isRejected(row)) {
+      return;
+    }
 
-    this.selectedRow = row;
-    this.selectedRejectionReason = row.rejectionReason?.trim() || 'لم يتم تسجيل سبب الرفض.';
+    this.selectedRow = row as PrintingRow;
+
+    this.selectedRejectionReason =
+      row.rejectionReason?.trim() ||
+      'لم يتم تسجيل سبب الرفض.';
+
     this.rejectionReasonDialogVisible = true;
   }
 
