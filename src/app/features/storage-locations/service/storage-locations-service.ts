@@ -25,7 +25,6 @@ export class StorageLocationsService {
     if (query.ascending !== undefined) {
       params = params.set('Ascending', query.ascending);
     }
-  console.log(this.appConfig.baseURL)
     return this.http.get<PagedResult<StorageLocation>>(`${this.appConfig.baseURL}api/StorageLocations`, { params });
   }
 

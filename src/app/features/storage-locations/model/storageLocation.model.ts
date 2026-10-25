@@ -2,11 +2,11 @@ export interface StorageLocation {
   id: number;
   warehouseId: number;
   warehouseName?: string;
-  code: string;
+  //code: string;
   area: string;
   rack: string;
   shelf: string;
-  bin: string;
+  //bin: string;
 }
 
 export interface StorageLocationQuery {
@@ -24,11 +24,11 @@ export interface PagedResult<T> {
 
 export interface CreateStorageLocationPayload {
   warehouseId: number;
-  code: string;
+  //code: string;
   area: string;
   rack: string;
   shelf: string;
-  bin: string;
+  //bin: string;
 }
 
 // PUT body has no warehouseId

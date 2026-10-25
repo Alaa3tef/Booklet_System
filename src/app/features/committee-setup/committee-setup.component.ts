@@ -66,7 +66,9 @@ export default class CommitteeSetupComponent implements OnInit, OnDestroy {
   private readonly committeeService = inject(CommitteeService);
   private readonly lookups = inject(Lookups);
   private readonly toast = inject(MessageService);
-
+  // Import errors dialog
+readonly importErrorsDialogVisible = signal(false);
+readonly importErrors = signal<string[]>([]);
   // =========================================================
   // STEPS
   // =========================================================
@@ -359,18 +361,31 @@ export default class CommitteeSetupComponent implements OnInit, OnDestroy {
     this.loadHistory();
   }
 
-  setSearchTerm(value: string): void {
-    this.searchTerm.set(value);
-    this.first.set(0);
+  
+setSearchTerm(value: string): void {
+  const searchValue = value ?? '';
 
-    if (this.searchTimer) {
-      clearTimeout(this.searchTimer);
-    }
+  this.searchTerm.set(searchValue);
+  this.first.set(0);
 
-    this.searchTimer = setTimeout(() => {
-      this.loadHistory();
-    }, 400);
+  // إلغاء أي عملية بحث سابقة لم يتم تنفيذها
+  if (this.searchTimer) {
+    clearTimeout(this.searchTimer);
   }
+
+  const trimmedValue = searchValue.trim();
+
+  // أقل من 3 حروف: لا نرسل طلب بحث جديد
+  if (trimmedValue.length > 0 && trimmedValue.length < 3) {
+    return;
+  }
+
+  // انتظار 400 مللي ثانية بعد توقف المستخدم عن الكتابة
+  this.searchTimer = setTimeout(() => {
+    this.loadHistory();
+  }, trimmedValue.length >= 3 ? 400 : 0);
+}
+
 
   onFilterGovernorateChange(value: string | null): void {
     this.filterGovernorate.set(value);
@@ -669,28 +684,30 @@ export default class CommitteeSetupComponent implements OnInit, OnDestroy {
     ];
   }
 
-  private showImportErrors(errors: string[]): void {
-    if (!errors.length) {
-      errors = ['تعذّر استيراد الملف. يرجى مراجعة البيانات والمحاولة مرة أخرى.'];
-    }
+ 
+private showImportErrors(errors: string[]): void {
+  const normalizedErrors = errors.length
+    ? errors
+    : ['تعذّر استيراد الملف. يرجى مراجعة البيانات والمحاولة مرة أخرى.'];
 
-    this.toast.add({
-      severity: 'error',
-      summary: `فشل استيراد الملف (${errors.length} أخطاء)`,
-      detail: 'تفاصيل الأخطاء تظهر في الرسائل التالية.',
-      life: 6000
-    });
+  // عرض كل الأخطاء في نافذة واحدة بدل Toast لكل خطأ
+  this.importErrors.set(normalizedErrors);
+  this.importErrorsDialogVisible.set(true);
 
-    // One toast per backend error, preserving the original Arabic message.
-    errors.forEach((message, index) => {
-      this.toast.add({
-        severity: 'error',
-        summary: `الخطأ ${index + 1} من ${errors.length}`,
-        detail: message,
-        sticky: true
-      });
-    });
-  }
+  // Toast واحد فقط لعرض ملخص المشكلة
+  this.toast.add({
+    key: 'import-summary',
+    severity: 'error',
+    summary: 'فشل استيراد الملف',
+    detail: `تم اكتشاف ${normalizedErrors.length} أخطاء. افتحي تفاصيل الأخطاء لمراجعتها.`,
+    life: 5000
+  });
+}
+
+closeImportErrors(): void {
+  this.importErrorsDialogVisible.set(false);
+}
+
 
   private extractErrorMessage(err: any): string {
     return this.extractApiErrors(err)[0];

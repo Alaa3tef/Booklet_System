@@ -152,14 +152,14 @@ export default class StorageLocationsComponent implements OnInit {
       null,
       Validators.required
     ),
-    code: this.fb.nonNullable.control('', [
-      Validators.required,
-      Validators.maxLength(50)
-    ]),
+    // code: this.fb.nonNullable.control('', [
+    //   Validators.required,
+    //   Validators.maxLength(50)
+    // ]),
     area: this.fb.control<string | null>(null, Validators.required),
     rack: this.fb.control<string | null>(null, Validators.required),
     shelf: this.fb.control<string | null>(null, Validators.required),
-    bin: this.fb.control<string | null>(null, Validators.required)
+    //bin: this.fb.control<string | null>(null, Validators.required)
   });
 
   // DELETE
@@ -332,11 +332,11 @@ export default class StorageLocationsComponent implements OnInit {
         next: (loc:any) => {
           this.form.patchValue({
             warehouseId: loc.data.warehouseId,
-            code: loc.data.code,
+            //code: loc.data.code,
             area: loc.data.area,
             rack: loc.data.rack,
             shelf: loc.data.shelf,
-            bin: loc.data.bin
+            //bin: loc.data.bin
           });
 
           this.loadingForm.set(false);
@@ -373,18 +373,18 @@ export default class StorageLocationsComponent implements OnInit {
       id === null
         ? this.api.create({
             warehouseId: value.warehouseId!,
-            code: value.code.trim(),
+            //code: value.code.trim(),
             area: value.area!,
             rack: value.rack!,
             shelf: value.shelf!,
-            bin: value.bin!
+           // bin: value.bin!
           })
         : this.api.update(id, {
-            code: value.code.trim(),
+            //code: value.code.trim(),
             area: value.area!,
             rack: value.rack!,
             shelf: value.shelf!,
-            bin: value.bin!
+           // bin: value.bin!
           });
 
     request$

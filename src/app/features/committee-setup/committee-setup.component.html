@@ -348,19 +348,20 @@
 
             <div class="table-filters-grid">
 
-              <div class="field">
-                <label for="tableSearch">بحث</label>
+             <div class="field">
+  <label for="tableSearch">بحث</label>
 
-                <input
-                  id="tableSearch"
-                  type="text"
-                  pInputText
-                  class="w-full"
-                  placeholder="ابحث..."
-                  [ngModel]="searchTerm()"
-                  (ngModelChange)="setSearchTerm($event)">
-              </div>
-
+  <input
+    id="tableSearch"
+    type="text"
+    pInputText
+    class="w-full"
+    placeholder="بحث ..."
+    [ngModel]="searchTerm()"
+    (ngModelChange)="setSearchTerm($event)"
+  />
+</div>
+<!-- 
               <div class="field">
                 <label for="tableGovernorate">المحافظة</label>
 
@@ -393,7 +394,7 @@
                   appendTo="body"
                   styleClass="w-full">
                 </p-select>
-              </div>
+              </div> -->
 
             </div>
 
@@ -690,6 +691,107 @@
     >
       <i class="pi pi-check"></i>
       إغلاق
+    </button>
+  </ng-template>
+</p-dialog>
+
+
+
+<p-dialog
+  [visible]="importErrorsDialogVisible()"
+  (visibleChange)="!$event && closeImportErrors()"
+  [modal]="true"
+  [draggable]="false"
+  [resizable]="false"
+  [dismissableMask]="true"
+  [closeOnEscape]="true"
+  appendTo="body"
+  [baseZIndex]="11000"
+  [style]="{ width: '850px', maxWidth: '95vw' }"
+  [breakpoints]="{ '640px': '96vw' }"
+  styleClass="import-errors-dialog"
+  dir="rtl"
+>
+  <ng-template pTemplate="header">
+    <div class="import-dialog-header">
+      <div class="import-dialog-icon">
+        <i class="pi pi-file-excel"></i>
+      </div>
+
+      <div class="import-dialog-title">
+        <h3>مراجعة أخطاء استيراد الملف</h3>
+        <p>راجعي تفاصيل الأخطاء وصححي ملف Excel ثم أعيدي رفعه.</p>
+      </div>
+    </div>
+  </ng-template>
+
+  <div class="import-errors-content">
+
+    <!-- Summary -->
+    <div class="import-errors-summary">
+      <div class="summary-status-icon">
+        <i class="pi pi-exclamation-triangle"></i>
+      </div>
+
+      <div class="summary-text">
+        <strong>تعذّر استيراد الملف</strong>
+        <span>
+          تم اكتشاف أخطاء أثناء التحقق من البيانات.
+        </span>
+      </div>
+
+      <div class="summary-count">
+        <strong>{{ importErrors().length }}</strong>
+        <span>خطأ</span>
+      </div>
+    </div>
+
+    <!-- Error list header -->
+    <div class="import-errors-list-header">
+      <div>
+        <i class="pi pi-list"></i>
+        <strong>تفاصيل الأخطاء</strong>
+      </div>
+
+      <span>{{ importErrors().length }} نتيجة</span>
+    </div>
+
+    <!-- Scrollable errors -->
+    <div class="import-errors-list">
+      @for (error of importErrors(); track $index) {
+        <div class="import-error-row">
+          <span class="import-error-number">
+            {{ $index + 1 }}
+          </span>
+
+          <div class="import-error-message">
+            <strong>الخطأ رقم {{ $index + 1 }}</strong>
+            <p>{{ error }}</p>
+          </div>
+
+          <i class="pi pi-exclamation-circle import-error-icon"></i>
+        </div>
+      }
+    </div>
+
+    <!-- Help note -->
+    <div class="import-errors-hint">
+      <i class="pi pi-info-circle"></i>
+      <span>
+        صححي البيانات المشار إليها في ملف Excel، ثم أعيدي رفع الملف.
+      </span>
+    </div>
+
+  </div>
+
+  <ng-template pTemplate="footer">
+    <button
+      type="button"
+      class="import-errors-close-btn"
+      (click)="closeImportErrors()"
+    >
+      <i class="pi pi-check"></i>
+      تم، فهمت
     </button>
   </ng-template>
 </p-dialog>
