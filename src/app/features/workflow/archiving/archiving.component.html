@@ -68,7 +68,7 @@
             </div>
         </div>
 
-        <div class="field">
+        <!-- <div class="field">
           <label>رقم اللجنة</label>
           <div class="input-wrapper">
             <i class="pi pi-hashtag"></i>
@@ -81,8 +81,37 @@
               placeholder="رقم اللجنة"
             />
           </div>
-        </div>
+        </div> -->
+           <!-- <div class="field">
+          <label>الادارة التعليمية </label>
+          <div class="input-wrapper">
+            <i class="pi pi-hashtag"></i>
+            <input
+              pInputText
+              type="text"
+              inputmode="numeric"
+              [ngModel]="searchEducation()"
+              (ngModelChange)="setEducation($event)"
+              placeholder="الادارة التعليمية"
+            />
+          </div>
+        </div> -->
 
+        <div class="field">
+          <label>الادارة التعليمية</label>
+            <div class="select-wrapper">
+            <i class="pi pi-book"></i>
+          <p-select
+            [options]="educationals"
+            [ngModel]="searchEducation()"
+            (ngModelChange)="setEducation($event)"
+            optionLabel="label"
+            optionValue="value"
+            placeholder="اختر الادارة التعليمية"
+            styleClass="archive-select"
+          />
+            </div>
+        </div>
       </div>
 
       <!-- ===== what is being filtered ===== -->
@@ -148,7 +177,11 @@
                 <span class="record-meta">
                   <span><i class="pi pi-map-marker"></i>{{ row.governorate }}</span>
                   <span class="dot"></span>
+                  <!-- <span>لجنة <b class="committee">{{ row.committeeNumber }}</b></span> -->
+                  <span>إدارة  <b class="committee">{{ row.educationNumber }}</b></span>
                   <span>لجنة <b class="committee">{{ row.committeeNumber }}</b></span>
+
+
                 </span>
               </div>
 

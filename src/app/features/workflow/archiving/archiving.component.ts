@@ -16,12 +16,13 @@ import { Lookups } from '../../../shared/services/lookups';
 // ---------------------------------------------------------------- types
 export type ArchiveStatus = 'جاهز للتخزين' | 'تم التخزين' | 'تم التسليم';
 type ScanType = 'shelf' | 'box' | 'zone' | 'committee';
-type FilterKey = 'governorate' | 'subject' | 'committee';
+type FilterKey = 'governorate' | 'subject' | 'committee' | 'education';
 
 export interface ArchiveRow {
   index: number;
   governorate: string;
   committeeNumber: string;
+  educationNumber: string;
   subject: string;
   scanPart: string;
   storage: { shelf: string; box: string } | null;
@@ -74,28 +75,22 @@ export default class ArchivingComponent {
   // GET your endpoint here, then: this.rows.set(response.data.map(...))
   private sampleRows(): ArchiveRow[] {
     const base: Omit<ArchiveRow, 'index'>[] = [
-      { governorate: 'الدقهلية',   committeeNumber: '101', subject: 'اللغة العربية',        scanPart: 'الجزء الأول',  status: 'تم التخزين',   storage: { shelf: 'A-01', box: 'BOX-001' } },
-      { governorate: 'الدقهلية',   committeeNumber: '102', subject: 'اللغة الإنجليزية',     scanPart: 'الجزء الأول',  status: 'جاهز للتخزين', storage: null },
-      { governorate: 'القاهرة',    committeeNumber: '203', subject: 'الرياضيات',            scanPart: 'الجزء الثاني', status: 'جاهز للتخزين', storage: null },
-      { governorate: 'الجيزة',     committeeNumber: '304', subject: 'العلوم',               scanPart: 'الجزء الأول',  status: 'تم التسليم',   storage: { shelf: 'C-03', box: 'BOX-004' } },
-      { governorate: 'الإسكندرية', committeeNumber: '405', subject: 'الدراسات الاجتماعية',  scanPart: 'الجزء الثاني', status: 'جاهز للتخزين', storage: null },
-      { governorate: 'القاهرة',    committeeNumber: '206', subject: 'اللغة العربية',        scanPart: 'الجزء الأول',  status: 'تم التخزين',   storage: { shelf: 'B-02', box: 'BOX-011' } },
-      { governorate: 'الجيزة',     committeeNumber: '307', subject: 'الرياضيات',            scanPart: 'الجزء الثاني', status: 'جاهز للتخزين', storage: null },
-      { governorate: 'الدقهلية',   committeeNumber: '108', subject: 'العلوم',               scanPart: 'الجزء الأول',  status: 'تم التسليم',   storage: { shelf: 'A-04', box: 'BOX-020' } },
-      { governorate: 'الإسكندرية', committeeNumber: '409', subject: 'اللغة الإنجليزية',     scanPart: 'الجزء الثاني', status: 'تم التخزين',   storage: { shelf: 'D-01', box: 'BOX-031' } },
-      { governorate: 'القاهرة',    committeeNumber: '210', subject: 'الدراسات الاجتماعية',  scanPart: 'الجزء الأول',  status: 'جاهز للتخزين', storage: null },
-      { governorate: 'الجيزة',     committeeNumber: '311', subject: 'اللغة العربية',        scanPart: 'الجزء الأول',  status: 'جاهز للتخزين', storage: null },
-      { governorate: 'الدقهلية',   committeeNumber: '112', subject: 'الرياضيات',            scanPart: 'الجزء الثاني', status: 'تم التخزين',   storage: { shelf: 'A-02', box: 'BOX-044' } },
-       { governorate: 'الإسكندرية', committeeNumber: '405', subject: 'الدراسات الاجتماعية',  scanPart: 'الجزء الثاني', status: 'جاهز للتخزين', storage: null },
-      { governorate: 'القاهرة',    committeeNumber: '206', subject: 'اللغة العربية',        scanPart: 'الجزء الأول',  status: 'تم التخزين',   storage: { shelf: 'B-02', box: 'BOX-011' } },
-      { governorate: 'الجيزة',     committeeNumber: '307', subject: 'الرياضيات',            scanPart: 'الجزء الثاني', status: 'جاهز للتخزين', storage: null },
-      { governorate: 'الدقهلية',   committeeNumber: '108', subject: 'العلوم',               scanPart: 'الجزء الأول',  status: 'تم التسليم',   storage: { shelf: 'A-04', box: 'BOX-020' } },
-      { governorate: 'الإسكندرية', committeeNumber: '409', subject: 'اللغة الإنجليزية',     scanPart: 'الجزء الثاني', status: 'تم التخزين',   storage: { shelf: 'D-01', box: 'BOX-031' } },
-      { governorate: 'القاهرة',    committeeNumber: '210', subject: 'الدراسات الاجتماعية',  scanPart: 'الجزء الأول',  status: 'جاهز للتخزين', storage: null },
-      { governorate: 'الجيزة',     committeeNumber: '311', subject: 'اللغة العربية',        scanPart: 'الجزء الأول',  status: 'جاهز للتخزين', storage: null },
-      { governorate: 'الدقهلية',   committeeNumber: '112', subject: 'الرياضيات',            scanPart: 'الجزء الثاني', status: 'تم التخزين',   storage: { shelf: 'A-02', box: 'BOX-044' } }
+      { governorate: 'الدقهلية',   committeeNumber: '101', subject: 'اللغة العربية',   educationNumber: 'EDU-001',      scanPart: 'الجزء الأول',  status: 'تم التخزين',   storage: { shelf: 'A-01', box: 'BOX-001' } },
+      { governorate: 'الدقهلية',   committeeNumber: '102', subject: 'اللغة الإنجليزية',  educationNumber: 'EDU-001',    scanPart: 'الجزء الأول',  status: 'جاهز للتخزين', storage: null },
+      { governorate: 'القاهرة',    committeeNumber: '203', subject: 'الرياضيات',            educationNumber: 'EDU-002',    scanPart: 'الجزء الثاني', status: 'جاهز للتخزين', storage: null },
+      { governorate: 'الجيزة',     committeeNumber: '304', subject: 'العلوم',               educationNumber: 'EDU-003',    scanPart: 'الجزء الأول',  status: 'تم التسليم',   storage: { shelf: 'C-03', box: 'BOX-004' } },
+      { governorate: 'الإسكندرية', committeeNumber: '405', subject: 'الدراسات الاجتماعية',  educationNumber: 'EDU-004',    scanPart: 'الجزء الثاني', status: 'جاهز للتخزين', storage: null },
+      { governorate: 'القاهرة',    committeeNumber: '206', subject: 'اللغة العربية',        educationNumber: 'EDU-005',    scanPart: 'الجزء الأول',  status: 'تم التخزين',   storage: { shelf: 'B-02', box: 'BOX-011' } },
+      { governorate: 'الجيزة',     committeeNumber: '307', subject: 'الرياضيات',            educationNumber: 'EDU-006',    scanPart: 'الجزء الثاني', status: 'جاهز للتخزين', storage: null },
+      { governorate: 'الدقهلية',   committeeNumber: '108', subject: 'العلوم',               educationNumber: 'EDU-007',    scanPart: 'الجزء الأول',  status: 'تم التسليم',   storage: { shelf: 'A-04', box: 'BOX-020' } },
+      { governorate: 'الإسكندرية', committeeNumber: '409', subject: 'اللغة الإنجليزية',     educationNumber: 'EDU-008',    scanPart: 'الجزء الثاني', status: 'تم التخزين',   storage: { shelf: 'D-01', box: 'BOX-031' } },
+      { governorate: 'القاهرة',    committeeNumber: '210', subject: 'الدراسات الاجتماعية',  educationNumber: 'EDU-009',    scanPart: 'الجزء الأول',  status: 'جاهز للتخزين', storage: null },
+      { governorate: 'الجيزة',     committeeNumber: '311', subject: 'اللغة العربية',        educationNumber: 'EDU-010',    scanPart: 'الجزء الأول',  status: 'جاهز للتخزين', storage: null },
+      { governorate: 'الدقهلية',   committeeNumber: '112', subject: 'الرياضيات',            educationNumber: 'EDU-011',    scanPart: 'الجزء الثاني', status: 'تم التخزين',   storage: { shelf: 'A-02', box: 'BOX-044' } },
+       { governorate: 'الإسكندرية', committeeNumber: '405', subject: 'الدراسات الاجتماعية',  educationNumber: 'EDU-004',    scanPart: 'الجزء الثاني', status: 'جاهز للتخزين', storage: null },
+      { governorate: 'الجيزة',     committeeNumber: '307', subject: 'الرياضيات',            educationNumber: 'EDU-006',    scanPart: 'الجزء الثاني', status: 'جاهز للتخزين', storage: null },
     ];
-    return base.map((r, i) => ({ ...r, index: i + 1 }));
+          return base.map((r, i) => ({ ...r, index: i + 1 }));
   }
 
   // ================================================================
@@ -104,24 +99,41 @@ export default class ArchivingComponent {
  
   governorates: Option[] = [];
   subjects: Option[] = [];
+  educationals: Option[] = [
+    { label: 'كل الادارات التعليمية', value: 'all' },
+    { label: 'EDU-001', value: 'EDU-001' },
+    { label: 'EDU-002', value: 'EDU-002' },
+    { label: 'EDU-003', value: 'EDU-003' },
+    { label: 'EDU-004', value: 'EDU-004' },
+    { label: 'EDU-005', value: 'EDU-005' },
+    { label: 'EDU-006', value: 'EDU-006' },
+    { label: 'EDU-007', value: 'EDU-007' },
+    { label: 'EDU-008', value: 'EDU-008' },
+    { label: 'EDU-009', value: 'EDU-009' },
+    { label: 'EDU-010', value: 'EDU-010' },
+    { label: 'EDU-011', value: 'EDU-011' }
+  ];
 
   readonly searchGovernorate = signal<string | null>(null);
   readonly searchSubject     = signal<string | null>(null);
-  readonly searchCommittee   = signal('');
+   readonly searchCommittee   = signal('');
+  readonly searchEducation   = signal('');
+
 
   setGovernorate(v: string | null): void { this.searchGovernorate.set(v); this.resetPage(); }
   setSubject(v: string | null): void     { this.searchSubject.set(v);     this.resetPage(); }
   setCommittee(v: string): void          { this.searchCommittee.set(v ?? ''); this.resetPage(); }
+  setEducation(v: string): void          { this.searchEducation.set(v ?? ''); this.resetPage(); }
 
   readonly filteredRows = computed(() => {
     const gov = this.searchGovernorate();
     const sub = this.searchSubject();
-    const com = this.searchCommittee().trim();
+    const edu = this.searchEducation().trim();
 
     return this.rows().filter(r =>
       (!gov || r.governorate === gov) &&
       (!sub || r.subject === sub) &&
-      (!com || r.committeeNumber.includes(com))
+      (!edu || r.educationNumber.includes(edu))
     );
   });
 
@@ -130,21 +142,21 @@ export default class ArchivingComponent {
     const list: { key: FilterKey; title: string; value: string }[] = [];
     if (this.searchGovernorate()) list.push({ key: 'governorate', title: 'المحافظة',   value: this.searchGovernorate()! });
     if (this.searchSubject())     list.push({ key: 'subject',     title: 'المادة',      value: this.searchSubject()! });
-    if (this.searchCommittee().trim()) list.push({ key: 'committee', title: 'رقم اللجنة', value: this.searchCommittee().trim() });
+    if (this.searchEducation().trim()) list.push({ key: 'education', title: 'الادارة التعليمية', value: this.searchEducation().trim() });
     return list;
   });
 
   removeFilter(key: FilterKey): void {
     if (key === 'governorate') this.searchGovernorate.set(null);
     if (key === 'subject')     this.searchSubject.set(null);
-    if (key === 'committee')   this.searchCommittee.set('');
+    if (key === 'education')   this.searchEducation.set('');
     this.resetPage();
   }
 
   clearFilters(): void {
     this.searchGovernorate.set(null);
     this.searchSubject.set(null);
-    this.searchCommittee.set('');
+    this.searchEducation.set('');
     this.resetPage();
   }
  loadLookups(): void {
