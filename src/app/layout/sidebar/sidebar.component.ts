@@ -126,12 +126,12 @@ export class SidebarComponent implements OnInit {
       roles: ['archive' , 'superadmin']
     },
 
-    {
-      label: 'إدارة المخازن',
-      icon: 'pi pi-building',
-      route: '/warehouses',
-      roles: ['warehouse', 'warehouses', 'warehouse management']
-    },
+    // {
+    //   label: 'إدارة المخازن',
+    //   icon: 'pi pi-building',
+    //   route: '/warehouses',
+    //   roles: ['warehouse', 'warehouses', 'warehouse management']
+    // },
 
     {
       label: 'إدارة المخازن والتخزين',
@@ -318,18 +318,37 @@ private isITRole(role: string): boolean {
   // GROUP TOGGLE
   // ==================================================
 
-  toggle(item: NavItem): void {
+  // toggle(item: NavItem): void {
 
-    if (!item.children) return;
+  //   if (!item.children) return;
 
-    this.navItems.update(items =>
-      items.map(i =>
-        i.label === item.label
-          ? { ...i, expanded: !i.expanded }
-          : i
-      )
-    );
-  }
+  //   this.navItems.update(items =>
+  //     items.map(i =>
+  //       i.label === item.label
+  //         ? { ...i, expanded: !i.expanded }
+  //         : i
+  //     )
+  //   );
+  // }
+
+
+toggle(selectedItem: NavItem): void {
+  const wasExpanded = selectedItem.expanded;
+
+  // Close all parent menus
+  this.navItems().forEach((item: NavItem) => {
+    if (item.children?.length) {
+      item.expanded = false;
+    }
+  });
+
+  // Toggle the selected menu
+  selectedItem.expanded = !wasExpanded;
+
+  // Notify Angular that the signal value has changed
+  this.navItems.update(items => [...items]);
+}
+
 
   // ==================================================
   // MOBILE SIDEBAR
