@@ -34,36 +34,34 @@
 
     <!-- ========== Filters ========== -->
     <section class="qc-box qc-filters">
-      <div class="qc-field">
-        <label>المادة</label>
-        <p-select
-          [options]="subjectOptions()"
-          optionLabel="label"
-          optionValue="value"
-          placeholder="كل المواد"
-          [ngModel]="subjectFilter()"
-          (ngModelChange)="subjectFilter.set($event)"
-          [showClear]="true"
-          [filter]="true"
-          filterPlaceholder="ابحث عن مادة..."
-          styleClass="qc-input"
-        />
-      </div>
 
       <div class="qc-field">
         <label>المحافظة</label>
         <p-select
-          [options]="governorateOptions()"
-          optionLabel="label"
-          optionValue="value"
-          placeholder="كل المحافظات"
-          [ngModel]="governorateFilter()"
-          (ngModelChange)="governorateFilter.set($event)"
-          [showClear]="true"
-          [filter]="true"
-          filterPlaceholder="ابحث عن محافظة..."
-          styleClass="qc-input"
-        />
+  [options]="governorateOptions()"
+  [ngModel]="governorateFilter()"
+  (ngModelChange)="governorateFilter.set($event)"
+  optionLabel="label"
+  optionValue="value"
+  placeholder="اختر المحافظة"
+  [loading]="governoratesLoading()"
+  [showClear]="true"
+  appendTo="body">
+</p-select>
+      </div>
+       <div class="qc-field">
+        <label>المادة</label>
+        <p-select
+  [options]="subjectOptions()"
+  [ngModel]="subjectFilter()"
+  (ngModelChange)="subjectFilter.set($event)"
+  optionLabel="label"
+  optionValue="value"
+  placeholder="اختر المادة"
+  [loading]="subjectsLoading()"
+  [showClear]="true"
+  appendTo="body">
+</p-select>
       </div>
 
       <div class="qc-field">
