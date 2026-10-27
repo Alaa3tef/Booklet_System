@@ -56,7 +56,7 @@ export class StorageLocationsService {
 
 // واحذف printQrs القديمة
 
-update(id: number, body: { area: string; rack: string; shelf: string; bin: string }) {
+update(id: number, body: { area: string; rack: string; shelf: string; bin: string , qrCode:string}) {
   return this.http.put(`${this.appConfig.baseURL}api/StorageLocations/${id}`, body);
 }
 

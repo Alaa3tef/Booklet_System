@@ -525,12 +525,34 @@
           <span>البيانات الأساسية</span>
         </div>
 
-        <div class="edit-warehouse">
-          <i class="pi pi-warehouse"></i>
-          <span>المخزن:</span>
-          <strong>{{ editingWarehouse() }}</strong>
-          <small>(لا يمكن تغييره)</small>
-        </div>
+        <div class="form-grid">
+  <div class="dialog-field">
+    <label for="editWarehouse">المخزن</label>
+    <p-select
+      inputId="editWarehouse"
+      formControlName="warehouseId"
+      [options]="warehouses()"
+      optionLabel="name"
+      optionValue="id"
+      placeholder="المخزن"
+      appendTo="body"
+      panelStyleClass="sl-select-panel"
+      styleClass="form-select"
+    ></p-select>
+  </div>
+
+  <div class="dialog-field">
+    <label for="editQrCode">كود الموقع</label>
+    <input
+      id="editQrCode"
+      pInputText
+      type="text"
+      formControlName="qrCode"
+      class="form-input"
+      dir="ltr"
+    />
+  </div>
+</div>
 
         <div class="form-section-heading location-section-heading">
           <i class="pi pi-sitemap"></i>
