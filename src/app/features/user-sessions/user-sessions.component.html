@@ -235,40 +235,84 @@
       </table>
     }
 
-    @if (!loading() && !loadError() && totalCount() > 0) {
-      <nav class="us-pagination" aria-label="التنقل بين صفحات الجلسات">
-        <span class="pag-summary">
-          عرض <b>{{ paginationStart() }}</b>–<b>{{ paginationEnd() }}</b>
-          من <b>{{ totalCount() }}</b> جلسة
-        </span>
+     <!-- ==================================================
+       PAGINATION
+  =================================================== -->
 
-        <div class="pag-controls">
-          <button type="button" class="pag-btn"
-            [disabled]="pageNumber() === 1 || loading()"
-            aria-label="السابق" (click)="previousPage()">
-            <i class="pi pi-angle-right"></i>
+@if (!loading() && !loadError() && totalCount() > 0) {
+  <div class="printing-pagination flex flex-column gap-3 md:flex-row md:align-items-center md:justify-content-between">
+
+    <!-- Pagination info -->
+    <div class="pagination-info flex align-items-center gap-2">
+      <span class="pagination-info-icon">
+        <i class="pi pi-list"></i>
+      </span>
+      <span>
+        عرض <strong>{{ paginationStart() }}</strong> -
+        <strong>{{ paginationEnd() }}</strong>
+        من <strong>{{ totalCount() }}</strong> جلسة
+      </span>
+    </div>
+
+    <!-- Page size -->
+    <div class="pagination-size flex align-items-center gap-2">
+      <label for="sessionPageSize">عدد الجلسات</label>
+      <p-select
+        inputId="sessionPageSize"
+        [options]="pageSizeOptions"
+        optionLabel="label"
+        optionValue="value"
+        [ngModel]="pageSize()"
+        (ngModelChange)="onPageSizeChange($event)"
+        styleClass="pagination-size-select"
+      />
+    </div>
+
+    <!-- Page controls -->
+    <nav
+      class="pagination-controls flex align-items-center gap-1"
+      aria-label="التنقل بين صفحات الجلسات"
+    >
+      <button
+        type="button"
+        class="pagination-arrow"
+        [disabled]="pageNumber() === 1 || loading()"
+        (click)="previousPage()"
+        aria-label="الصفحة السابقة"
+      >
+        <i class="pi pi-chevron-right"></i>
+      </button>
+
+      @for (page of paginationPages(); track $index) {
+        @if (page === 'dots') {
+          <span class="pagination-dots" aria-hidden="true">...</span>
+        } @else {
+          <button
+            type="button"
+            class="pagination-page"
+            [class.active]="page === pageNumber()"
+            [attr.aria-current]="page === pageNumber() ? 'page' : null"
+            [disabled]="loading()"
+            (click)="goToPage(page)"
+          >
+            {{ page }}
           </button>
+        }
+      }
 
-          @for (page of paginationPages(); track $index) {
-            @if (page === 'dots') {
-              <span class="pag-dots">…</span>
-            } @else {
-              <button type="button" class="pag-btn"
-                [class.pag-active]="page === pageNumber()"
-                [attr.aria-current]="page === pageNumber() ? 'page' : null"
-                [disabled]="loading()"
-                (click)="goToPage(page)">{{ page }}</button>
-            }
-          }
+      <button
+        type="button"
+        class="pagination-arrow"
+        [disabled]="pageNumber() >= totalPages() || loading()"
+        (click)="nextPage()"
+        aria-label="الصفحة التالية"
+      >
+        <i class="pi pi-chevron-left"></i>
+      </button>
+    </nav>
+  </div>
+}
 
-          <button type="button" class="pag-btn"
-            [disabled]="pageNumber() === totalPages() || loading()"
-            aria-label="التالي" (click)="nextPage()">
-            <i class="pi pi-angle-left"></i>
-          </button>
-        </div>
-      </nav>
-    }
 
   </section>
 

@@ -341,6 +341,20 @@ onFullNameInput(event: Event): void {
     menu.toggle(event);
   }
 
+  private resetPage(): void { this.currentPage.set(1); }
+ 
+
+readonly pageSizeOptions = [
+  { label: '10', value: 10 },
+  { label: '20', value: 20 },
+  { label: '30', value: 30 }
+];
+
+onPageSizeChange(value: number): void {
+  this.pageSize.set(value);
+  this.currentPage.set(1);
+  this.loadUsers();
+}
   goToPage(page: number | '...'): void {
     if (typeof page === 'number') {
       this.currentPage.set(page);

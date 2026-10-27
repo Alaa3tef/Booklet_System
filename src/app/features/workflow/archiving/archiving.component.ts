@@ -87,7 +87,12 @@ export default class ArchivingComponent {
       { governorate: 'القاهرة',    committeeNumber: '210', subject: 'الدراسات الاجتماعية',  educationNumber: 'EDU-009',    scanPart: 'الجزء الأول',  status: 'جاهز للتخزين', storage: null },
       { governorate: 'الجيزة',     committeeNumber: '311', subject: 'اللغة العربية',        educationNumber: 'EDU-010',    scanPart: 'الجزء الأول',  status: 'جاهز للتخزين', storage: null },
       { governorate: 'الدقهلية',   committeeNumber: '112', subject: 'الرياضيات',            educationNumber: 'EDU-011',    scanPart: 'الجزء الثاني', status: 'تم التخزين',   storage: { shelf: 'A-02', box: 'BOX-044' } },
-       { governorate: 'الإسكندرية', committeeNumber: '405', subject: 'الدراسات الاجتماعية',  educationNumber: 'EDU-004',    scanPart: 'الجزء الثاني', status: 'جاهز للتخزين', storage: null },
+      { governorate: 'الإسكندرية', committeeNumber: '405', subject: 'الدراسات الاجتماعية',  educationNumber: 'EDU-004',    scanPart: 'الجزء الثاني', status: 'جاهز للتخزين', storage: null },
+      { governorate: 'الجيزة',     committeeNumber: '307', subject: 'الرياضيات',            educationNumber: 'EDU-006',    scanPart: 'الجزء الثاني', status: 'جاهز للتخزين', storage: null },
+      { governorate: 'القاهرة',    committeeNumber: '210', subject: 'الدراسات الاجتماعية',  educationNumber: 'EDU-009',    scanPart: 'الجزء الأول',  status: 'جاهز للتخزين', storage: null },
+      { governorate: 'الجيزة',     committeeNumber: '311', subject: 'اللغة العربية',        educationNumber: 'EDU-010',    scanPart: 'الجزء الأول',  status: 'جاهز للتخزين', storage: null },
+      { governorate: 'الدقهلية',   committeeNumber: '112', subject: 'الرياضيات',            educationNumber: 'EDU-011',    scanPart: 'الجزء الثاني', status: 'تم التخزين',   storage: { shelf: 'A-02', box: 'BOX-044' } },
+      { governorate: 'الإسكندرية', committeeNumber: '405', subject: 'الدراسات الاجتماعية',  educationNumber: 'EDU-004',    scanPart: 'الجزء الثاني', status: 'جاهز للتخزين', storage: null },
       { governorate: 'الجيزة',     committeeNumber: '307', subject: 'الرياضيات',            educationNumber: 'EDU-006',    scanPart: 'الجزء الثاني', status: 'جاهز للتخزين', storage: null },
     ];
           return base.map((r, i) => ({ ...r, index: i + 1 }));
@@ -201,53 +206,70 @@ export default class ArchivingComponent {
     }
   });
 }
+ 
   // ================================================================
   // PAGINATION  (works on the filtered rows)
   // ================================================================
-  readonly pageSize    = signal(6);
+  readonly pageSize    = signal(6);   // 6 = 2 rows x 3 cards, 0 = show all
+ 
+  readonly pageSizeOptions = [
+    { label: '6',    value: 6 },
+    { label: '12',   value: 12 },
+    { label: '24',   value: 24 },
+    { label: 'الكل', value: 0 }
+  ];
   readonly currentPage = signal(1);
-
+ 
+  readonly showAll = computed(() => this.pageSize() === 0);      // 0 = "الكل"
+ 
   readonly totalPages = computed(() =>
-    Math.max(1, Math.ceil(this.filteredRows().length / this.pageSize())));
-
+    this.showAll() ? 1 : Math.max(1, Math.ceil(this.filteredRows().length / this.pageSize())));
+ 
   readonly paginatedRows = computed(() => {
+    if (this.showAll()) return this.filteredRows();
     const page = Math.min(this.currentPage(), this.totalPages());
     const start = (page - 1) * this.pageSize();
     return this.filteredRows().slice(start, start + this.pageSize());
   });
-
-  readonly paginationStart = computed(() =>
-    this.filteredRows().length === 0 ? 0 : (this.currentPage() - 1) * this.pageSize() + 1);
-
+ 
+  readonly paginationStart = computed(() => {
+    if (this.filteredRows().length === 0) return 0;
+    return this.showAll() ? 1 : (this.currentPage() - 1) * this.pageSize() + 1;
+  });
+ 
   readonly paginationEnd = computed(() =>
-    Math.min(this.currentPage() * this.pageSize(), this.filteredRows().length));
-
+    this.showAll()
+      ? this.filteredRows().length
+      : Math.min(this.currentPage() * this.pageSize(), this.filteredRows().length));
+ 
+  /**
+   * Page numbers with dots (dots appear as soon as there are more than 3 pages
+   * and at least one page is hidden):
+   *   5 pages -> 1 2 ... 5  |  1 2 3 ... 5  |  1 2 3 4 5  |  1 ... 3 4 5  |  1 ... 4 5
+   *   9 pages -> 1 2 ... 9  |  1 2 3 ... 9  |  1 ... 4 5 6 ... 9  |  1 ... 7 8 9
+   */
   readonly paginationPages = computed<(number | 'dots')[]>(() => {
     const total = this.totalPages();
-    const current = this.currentPage();
+    const cur = Math.min(this.currentPage(), total);
+ 
+    // first page + last page + the page before/after the current one
+    const wanted = new Set<number>([1, total, cur - 1, cur, cur + 1]);
+    const sorted = [...wanted].filter(p => p >= 1 && p <= total).sort((a, b) => a - b);
+ 
     const pages: (number | 'dots')[] = [];
-
-    if (total <= 4) {
-      for (let page = 1; page <= total; page++) pages.push(page);
-    } else if (current <= 3) {
-      pages.push(1, 2, 3, 4, 'dots', total);
-    } else if (current >= total - 2) {
-      pages.push(1, 'dots', total - 3, total - 2, total - 1, total);
-    } else {
-      pages.push(1, 'dots', current - 1, current, current + 1, 'dots', total);
-    }
-
+    sorted.forEach((p, i) => {
+      if (i > 0 && p - sorted[i - 1] > 1) pages.push('dots');   // hidden pages in between
+      pages.push(p);
+    });
     return pages;
   });
-
+ 
   private resetPage(): void { this.currentPage.set(1); }
-
+ 
   onPageSizeChange(): void { this.resetPage(); }
-  goToPage(page: number): void {
-    if (page >= 1 && page <= this.totalPages()) this.currentPage.set(page);
-  } 
+  goToPage(p: number): void { if (p >= 1 && p <= this.totalPages()) this.currentPage.set(p); }
   previousPage(): void { this.goToPage(this.currentPage() - 1); }
-  nextPage(): void { this.goToPage(this.currentPage() + 1); }
+  nextPage(): void     { this.goToPage(this.currentPage() + 1); }
 
   // ================================================================
   // CARD HELPERS

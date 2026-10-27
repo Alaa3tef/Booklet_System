@@ -60,6 +60,19 @@ export default class UserSessionsComponent implements OnInit {
   readonly loading = signal(false);
   readonly loadError = signal(false);
 
+readonly pageSizeOptions = [
+  { label: '10', value: 10 },
+  { label: '20', value: 20 },
+  { label: '30', value: 30 }
+];
+onPageSizeChange(value: number): void {
+  if (value === this.pageSize()) return;
+
+  this.pageSize.set(value);
+  this.pageNumber.set(1);
+  this.load();
+}
+
   readonly totalPages = computed(() =>
     Math.max(1, Math.ceil(this.totalCount() / this.pageSize()))
   );

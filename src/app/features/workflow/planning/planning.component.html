@@ -12,7 +12,7 @@
   panelTitle="البحث في خطط الإنتاج"
   functionLabel="مستخدم الإعداد"
   [essentials]="essentials"
-  resultText="يمكن تغيير حالة كل مادة مباشرة من الجدول"
+  resultText="يمكن تغيير حالة كل مادة مباشرة من البطاقة"
 >
 
   <div panel-content>
@@ -20,617 +20,354 @@
     <!-- ==========================================
          SEARCH SECTION
     =========================================== -->
-
     <div class="search-section">
 
       <div class="planning-search-card">
 
-        <!-- IMAGE -->
-
         <div class="planning-image">
-
-          <img
-            src="assets/images/planning.png"
-            alt="التخطيط"
-          />
-
+          <img src="assets/images/planning.png" alt="التخطيط" />
         </div>
-
-
-        <!-- SEARCH CONTENT -->
 
         <div class="planning-search-content">
 
           <div class="planning-search-title">
+            <div class="planning-search-icon"><i class="pi pi-search"></i></div>
 
-            <div class="planning-search-icon">
-
-              <i class="pi pi-search"></i>
-
+            <div class="planning-search-text">
+              <h3>البحث في خطط الإنتاج</h3>
+              <p>اختر المحافظة والمادة لعرض الخطة المطلوبة</p>
             </div>
 
+            <!-- <button type="button" class="clear-all-btn" (click)="clearFilters()">
+              <i class="pi pi-filter-slash"></i>
+              مسح البحث
+            </button> -->
+          </div>
 
-            <div>
+          <div class="fields-grid cols-3">
 
-              <h3>
-                البحث في خطط الإنتاج
-              </h3>
+            <div class="field">
+              <label for="governorate">المحافظة</label>
+              <div class="select-wrapper">
+                <i class="pi pi-map-marker"></i>
+              <p-select
+                inputId="governorate"
+                [options]="governorates()"
+                [ngModel]="searchGovernorate()"
+                (ngModelChange)="setGovernorate($event)"
+                optionLabel="label"
+                optionValue="value"
+                styleClass="w-full"
+                appendTo="body"
+              />
+              </div>
+            </div>
 
-              <p>
-                اختر المحافظة والمادة لعرض الخطة المطلوبة
-              </p>
+            <div class="field">
+              <label for="subject">المادة</label>
+               <div class="select-wrapper">
+            <i class="pi pi-book"></i>
+              <p-select
+                inputId="subject"
+                [options]="subjects()"
+                [ngModel]="searchSubject()"
+                (ngModelChange)="setSubject($event)"
+                optionLabel="label"
+                optionValue="value"
+                styleClass="w-full"
+                appendTo="body"
+              />
+              </div>
+            </div>
 
+            <div class="field committee-search-field">
+              <label for="committeeNumber">رقم اللجنة</label>
+
+              <div class="committee-input-wrapper">
+                <i class="pi pi-hashtag"></i>
+
+                <input
+                  id="committeeNumber"
+                  type="text"
+                  pInputText
+                  [ngModel]="searchCommittee()"
+                  (ngModelChange)="setCommittee($event)"
+                  placeholder="أدخل رقم اللجنة"
+                  autocomplete="off"
+                />
+
+                @if (searchCommittee()) {
+                  <button
+                    type="button"
+                    class="clear-search-btn"
+                    aria-label="مسح رقم اللجنة"
+                    pTooltip="مسح"
+                    tooltipPosition="top"
+                    (click)="setCommittee('')">
+                    <i class="pi pi-times"></i>
+                  </button>
+                }
+              </div>
             </div>
 
           </div>
 
+          <!-- ===== what is being filtered ===== -->
+          @if (activeFilters().length) {
+            <div class="active-filters" role="status" aria-live="polite">
 
-          <!-- SEARCH FIELDS -->
+              <span class="af-label"><i class="pi pi-filter"></i> الفلاتر المطبّقة</span>
 
-          <div class="fields-grid cols-3">
+              @for (f of activeFilters(); track f.key) {
+                <span class="af-chip">
+                  <small>{{ f.title }}:</small>
+                  <b>{{ f.value }}</b>
+                  <button type="button" [attr.aria-label]="'إزالة فلتر ' + f.title" (click)="removeFilter(f.key)">
+                    <i class="pi pi-times"></i>
+                  </button>
+                </span>
+              }
 
-  <!-- GOVERNORATE -->
+              <span class="af-count">
+                النتائج <b>{{ filteredRows().length }}</b> من <b>{{ rows().length }}</b> مادة
+              </span>
 
-  <div class="field">
+            </div>
+          }
 
-    <label for="governorate">
-      المحافظة
-    </label>
-
-    <p-select
-      inputId="governorate"
-      [options]="governorates"
-      [(ngModel)]="selectedGovernorate"
-      optionLabel="label"
-      optionValue="value"
-      styleClass="w-full"
-    >
-    </p-select>
-
-  </div>
-
-
-  <!-- SUBJECT -->
-
-  <div class="field">
-
-    <label for="subject">
-      المادة
-    </label>
-
-    <p-select
-      inputId="subject"
-      [options]="subjects"
-      [(ngModel)]="selectedSubject"
-      optionLabel="label"
-      optionValue="value"
-      styleClass="w-full"
-    >
-    </p-select>
-
-  </div>
-
-    <div class="field committee-search-field">
-
-    <label for="committeeNumber">
-      رقم اللجنة
-    </label>
-
-    <div class="committee-input-wrapper">
-
-      <i class="pi pi-hashtag"></i>
-
-      <input
-        id="committeeNumber"
-        type="text"
-        pInputText
-        [(ngModel)]="selectedCommitteeNumber"
-        placeholder="أدخل رقم اللجنة"
-        autocomplete="off"
-        (keyup.enter)="search()"
-      />
-
-      <button
-        *ngIf="selectedCommitteeNumber"
-        type="button"
-        class="clear-search-btn"
-        aria-label="مسح رقم اللجنة"
-        pTooltip="مسح"
-        tooltipPosition="top"
-        (click)="selectedCommitteeNumber = ''"
-      >
-        <i class="pi pi-times"></i>
-      </button>
-
-    </div>
-
-  </div>
-
-</div>
-
-<!-- <div class="search-actions">
-
-  <button
-    pButton
-    type="button"
-    label="بحث"
-    icon="pi pi-search"
-    class="search-btn"
-    (click)="search()"
-  >
-  </button>
-
-  <button
-    *ngIf="
-      selectedCommitteeNumber ||
-      selectedGovernorate !== 'all' ||
-      selectedSubject !== 'all'
-    "
-    pButton
-    type="button"
-    label="إعادة تعيين"
-    icon="pi pi-refresh"
-    class="p-button-text reset-search-btn"
-    (click)="resetSearch()"
-  >
-  </button>
-
-</div> -->
         </div>
-
       </div>
-
     </div>
 
 
     <!-- ==========================================
-         TABLE SECTION
+         CARDS SECTION
     =========================================== -->
-
     <div class="table-section">
 
       <div class="table-header">
+        <h4>الخطط المسجلة</h4>
+        <span class="results-count">{{ filteredRows().length }} مادة</span>
+      </div>
 
-        <h4>
-          الخطط المسجلة
-        </h4>
+      <div class="plan-grid">
 
+        @for (row of paginatedRows(); track row.index) {
 
-        <span class="results-count">
+          <article class="plan" [ngClass]="row.statusTone">
 
-          {{ filteredRows().length }}
+            <!-- top -->
+            <header class="plan-top">
+              <span class="plan-no">{{ row.index }}</span>
 
-          مادة
+              <div class="plan-title">
+                <strong>{{ row.subject }}</strong>
+              </div>
 
-        </span>
+              <span class="status-pill" [ngClass]="row.statusTone">{{ row.status }}</span>
+            </header>
+
+            <!-- info tiles -->
+            <div class="info-tiles">
+              <div class="info-tile">
+                <small>المحافظة</small>
+                <strong><i class="pi pi-map-marker"></i>{{ row.governorate }}</strong>
+              </div>
+              <div class="info-tile">
+                <small>رقم اللجنة</small>
+                <strong class="committee" dir="ltr"><i class="pi pi-hashtag"></i>{{ row.committeeNumber }}</strong>
+              </div>
+            </div>
+
+            <!-- tracker -->
+            <ol class="tracker" [attr.aria-label]="'الحالة: ' + row.status">
+              @for (step of trackerSteps(row); track step.label) {
+                <li [ngClass]="step.state">
+                  <span class="tracker-dot">
+                    @if (step.state === 'rejected') {
+                      <i class="pi pi-times"></i>
+                    } @else if (step.state !== 'pending') {
+                      <i class="pi pi-check"></i>
+                    }
+                  </span>
+                  <span class="tracker-label">{{ step.label }}</span>
+                </li>
+              }
+            </ol>
+
+            <!-- rejected: short reason preview -->
+            @if (row.status === 'مرفوض') {
+              <div class="reason-preview">
+                <i class="pi pi-exclamation-circle"></i>
+                <p>{{ row.rejectionReason || 'لم يتم تسجيل سبب الرفض.' }}</p>
+              </div>
+            }
+
+            <!-- actions -->
+            <footer class="plan-action">
+
+              @if (row.status === 'جاهز للطباعة') {
+                <div class="completed-action">
+                  <i class="pi pi-check-circle"></i>
+                  المادة جاهزة للطباعة
+                </div>
+              } @else if (row.status === 'مرفوض') {
+                <button type="button" class="action-btn view-reason" (click)="openRejectionReasonDialog(row)">
+                  <i class="pi pi-eye"></i>
+                  <span>عرض سبب الرفض</span>
+                </button>
+              } @else {
+                <div class="action-pair">
+                  <button type="button" class="action-btn ready" (click)="markReady(row)">
+                    <i class="pi pi-check"></i>
+                    <span>جاهز للطباعة</span>
+                  </button>
+                  <button type="button" class="action-btn reject" (click)="openRejectDialog(row)">
+                    <i class="pi pi-times-circle"></i>
+                    <span>رفض</span>
+                  </button>
+                </div>
+              }
+
+            </footer>
+
+          </article>
+
+        } @empty {
+
+          <div class="empty-state">
+            <span class="empty-icon"><i class="pi pi-search"></i></span>
+            <strong>لا توجد نتائج</strong>
+            <span>
+              @if (activeFilters().length) { لا توجد مواد مطابقة للفلاتر المحددة } @else { لا توجد مواد مسجلة حاليًا }
+            </span>
+            @if (activeFilters().length) {
+              <button type="button" class="empty-clear" (click)="clearFilters()">
+                <i class="pi pi-filter-slash"></i> مسح الفلاتر
+              </button>
+            }
+          </div>
+
+        }
 
       </div>
 
 
       <!-- ==========================================
-           TABLE
+           PAGINATION
       =========================================== -->
+      @if (filteredRows().length > 0) {
+        <div class="printing-pagination">
 
-   <p-table
-  [value]="paginatedRows()"
-  styleClass="p-datatable-sm"
-  responsiveLayout="scroll"
->
+          <div class="pagination-info">
+            <span class="pagination-info-icon"><i class="pi pi-list"></i></span>
+            <span>
+              عرض
+              <strong>{{ paginationStart() }}</strong>
+              -
+              <strong>{{ paginationEnd() }}</strong>
+              من
+              <strong>{{ filteredRows().length }}</strong>
+              مادة
+            </span>
+          </div>
 
-        <!-- HEADER -->
+          <div class="pagination-size">
+            <span>عدد البطاقات</span>
+            <p-select
+              [options]="[
+                { label: '6',  value: 6 },
+                { label: '12', value: 12 },
+                { label: '24', value: 24 }
+              ]"
+              optionLabel="label"
+              optionValue="value"
+              [ngModel]="pageSize()"
+              (ngModelChange)="pageSize.set($event); onPageSizeChange()"
+              styleClass="pagination-size-select"
+            />
+          </div>
 
-        <ng-template pTemplate="header">
+          @if (totalPages() > 1) {
+            <div class="pagination-controls">
 
-          <tr>
-
-            <th>
-              م
-            </th>
-
-            <th>
-              المحافظة
-            </th>
-
-            <th>
-              المادة
-            </th>
-
-            <th>
-              الحالة
-            </th>
-
-            <th class="action-header">
-              إجراء
-            </th>
-
-          </tr>
-
-        </ng-template>
-
-
-        <!-- BODY -->
-
-        <ng-template
-          pTemplate="body"
-          let-row
-        >
-
-          <tr>
-
-            <!-- INDEX -->
-
-            <td>
-              {{ row.index }}
-            </td>
-
-
-            <!-- GOVERNORATE -->
-
-            <td>
-              {{ row.governorate }}
-            </td>
-
-
-            <!-- SUBJECT -->
-
-            <td>
-              {{ row.subject }}
-            </td>
-
-
-            <!-- STATUS -->
-
-            <td>
-
-              <span
-                class="status-pill"
-                [ngClass]="row.statusTone"
-              >
-
-                {{ row.status }}
-
-              </span>
-
-            </td>
-
-
-            <!-- ACTION -->
-
-            <td class="status-cell">
-
-              <!-- ==================================
-                   NORMAL ACTIONS
-              =================================== -->
-
-              <button
-                *ngIf="
-                  row.status !== 'جاهز للطباعة' &&
-                  row.status !== 'مرفوض'
-                "
-                type="button"
-                class="status-menu-btn"
-                aria-label="إجراءات المادة"
-                pTooltip="إجراءات المادة"
-                tooltipPosition="top"
-                (click)="
-                  openStatusMenu(
-                    row,
-                    statusMenu,
-                    $event
-                  )
-                "
-              >
-
-                <i class="pi pi-ellipsis-v"></i>
-
+              <button type="button" class="pagination-arrow"
+                [disabled]="currentPage() === 1" (click)="previousPage()"
+                pTooltip="الصفحة السابقة" tooltipPosition="top">
+                <i class="pi pi-chevron-right"></i>
               </button>
 
+              @for (page of paginationPages(); track $index) {
+                @if (page === 'dots') {
+                  <span class="pagination-dots">...</span>
+                } @else {
+                  <button type="button" class="pagination-page"
+                    [class.active]="page === currentPage()"
+                    [attr.aria-current]="page === currentPage() ? 'page' : null"
+                    (click)="goToPage(page)">
+                    {{ page }}
+                  </button>
+                }
+              }
 
-              <!-- ==================================
-                   REJECTED - VIEW REASON
-              =================================== -->
-
-              <button
-                *ngIf="row.status === 'مرفوض'"
-                type="button"
-                class="
-                  status-menu-btn
-                  rejection-reason-btn
-                "
-                aria-label="عرض سبب الرفض"
-                pTooltip="عرض سبب الرفض"
-                tooltipPosition="top"
-                (click)="
-                  openRejectionReasonDialog(row)
-                "
-              >
-
-                <i class="pi pi-eye"></i>
-
+              <button type="button" class="pagination-arrow"
+                [disabled]="currentPage() === totalPages()" (click)="nextPage()"
+                pTooltip="الصفحة التالية" tooltipPosition="top">
+                <i class="pi pi-chevron-left"></i>
               </button>
 
-            </td>
+            </div>
+          }
 
-          </tr>
-
-        </ng-template>
-
-
-        <!-- EMPTY -->
-
-        <ng-template pTemplate="emptymessage">
-
-          <tr>
-
-            <td
-              colspan="5"
-              class="empty-message"
-            >
-
-              <i class="pi pi-search"></i>
-
-              لا توجد نتائج مطابقة للبحث
-
-            </td>
-
-          </tr>
-
-        </ng-template>
-
-      </p-table>
-
-      <!-- ==========================================
-     PAGINATION
-=========================================== -->
-
-<!-- ==========================================
-     PAGINATION
-=========================================== -->
-
-<div
-  class="printing-pagination"
-  *ngIf="rows().length > 0"
->
-
-  <!-- RESULTS INFO -->
-
-  <div class="pagination-info">
-
-    <span class="pagination-info-icon">
-      <i class="pi pi-list"></i>
-    </span>
-
-    <span>
-      عرض
-      <strong>{{ paginationStart() }}</strong>
-      -
-      <strong>{{ paginationEnd() }}</strong>
-      من
-      <strong>{{ rows().length }}</strong>
-      مادة
-    </span>
-
-  </div>
-
-
-  <!-- PAGE SIZE -->
-
-  <div class="pagination-size">
-
-    <span>عدد الصفوف</span>
-
-    <p-select
-      [options]="[
-        { label: '5', value: 5 },
-        { label: '10', value: 10 },
-        { label: '20', value: 20 }
-      ]"
-      optionLabel="label"
-      optionValue="value"
-      [ngModel]="pageSize()"
-      (ngModelChange)="
-        pageSize.set($event);
-        onPageSizeChange()
-      "
-      styleClass="pagination-size-select"
-    />
-
-  </div>
-
-
-  <!-- PAGINATION CONTROLS -->
-
-  <div class="pagination-controls">
-
-    <!-- PREVIOUS -->
-
-    <button
-      type="button"
-      class="pagination-arrow"
-      [disabled]="currentPage() === 1"
-      (click)="previousPage()"
-      pTooltip="الصفحة السابقة"
-      tooltipPosition="top"
-    >
-      <i class="pi pi-chevron-right"></i>
-    </button>
-
-
-    <!-- PAGES -->
-
-    <ng-container
-      *ngFor="let page of paginationPages()"
-    >
-
-      <!-- DOTS -->
-
-      <span
-        *ngIf="page === 'dots'"
-        class="pagination-dots"
-      >
-        ...
-      </span>
-
-
-      <!-- PAGE -->
-
-      <button
-        *ngIf="page !== 'dots'"
-        type="button"
-        class="pagination-page"
-        [class.active]="page === currentPage()"
-        (click)="goToPage(+page)"
-      >
-        {{ page }}
-      </button>
-
-    </ng-container>
-
-
-    <!-- NEXT -->
-
-    <button
-      type="button"
-      class="pagination-arrow"
-      [disabled]="currentPage() === totalPages()"
-      (click)="nextPage()"
-      pTooltip="الصفحة التالية"
-      tooltipPosition="top"
-    >
-      <i class="pi pi-chevron-left"></i>
-    </button>
-
-  </div>
-
-</div>
-
-
-      <!-- ==========================================
-           STATUS MENU
-      =========================================== -->
-
-      <p-menu
-        #statusMenu
-        [model]="menuItems"
-        [popup]="true"
-        appendTo="body"
-      >
-      </p-menu>
+        </div>
+      }
 
 
       <!-- ==========================================
            REJECT DIALOG
       =========================================== -->
-
       <p-dialog
         [(visible)]="rejectDialogVisible"
         [modal]="true" [baseZIndex]="10000"
-        [draggable]="false"
-        [resizable]="false"
+        [draggable]="false" [resizable]="false"
         [closable]="!rejectSubmitting"
         [dismissableMask]="!rejectSubmitting"
-        [style]="{
-          width: '720px',
-          maxWidth: 'calc(100vw - 2rem)'
-        }"
+        [style]="{ width: '720px', maxWidth: 'calc(100vw - 2rem)' }"
         appendTo="body"
         styleClass="reject-dialog"
         header="رفض المادة"
       >
-
         <div class="reject-dialog-content">
 
-          <!-- HEADER -->
-
           <div class="reject-intro">
-
-            <div class="reject-icon">
-
-              <i class="pi pi-exclamation-triangle"></i>
-
-            </div>
-
-
+            <div class="reject-icon"><i class="pi pi-exclamation-triangle"></i></div>
             <div class="reject-intro-text">
-
-              <h3>
-                رفض مادة {{ selectedRow?.subject }}
-              </h3>
-
-              <p>
-                يرجى توضيح سبب الرفض وتحديد المستخدمين المسؤولين عن المراجعة.
-              </p>
-
+              <h3>رفض مادة {{ selectedRow?.subject }}</h3>
+              <p>يرجى توضيح سبب الرفض وتحديد المستخدمين المسؤولين عن المراجعة.</p>
             </div>
-
           </div>
-
-
-          <!-- MATERIAL SUMMARY -->
 
           <div class="material-summary">
-
             <div class="summary-item">
-
-              <span class="summary-label">
-                المادة
-              </span>
-
-              <span class="summary-value">
-                {{ selectedRow?.subject }}
-              </span>
-
+              <span class="summary-label">المادة</span>
+              <span class="summary-value">{{ selectedRow?.subject }}</span>
             </div>
-
-
             <div class="summary-divider"></div>
-
-
             <div class="summary-item">
-
-              <span class="summary-label">
-                المحافظة
-              </span>
-
-              <span class="summary-value">
-                {{ selectedRow?.governorate }}
-              </span>
-
+              <span class="summary-label">المحافظة</span>
+              <span class="summary-value">{{ selectedRow?.governorate }}</span>
             </div>
-
-
             <div class="summary-divider"></div>
-
-
             <div class="summary-item">
-
-              <span class="summary-label">
-                الحالة الحالية
-              </span>
-
-              <span class="summary-value">
-                {{ selectedRow?.status }}
-              </span>
-
+              <span class="summary-label">الحالة الحالية</span>
+              <span class="summary-value">{{ selectedRow?.status }}</span>
             </div>
-
           </div>
 
-
-          <!-- REJECTION REASON -->
-
           <div class="dialog-field">
-
             <label for="rejectReason">
-
-              سبب الرفض
-
-              <span class="required">
-                *
-              </span>
-
+              سبب الرفض <span class="required">*</span>
             </label>
-
 
             <textarea
               pTextarea
@@ -641,55 +378,23 @@
               maxlength="500"
               placeholder="اكتب سبب رفض المادة بالتفصيل..."
               class="reject-textarea"
-            >
-            </textarea>
-
+            ></textarea>
 
             <div class="field-footer">
-
-              <small
-                [class.invalid-counter]="
-                  rejectReason.length > 0 &&
-                  rejectReason.trim().length < 10
-                "
-              >
-
+              <small [class.invalid-counter]="rejectReason.length > 0 && rejectReason.trim().length < 10">
                 {{ rejectReason.length }}/500
-
               </small>
 
-
-              <small
-                *ngIf="
-                  rejectReason.length > 0 &&
-                  rejectReason.trim().length < 10
-                "
-                class="field-error"
-              >
-
-                يجب أن يكون سبب الرفض 10 أحرف على الأقل
-
-              </small>
-
+              @if (rejectReason.length > 0 && rejectReason.trim().length < 10) {
+                <small class="field-error">يجب أن يكون سبب الرفض 10 أحرف على الأقل</small>
+              }
             </div>
-
           </div>
 
-
-          <!-- REVIEWERS -->
-
           <div class="dialog-field">
-
             <label for="reviewers">
-
-              المستخدمون المسؤولون عن المراجعة
-
-              <span class="required">
-                *
-              </span>
-
+              المستخدمون المسؤولون عن المراجعة <span class="required">*</span>
             </label>
-
 
             <p-multiselect
               inputId="reviewers"
@@ -705,367 +410,124 @@
               [maxSelectedLabels]="2"
               selectedItemsLabel="{0} مستخدمين مختارين"
             >
-
-              <!-- SELECTED USERS -->
-
-              <ng-template
-                pTemplate="selecteditems"
-                let-values
-              >
-
+              <ng-template pTemplate="selecteditems" let-values>
                 <div class="selected-reviewers">
-
-                  <span
-                    class="reviewer-chip"
-                    *ngFor="let user of values"
-                  >
-
-                    <span class="reviewer-avatar">
-
-                      {{ user.name.charAt(0) }}
-
+                  @for (user of values; track user.id) {
+                    <span class="reviewer-chip">
+                      <span class="reviewer-avatar">{{ user.name.charAt(0) }}</span>
+                      <span>{{ user.name }}</span>
                     </span>
-
-
-                    <span>
-
-                      {{ user.name }}
-
-                    </span>
-
-                  </span>
-
+                  }
                 </div>
-
               </ng-template>
 
-
-              <!-- USER OPTION -->
-
-              <ng-template
-                pTemplate="item"
-                let-user
-              >
-
+              <ng-template pTemplate="item" let-user>
                 <div class="reviewer-option">
-
-                  <div class="reviewer-avatar">
-
-                    {{ user.name.charAt(0) }}
-
-                  </div>
-
-
+                  <div class="reviewer-avatar">{{ user.name.charAt(0) }}</div>
                   <div class="reviewer-info">
-
-                    <span class="reviewer-name">
-
-                      {{ user.name }}
-
-                    </span>
-
-
-                    <span class="reviewer-role">
-
-                      {{ user.role }}
-
-                    </span>
-
+                    <span class="reviewer-name">{{ user.name }}</span>
+                    <span class="reviewer-role">{{ user.role }}</span>
                   </div>
-
                 </div>
-
               </ng-template>
-
             </p-multiselect>
 
-
-            <small class="field-hint">
-
-              يمكنك اختيار أكثر من مستخدم لمراجعة المادة.
-
-            </small>
-
+            <small class="field-hint">يمكنك اختيار أكثر من مستخدم لمراجعة المادة.</small>
           </div>
 
-
-          <!-- WARNING -->
-
           <div class="reject-warning">
-
             <i class="pi pi-info-circle"></i>
-
             <span>
-
-              سيتم تغيير حالة المادة إلى
-
-              <strong>
-                مرفوض
-              </strong>
-
+              سيتم تغيير حالة المادة إلى <strong>مرفوض</strong>
               وإرسالها للمستخدمين المحددين للمراجعة.
-
             </span>
-
           </div>
 
         </div>
 
-
-        <!-- FOOTER -->
-
         <ng-template pTemplate="footer">
-
           <div class="dialog-footer">
-
-            <button
-              pButton
-              type="button"
-              label="إلغاء"
-              icon="pi pi-times"
+            <button pButton type="button" label="إلغاء" icon="pi pi-times"
               class="p-button-text cancel-btn"
-              [disabled]="rejectSubmitting"
-              (click)="closeRejectDialog()"
-            >
-            </button>
+              [disabled]="rejectSubmitting" (click)="closeRejectDialog()"></button>
 
-
-            <button
-              pButton
-              type="button"
-              label="تأكيد الرفض"
-              icon="pi pi-send"
+            <button pButton type="button" label="تأكيد الرفض" icon="pi pi-send"
               class="reject-submit-btn"
               [loading]="rejectSubmitting"
-              [disabled]="
-                !isRejectFormValid ||
-                rejectSubmitting
-              "
-              (click)="submitRejection()"
-            >
-            </button>
-
+              [disabled]="!isRejectFormValid || rejectSubmitting"
+              (click)="submitRejection()"></button>
           </div>
-
         </ng-template>
-
       </p-dialog>
 
 
       <!-- ==========================================
            VIEW REJECTION REASON DIALOG
       =========================================== -->
-
       <p-dialog
         [(visible)]="rejectionReasonDialogVisible"
         [modal]="true" [baseZIndex]="10000"
-        [draggable]="false"
-        [resizable]="false"
-        [closable]="true"
-        [dismissableMask]="true"
-        [style]="{
-          width: '620px',
-          maxWidth: 'calc(100vw - 2rem)'
-        }"
+        [draggable]="false" [resizable]="false"
+        [closable]="true" [dismissableMask]="true"
+        [style]="{ width: '620px', maxWidth: 'calc(100vw - 2rem)' }"
         appendTo="body"
         styleClass="rejection-reason-dialog"
       >
-
-        <!-- ======================================
-             HEADER
-        ======================================= -->
-
         <ng-template pTemplate="header">
-
           <div class="rejection-dialog-header">
-
-            <div class="rejection-dialog-icon">
-
-              <i class="pi pi-info-circle"></i>
-
-            </div>
-
-
+            <div class="rejection-dialog-icon"><i class="pi pi-info-circle"></i></div>
             <div class="rejection-dialog-title">
-
-              <h3>
-                سبب رفض المادة
-              </h3>
-
-              <span>
-                تفاصيل سبب الرفض المسجل
-              </span>
-
+              <h3>سبب رفض المادة</h3>
+              <span>تفاصيل سبب الرفض المسجل</span>
             </div>
-
           </div>
-
         </ng-template>
-
-
-        <!-- ======================================
-             CONTENT
-        ======================================= -->
 
         <div class="rejection-reason-content">
 
-
-          <!-- MATERIAL -->
-
           <div class="rejection-material-card">
-
-            <div class="rejection-material-icon">
-
-              <i class="pi pi-book"></i>
-
-            </div>
-
-
+            <div class="rejection-material-icon"><i class="pi pi-book"></i></div>
             <div class="rejection-material-info">
-
-              <span class="rejection-label">
-                المادة
-              </span>
-
-              <strong>
-                {{ selectedRow?.subject }}
-              </strong>
-
+              <span class="rejection-label">المادة</span>
+              <strong>{{ selectedRow?.subject }}</strong>
             </div>
-
-
-            <div class="rejection-status">
-
-              <span class="status-pill danger">
-
-                مرفوض
-
-              </span>
-
-            </div>
-
+            <div class="rejection-status"><span class="status-pill danger">مرفوض</span></div>
           </div>
-
-
-          <!-- META -->
 
           <div class="rejection-meta">
-
-
-            <!-- GOVERNORATE -->
-
             <div class="rejection-meta-item">
-
               <i class="pi pi-map-marker"></i>
-
-
-              <div>
-
-                <span>
-                  المحافظة
-                </span>
-
-                <strong>
-                  {{ selectedRow?.governorate }}
-                </strong>
-
-              </div>
-
+              <div><span>المحافظة</span><strong>{{ selectedRow?.governorate }}</strong></div>
             </div>
-
-
-            <!-- INDEX -->
-
             <div class="rejection-meta-item">
-
               <i class="pi pi-file"></i>
-
-
-              <div>
-
-                <span>
-                  رقم المادة
-                </span>
-
-                <strong>
-                  {{ selectedRow?.index }}
-                </strong>
-
-              </div>
-
+              <div><span>رقم المادة</span><strong>{{ selectedRow?.index }}</strong></div>
             </div>
-
           </div>
-
-
-          <!-- REASON -->
 
           <div class="rejection-reason-box">
-
             <div class="rejection-reason-heading">
-
               <div class="reason-title">
-
                 <i class="pi pi-times-circle"></i>
-
-                <span>
-                  سبب الرفض
-                </span>
-
+                <span>سبب الرفض</span>
               </div>
-
             </div>
-
-
-            <div class="rejection-reason-text">
-
-              {{ selectedRejectionReason }}
-
-            </div>
-
+            <div class="rejection-reason-text">{{ selectedRejectionReason }}</div>
           </div>
 
-
-          <!-- INFO -->
-
           <div class="rejection-info">
-
             <i class="pi pi-info-circle"></i>
-
-            <span>
-
-              يمكنك مراجعة سبب الرفض قبل إعادة المادة إلى مرحلة الإعداد
-              وإجراء التعديلات المطلوبة.
-
-            </span>
-
+            <span>يمكنك مراجعة سبب الرفض قبل إعادة المادة إلى مرحلة الإعداد وإجراء التعديلات المطلوبة.</span>
           </div>
 
         </div>
 
-
-        <!-- ======================================
-             FOOTER
-        ======================================= -->
-
         <ng-template pTemplate="footer">
-
           <div class="rejection-dialog-footer">
-
-            <button
-              pButton
-              type="button"
-              label="إغلاق"
-              icon="pi pi-times"
-              class="p-button-text"
-              (click)="closeRejectionReasonDialog()"
-            >
-            </button>
-
+            <button pButton type="button" label="إغلاق" icon="pi pi-times"
+              class="p-button-text" (click)="closeRejectionReasonDialog()"></button>
           </div>
-
         </ng-template>
-
       </p-dialog>
 
     </div>
