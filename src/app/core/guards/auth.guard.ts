@@ -12,7 +12,7 @@ const normalizeRole = (role: string | null | undefined): string =>
   (role ?? '').trim().toLowerCase().replace(/[\s_-]+/g, ' ');
 
 const dashboardRoles = new Set([
-  'superadmin', 'super admin', 'it',
+  'superadmin', 'it', 
   'مسؤول النظام it', 'مدير النظام it',
   'top', 'top management', 'topmanagment'
 ]);
@@ -30,17 +30,19 @@ const workflowRouteByRole: Record<string, string> = {
   archiving: '/workflow/archiving',
   storage: '/workflow/archiving',
   warehouse: '/warehouses',
-  warehouses: '/warehouses',
+  // warehouses: '/warehouses',
   'warehouse management': '/warehouses'
 };
 
 function roleFromProfileResponse(response: any): string {
   const profile = response?.data?.data ?? response?.data ?? response;
+  console.log('roleFromProfileResponse:', profile);
   return profile?.roleName
     ?? profile?.role
     ?? profile?.user?.roleName
     ?? profile?.user?.role
     ?? '';
+    
 }
 
 function roleHomeUrl(role: string, router: Router) {
