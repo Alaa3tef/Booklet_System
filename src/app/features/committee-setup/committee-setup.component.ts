@@ -1,4 +1,3 @@
-
 import { CommonModule } from '@angular/common';
 import {
   Component,
@@ -14,14 +13,11 @@ import { forkJoin } from 'rxjs';
 import { ButtonModule } from 'primeng/button';
 import { SelectModule } from 'primeng/select';
 import { TableModule } from 'primeng/table';
-import { TagModule } from 'primeng/tag';
 import { TooltipModule } from 'primeng/tooltip';
-import { CardModule } from 'primeng/card';
-import { DividerModule } from 'primeng/divider';
 import { InputTextModule } from 'primeng/inputtext';
 import { DialogModule } from 'primeng/dialog';
 import { ToastModule } from 'primeng/toast';
-import { MessageService, MessageService as PrimeSelectOption } from 'primeng/api';
+import { MessageService } from 'primeng/api';
 
 import {
   CommitteeRow,
@@ -33,26 +29,15 @@ import { Lookups } from '../../shared/services/lookups';
 import { CommitteeService } from './service/committee-service';
 import { toOptions } from './to-options';
 
-interface CommitteeTableRow extends CommitteeRow {
-  governorate: string;
-  subject: string;
-  fileName: string;
-  errors: string[];
-  status: 'valid' | 'invalid';
-}
-
 @Component({
   selector: 'app-committee-setup',
   standalone: true,
   imports: [
     CommonModule,
     FormsModule,
-    CardModule,
     SelectModule,
     TableModule,
     ButtonModule,
-    DividerModule,
-    TagModule,
     TooltipModule,
     InputTextModule,
     DialogModule,
@@ -66,9 +51,7 @@ export default class CommitteeSetupComponent implements OnInit, OnDestroy {
   private readonly committeeService = inject(CommitteeService);
   private readonly lookups = inject(Lookups);
   private readonly toast = inject(MessageService);
-  // Import errors dialog
-readonly importErrorsDialogVisible = signal(false);
-readonly importErrors = signal<string[]>([]);
+
   // =========================================================
   // STEPS
   // =========================================================
@@ -140,7 +123,7 @@ readonly importErrors = signal<string[]>([]);
   // HISTORY
   // =========================================================
 
-  readonly rows = signal<CommitteeTableRow[]>([]);
+  readonly rows = signal<any[]>([]);
   readonly totalRecords = signal(0);
   readonly tableLoading = signal(false);
 
@@ -181,7 +164,7 @@ readonly importErrors = signal<string[]>([]);
     return [1, 'dots', current, 'dots', total];
   });
 
-  readonly visibleRows = computed<CommitteeTableRow[]>(() => {
+  readonly visibleRows = computed<any[]>(() => {
     const governorate = this.filterGovernorate();
     const subject = this.filterSubject();
 
@@ -197,13 +180,6 @@ readonly importErrors = signal<string[]>([]);
       0
     )
   );
-
-  // =========================================================
-  // HISTORY API RESPONSE
-  // Supports:
-  // response.data.data
-  // response.data.totalCount
-  // =========================================================
 
   loadHistory(): void {
     this.tableLoading.set(true);
@@ -240,28 +216,13 @@ readonly importErrors = signal<string[]>([]);
     });
   }
 
-  private parseHistory(
-    response: unknown
-  ): { items: any[]; total: number } {
+  // Supports: response.data.data / response.data.totalCount
+  private parseHistory(response: unknown): { items: any[]; total: number } {
     const raw = response as any;
-
-    // Example:
-    // raw.data.currentPage
-    // raw.data.totalCount
-    // raw.data.data = history items
     const body = raw?.data ?? raw;
 
-    const items: any[] = Array.isArray(body)
-      ? body
-      : Array.isArray(body?.data)
-        ? body.data
-        : Array.isArray(body?.items)
-          ? body.items
-          : Array.isArray(body?.records)
-            ? body.records
-            : Array.isArray(body?.result)
-              ? body.result
-              : [];
+    const items: any[] = [body, body?.data, body?.items, body?.records, body?.result]
+      .find(Array.isArray) ?? [];
 
     const total = Number(
       body?.totalCount ??
@@ -273,27 +234,20 @@ readonly importErrors = signal<string[]>([]);
     return { items, total };
   }
 
-  private mapHistoryRow(
-    item: any,
-    index: number
-  ): CommitteeTableRow {
+  private mapHistoryRow(item: any, index: number): any {
     const errors = this.normalizeErrors(item?.errors);
-
     const status = String(item?.status ?? '').toLowerCase();
 
     const invalid =
-      status === 'rejected' ||
-      status === 'invalid' ||
-      status === 'failed' ||
+      ['rejected', 'invalid', 'failed'].includes(status) ||
       item?.isValid === false ||
       item?.success === false ||
       errors.length > 0;
 
     return {
+      id: String(item?.auditLogId ?? item?.id ?? item?.committeeId ?? ''),
       index: this.first() + index + 1,
 
-      // The history endpoint is an import-history endpoint.
-      // auditLogId is used as a fallback when no committee ID exists.
       committeeNumber: String(
         item?.committeeNumber ??
         item?.committeeCode ??
@@ -303,55 +257,30 @@ readonly importErrors = signal<string[]>([]);
       ),
 
       schoolName: String(
-        item?.schoolName ??
-        item?.committeeName ??
-        item?.fileName ??
-        ''
+        item?.schoolName ?? item?.committeeName ?? item?.fileName ?? ''
       ),
 
       educationalAdministration: String(
-        item?.educationalAdministration ??
-        item?.administrationName ??
-        ''
+        item?.educationalAdministration ?? item?.administrationName ?? ''
       ),
 
       bookletCount: Number(
-        item?.bookletCount ??
-        item?.booklets ??
-        item?.rowsCount ??
-        0
+        item?.bookletCount ?? item?.booklets ?? item?.rowsCount ?? 0
       ),
 
       status: invalid ? 'invalid' : 'valid',
+      transferred: item?.isTransferred === true || item?.transferred === true,
 
-      governorate: String(
-        item?.governorateCode ??
-        item?.governorate ??
-        ''
-      ),
-
-      subject: String(
-        item?.subjectCode ??
-        item?.subject ??
-        ''
-      ),
-
-       round: String(
-        item?.roundCode ??
-        item?.round ??
-        ''
-      ),
-
+      governorate: String(item?.governorateCode ?? item?.governorate ?? ''),
+      subject: String(item?.subjectCode ?? item?.subject ?? ''),
+      round: String(item?.roundCode ?? item?.round ?? ''),
       educationalStage: String(
-        item?.educationalStageCode ??
-        item?.educationalStage ??
-        ''
+        item?.educationalStageCode ?? item?.educationalStage ?? ''
       ),
 
       fileName: String(item?.fileName ?? ''),
-
       errors
-    } as CommitteeTableRow;
+    } as any;
   }
 
   // =========================================================
@@ -373,68 +302,121 @@ readonly importErrors = signal<string[]>([]);
     this.loadHistory();
   }
 
-  
-setSearchTerm(value: string): void {
-  const searchValue = value ?? '';
+  setSearchTerm(value: string): void {
+    const searchValue = value ?? '';
+    const trimmedValue = searchValue.trim();
 
-  this.searchTerm.set(searchValue);
-  this.first.set(0);
-
-  // إلغاء أي عملية بحث سابقة لم يتم تنفيذها
-  if (this.searchTimer) {
-    clearTimeout(this.searchTimer);
-  }
-
-  const trimmedValue = searchValue.trim();
-
-  // أقل من 3 حروف: لا نرسل طلب بحث جديد
-  if (trimmedValue.length > 0 && trimmedValue.length < 3) {
-    return;
-  }
-
-  // انتظار 400 مللي ثانية بعد توقف المستخدم عن الكتابة
-  this.searchTimer = setTimeout(() => {
-    this.loadHistory();
-  }, trimmedValue.length >= 3 ? 400 : 0);
-}
-
-
-  onFilterGovernorateChange(value: string | null): void {
-    this.filterGovernorate.set(value);
-  }
-
-  onFilterSubjectChange(value: string | null): void {
-    this.filterSubject.set(value);
-  }
-
-  resetTableFilters(): void {
-    this.searchTerm.set('');
-    this.filterGovernorate.set(null);
-    this.filterSubject.set(null);
+    this.searchTerm.set(searchValue);
     this.first.set(0);
 
-    if (this.searchTimer) {
-      clearTimeout(this.searchTimer);
+    // إلغاء أي عملية بحث سابقة لم يتم تنفيذها
+    clearTimeout(this.searchTimer);
+
+    // أقل من 3 حروف: لا نرسل طلب بحث جديد
+    if (trimmedValue.length > 0 && trimmedValue.length < 3) {
+      return;
     }
 
-    this.loadHistory();
+    // انتظار 400 مللي ثانية بعد توقف المستخدم عن الكتابة
+    this.searchTimer = setTimeout(
+      () => this.loadHistory(),
+      trimmedValue.length >= 3 ? 400 : 0
+    );
   }
 
   // =========================================================
-  // ERROR DIALOG
+  // ERRORS DIALOG (import errors + row errors)
   // =========================================================
 
-  readonly errorsDialogVisible = signal(false);
-  readonly selectedErrorRow = signal<CommitteeTableRow | null>(null);
+  readonly importErrorsDialogVisible = signal(false);
+  readonly importErrors = signal<string[]>([]);
+  readonly errorsFileName = signal('');
 
-  openErrors(row: CommitteeTableRow): void {
-    this.selectedErrorRow.set(row);
-    this.errorsDialogVisible.set(true);
+  openErrors(row: any): void {
+    this.importErrors.set(row.errors);
+    this.errorsFileName.set(row.fileName || row.schoolName);
+    this.importErrorsDialogVisible.set(true);
   }
 
-  closeErrors(): void {
-    this.errorsDialogVisible.set(false);
-    this.selectedErrorRow.set(null);
+  closeImportErrors(): void {
+    this.importErrorsDialogVisible.set(false);
+  }
+
+  private showImportErrors(errors: string[]): void {
+    const list = errors.length
+      ? errors
+      : ['تعذّر استيراد الملف. يرجى مراجعة البيانات والمحاولة مرة أخرى.'];
+
+    this.importErrors.set(list);
+    this.errorsFileName.set('');
+    this.importErrorsDialogVisible.set(true);
+
+    this.toast.add({
+      key: 'import-summary',
+      severity: 'error',
+      summary: 'فشل استيراد الملف',
+      detail: `تم اكتشاف ${list.length} أخطاء. افتحي تفاصيل الأخطاء لمراجعتها.`,
+      life: 5000
+    });
+  }
+
+  // =========================================================
+  // TRANSFER TO PLANNING
+  // =========================================================
+
+  readonly transferDialogVisible = signal(false);
+  readonly transferRow = signal<any | null>(null);
+  readonly transferring = signal(false);
+
+  openTransfer(row: any): void {
+    this.transferRow.set(row);
+    this.transferDialogVisible.set(true);
+  }
+
+  closeTransfer(): void {
+    if (this.transferring()) {
+      return;
+    }
+
+    this.transferDialogVisible.set(false);
+    this.transferRow.set(null);
+  }
+
+  confirmTransfer(): void {
+    const row = this.transferRow();
+
+    if (!row || this.transferring()) {
+      return;
+    }
+
+    this.transferring.set(true);
+
+    // this.committeeService.transferToPlanning(row.id).subscribe({
+    //   next: () => {
+    //     this.transferring.set(false);
+    //     this.closeTransfer();
+
+    //     this.toast.add({
+    //       severity: 'success',
+    //       summary: 'تم التحويل',
+    //       detail: `تم تحويل اللجنة رقم ${row.committeeNumber} إلى مستخدم Planning بنجاح.`,
+    //       life: 3500
+    //     });
+
+    //     this.loadHistory();
+    //   },
+    //   error: err => {
+    //     console.error('Transfer error:', err);
+    //     this.transferring.set(false);
+
+    //     this.toast.add({
+    //       severity: 'error',
+    //       summary: 'تعذّر تحويل اللجنة',
+    //       detail: this.extractErrorMessage(err),
+    //       life: 5000
+    //     });
+    //   }
+    // });
   }
 
   // =========================================================
@@ -443,11 +425,7 @@ setSearchTerm(value: string): void {
 
   private selectedFile: File | null = null;
 
-  readonly uploadedFile = signal<{
-    name: string;
-    sizeKb: number;
-  } | null>(null);
-
+  readonly uploadedFile = signal<{ name: string; sizeKb: number } | null>(null);
   readonly saving = signal(false);
   readonly filesGenerated = signal(false);
   readonly saveError = signal('');
@@ -467,11 +445,9 @@ setSearchTerm(value: string): void {
   onDragOver(event: DragEvent): void {
     event.preventDefault();
 
-    if (this.saving()) {
-      return;
+    if (!this.saving()) {
+      this.isDragOver.set(true);
     }
-
-    this.isDragOver.set(true);
   }
 
   onDragLeave(event: DragEvent): void {
@@ -491,13 +467,9 @@ setSearchTerm(value: string): void {
     event.preventDefault();
     this.isDragOver.set(false);
 
-    if (this.saving()) {
-      return;
-    }
-
     const file = event.dataTransfer?.files?.[0];
 
-    if (file) {
+    if (file && !this.saving()) {
       this.processSelectedFile(file);
     }
   }
@@ -506,9 +478,7 @@ setSearchTerm(value: string): void {
     const extension = file.name.split('.').pop()?.toLowerCase();
 
     if (!extension || !['xlsx', 'xls'].includes(extension)) {
-      this.selectedFile = null;
-      this.uploadedFile.set(null);
-      this.filesGenerated.set(false);
+      this.resetFile();
 
       this.saveError.set(
         'صيغة الملف غير مدعومة. اختاري ملف Excel بصيغة XLS أو XLSX.'
@@ -540,10 +510,14 @@ setSearchTerm(value: string): void {
       return;
     }
 
+    this.resetFile();
+    this.saveError.set('');
+  }
+
+  private resetFile(): void {
     this.selectedFile = null;
     this.uploadedFile.set(null);
     this.filesGenerated.set(false);
-    this.saveError.set('');
   }
 
   // =========================================================
@@ -593,18 +567,12 @@ setSearchTerm(value: string): void {
       next: response => {
         this.saving.set(false);
 
-        // Do not treat an unsuccessful response as a success
-        // just because the HTTP status was 2xx.
+        // 2xx لا يعني بالضرورة نجاح الاستيراد
         const responseErrors = this.normalizeErrors(
-          (response as any)?.errors ??
-          (response as any)?.data?.errors
+          (response as any)?.errors ?? (response as any)?.data?.errors
         );
 
-        if (
-          (response as any)?.success === false ||
-          responseErrors.length > 0
-        ) {
-          this.filesGenerated.set(false);
+        if ((response as any)?.success === false || responseErrors.length > 0) {
           this.saveError.set(
             `فشل استيراد الملف، وتم اكتشاف ${responseErrors.length} أخطاء.`
           );
@@ -631,7 +599,6 @@ setSearchTerm(value: string): void {
         console.error('Upload error:', err);
 
         this.saving.set(false);
-        this.filesGenerated.set(false);
 
         const errors = this.extractApiErrors(err);
 
@@ -643,7 +610,7 @@ setSearchTerm(value: string): void {
 
         this.showImportErrors(errors);
 
-        // Refresh history so that the rejected import appears in the table.
+        // تحديث الجدول ليظهر الاستيراد المرفوض
         this.first.set(0);
         this.loadHistory();
       }
@@ -651,14 +618,12 @@ setSearchTerm(value: string): void {
   }
 
   // =========================================================
-  // IMPORT ERRORS / TOAST
+  // ERROR HELPERS
   // =========================================================
 
   private normalizeErrors(value: unknown): string[] {
     if (Array.isArray(value)) {
-      return value
-        .map(item => String(item ?? '').trim())
-        .filter(Boolean);
+      return value.map(item => String(item ?? '').trim()).filter(Boolean);
     }
 
     if (typeof value === 'string' && value.trim()) {
@@ -671,11 +636,8 @@ setSearchTerm(value: string): void {
   private extractApiErrors(err: any): string[] {
     const body = err?.error;
 
-    // The backend may return the 422 body directly in error.errors.
     const errors = this.normalizeErrors(
-      body?.errors ??
-      body?.Errors ??
-      body?.data?.errors
+      body?.errors ?? body?.Errors ?? body?.data?.errors
     );
 
     if (errors.length) {
@@ -696,31 +658,6 @@ setSearchTerm(value: string): void {
     ];
   }
 
- 
-private showImportErrors(errors: string[]): void {
-  const normalizedErrors = errors.length
-    ? errors
-    : ['تعذّر استيراد الملف. يرجى مراجعة البيانات والمحاولة مرة أخرى.'];
-
-  // عرض كل الأخطاء في نافذة واحدة بدل Toast لكل خطأ
-  this.importErrors.set(normalizedErrors);
-  this.importErrorsDialogVisible.set(true);
-
-  // Toast واحد فقط لعرض ملخص المشكلة
-  this.toast.add({
-    key: 'import-summary',
-    severity: 'error',
-    summary: 'فشل استيراد الملف',
-    detail: `تم اكتشاف ${normalizedErrors.length} أخطاء. افتحي تفاصيل الأخطاء لمراجعتها.`,
-    life: 5000
-  });
-}
-
-closeImportErrors(): void {
-  this.importErrorsDialogVisible.set(false);
-}
-
-
   private extractErrorMessage(err: any): string {
     return this.extractApiErrors(err)[0];
   }
@@ -729,21 +666,24 @@ closeImportErrors(): void {
   // DISPLAY LABELS
   // =========================================================
 
+  private labelOf(options: SelectOption[], value: string): string {
+    return options.find(item => item.value === value)?.label ?? value;
+  }
+
   getGovernorateLabel(value: string): string {
-    return this.governorates().find(item => item.value === value)?.label ?? value;
+    return this.labelOf(this.governorates(), value);
   }
 
-   getRoundLabel(value: string): string {
-    console.log(value)
-    return this.rounds().find(item => item.value === value)?.label ?? value;
+  getRoundLabel(value: string): string {
+    return this.labelOf(this.rounds(), value);
   }
 
-   getEduccationalStageLabel(value: string): string {
-    return this.educationalStages().find(item => item.value === value)?.label ?? value;
+  getEduccationalStageLabel(value: string): string {
+    return this.labelOf(this.educationalStages(), value);
   }
 
   getSubjectLabel(value: string): string {
-    return this.subjects().find(item => item.value === value)?.label ?? value;
+    return this.labelOf(this.subjects(), value);
   }
 
   // =========================================================
@@ -809,8 +749,7 @@ closeImportErrors(): void {
     ];
 
     const csv =
-      '\uFEFF' +
-      reportRows.map(row => row.map(csvCell).join(',')).join('\r\n');
+      '\uFEFF' + reportRows.map(row => row.map(csvCell).join(',')).join('\r\n');
 
     const url = URL.createObjectURL(
       new Blob([csv], { type: 'text/csv;charset=utf-8;' })
@@ -819,8 +758,7 @@ closeImportErrors(): void {
     const anchor = document.createElement('a');
 
     anchor.href = url;
-    anchor.download =
-      `تقرير-اللجان-${new Date().toISOString().slice(0, 10)}.csv`;
+    anchor.download = `تقرير-اللجان-${new Date().toISOString().slice(0, 10)}.csv`;
 
     document.body.appendChild(anchor);
     anchor.click();
