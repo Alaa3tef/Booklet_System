@@ -128,62 +128,72 @@ export default class QualityComponent implements OnInit {
    * GET api/Governorates
    */
   loadGovernorates(): void {
-    this.governoratesLoading.set(true);
-    this.governoratesError.set(false);
+  this.governoratesLoading.set(true);
+  this.governoratesError.set(false);
 
-    this.lookups.getLookupGovernorateData().subscribe({
-      next: (response: any) => {
-        const options = this.normalizeLookupOptions(response, [
-          'governorateName',
-          'nameAr',
-          'arabicName',
-          'governorate',
-          'name',
-          'title',
-          'value'
-        ]);
+  // إفراغ القائمة قبل تحميل البيانات
+  this.governorates.set([]);
 
-        this.governorates.set(options);
-        this.governoratesLoading.set(false);
-      },
-      error: (error: unknown) => {
-        console.error('Error loading governorates:', error);
-        this.governoratesError.set(true);
-        this.governoratesLoading.set(false);
-      }
-    });
-  }
+  this.lookups.getLookupGovernorateData().subscribe({
+    next: (response: any) => {
+      const options = this.normalizeLookupOptions(response, [
+        'governorateName',
+        'nameAr',
+        'arabicName',
+        'governorate',
+        'name',
+        'title',
+        'value'
+      ]);
+
+      this.governorates.set(options);
+      this.governoratesLoading.set(false);
+    },
+    error: (error: unknown) => {
+      console.error('Error loading governorates:', error);
+
+      this.governorates.set([]);
+      this.governoratesError.set(true);
+      this.governoratesLoading.set(false);
+    }
+  });
+}
 
   /**
    * تحميل المواد من:
    * GET api/Subjects
    */
   loadSubjects(): void {
-    this.subjectsLoading.set(true);
-    this.subjectsError.set(false);
+  this.subjectsLoading.set(true);
+  this.subjectsError.set(false);
 
-    this.lookups.getLookupSubjectData().subscribe({
-      next: (response: any) => {
-        const options = this.normalizeLookupOptions(response, [
-          'subjectName',
-          'nameAr',
-          'arabicName',
-          'subject',
-          'name',
-          'title',
-          'value'
-        ]);
+  // إفراغ القائمة قبل تحميل البيانات
+  this.subjects.set([]);
 
-        this.subjects.set(options);
-        this.subjectsLoading.set(false);
-      },
-      error: (error: unknown) => {
-        console.error('Error loading subjects:', error);
-        this.subjectsError.set(true);
-        this.subjectsLoading.set(false);
-      }
-    });
-  }
+  this.lookups.getLookupSubjectData().subscribe({
+    next: (response: any) => {
+      const options = this.normalizeLookupOptions(response, [
+        'subjectName',
+        'nameAr',
+        'arabicName',
+        'subject',
+        'name',
+        'title',
+        'value'
+      ]);
+
+      this.subjects.set(options);
+      this.subjectsLoading.set(false);
+    },
+    error: (error: unknown) => {
+      console.error('Error loading subjects:', error);
+
+      this.subjects.set([]);
+      this.subjectsError.set(true);
+      this.subjectsLoading.set(false);
+    }
+  });
+}
 
   /**
    * تحويل استجابة الـ API إلى:
@@ -338,21 +348,13 @@ export default class QualityComponent implements OnInit {
    * في حالة فشل تحميل القوائم نستخدم القيم الموجودة بالصفوف
    * حتى لا تصبح الفلاتر فارغة تماماً.
    */
-  readonly subjectOptions = computed<LookupOption[]>(() => {
-    const apiOptions = this.subjects();
+  readonly subjectOptions = computed<LookupOption[]>(() =>
+  this.subjects()
+);
 
-    return apiOptions.length
-      ? apiOptions
-      : this.optionsOf(row => row.subject);
-  });
-
-  readonly governorateOptions = computed<LookupOption[]>(() => {
-    const apiOptions = this.governorates();
-
-    return apiOptions.length
-      ? apiOptions
-      : this.optionsOf(row => row.governorate);
-  });
+readonly governorateOptions = computed<LookupOption[]>(() =>
+  this.governorates()
+);
 
   private readonly searchedRows = computed(() => {
     const { subject, governorate, committee } =
