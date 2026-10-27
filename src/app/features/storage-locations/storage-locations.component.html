@@ -16,63 +16,11 @@
       </div>
     </div>
 
-    <button
-      pButton
-      type="button"
-      class="add-btn"
-      (click)="openAdd()"
-    >
+    <button pButton type="button" class="add-btn" (click)="openAdd()">
       <i class="pi pi-plus"></i>
       <span>إضافة موقع تخزين</span>
     </button>
   </header>
-
-  <!-- Statistics -->
-  <!-- <section class="stats-grid">
-    <article class="stat-card stat-card-primary">
-      <div class="stat-content">
-        <span>إجمالي مواقع التخزين</span>
-        <strong>{{ totalCount() | number }}</strong>
-        <small>حسب نتائج النظام الحالية</small>
-      </div>
-      <div class="stat-icon">
-        <i class="pi pi-map-marker"></i>
-      </div>
-    </article>
-
-    <article class="stat-card">
-      <div class="stat-content">
-        <span>المخازن المسجلة</span>
-        <strong>{{ warehouseCount() | number }}</strong>
-        <small>المخازن المتاحة للاختيار</small>
-      </div>
-      <div class="stat-icon icon-blue">
-        <i class="pi pi-warehouse"></i>
-      </div>
-    </article>
-
-    <article class="stat-card">
-      <div class="stat-content">
-        <span>المواقع المعروضة</span>
-        <strong>{{ visibleLocationCount() | number }}</strong>
-        <small>في الصفحة الحالية</small>
-      </div>
-      <div class="stat-icon icon-cyan">
-        <i class="pi pi-list"></i>
-      </div>
-    </article>
-
-    <article class="stat-card">
-      <div class="stat-content">
-        <span>المناطق المعروضة</span>
-        <strong>{{ visibleAreaCount() | number }}</strong>
-        <small>المناطق المختلفة في الصفحة الحالية</small>
-      </div>
-      <div class="stat-icon icon-sky">
-        <i class="pi pi-th-large"></i>
-      </div>
-    </article>
-  </section> -->
 
   <!-- Filters -->
   <section class="filters-card">
@@ -120,23 +68,43 @@
       </div>
 
       <div class="filter-field">
-        <label for="locationSearch">بحث عن موقع</label>
+        <!-- <label for="locationSearch">بحث عن موقع</label> -->
 
-        <div class="search-wrapper">
-          <i class="pi pi-search"></i>
-          <input
-            id="locationSearch"
-            pInputText
-            type="search"
-            class="filter-input"
-            placeholder="ابحث بالكود أو المنطقة أو الرف..."
-            [ngModel]="searchInput()"
-            (ngModelChange)="onSearchInput($event)"
-          />
+        <div class="search-row">
+          <!-- <div class="search-wrapper">
+            <i class="pi pi-search"></i>
+            <input
+              id="locationSearch"
+              pInputText
+              type="search"
+              class="filter-input"
+              placeholder="ابحث بالكود أو المنطقة أو الرف..."
+              [ngModel]="searchInput()"
+              (ngModelChange)="onSearchInput($event)"
+            />
+          </div> -->
+
+          <!-- زرار طباعة QR بجوار البحث: ظاهر دائمًا، يطبع كل المواقع -->
+        
         </div>
       </div>
 
       <div class="filter-actions">
+          <button
+            pButton
+            type="button"
+            class="print-qr-btn"
+            [disabled]="printingAll() || printingId() !== null"
+            pTooltip="طباعة QR لكل مواقع التخزين"
+            tooltipPosition="top"
+            (click)="printQr()"
+          >
+            <i
+              class="pi"
+              [ngClass]="printingAll() ? 'pi-spin pi-spinner' : 'pi-qrcode'"
+            ></i>
+            <span>{{ printingAll() ? 'جاري التجهيز...' : 'طباعة QR' }}</span>
+          </button>
         <button
           pButton
           type="button"
@@ -197,7 +165,7 @@
             <th>كود الموقع</th>
             <th>المنطقة</th>
             <th>الرف</th>
-            <th>الدور</th>
+            <th>الدولاب</th>
             <th>الصندوق</th>
             <th>المخزن</th>
             <th class="action-column">الإجراءات</th>
@@ -206,9 +174,7 @@
 
         <ng-template pTemplate="body" let-row let-i="rowIndex">
           <tr>
-            <td>
-              <span class="row-index">{{ rowNumber(i) }}</span>
-            </td>
+            <td><span class="row-index">{{ rowNumber(i) }}</span></td>
 
             <td>
               <span class="code-chip">
@@ -217,10 +183,7 @@
               </span>
             </td>
 
-            <td>
-              <span class="location-value">{{ row.area }}</span>
-            </td>
-
+            <td><span class="location-value">{{ row.area }}</span></td>
             <td>{{ row.rack }}</td>
             <td>{{ row.shelf }}</td>
             <td>{{ row.bin }}</td>
@@ -256,6 +219,21 @@
                   (click)="openDelete(row)"
                 >
                   <i class="pi pi-trash"></i>
+                </button>
+
+                <button
+                  type="button"
+                  class="action-btn print-action"
+                  aria-label="طباعة QR"
+                  pTooltip="طباعة QR لهذا الموقع"
+                  tooltipPosition="top"
+                  [disabled]="printingAll() || printingId() !== null"
+                  (click)="printQr(row.id)"
+                >
+                  <i
+                    class="pi"
+                    [ngClass]="printingId() === row.id ? 'pi-spin pi-spinner' : 'pi-qrcode'"
+                  ></i>
                 </button>
               </div>
             </td>
@@ -381,7 +359,7 @@
 </div>
 
 <!-- ============================== -->
-<!-- ADD / EDIT DIALOG              -->
+<!-- ADD / EDIT DIALOG (واحد)       -->
 <!-- ============================== -->
 <p-dialog
   [(visible)]="formVisible"
@@ -407,20 +385,23 @@
       <div class="dialog-heading-text">
         <span class="dialog-eyebrow">مواقع التخزين</span>
         <h2>{{ editingId() !== null ? 'تعديل موقع التخزين' : 'إضافة موقع تخزين جديد' }}</h2>
-        <p>أدخل بيانات الموقع وتأكد من صحة الكود.</p>
+        <p>
+          {{
+            editingId() !== null
+              ? 'عدّل بيانات الموقع المحدد.'
+              : 'حدد عدد المناطق والرفوف والدواليب والصناديق ليتم إنشاء المواقع.'
+          }}
+        </p>
       </div>
     </div>
   </ng-template>
 
   <div class="dialog-body">
-    <div class="form-loading" *ngIf="loadingForm()">
-      <i class="pi pi-spin pi-spinner"></i>
-      <span>جاري تحميل بيانات الموقع...</span>
-    </div>
 
+    <!-- ========== فورم الإضافة (أرقام) ========== -->
     <form
-      *ngIf="!loadingForm()"
-      [formGroup]="form"
+      *ngIf="editingId() === null"
+      [formGroup]="addForm"
       (ngSubmit)="save()"
       class="location-form"
       novalidate
@@ -432,11 +413,9 @@
 
       <div class="form-grid">
         <div class="dialog-field">
-          <label for="formWarehouse">
-            المخزن <span class="required">*</span>
-          </label>
+          <label for="addWarehouse">المخزن <span class="required">*</span></label>
           <p-select
-            inputId="formWarehouse"
+            inputId="addWarehouse"
             formControlName="warehouseId"
             [options]="warehouses()"
             optionLabel="name"
@@ -448,36 +427,10 @@
             panelStyleClass="sl-select-panel"
             styleClass="form-select"
           ></p-select>
-          <small class="field-error" *ngIf="invalid('warehouseId')">
+          <small class="field-error" *ngIf="invalid(addForm, 'warehouseId')">
             يجب اختيار المخزن.
           </small>
-          <small class="field-hint" *ngIf="editingId() !== null">
-            لا يمكن تغيير المخزن عند تعديل الموقع.
-          </small>
         </div>
-
-        <!-- <div class="dialog-field">
-          <label for="formCode">
-            كود الموقع <span class="required">*</span>
-          </label>
-          <input
-            id="formCode"
-            pInputText
-            type="text"
-            formControlName="code"
-            class="form-input"
-            maxlength="50"
-            placeholder="مثال: A1-R1-S1-B1"
-            dir="auto"
-          />
-          <small class="field-error" *ngIf="invalid('code')">
-            {{
-              form.controls.code.hasError('maxlength')
-                ? 'الحد الأقصى للكود 50 حرفًا.'
-                : 'كود الموقع مطلوب.'
-            }}
-          </small>
-        </div> -->
       </div>
 
       <div class="form-section-heading location-section-heading">
@@ -487,79 +440,64 @@
 
       <div class="form-grid">
         <div class="dialog-field">
-          <label for="formArea">
-            المنطقة <span class="required">*</span>
-          </label>
-          <input
-             id="formArea"
-            pInputText
-            type="text"
-            formControlName="area"
-            class="form-input"
-            maxlength="50"
-            dir="auto"
-          />
-          <small class="field-error" *ngIf="invalid('area')">
-            المنطقة مطلوبة.
+          <label for="addAreas">عدد المناطق <span class="required">*</span></label>
+          <p-inputNumber
+            inputId="addAreas"
+            formControlName="areas"
+            [min]="1"
+            [useGrouping]="false"
+            [showButtons]="true"
+            inputStyleClass="form-input"
+          ></p-inputNumber>
+          <small class="field-error" *ngIf="invalid(addForm, 'areas')">
+            أدخل رقمًا صحيحًا (1 أو أكثر).
           </small>
         </div>
 
         <div class="dialog-field">
-          <label for="formRack">
-            الرف <span class="required">*</span>
-          </label>
-         <input
-             id="formRack"
-            pInputText
-            type="text"
-            formControlName="rack"
-            class="form-input"
-            maxlength="50"
-            dir="auto"
-          />
-          <small class="field-error" *ngIf="invalid('rack')">
-            الرف مطلوب.
+          <label for="addRacks">عدد الرفوف <span class="required">*</span></label>
+          <p-inputNumber
+            inputId="addRacks"
+            formControlName="racksPerArea"
+            [min]="1"
+            [useGrouping]="false"
+            [showButtons]="true"
+            inputStyleClass="form-input"
+          ></p-inputNumber>
+          <small class="field-error" *ngIf="invalid(addForm, 'racksPerArea')">
+            أدخل رقمًا صحيحًا (1 أو أكثر).
           </small>
         </div>
 
         <div class="dialog-field">
-          <label for="formShelf">
-            الدولاب <span class="required">*</span>
-          </label>
-          <input
-             id="formShelf"
-            pInputText
-            type="text"
-            formControlName="shelf"
-            class="form-input"
-            maxlength="50"
-           
-            dir="auto"
-          />
-          <small class="field-error" *ngIf="invalid('shelf')">
-            الدولاب مطلوب.
+          <label for="addShelves">عدد الدواليب <span class="required">*</span></label>
+          <p-inputNumber
+            inputId="addShelves"
+            formControlName="shelvesPerRack"
+            [min]="1"
+            [useGrouping]="false"
+            [showButtons]="true"
+            inputStyleClass="form-input"
+          ></p-inputNumber>
+          <small class="field-error" *ngIf="invalid(addForm, 'shelvesPerRack')">
+            أدخل رقمًا صحيحًا (1 أو أكثر).
           </small>
         </div>
 
-        <!-- <div class="dialog-field">
-          <label for="formBin">
-            الصندوق <span class="required">*</span>
-          </label>
-          <p-select
-            inputId="formBin"
-            formControlName="bin"
-            [options]="binOptions"
-            optionLabel="label"
-            optionValue="value"
-            placeholder="اختر الصندوق"
-            appendTo="body"
-            panelStyleClass="sl-select-panel"
-            styleClass="form-select"
-          ></p-select>
-          <small class="field-error" *ngIf="invalid('bin')">
-            الصندوق مطلوب.
+        <div class="dialog-field">
+          <label for="addBins">عدد الصناديق <span class="required">*</span></label>
+          <p-inputNumber
+            inputId="addBins"
+            formControlName="binsPerArea"
+            [min]="1"
+            [useGrouping]="false"
+            [showButtons]="true"
+            inputStyleClass="form-input"
+          ></p-inputNumber>
+          <small class="field-error" *ngIf="invalid(addForm, 'binsPerArea')">
+            أدخل رقمًا صحيحًا (1 أو أكثر).
           </small>
-        </div> -->
+        </div>
       </div>
 
       <div class="form-note">
@@ -567,6 +505,124 @@
         <span>الحقول التي بجوارها علامة النجمة إلزامية.</span>
       </div>
     </form>
+
+    <!-- ========== فورم التعديل (نصوص) ========== -->
+    <ng-container *ngIf="editingId() !== null">
+      <div class="form-loading" *ngIf="loadingForm()">
+        <i class="pi pi-spin pi-spinner"></i>
+        <span>جاري تحميل بيانات الموقع...</span>
+      </div>
+
+      <form
+        *ngIf="!loadingForm()"
+        [formGroup]="editForm"
+        (ngSubmit)="save()"
+        class="location-form"
+        novalidate
+      >
+        <div class="form-section-heading">
+          <i class="pi pi-info-circle"></i>
+          <span>البيانات الأساسية</span>
+        </div>
+
+        <div class="form-grid">
+  <div class="dialog-field">
+    <label for="editWarehouse">المخزن</label>
+    <p-select
+      inputId="editWarehouse"
+      formControlName="warehouseId"
+      [options]="warehouses()"
+      optionLabel="name"
+      optionValue="id"
+      placeholder="المخزن"
+      appendTo="body"
+      panelStyleClass="sl-select-panel"
+      styleClass="form-select"
+    ></p-select>
+  </div>
+
+  <div class="dialog-field">
+    <label for="editQrCode">كود الموقع</label>
+    <input
+      id="editQrCode"
+      pInputText
+      type="text"
+      formControlName="qrCode"
+      class="form-input"
+      dir="ltr"
+    />
+  </div>
+</div>
+
+        <div class="form-section-heading location-section-heading">
+          <i class="pi pi-sitemap"></i>
+          <span>تفاصيل موقع التخزين</span>
+        </div>
+
+        <div class="form-grid">
+          <div class="dialog-field">
+            <label for="editArea">المنطقة <span class="required">*</span></label>
+            <input
+              id="editArea"
+              pInputText
+              type="text"
+              formControlName="area"
+              class="form-input"
+              maxlength="50"
+              dir="auto"
+            />
+            <small class="field-error" *ngIf="invalid(editForm, 'area')">المنطقة مطلوبة.</small>
+          </div>
+
+          <div class="dialog-field">
+            <label for="editRack">الرف <span class="required">*</span></label>
+            <input
+              id="editRack"
+              pInputText
+              type="text"
+              formControlName="rack"
+              class="form-input"
+              maxlength="50"
+              dir="auto"
+            />
+            <small class="field-error" *ngIf="invalid(editForm, 'rack')">الرف مطلوب.</small>
+          </div>
+
+          <div class="dialog-field">
+            <label for="editShelf">الدولاب <span class="required">*</span></label>
+            <input
+              id="editShelf"
+              pInputText
+              type="text"
+              formControlName="shelf"
+              class="form-input"
+              maxlength="50"
+              dir="auto"
+            />
+            <small class="field-error" *ngIf="invalid(editForm, 'shelf')">الدولاب مطلوب.</small>
+          </div>
+
+          <div class="dialog-field">
+            <label for="editBin">الصندوق <span class="required">*</span></label>
+            <input
+              id="editBin"
+              pInputText
+              type="text"
+              formControlName="bin"
+              class="form-input"
+              maxlength="50"
+              dir="auto"
+            />
+            <small class="field-error" *ngIf="invalid(editForm, 'bin')">الصندوق مطلوب.</small>
+          </div>
+        </div>
+
+        <div class="form-note">
+          <i class="pi pi-shield"></i>
+          <span>الحقول التي بجوارها علامة النجمة إلزامية.</span>
+        </div>
+      </form>
+    </ng-container>
   </div>
 
   <ng-template pTemplate="footer">
@@ -575,7 +631,7 @@
         pButton
         type="button"
         class="save-btn"
-        [disabled]="form.invalid || saving() || loadingForm()"
+        [disabled]="activeForm.invalid || saving() || loadingForm()"
         [loading]="saving()"
         (click)="save()"
       >
@@ -641,17 +697,14 @@
     </div>
 
     <h3>هل أنت متأكد من الحذف؟</h3>
-    <p class="delete-text">
-      سيتم حذف موقع التخزين
-      <!-- <strong class="delete-code"><bdi>{{ warehouseName(t) }}</bdi></strong> -->
-      نهائيًا من النظام.
-    </p>
+    <p class="delete-text">سيتم حذف موقع التخزين نهائيًا من النظام.</p>
 
     <dl class="delete-details" *ngIf="deleteTarget() as t">
       <div><dt>المخزن</dt><dd>{{ warehouseName(t) }}</dd></div>
       <div><dt>المنطقة</dt><dd>{{ t.area }}</dd></div>
       <div><dt>الرف</dt><dd>{{ t.rack }}</dd></div>
-      <div><dt>الدور / الصندوق</dt><dd>{{ t.shelf  }}</dd></div>
+      <div><dt>الدولاب</dt><dd>{{ t.shelf }}</dd></div>
+      <div><dt>الصندوق</dt><dd>{{ t.bin }}</dd></div>
     </dl>
 
     <div class="delete-warning">
