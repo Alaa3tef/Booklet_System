@@ -1,0 +1,511 @@
+<p-toast position="top-left"></p-toast>
+
+<app-workflow-step-layout
+  stepNumber="02"
+  englishLabel="Printing Approved"
+  arabicTitle=" "
+  arabicSubtitle="مراجعة المواد واعتمادها أو رفضها قبل بدء الطباعة"
+  theme="approve"
+  activeNavKey="printing"
+  illustrationIcon="pi pi-print"
+  illustrationTaglineTop="اعتماد الطباعة"
+  illustrationTaglineBottom="مراجعة دقيقة قبل التنفيذ"
+  panelIcon="pi pi-verified"
+  panelTitle="اعتماد المواد للطباعة"
+  functionLabel="مستخدم الطباعة"
+  [essentials]="essentials"
+  resultText="راجع بيانات المادة ثم اعتمدها للطباعة أو سجّل سبب الرفض"
+>
+  <div panel-content class="printing-approved-page" dir="rtl">
+
+    <!-- ==========================================
+         SEARCH SECTION
+    =========================================== -->
+    <section class="search-section">
+      <div class="pa-search-card">
+
+        <div class="pa-image" aria-hidden="true">
+          <img src="assets/images/it-committee-hero.png" alt="" />
+        </div>
+
+        <div class="pa-search-content">
+
+          <div class="pa-search-title">
+            <div class="pa-search-icon"><i class="pi pi-print"></i></div>
+            <div class="pa-search-text">
+              <h3>اعتماد المواد للطباعة</h3>
+              <p>ابحث عن المادة وراجع بياناتها قبل اعتمادها لمرحلة الطباعة.</p>
+            </div>
+          </div>
+
+          <div class="fields-grid">
+
+            <div class="filter-field">
+              <label for="pa-governorate">المحافظة</label>
+              <div class="select-wrapper">
+                <i class="pi pi-map-marker"></i>
+                <p-select
+                  inputId="pa-governorate"
+                  [options]="governorates()"
+                  optionLabel="label"
+                  optionValue="value"
+                  [ngModel]="searchGovernorate()"
+                  (ngModelChange)="setGovernorate($event)"
+                  placeholder="كل المحافظات"
+                  appendTo="body"
+                  [showClear]="false"
+                />
+              </div>
+            </div>
+
+            <div class="filter-field">
+              <label for="pa-subject">المادة</label>
+              <div class="select-wrapper">
+                <i class="pi pi-book"></i>
+                <p-select
+                  inputId="pa-subject"
+                  [options]="subjects()"
+                  optionLabel="label"
+                  optionValue="value"
+                  [ngModel]="searchSubject()"
+                  (ngModelChange)="setSubject($event)"
+                  placeholder="كل المواد"
+                  appendTo="body"
+                  [showClear]="false"
+                  styleClass="pa-filter-select"
+                />
+              </div>
+            </div>
+
+            <div class="filter-field committee-search-field">
+              <label for="pa-committee">رقم اللجنة</label>
+              <div class="committee-input-wrapper">
+                <i class="pi pi-hashtag"></i>
+                <input
+                  id="pa-committee"
+                  pInputText
+                  type="text"
+                  autocomplete="off"
+                  placeholder="اكتب رقم اللجنة"
+                  [ngModel]="searchCommittee()"
+                  (ngModelChange)="setCommittee($event)"
+                />
+                @if (searchCommittee()) {
+                  <button type="button" class="clear-search-btn" aria-label="مسح البحث" (click)="setCommittee('')">
+                    <i class="pi pi-times"></i>
+                  </button>
+                }
+              </div>
+            </div>
+
+          </div>
+
+          @if (activeFilters().length) {
+            <div class="active-filters" role="status" aria-live="polite">
+              <span class="af-label"><i class="pi pi-filter"></i> الفلاتر النشطة</span>
+
+              @for (filter of activeFilters(); track filter.key) {
+                <span class="af-chip">
+                  <small>{{ filter.title }}</small><b>{{ filter.value }}</b>
+                  <button type="button" [attr.aria-label]="'إزالة فلتر ' + filter.title" (click)="removeFilter(filter.key)">
+                    <i class="pi pi-times"></i>
+                  </button>
+                </span>
+              }
+
+              <button type="button" class="empty-clear" (click)="clearFilters()">
+                <i class="pi pi-filter-slash"></i> مسح الكل
+              </button>
+            </div>
+          }
+
+        </div>
+      </div>
+    </section>
+
+
+    <!-- ==========================================
+         CARDS SECTION
+    =========================================== -->
+    <section class="table-section">
+
+      <div class="table-header">
+        <h4>قائمة المواد</h4>
+        <span class="results-count">{{ filteredRows().length }} مادة</span>
+      </div>
+
+      <div class="approval-grid">
+
+        @for (row of paginatedRows(); track row.index) {
+          <article class="approval-card" [ngClass]="row.statusTone">
+
+            <div class="approval-card-head">
+              <div class="approval-number">{{ row.index }}</div>
+              <div class="approval-title">
+                <small>رقم اللجنة: {{ row.committeeNumber }}</small>
+                <strong>{{ row.subject }}</strong>
+              </div>
+              <span class="status-badge" [ngClass]="row.statusTone">{{ row.status }}</span>
+            </div>
+
+            <div class="approval-details">
+              <div class="approval-detail">
+                <small>المحافظة</small>
+                <strong><i class="pi pi-map-marker"></i>{{ row.governorate }}</strong>
+              </div>
+              <div class="approval-detail">
+                <small>رقم اللجنة</small>
+                <strong class="committee" dir="ltr">{{ row.committeeNumber }}</strong>
+              </div>
+            </div>
+
+            <ul class="approval-tracker">
+              @for (step of trackerSteps(row); track step.label) {
+                <li [ngClass]="step.state">
+                  <span class="tracker-dot">
+                    <i class="pi" [ngClass]="
+                      step.state === 'done' ? 'pi-check' :
+                      step.state === 'rejected' ? 'pi-times' :
+                      step.state === 'current' ? 'pi-circle-fill' : 'pi-clock'"></i>
+                  </span>
+                  <span class="tracker-label">{{ step.label }}</span>
+                </li>
+              }
+            </ul>
+
+            @if (row.status === 'مرفوض') {
+              <div class="reason-preview">
+                <i class="pi pi-exclamation-circle"></i>
+                <p>{{ row.rejectionReason || 'لم يتم تسجيل سبب الرفض.' }}</p>
+              </div>
+            }
+
+            <div class="approval-actions">
+              @if (row.status === 'جاهز للطباعة') {
+                <div class="approval-completed">
+                  <i class="pi pi-check-circle"></i><span>تم الاعتماد للطباعة</span>
+                </div>
+              } @else if (row.status === 'مرفوض') {
+                <button type="button" class="approval-action view-reason-action" (click)="openRejectionReasonDialog(row)">
+                  <i class="pi pi-eye"></i><span>عرض سبب الرفض</span>
+                </button>
+              } @else {
+                <button type="button" class="approval-action approve-action" (click)="markReady(row)">
+                  <i class="pi pi-print"></i><span>جاهز للطباعة</span>
+                </button>
+                <button type="button" class="approval-action reject-action" (click)="openRejectDialog(row)">
+                  <i class="pi pi-times-circle"></i><span>رفض المادة</span>
+                </button>
+              }
+            </div>
+
+          </article>
+        } @empty {
+          <div class="empty-state">
+            <i class="pi pi-search empty-icon"></i>
+            <strong>لا توجد نتائج مطابقة للبحث</strong>
+            <span>جرّب تغيير الفلاتر أو امسح البحث لعرض جميع المواد.</span>
+            <button type="button" class="empty-clear" (click)="clearFilters()">
+              <i class="pi pi-refresh"></i> عرض كل المواد
+            </button>
+          </div>
+        }
+
+      </div>
+
+
+      <!-- ==========================================
+           PAGINATION
+      =========================================== -->
+      @if (filteredRows().length) {
+        <div class="printing-pagination">
+
+          <div class="pagination-info">
+            <span class="pagination-info-icon"><i class="pi pi-list"></i></span>
+            <span>
+              عرض <strong>{{ paginationStart() }}–{{ paginationEnd() }}</strong>
+              من <strong>{{ filteredRows().length }}</strong> مادة
+            </span>
+          </div>
+
+          <div class="pagination-size">
+            <span>عدد الصفوف</span>
+            <p-select
+              [options]="[{ label: '6', value: 6 }, { label: '9', value: 9 }, { label: '12', value: 12 }]"
+              optionLabel="label"
+              optionValue="value"
+              [ngModel]="pageSize()"
+              (ngModelChange)="pageSize.set(+$event); onPageSizeChange()"
+              appendTo="body"
+              styleClass="pagination-size-select"
+            />
+          </div>
+
+          <div class="pagination-controls">
+            <button type="button" class="pagination-arrow"
+              [disabled]="currentPage() === 1" (click)="previousPage()" aria-label="الصفحة السابقة">
+              <i class="pi pi-chevron-right"></i>
+            </button>
+
+            @for (page of paginationPages(); track $index) {
+              @if (page === 'dots') {
+                <span class="pagination-dots">…</span>
+              } @else {
+                <button type="button" class="pagination-page"
+                  [class.active]="page === currentPage()"
+                  [attr.aria-current]="page === currentPage() ? 'page' : null"
+                  (click)="goToPage(+page)">{{ page }}</button>
+              }
+            }
+
+            <button type="button" class="pagination-arrow"
+              [disabled]="currentPage() === totalPages()" (click)="nextPage()" aria-label="الصفحة التالية">
+              <i class="pi pi-chevron-left"></i>
+            </button>
+          </div>
+
+        </div>
+      }
+
+
+      <!-- ==========================================
+           CONFIRM DIALOG (ready for printing)
+      =========================================== -->
+      <p-dialog
+        [(visible)]="readyDialogVisible"
+        [modal]="true" [baseZIndex]="10000"
+        [draggable]="false" [resizable]="false"
+        [closable]="true" [dismissableMask]="true"
+        [style]="{ width: '520px', maxWidth: 'calc(100vw - 2rem)' }"
+        appendTo="body"
+        styleClass="pa-dialog ready-confirm-dialog"
+      >
+        <ng-template pTemplate="header">
+          <div class="pa-dlg-header">
+            <div class="pa-dlg-icon"><i class="pi pi-print"></i></div>
+            <div class="pa-dlg-title">
+              <h3>تأكيد اعتماد المادة للطباعة</h3>
+              <span>يرجى مراجعة بيانات المادة قبل تأكيد الإجراء</span>
+            </div>
+          </div>
+        </ng-template>
+
+        <div class="pa-dlg-body">
+
+          <div class="pa-subject-card">
+            <div class="pa-subject-icon"><i class="pi pi-book"></i></div>
+            <div class="pa-subject-info">
+              <span>المادة</span>
+              <strong>{{ selectedRow?.subject || '—' }}</strong>
+            </div>
+          </div>
+
+          <div class="pa-meta-grid">
+            <div class="pa-meta">
+              <i class="pi pi-map-marker"></i>
+              <div><span>المحافظة</span><strong>{{ selectedRow?.governorate || '—' }}</strong></div>
+            </div>
+            <div class="pa-meta">
+              <i class="pi pi-hashtag"></i>
+              <div><span>رقم اللجنة</span><strong dir="ltr">{{ selectedRow?.committeeNumber || '—' }}</strong></div>
+            </div>
+          </div>
+
+          <div class="pa-status-flow">
+            <span class="pa-chip warning">{{ selectedRow?.status || '—' }}</span>
+            <i class="pi pi-arrow-left"></i>
+            <span class="pa-chip success">جاهز للطباعة</span>
+          </div>
+
+          <div class="pa-note">
+            <i class="pi pi-shield"></i>
+            <span>لن يتم تغيير الحالة إلا بعد الضغط على «تأكيد الاعتماد».</span>
+          </div>
+
+        </div>
+
+        <ng-template pTemplate="footer">
+          <div class="pa-dlg-footer">
+            <button pButton type="button" label="إلغاء" icon="pi pi-times"
+              class="pa-btn-cancel" (click)="closeReadyDialog()"></button>
+            <button pButton type="button" label="تأكيد الاعتماد" icon="pi pi-check"
+              class="pa-btn-confirm" (click)="confirmMarkReady()"></button>
+          </div>
+        </ng-template>
+      </p-dialog>
+
+
+      <!-- ==========================================
+           REJECT DIALOG
+      =========================================== -->
+      <p-dialog
+        [(visible)]="rejectDialogVisible"
+        [modal]="true" [baseZIndex]="10000"
+        [draggable]="false" [resizable]="false"
+        [closable]="!rejectSubmitting"
+        [dismissableMask]="!rejectSubmitting"
+        [style]="{ width: '640px', maxWidth: 'calc(100vw - 2rem)' }"
+        appendTo="body"
+        styleClass="pa-dialog pa-reject-dialog"
+      >
+        <ng-template pTemplate="header">
+          <div class="pa-dlg-header">
+            <div class="pa-dlg-icon danger"><i class="pi pi-exclamation-triangle"></i></div>
+            <div class="pa-dlg-title">
+              <h3>رفض مادة {{ selectedRow?.subject }}</h3>
+              <span>اكتب سبب الرفض وحدد المراجعين المعنيين</span>
+            </div>
+          </div>
+        </ng-template>
+
+        <div class="pa-dlg-body">
+
+          <div class="pa-summary">
+            <div class="pa-summary-item"><span>المادة</span><strong>{{ selectedRow?.subject || '—' }}</strong></div>
+            <div class="pa-summary-divider"></div>
+            <div class="pa-summary-item"><span>المحافظة</span><strong>{{ selectedRow?.governorate || '—' }}</strong></div>
+            <div class="pa-summary-divider"></div>
+            <div class="pa-summary-item"><span>رقم اللجنة</span><strong dir="ltr">{{ selectedRow?.committeeNumber || '—' }}</strong></div>
+          </div>
+
+          <div class="pa-field">
+            <label for="reject-reason">سبب الرفض <b>*</b></label>
+            <textarea
+              pTextarea
+              id="reject-reason"
+              [(ngModel)]="rejectReason"
+              rows="4"
+              [autoResize]="true"
+              maxlength="500"
+              placeholder="اكتب سبب رفض المادة بالتفصيل..."
+            ></textarea>
+
+            <div class="pa-field-footer">
+              <small [class.invalid]="rejectReason.length > 0 && rejectReason.trim().length < 10">
+                {{ rejectReason.length }}/500
+              </small>
+              @if (rejectReason.length > 0 && rejectReason.trim().length < 10) {
+                <small class="invalid">يجب أن يكون سبب الرفض 10 أحرف على الأقل</small>
+              }
+            </div>
+          </div>
+
+          <div class="pa-field">
+            <label for="reject-reviewers">المراجعون المعنيون <b>*</b></label>
+            <p-multiselect
+              inputId="reject-reviewers"
+              [options]="reviewUsers"
+              [(ngModel)]="selectedReviewers"
+              optionLabel="name"
+              [filter]="true"
+              filterBy="name,role"
+              placeholder="اختر المستخدمين المراجعين"
+              appendTo="body"
+              styleClass="w-full pa-reviewers"
+              [showClear]="true"
+              [maxSelectedLabels]="2"
+              selectedItemsLabel="{0} مستخدمين مختارين"
+            >
+              <ng-template pTemplate="item" let-user>
+                <div class="pa-reviewer-option">
+                  <span class="pa-avatar">{{ user.name.charAt(0) }}</span>
+                  <div>
+                    <strong>{{ user.name }}</strong>
+                    <small>{{ user.role }}</small>
+                  </div>
+                </div>
+              </ng-template>
+            </p-multiselect>
+          </div>
+
+          <div class="pa-warning">
+            <i class="pi pi-info-circle"></i>
+            <span>سيتم تغيير حالة المادة إلى <strong>مرفوض</strong> وإرسالها للمراجعين المحددين.</span>
+          </div>
+
+        </div>
+
+        <ng-template pTemplate="footer">
+          <div class="pa-dlg-footer">
+            <button pButton type="button" label="إلغاء" icon="pi pi-times"
+              class="pa-btn-cancel"
+              [disabled]="rejectSubmitting" (click)="closeRejectDialog()"></button>
+            <button pButton type="button" label="تأكيد الرفض" icon="pi pi-send"
+              class="pa-btn-danger"
+              [loading]="rejectSubmitting"
+              [disabled]="!isRejectFormValid || rejectSubmitting"
+              (click)="submitRejection()"></button>
+          </div>
+        </ng-template>
+      </p-dialog>
+
+
+      <!-- ==========================================
+           VIEW REJECTION REASON DIALOG
+      =========================================== -->
+      <p-dialog
+        [(visible)]="rejectionReasonDialogVisible"
+        [modal]="true" [baseZIndex]="10000"
+        [draggable]="false" [resizable]="false"
+        [closable]="true" [dismissableMask]="true"
+        [style]="{ width: '560px', maxWidth: 'calc(100vw - 2rem)' }"
+        appendTo="body"
+        styleClass="pa-dialog rejection-reason-dialog"
+      >
+        <ng-template pTemplate="header">
+          <div class="rejection-dialog-header">
+            <div class="rejection-dialog-icon"><i class="pi pi-eye"></i></div>
+            <div class="rejection-dialog-title">
+              <h3>سبب رفض المادة</h3>
+              <span>تفاصيل المادة التي لم يتم اعتمادها</span>
+            </div>
+          </div>
+        </ng-template>
+
+        <div class="rejection-reason-content">
+
+          <div class="rejection-material-card">
+            <div class="rejection-material-icon"><i class="pi pi-book"></i></div>
+            <div class="rejection-material-info">
+              <span class="rejection-label">المادة</span>
+              <strong>{{ selectedRow?.subject || '—' }}</strong>
+            </div>
+            <span class="status-badge danger">{{ selectedRow?.status || 'مرفوض' }}</span>
+          </div>
+
+          <div class="rejection-meta">
+            <div class="rejection-meta-item">
+              <i class="pi pi-map-marker"></i>
+              <div><span>المحافظة</span><strong>{{ selectedRow?.governorate || '—' }}</strong></div>
+            </div>
+            <div class="rejection-meta-item">
+              <i class="pi pi-hashtag"></i>
+              <div><span>رقم اللجنة</span><strong dir="ltr">{{ selectedRow?.committeeNumber || '—' }}</strong></div>
+            </div>
+          </div>
+
+          <div class="rejection-reason-box">
+            <div class="rejection-reason-heading">
+              <span class="reason-title"><i class="pi pi-exclamation-circle"></i> تفاصيل سبب الرفض</span>
+            </div>
+            <div class="rejection-reason-text">{{ selectedRejectionReason }}</div>
+          </div>
+
+          <div class="rejection-info">
+            <i class="pi pi-info-circle"></i>
+            <span>يمكن مراجعة تفاصيل الرفض قبل إعادة تقديم المادة للاعتماد.</span>
+          </div>
+
+        </div>
+
+        <ng-template pTemplate="footer">
+          <div class="rejection-dialog-footer">
+            <button pButton type="button" label="إغلاق" icon="pi pi-times"
+              class="pa-btn-cancel" (click)="closeRejectionReasonDialog()"></button>
+          </div>
+        </ng-template>
+      </p-dialog>
+
+    </section>
+  </div>
+</app-workflow-step-layout>
