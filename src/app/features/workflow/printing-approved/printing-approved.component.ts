@@ -332,7 +332,7 @@ export default class PrintingApprovedComponent implements OnInit {
       this.selectedRow = null;
       this.rejectReason = '';
       this.selectedReviewers = [];
-
+    console.log("jjgfjg")
       this.messageService.add({ severity: 'success', summary: 'تمت العملية', life: 3000, detail: 'تم رفض المادة بنجاح' });
     }, 800);
   }
