@@ -5,20 +5,27 @@ import { DialogModule } from 'primeng/dialog';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { FloatLabelModule } from 'primeng/floatlabel';
+import { InputGroupModule } from 'primeng/inputgroup';
+import { InputGroupAddonModule } from 'primeng/inputgroupaddon';
 import { MenuModule, Menu } from 'primeng/menu';
 import { MenuItem, MessageService } from 'primeng/api';
+
 import { Warehouse } from './interfaces/warehouse';
 import { WarehouseService } from './service/warehouse.service';
 
 interface WarehouseForm { code: string; name: string; }
 
-const CODE_REGEX = /^[1-9]$/;
-const ARABIC_NAME_CHARACTERS = '\u0621-\u064A\u064B-\u065F\u0670\u066E-\u06D3\u06FA-\u06FC\u0750-\u077F\u08A0-\u08FF';
-const NAME_REGEX =
-  /^[\u0621-\u064A0-9]+(?: [\u0621-\u064A0-9]+)*$/;@Component({
+// Fixed prefix + exactly N digits typed by the user  ->  AP01, AP25 ...
+const CODE_PREFIX = 'AP';
+const CODE_DIGITS = 2;
+const CODE_REGEX = new RegExp(`^\\d{${CODE_DIGITS}}$`);
+// letters (any language), digits and single spaces
+const NAME_REGEX = /^[\p{L}\p{M}\p{N}]+(?:\s[\p{L}\p{M}\p{N}]+)*$/u;
+
+@Component({
   selector: 'app-warehouses',
   standalone: true,
-  imports: [CommonModule, FormsModule, ButtonModule, InputTextModule, DialogModule, FloatLabelModule, MenuModule],
+  imports: [CommonModule, FormsModule, ButtonModule, InputTextModule, DialogModule, FloatLabelModule, MenuModule, InputGroupModule, InputGroupAddonModule],
   templateUrl: './warehouses.component.html',
   styleUrl: './warehouses.component.scss'
 })
@@ -44,7 +51,28 @@ export default class WarehousesComponent implements OnInit {
   formLoading     = signal(false);
   deleting        = signal(false);
 
-  form      = signal<WarehouseForm>({ code: '', name: '' });
+  form      = signal<WarehouseForm>({ code: '', name: '' });   // form.code = the digits only
+
+  readonly codePrefix = CODE_PREFIX;
+  readonly codeDigitsCount = CODE_DIGITS;
+  legacyCode = signal('');   // old code that does not follow the new format
+
+  /** what is sent to the API: AP + digits */
+  readonly fullCode = computed(() => CODE_PREFIX + this.form().code.trim());
+
+  /** AP07 -> '07'.  Anything that does not match the new format -> '' */
+  private toDigits(code: string): string {
+    const rest = (code ?? '').toUpperCase().startsWith(CODE_PREFIX) ? code.slice(CODE_PREFIX.length) : '';
+    return CODE_REGEX.test(rest) ? rest : '';
+  }
+
+  /** keeps only digits, max N characters */
+  onCodeInput(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const digits = input.value.replace(/\D/g, '').slice(0, CODE_DIGITS);
+    if (digits !== input.value) input.value = digits;
+    this.updateForm('code', digits);
+  }
   formError = signal('');
   touched   = signal<Partial<Record<keyof WarehouseForm, boolean>>>({});
 
@@ -81,8 +109,10 @@ export default class WarehousesComponent implements OnInit {
   });
 
   // Summary tiles (based on the warehouses currently loaded)
-  readonly latest = computed<Warehouse | null>(() =>
-    [...this.items()].sort((a, b) => b.dateCreated.localeCompare(a.dateCreated))[0] ?? null);
+  readonly latest = computed<Warehouse | null>(() => {
+    const sorted = [...this.items()].sort((a, b) => b.dateCreated.localeCompare(a.dateCreated));
+    return sorted.length ? sorted[0] : null;
+  });
 
   // Validation
   readonly fieldErrors = computed(() => {
@@ -91,13 +121,13 @@ export default class WarehousesComponent implements OnInit {
     const name = f.name.trim();
     const e: Partial<Record<keyof WarehouseForm, string>> = {};
 
-    if (!code)                       e.code = 'رقم المخزن مطلوب';
-    else if (!CODE_REGEX.test(code)) e.code = 'أدخل رقمًا واحدًا من 1 إلى 9';
+    if (!code)                       e.code = 'كود المخزن مطلوب';
+    else if (!CODE_REGEX.test(code)) e.code = `الكود يجب أن يتكون من ${CODE_DIGITS === 2 ? 'رقمين' : CODE_DIGITS + ' أرقام'} فقط (مثال: ${CODE_PREFIX}01)`;
 
     if (!name)                                   e.name = 'اسم المخزن مطلوب';
     else if (name.length < 2)                    e.name = 'اسم المخزن قصير جدًا';
-else if (!NAME_REGEX.test(name))
-  e.name = 'اسم المخزن يقبل الحروف العربية والأرقام والمسافات فقط';    return e;
+    else if (!NAME_REGEX.test(name))             e.name = 'الاسم يقبل حروفًا وأرقامًا فقط (بدون رموز)';
+    return e;
   });
 
   readonly formValid = computed(() => Object.keys(this.fieldErrors()).length === 0);
@@ -174,45 +204,8 @@ else if (!NAME_REGEX.test(name))
 
   // ---------- ADD / EDIT ----------
   updateForm<K extends keyof WarehouseForm>(key: K, value: string | null): void {
-    const rawValue = value ?? '';
-    const nextValue = key === 'code'
-      ? rawValue.replace(/[^1-9]/g, '').slice(0, 1)
-      : this.sanitizeArabicName(rawValue);
-    this.form.update(f => ({ ...f, [key]: nextValue }));
+    this.form.update(f => ({ ...f, [key]: value ?? '' }));
     this.formError.set('');
-  }
-
-  onWarehouseCodeInput(event: Event): void {
-    const input = event.target as HTMLInputElement;
-    const code = input.value.replace(/[^1-9]/g, '').slice(0, 1);
-    input.value = code;
-    this.updateForm('code', code);
-  }
-
-sanitizeArabicName(value: string): string {
-  return value
-    .replace(/[^\u0621-\u064A\u0660-\u0669\u06F0-\u06F90-9\s]/g, '')
-    .replace(/\s+/g, ' ')
-    .trimStart();
-}
-
-onArabicNameInput(event: Event): void {
-  const input = event.target as HTMLInputElement;
-  const sanitizedName = this.sanitizeArabicName(input.value);
-
-  input.value = sanitizedName;
-  this.updateForm('name', sanitizedName);
-}
-
-  // private sanitizeArabicName(value: string): string {
-  //   return value
-  //     .replace(new RegExp(`[^${ARABIC_NAME_CHARACTERS} ]`, 'g'), '')
-  //     .replace(/\s+/g, ' ')
-  //     .slice(0, 60);
-  // }
-
-  private codeNumber(code: string): string {
-    return /^W([1-9])$/i.exec(code.trim())?.[1] ?? '';
   }
 
   markTouched(key: keyof WarehouseForm): void {
@@ -221,6 +214,7 @@ onArabicNameInput(event: Event): void {
 
   openAddModal(): void {
     this.editingId.set(null);
+    this.legacyCode.set('');
     this.form.set({ code: '', name: '' });
     this.formError.set('');
     this.touched.set({});
@@ -229,7 +223,8 @@ onArabicNameInput(event: Event): void {
 
   openEditModal(w: Warehouse): void {
     this.editingId.set(w.id);
-    this.form.set({ code: this.codeNumber(w.code), name: w.name });
+    this.legacyCode.set(this.toDigits(w.code) ? '' : w.code);
+    this.form.set({ code: this.toDigits(w.code), name: w.name });     // instant, then refresh from server
     this.formError.set('');
     this.touched.set({});
     this.formLoading.set(true);
@@ -237,7 +232,8 @@ onArabicNameInput(event: Event): void {
 
     this.service.getById(w.id).subscribe({
       next: res => {
-        this.form.set({ code: this.codeNumber(res.data.code), name: res.data.name });
+        this.legacyCode.set(this.toDigits(res.data.code) ? '' : res.data.code);
+        this.form.set({ code: this.toDigits(res.data.code), name: res.data.name });
         this.formLoading.set(false);
       },
       error: err => {
@@ -264,7 +260,7 @@ onArabicNameInput(event: Event): void {
     }
 
     const editing = this.isEdit();
-    const body = { code: `W${this.form().code.trim()}`, name: this.form().name.trim() };
+    const body = { code: this.fullCode(), name: this.form().name.trim() };
 
     this.saving.set(true);
     const request$ = editing
