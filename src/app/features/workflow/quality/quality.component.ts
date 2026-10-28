@@ -30,6 +30,7 @@ interface QualityRow extends WorkflowStatusRow {
   committeeNumber: string;
   governorate: string;
   qrCode: string;
+  envelopeCount?: number;
 }
 
 interface LookupOption {
@@ -49,7 +50,7 @@ interface ScanResult {
 
 interface ScanStep {
   id: number;
-  type: 'envelope' | 'cover';
+  type: 'envelope';
   title: string;
   subtitle: string;
   scanned: boolean;
@@ -87,7 +88,6 @@ export default class QualityComponent implements OnInit {
   readonly essentials = [
     'مسح QR الخاص بكل مادة',
     'مسح جميع أظرف اللجنة',
-    'مسح الغلاف النهائي',
     'مراجعة بيانات الـ QR',
     'تسجيل نتيجة المراجعة'
   ];
@@ -305,6 +305,7 @@ export default class QualityComponent implements OnInit {
       committeeNumber: '101',
       governorate: 'القاهرة',
       qrCode: 'QR-COMMITTEE-101',
+      envelopeCount: 8,
       status: PENDING,
       statusTone: 'info'
     },
@@ -314,6 +315,7 @@ export default class QualityComponent implements OnInit {
       committeeNumber: '102',
       governorate: 'الجيزة',
       qrCode: 'QR-COMMITTEE-102',
+      envelopeCount: 8,
       status: PENDING,
       statusTone: 'info'
     },
@@ -323,6 +325,7 @@ export default class QualityComponent implements OnInit {
       committeeNumber: '103',
       governorate: 'القاهرة',
       qrCode: 'QR-COMMITTEE-103',
+      envelopeCount: 8,
       status: DONE,
       statusTone: 'success'
     }
@@ -581,28 +584,21 @@ readonly governorateOptions = computed<LookupOption[]>(() =>
   }
 
   private createScanSteps(): ScanStep[] {
-    const step = (
-      id: number,
-      type: ScanStep['type'],
-      title: string,
-      subtitle: string
-    ): ScanStep => ({
-      id,
-      type,
-      title,
-      subtitle,
+    const envelopeCount = Math.max(
+      1,
+      Math.floor(this.selectedRow?.envelopeCount ?? 8)
+    );
+
+    return Array.from({ length: envelopeCount }, (_, index) => ({
+      id: index + 1,
+      type: 'envelope' as const,
+      title: `الظرف ${index + 1}`,
+      subtitle: `QR الخاص بالظرف رقم ${index + 1}`,
       scanned: false,
       scanning: false,
       qrCode: '',
       data: null
-    });
-
-    return [
-      step(1, 'envelope', 'الظرف الأول', 'QR الخاص بالظرف الأول'),
-      step(2, 'envelope', 'الظرف الثاني', 'QR الخاص بالظرف الثاني'),
-      step(3, 'envelope', 'الظرف الثالث', 'QR الخاص بالظرف الثالث'),
-      step(4, 'cover', 'الغلاف النهائي', 'QR الخاص بالغلاف الداخلي')
-    ];
+    }));
   }
 
   get currentStep(): ScanStep | null {
@@ -634,21 +630,15 @@ readonly governorateOptions = computed<LookupOption[]>(() =>
         return;
       }
 
-      const isCover = step.type === 'cover';
-
-      const qrCode = isCover
-        ? `${row.qrCode}-COVER`
-        : `${row.qrCode}-ENV-${step.id}`;
+      const qrCode = `${row.qrCode}-ENV-${step.id}`;
 
       step.data = {
         qrCode,
         material: row.subject,
         committeeNumber: row.committeeNumber,
         governorate: row.governorate,
-        envelopeNumber: isCover ? undefined : step.id,
-        scanType: isCover
-          ? 'الغلاف النهائي'
-          : `الظرف ${step.id}`,
+        envelopeNumber: step.id,
+        scanType: `الظرف ${step.id}`,
         scannedAt: new Date().toLocaleTimeString('ar-EG', {
           hour: '2-digit',
           minute: '2-digit'

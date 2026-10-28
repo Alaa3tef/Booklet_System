@@ -615,3 +615,32 @@
   .qc-actions .qc-btn { flex: 1; }
   .qc-pager { justify-content: center; }
 }
+
+.qc-envelopes-scroll {
+  max-height: 390px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  padding-inline-end: 6px;
+}
+
+.qc-envelopes-scroll::-webkit-scrollbar {
+  width: 7px;
+}
+
+.qc-envelopes-scroll::-webkit-scrollbar-thumb {
+  background: #b8c7d8;
+  border-radius: 10px;
+}
+
+.qc-envelopes-scroll::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 10px;
+}
+
+@media (max-width: 768px) {
+  .qc-envelopes-scroll {
+    max-height: 280px;
+  }
+}

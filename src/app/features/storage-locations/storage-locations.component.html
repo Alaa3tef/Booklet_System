@@ -46,91 +46,94 @@
       </button>
     </div>
 
-    <div class="filters-grid">
-      <div class="filter-field">
-        <label for="warehouseFilter">المخزن</label>
+    
+<div class="filters-grid">
+  <!-- المخزن -->
+  <div class="filter-field">
+    <label for="warehouseFilter">المخزن</label>
 
-        <p-select
-          inputId="warehouseFilter"
-          [options]="warehouses()"
-          optionLabel="name"
-          optionValue="id"
-          placeholder="كل المخازن"
-          [ngModel]="warehouseFilter()"
-          (ngModelChange)="onWarehouseChange($event)"
-          [showClear]="true"
-          [filter]="true"
-          filterPlaceholder="ابحث عن مخزن..."
-          appendTo="body"
-          panelStyleClass="sl-select-panel"
-          styleClass="filter-select"
-        ></p-select>
-      </div>
+    <p-select
+      inputId="warehouseFilter"
+      [options]="warehouses()"
+      optionLabel="name"
+      optionValue="id"
+      placeholder="كل المخازن"
+      [ngModel]="warehouseFilter()"
+      (ngModelChange)="onWarehouseChange($event)"
+      [showClear]="true"
+      [filter]="true"
+      filterPlaceholder="ابحث عن مخزن..."
+      appendTo="body"
+      panelStyleClass="sl-select-panel"
+      styleClass="filter-select"
+    ></p-select>
+  </div>
 
-      <div class="filter-field">
-        <!-- <label for="locationSearch">بحث عن موقع</label> -->
+  <!-- البحث -->
+  <div class="filter-field">
+    <!-- <label for="locationSearch">بحث عن موقع التخزين</label>
 
-        <div class="search-row">
-          <!-- <div class="search-wrapper">
-            <i class="pi pi-search"></i>
-            <input
-              id="locationSearch"
-              pInputText
-              type="search"
-              class="filter-input"
-              placeholder="ابحث بالكود أو المنطقة أو الرف..."
-              [ngModel]="searchInput()"
-              (ngModelChange)="onSearchInput($event)"
-            />
-          </div> -->
+    <div class="search-wrapper">
+      <i class="pi pi-search"></i>
+      <input
+        id="locationSearch"
+        pInputText
+        type="search"
+        class="filter-input"
+        placeholder="ابحث بالكود أو المنطقة أو الرف..."
+        [ngModel]="searchInput()"
+        (ngModelChange)="onSearchInput($event)"
+      />
+    </div> -->
+  </div>
 
-          <!-- زرار طباعة QR بجوار البحث: ظاهر دائمًا، يطبع كل المواقع -->
-        
-        </div>
-      </div>
+  <!-- الإجراءات -->
+  <div class="filter-actions">
+    <button
+      pButton
+      type="button"
+      class="print-qr-btn"
+      [disabled]="loading() || rows().length === 0 || printingAll() || printingId() !== null"
+      pTooltip="طباعة QR لمواقع التخزين"
+      tooltipPosition="top"
+      (click)="printQr()"
+    >
+      <i
+        class="pi"
+        [ngClass]="printingAll() ? 'pi-spin pi-spinner' : 'pi-qrcode'"
+      ></i>
+      <span>
+        {{ printingAll() ? 'جاري التجهيز...' : 'طباعة QR' }}
+      </span>
+    </button>
 
-      <div class="filter-actions">
-          <button
-            pButton
-            type="button"
-            class="print-qr-btn"
-            [disabled]="printingAll() || printingId() !== null"
-            pTooltip="طباعة QR لكل مواقع التخزين"
-            tooltipPosition="top"
-            (click)="printQr()"
-          >
-            <i
-              class="pi"
-              [ngClass]="printingAll() ? 'pi-spin pi-spinner' : 'pi-qrcode'"
-            ></i>
-            <span>{{ printingAll() ? 'جاري التجهيز...' : 'طباعة QR' }}</span>
-          </button>
-        <button
-          pButton
-          type="button"
-          class="secondary-btn"
-          (click)="toggleSort()"
-          [pTooltip]="ascending() ? 'ترتيب تصاعدي' : 'ترتيب تنازلي'"
-        >
-          <i
-            class="pi"
-            [class.pi-sort-amount-up]="ascending()"
-            [class.pi-sort-amount-down]="!ascending()"
-          ></i>
-          <span>{{ ascending() ? 'تصاعدي' : 'تنازلي' }}</span>
-        </button>
+    <button
+      pButton
+      type="button"
+      class="secondary-btn"
+      (click)="toggleSort()"
+      [pTooltip]="ascending() ? 'ترتيب تصاعدي' : 'ترتيب تنازلي'"
+    >
+      <i
+        class="pi"
+        [class.pi-sort-amount-up]="ascending()"
+        [class.pi-sort-amount-down]="!ascending()"
+      ></i>
+      <span>{{ ascending() ? 'تصاعدي' : 'تنازلي' }}</span>
+    </button>
 
-        <button
-          pButton
-          type="button"
-          class="secondary-btn"
-          (click)="clearFilters()"
-        >
-          <i class="pi pi-refresh"></i>
-          <span>إعادة تعيين</span>
-        </button>
-      </div>
-    </div>
+    <button
+      pButton
+      type="button"
+      class="secondary-btn"
+      (click)="clearFilters()"
+    >
+      <i class="pi pi-refresh"></i>
+      <span>إعادة تعيين</span>
+    </button>
+  </div>
+</div>
+
   </section>
 
   <!-- Table -->
@@ -179,7 +182,7 @@
             <td>
               <span class="code-chip">
                 <i class="pi pi-tag"></i>
-                <bdi>{{ row.code }}</bdi>
+                <bdi>{{ row.qrCode }}</bdi>
               </span>
             </td>
 

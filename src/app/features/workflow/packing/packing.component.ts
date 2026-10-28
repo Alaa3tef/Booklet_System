@@ -1,4 +1,3 @@
-
 import { CommonModule } from '@angular/common';
 import {
   Component,
@@ -30,9 +29,17 @@ const PENDING = 'قيد التغليف';
 const DONE = 'تم التغليف';
 const REJECTED = 'مرفوض';
 
+interface PackingEnvelope {
+  id: number;
+  qrCode: string;
+  scanned: boolean;
+  scannedAt: string | null;
+}
+
 interface PackingRow extends WorkflowStatusRow {
   governorate: string;
   qrCode: string;
+  envelopes: PackingEnvelope[];
 }
 
 interface PackingScanResult {
@@ -42,6 +49,17 @@ interface PackingScanResult {
   governorate: string;
   scanType: string;
   scannedAt: string;
+}
+
+interface ScanStep {
+  id: number;
+  kind: 'envelope' | 'outer';
+  title: string;
+  subtitle: string;
+  qrCode: string;
+  scanned: boolean;
+  scannedAt: string | null;
+  data: any | null;
 }
 
 interface Option {
@@ -260,6 +278,15 @@ export default class PackingComponent implements OnInit {
    * أسماء المواد والمحافظات تُؤخذ من الـ API بعد تحميل القوائم.
    * عند توفر API اللجان، يمكن استبدال هذه الدالة ببيانات الباك إند.
    */
+  private createEnvelopes(committeeNumber: string, count: number): PackingEnvelope[] {
+    return Array.from({ length: count }, (_, index) => ({
+      id: index + 1,
+      qrCode: `QR-${committeeNumber}-ENV-${String(index + 1).padStart(2, '0')}`,
+      scanned: false,
+      scannedAt: null
+    }));
+  }
+
   private rebuildRowsFromLookups(): void {
     if (this.subjectsLoading() || this.governoratesLoading()) {
       return;
@@ -280,6 +307,7 @@ export default class PackingComponent implements OnInit {
         committeeNumber: '101',
         governorate: availableGovernorates[0],
         qrCode: 'QR-PACK-101',
+        envelopes: this.createEnvelopes('101', 12),
         status: DONE,
         statusTone: 'success'
       },
@@ -289,6 +317,7 @@ export default class PackingComponent implements OnInit {
         committeeNumber: '102',
         governorate: availableGovernorates[1 % availableGovernorates.length],
         qrCode: 'QR-PACK-102',
+        envelopes: this.createEnvelopes('102', 12),
         status: PENDING,
         statusTone: 'warning'
       },
@@ -298,6 +327,7 @@ export default class PackingComponent implements OnInit {
         committeeNumber: '103',
         governorate: availableGovernorates[0],
         qrCode: 'QR-PACK-103',
+        envelopes: this.createEnvelopes('103', 12),
         status: PENDING,
         statusTone: 'warning'
       },
@@ -307,6 +337,7 @@ export default class PackingComponent implements OnInit {
         committeeNumber: '104',
         governorate: availableGovernorates[2 % availableGovernorates.length],
         qrCode: 'QR-PACK-104',
+        envelopes: this.createEnvelopes('104', 12),
         status: PENDING,
         statusTone: 'warning'
       }
@@ -523,67 +554,168 @@ export default class PackingComponent implements OnInit {
   }
 
   // =====================================================
-  // Scan dialog
+  // Scan dialog (envelopes + outer cover, one scanner)
   // =====================================================
 
   scanDialogVisible = false;
   selectedRow: PackingRow | null = null;
 
-  isScanning = false;
-  scanCompleted = false;
+  scanSteps: ScanStep[] = [];
+  currentScanIndex = 0;
   scanMessage = '';
-  scanResult: any | null = null;
+  isScanning = false;
+
+  private scanTimers: ReturnType<typeof setTimeout>[] = [];
 
   openScanDialog(row: PackingRow): void {
     if (!this.isPending(row)) {
       return;
     }
-    console.log("edit")
+
+    this.clearScanTimers();
+
     this.selectedRow = row;
-    this.isScanning = false;
-    this.scanCompleted = false;
+    this.currentScanIndex = 0;
     this.scanMessage = '';
-    this.scanResult = null;
+    this.isScanning = false;
+    this.scanSteps = this.createScanSteps(row);
     this.scanDialogVisible = true;
   }
 
+  private createScanSteps(row: PackingRow): ScanStep[] {
+    const envelopeSteps: ScanStep[] = row.envelopes.map(envelope => ({
+      id: envelope.id,
+      kind: 'envelope' as const,
+      title: `الظرف رقم ${envelope.id}`,
+      subtitle: envelope.qrCode,
+      qrCode: envelope.qrCode,
+      scanned: false,
+      scannedAt: null,
+      data: null
+    }));
+
+    const outerStep: ScanStep = {
+      id: envelopeSteps.length + 1,
+      kind: 'outer',
+      title: 'الغلاف الخارجي',
+      subtitle: `${row.qrCode}-OUTER`,
+      qrCode: `${row.qrCode}-OUTER`,
+      scanned: false,
+      scannedAt: null,
+      data: null
+    };
+
+    return [...envelopeSteps, outerStep];
+  }
+
+  get currentStep(): ScanStep | null {
+    return this.scanSteps[this.currentScanIndex] ?? null;
+  }
+
+  get completedScans(): number {
+    return this.scanSteps.filter(step => step.scanned).length;
+  }
+
+  get scanProgress(): number {
+    return this.scanSteps.length
+      ? Math.round((this.completedScans / this.scanSteps.length) * 100)
+      : 0;
+  }
+
+  get scannedEnvelopeCount(): number {
+    return this.scanSteps.filter(step => step.kind === 'envelope' && step.scanned).length;
+  }
+
+  get envelopeTotal(): number {
+    return this.scanSteps.filter(step => step.kind === 'envelope').length;
+  }
+
+  get allScansCompleted(): boolean {
+    return this.scanSteps.length > 0 && this.scanSteps.every(step => step.scanned);
+  }
+
+  get canConfirmPacking(): boolean {
+    return this.allScansCompleted && !this.isScanning;
+  }
+
+  isStepLocked(index: number): boolean {
+    return !this.scanSteps.slice(0, index).every(step => step.scanned);
+  }
+
+  selectScanStep(index: number): void {
+    if (
+      this.isScanning ||
+      index < 0 ||
+      index >= this.scanSteps.length ||
+      this.isStepLocked(index)
+    ) {
+      return;
+    }
+
+    this.currentScanIndex = index;
+    this.scanMessage = '';
+  }
+
   startScan(): void {
-    if (this.isScanning || this.scanCompleted || !this.selectedRow) {
+    const step = this.currentStep;
+    const row = this.selectedRow;
+
+    if (this.isScanning || !step || !row || step.scanned) {
       return;
     }
 
     this.isScanning = true;
-    this.scanMessage = 'جاري قراءة QR الغلاف الخارجي...';
+    this.scanMessage = `جاري قراءة QR ${step.title}...`;
 
-    // محاكاة مؤقتة لعملية الـ Scan إلى حين ربط الـ API.
-    setTimeout(() => {
-      if (!this.selectedRow || !this.scanDialogVisible) {
-        this.isScanning = false;
-        return;
-      }
+    // محاكاة مؤقتة لعملية المسح، إلى حين ربط جهاز القراءة أو الـ API.
+    this.scanTimers.push(
+      setTimeout(() => {
+        if (!this.scanDialogVisible || this.selectedRow !== row) {
+          this.isScanning = false;
+          return;
+        }
 
-      const row = this.selectedRow;
-
-      this.scanResult = {
-        qrCode: `${row.qrCode}-OUTER`,
-        subject: row.subject,
-        committeeNumber: row.committeeNumber,
-        governorate: row.governorate,
-        scanType: 'الغلاف الخارجي للجنة',
-        scannedAt: new Date().toLocaleTimeString('ar-EG', {
+        const scannedAt = new Date().toLocaleTimeString('ar-EG', {
           hour: '2-digit',
           minute: '2-digit'
-        })
-      };
+        });
 
-      this.isScanning = false;
-      this.scanCompleted = true;
-      this.scanMessage = 'تمت قراءة QR الغلاف الخارجي بنجاح.';
-    }, 1400);
+        step.data = {
+          qrCode: step.qrCode,
+          subject: row.subject,
+          committeeNumber: row.committeeNumber,
+          governorate: row.governorate,
+          scanType: step.kind === 'outer' ? 'الغلاف الخارجي للجنة' : step.title,
+          scannedAt
+        };
+
+        step.scanned = true;
+        step.scannedAt = scannedAt;
+
+        this.isScanning = false;
+        this.scanMessage = `تم قراءة ${step.title} بنجاح`;
+
+        // الانتقال تلقائياً للخطوة التالية بعد نجاح القراءة
+        const nextIndex = this.scanSteps.findIndex(
+          (item, i) => i > this.currentScanIndex && !item.scanned
+        );
+
+        if (nextIndex !== -1) {
+          this.scanTimers.push(
+            setTimeout(() => {
+              if (this.scanDialogVisible && this.selectedRow === row) {
+                this.currentScanIndex = nextIndex;
+                this.scanMessage = '';
+              }
+            }, 600)
+          );
+        }
+      }, 1200)
+    );
   }
 
   confirmPacking(): void {
-    if (!this.selectedRow || !this.scanCompleted) {
+    if (!this.selectedRow || !this.canConfirmPacking) {
       return;
     }
 
@@ -593,7 +725,11 @@ export default class PackingComponent implements OnInit {
     console.info('Confirm Packing', {
       committeeNumber: row.committeeNumber,
       subject: row.subject,
-      scan: this.scanResult
+      scans: this.scanSteps.map(step => ({
+        scanType: step.title,
+        qrCode: step.qrCode,
+        scannedAt: step.scannedAt
+      }))
     });
 
     this.updateStatus(row.index, DONE, 'success');
@@ -611,11 +747,18 @@ export default class PackingComponent implements OnInit {
   }
 
   private resetScanState(): void {
+    this.clearScanTimers();
+
     this.selectedRow = null;
-    this.scanResult = null;
-    this.scanCompleted = false;
+    this.scanSteps = [];
+    this.currentScanIndex = 0;
     this.scanMessage = '';
     this.isScanning = false;
+  }
+
+  private clearScanTimers(): void {
+    this.scanTimers.forEach(timer => clearTimeout(timer));
+    this.scanTimers = [];
   }
 
   private updateStatus(
@@ -642,7 +785,7 @@ export default class PackingComponent implements OnInit {
   rejectSubmitting = false;
 
   openRejectDialog(): void {
-    if (!this.selectedRow || !this.scanCompleted) {
+    if (!this.selectedRow || !this.canConfirmPacking) {
       return;
     }
 
@@ -676,7 +819,10 @@ export default class PackingComponent implements OnInit {
       subject: row.subject,
       committeeNumber: row.committeeNumber,
       governorate: row.governorate,
-      scan: this.scanResult,
+      scans: this.scanSteps.map(step => ({
+        scanType: step.title,
+        qrCode: step.qrCode
+      })),
       reason: this.rejectReason.trim(),
       reviewerIds: this.selectedReviewers.map(user => user.id)
     });
