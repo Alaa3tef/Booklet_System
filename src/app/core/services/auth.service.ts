@@ -8,6 +8,7 @@ import {
   ResetPasswordRequest
 } from '../models/auth.model';
 import { AppConfigService } from '../../shared/services/app-config.service';
+import { SecureStorageService } from './secure-storage.service';
 import {
   catchError,
   shareReplay,
@@ -22,6 +23,7 @@ export class AuthService {
   private readonly http = inject(HttpClient);
   private readonly router = inject(Router);
   private readonly appConfig = inject(AppConfigService);
+  private readonly secureStorage = inject(SecureStorageService);
 
 
   private readonly ACCESS_TOKEN_KEY = 'accessToken';
@@ -147,12 +149,12 @@ pingSession(): Observable<unknown> {
     this._profile.set(null);
   }
 clearSession(): void {
-  localStorage.removeItem(this.ACCESS_TOKEN_KEY);
-  localStorage.removeItem(this.REFRESH_TOKEN_KEY);
-  localStorage.removeItem('userName');
-  localStorage.removeItem('emailAddress');
-  localStorage.removeItem('isActive');
-  localStorage.removeItem('roleId');
+  this.secureStorage.removeItem(this.ACCESS_TOKEN_KEY);
+  this.secureStorage.removeItem(this.REFRESH_TOKEN_KEY);
+  this.secureStorage.removeItem('userName');
+  this.secureStorage.removeItem('emailAddress');
+  this.secureStorage.removeItem('isActive');
+  this.secureStorage.removeItem('roleId');
 
   this.currentUser.set(null);
   this.clearProfile();
@@ -193,44 +195,33 @@ clearSession(): void {
 
 
 if (data.accessToken) {
-  localStorage.setItem(
+  this.secureStorage.setItem(
     this.ACCESS_TOKEN_KEY,
-    data.accessToken
+    String(data.accessToken)
   );
 }
 
 // Refresh-token storage is disabled together with automatic renewal.
 // if (data.refreshToken) {
-//   localStorage.setItem(
+//   this.secureStorage.setItem(
 //     this.REFRESH_TOKEN_KEY,
-//     data.refreshToken
+//     String(data.refreshToken)
 //   );
 // }
-
 
             // ==================================================
             // User information
             // ==================================================
 
             if (data.user) {
-
-              localStorage.setItem(
-                'userName',
-                `${data.user.fullName }`
-              );
-
- localStorage.setItem(
-                'isActive',
-                `${data.user.isActive }`
-              );
-              localStorage.setItem(
-                'emailAddress',
-                data.user.email ?? ''
-              );
- localStorage.setItem(
-                'emailAddress',
-                data.user.roleId ?? ''
-              );
+              try {
+                this.secureStorage.setItem('userName',     String(data.user.fullName  ?? ''));
+                this.secureStorage.setItem('isActive',     String(data.user.isActive  ?? ''));
+                this.secureStorage.setItem('emailAddress', String(data.user.email     ?? ''));
+                this.secureStorage.setItem('roleId',       String(data.user.roleId    ?? ''));
+              } catch (storageErr) {
+                console.warn('SecureStorage: failed to persist user info', storageErr);
+              }
             }
 
 
@@ -245,7 +236,7 @@ return this.http.post<any>(`${this.appConfig.baseURL}api/Account/change-password
 }
 
 getToken(): string | null {
-  return localStorage.getItem(this.ACCESS_TOKEN_KEY);
+  return this.secureStorage.getItem(this.ACCESS_TOKEN_KEY);
 }
  isAuthenticated(): boolean {
     return !!this.getToken();
@@ -258,11 +249,11 @@ logout(): Observable<any> {
       .post<any>(`${this.appConfig.baseURL}api/Account/logout`, {})
       .pipe(
         finalize(() => {
-          localStorage.removeItem('accessToken');
-          localStorage.removeItem('userName');
-          localStorage.removeItem('emailAddress');
-          localStorage.removeItem('isActive');
-          localStorage.removeItem('roleId');
+          this.secureStorage.removeItem(this.ACCESS_TOKEN_KEY);
+          this.secureStorage.removeItem('userName');
+          this.secureStorage.removeItem('emailAddress');
+          this.secureStorage.removeItem('isActive');
+          this.secureStorage.removeItem('roleId');
           this.clearProfile(); // مهم عشان اليوزر الجديد ما يشوفش داتا القديم
         })
       );
