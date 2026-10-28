@@ -175,10 +175,6 @@ export default class LoginComponent {
     'مرحبًا بك'
   );
 
-  console.log(
-    'Access token:',
-    sessionStorage.getItem('accessToken')
-  );
 
   this.router.navigateByUrl('/dashboard');
 

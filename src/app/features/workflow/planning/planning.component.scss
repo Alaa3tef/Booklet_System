@@ -529,3 +529,44 @@ $red:    #dc2626;
   .rejection-material-card { align-items: flex-start; flex-wrap: wrap; }
   .rejection-status { width: 100%; padding-inline-start: 3rem; }
 }
+.action-pair .action-btn.ready {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+
+  min-width: 0;
+  min-height: 44px;
+  height: auto;
+  padding: 8px 12px;
+
+  line-height: 1.4;
+  white-space: normal;
+  overflow-wrap: normal;
+  word-break: normal;
+  text-align: center;
+  box-sizing: border-box;
+}
+
+.action-pair .action-btn.ready span {
+  flex: 0 1 auto;
+  min-width: 0;
+  line-height: inherit;
+  white-space: normal;
+}
+
+.action-pair .action-btn.ready i {
+  flex-shrink: 0;
+}
+
+.action-pair {
+  min-width: 0;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: stretch;
+}
+
+@media (max-width: 480px) {
+  .action-pair {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
