@@ -304,31 +304,38 @@ export default class StorageLocationsComponent implements OnInit {
   // بدون id => طباعة الكل | مع id => طباعة موقع واحد
   // بدون id => طباعة مواقع المخزن المختار في الفلتر (أو الكل لو مفيش مخزن)
   // مع id => طباعة موقع واحد
-  printQr(id?: number): void {
-    if (this.printingAll() || this.printingId() !== null) {
-      return;
-    }
-
-    const warehouseId = id === undefined ? this.warehouseFilter() : null;
-
-    if (id === undefined) {
-      this.printingAll.set(true);
-    } else {
-      this.printingId.set(id);
-    }
-
-    const baseName =
-      id !== undefined
-        ? `qr-location-${id}`
-        : warehouseId !== null
-          ? `qr-warehouse-${warehouseId}`
-          : "qr-all-locations";
-
-    this.downloadFile(this.api.printQr(warehouseId), baseName, () => {
-      this.printingAll.set(false);
-      this.printingId.set(null);
-    });
+ 
+printQr(id?: number): void {
+  if (
+    this.loading() ||
+    this.rows().length === 0 ||
+    this.printingAll() ||
+    this.printingId() !== null
+  ) {
+    return;
   }
+
+  const warehouseId = id === undefined ? this.warehouseFilter() : null;
+
+  if (id === undefined) {
+    this.printingAll.set(true);
+  } else {
+    this.printingId.set(id);
+  }
+
+  const baseName =
+    id !== undefined
+      ? `qr-location-${id}`
+      : warehouseId !== null
+        ? `qr-warehouse-${warehouseId}`
+        : 'qr-all-locations';
+
+  this.downloadFile(this.api.printQr(warehouseId), baseName, () => {
+    this.printingAll.set(false);
+    this.printingId.set(null);
+  });
+}
+
 
   private downloadFile(
     request$: Observable<Blob>,

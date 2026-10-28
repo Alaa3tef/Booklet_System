@@ -2,7 +2,7 @@
   stepNumber="04"
   englishLabel="Packing"
   arabicTitle="مستخدم التغليف"
-  arabicSubtitle="تغليف الأظرف الصغيرة للجنة في ظرف كبير وعمل Scan للغلاف الخارجي"
+  arabicSubtitle="تغليف الأظرف الصغيرة للجنة في ظرف كبير وعمل Scan للأظرف والغلاف الخارجي"
   theme="purple"
   activeNavKey="packing"
   illustrationIcon="pi pi-box"
@@ -12,159 +12,86 @@
   panelTitle="التغليف"
   functionLabel="مستخدم التغليف"
   [essentials]="essentials"
-  resultText="يتم تسجيل حالة التغليف وتصبح اللجنة جاهزة للتخزين"
+  resultText="يتم تسجيل حالة التغليف بعد مسح جميع الأظرف والغلاف الخارجي"
 >
   <div panel-content class="pk">
-
-    <!-- ========== Header ========== -->
     <section class="pk-head">
       <div>
         <h2>تغليف ومراجعة اللجان</h2>
-        <p>اختر اللجنة لعمل Scan للغلاف الخارجي، ثم سجّل نتيجة التغليف.</p>
+        <p>امسح QR كل ظرف صغير أولًا، ثم امسح QR الغلاف الخارجي للجنة.</p>
       </div>
-
       <div class="pk-count">
         <i class="pi pi-box"></i>
-        <div>
-          <strong>{{ rows().length }}</strong>
-          <span>لجنة</span>
-        </div>
+        <div><strong>{{ rows().length }}</strong><span>لجنة</span></div>
       </div>
     </section>
 
-    <!-- ========== Filters ========== -->
     <section class="pk-box pk-filters">
       <div class="pk-field">
         <label>المحافظة</label>
-        <p-select
-          [options]="governorateOptions()"
-          optionLabel="label"
-          optionValue="value"
-          placeholder="كل المحافظات"
-          [ngModel]="governorateFilter()"
-          (ngModelChange)="governorateFilter.set($event)"
-          [loading]="governoratesLoading()"
-          [showClear]="true"
-          [filter]="true"
-          filterPlaceholder="ابحث عن محافظة..."
-          emptyMessage="لا توجد محافظات"
-          styleClass="pk-input"
-        />
+        <p-select [options]="governorateOptions()" optionLabel="label" optionValue="value"
+          placeholder="كل المحافظات" [ngModel]="governorateFilter()"
+          (ngModelChange)="governorateFilter.set($event)" [loading]="governoratesLoading()"
+          [showClear]="true" [filter]="true" filterPlaceholder="ابحث عن محافظة..."
+          emptyMessage="لا توجد محافظات" styleClass="pk-input" />
       </div>
-      
       <div class="pk-field">
         <label>المادة</label>
-        <p-select
-          [options]="subjectOptions()"
-          optionLabel="label"
-          optionValue="value"
-          placeholder="كل المواد"
-          [ngModel]="subjectFilter()"
-          (ngModelChange)="subjectFilter.set($event)"
-          [loading]="subjectsLoading()"
-          [showClear]="true"
-          [filter]="true"
-          filterPlaceholder="ابحث عن مادة..."
-          emptyMessage="لا توجد مواد"
-          styleClass="pk-input"
-        />
+        <p-select [options]="subjectOptions()" optionLabel="label" optionValue="value"
+          placeholder="كل المواد" [ngModel]="subjectFilter()"
+          (ngModelChange)="subjectFilter.set($event)" [loading]="subjectsLoading()"
+          [showClear]="true" [filter]="true" filterPlaceholder="ابحث عن مادة..."
+          emptyMessage="لا توجد مواد" styleClass="pk-input" />
       </div>
-
       <div class="pk-field">
         <label>رقم اللجنة</label>
         <span class="pk-search">
           <i class="pi pi-hashtag"></i>
-          <input
-            pInputText
-            type="text"
-            inputmode="numeric"
-            class="pk-input"
-            placeholder="مثال: 101"
-            maxlength="10"
-            [ngModel]="committeeFilter()"
-            (ngModelChange)="committeeFilter.set($event)"
-            (keydown.enter)="applyFilters()"
-          />
+          <input pInputText type="text" inputmode="numeric" class="pk-input"
+            placeholder="مثال: 101" maxlength="10" [ngModel]="committeeFilter()"
+            (ngModelChange)="committeeFilter.set($event)" (keydown.enter)="applyFilters()" />
         </span>
       </div>
-
       <div class="pk-actions">
         <button pButton type="button" class="pk-btn pk-btn-primary" (click)="applyFilters()">
           <i class="pi pi-search"></i><span>بحث</span>
         </button>
-        <button
-          pButton
-          type="button"
-          class="pk-btn pk-btn-ghost"
-          pTooltip="إعادة تعيين"
-          tooltipPosition="top"
-          [disabled]="!hasActiveFilters()"
-          (click)="resetFilters()"
-        >
+        <button pButton type="button" class="pk-btn pk-btn-ghost" pTooltip="إعادة تعيين"
+          tooltipPosition="top" [disabled]="!hasActiveFilters()" (click)="resetFilters()">
           <i class="pi pi-filter-slash"></i>
         </button>
       </div>
     </section>
 
-    <!-- ========== Status tabs ========== -->
     <nav class="pk-tabs">
-      <button
-        type="button"
-        class="pk-tab"
-        *ngFor="let tab of statusTabs()"
-        [attr.data-tone]="tab.tone"
-        [class.active]="statusFilter() === tab.key"
-        (click)="setStatus(tab.key)"
-      >
-        <i class="pi" [ngClass]="tab.icon"></i>
-        <span>{{ tab.label }}</span>
-        <b>{{ tab.count }}</b>
+      <button type="button" class="pk-tab" *ngFor="let tab of statusTabs()"
+        [attr.data-tone]="tab.tone" [class.active]="statusFilter() === tab.key"
+        (click)="setStatus(tab.key)">
+        <i class="pi" [ngClass]="tab.icon"></i><span>{{ tab.label }}</span><b>{{ tab.count }}</b>
       </button>
     </nav>
 
-    <!-- ========== Committee cards ========== -->
     <section class="pk-grid" *ngIf="paginatedRows().length; else emptyState">
       <article class="pk-card" *ngFor="let row of paginatedRows()" [attr.data-tone]="row.statusTone">
-
         <header>
           <span class="pk-ico"><i class="pi pi-book"></i></span>
-
           <div class="pk-card-title">
-            <strong>{{ row.subject }}</strong>
-            <small>لجنة رقم {{ row.committeeNumber }}</small>
+            <strong>{{ row.subject }}</strong><small>لجنة رقم {{ row.committeeNumber }}</small>
           </div>
-
-          <span class="pk-pill">
-            <i class="pi" [ngClass]="statusIcon(row)"></i>
-            {{ row.status }}
-          </span>
+          <span class="pk-pill"><i class="pi" [ngClass]="statusIcon(row)"></i>{{ row.status }}</span>
         </header>
-
         <dl class="pk-meta">
-          <div>
-            <dt><i class="pi pi-map-marker"></i>المحافظة</dt>
-            <dd>{{ row.governorate }}</dd>
-          </div>
-          <div>
-            <dt><i class="pi pi-hashtag"></i>رقم اللجنة</dt>
-            <dd>{{ row.committeeNumber }}</dd>
-          </div>
+          <div><dt><i class="pi pi-map-marker"></i> المحافظة</dt><dd>{{ row.governorate }}</dd></div>
+          <div><dt><i class="pi pi-hashtag"></i> رقم اللجنة</dt><dd>{{ row.committeeNumber }}</dd></div>
         </dl>
-
         <footer>
-          <button *ngIf="isPending(row)" pButton type="button" class="pk-btn pk-btn-primary pk-block" (click)="openScanDialog(row)">
-            <i class="pi pi-qrcode"></i><span>بدء Scan</span>
+          <button *ngIf="isPending(row)" pButton type="button"
+            class="pk-btn pk-btn-primary pk-block" (click)="openScanDialog(row)">
+            <i class="pi pi-qrcode"></i><span>بدء Scan للأظرف والغلاف</span>
           </button>
-
-          <span *ngIf="isDone(row)" class="pk-result">
-            <i class="pi pi-check-circle"></i> تم التغليف بنجاح
-          </span>
-
-          <span *ngIf="isRejected(row)" class="pk-result pk-result-danger">
-            <i class="pi pi-times-circle"></i> تم رفض التغليف
-          </span>
+          <span *ngIf="isDone(row)" class="pk-result"><i class="pi pi-check-circle"></i> تم التغليف بنجاح</span>
+          <span *ngIf="isRejected(row)" class="pk-result pk-result-danger"><i class="pi pi-times-circle"></i> تم رفض التغليف</span>
         </footer>
-
       </article>
     </section>
 
@@ -172,55 +99,29 @@
       <div class="pk-box pk-empty">
         <i class="pi pi-inbox"></i>
         <strong>{{ hasActiveFilters() ? 'لا توجد نتائج مطابقة للبحث' : 'لا توجد لجان للتغليف' }}</strong>
-        <span>
-          {{ hasActiveFilters() ? 'جرّب تغيير معايير البحث أو إعادة تعيين الفلاتر.' : 'ستظهر اللجان المطلوب تغليفها هنا.' }}
-        </span>
+        <span>{{ hasActiveFilters() ? 'جرّب تغيير معايير البحث أو إعادة تعيين الفلاتر.' : 'ستظهر اللجان المطلوب تغليفها هنا.' }}</span>
       </div>
     </ng-template>
 
-    <!-- ========== Pagination ========== -->
     <div class="pk-pager" *ngIf="filteredRows().length">
-      <span>
-        عرض <b>{{ paginationStart() }}</b> - <b>{{ paginationEnd() }}</b> من <b>{{ filteredRows().length }}</b> لجنة
-      </span>
-
+      <span>عرض <b>{{ paginationStart() }}</b> - <b>{{ paginationEnd() }}</b> من <b>{{ filteredRows().length }}</b> لجنة</span>
       <div class="pk-pager-size">
         <span>عدد البطاقات</span>
-        <p-select
-          [options]="pageSizes"
-          optionLabel="label"
-          optionValue="value"
-          [ngModel]="pageSize()"
-          (ngModelChange)="onPageSizeChange($event)"
-          styleClass="pk-input pk-size"
-        />
+        <p-select [options]="pageSizes" optionLabel="label" optionValue="value"
+          [ngModel]="pageSize()" (ngModelChange)="onPageSizeChange($event)" styleClass="pk-input pk-size" />
       </div>
-
       <div class="pk-pager-nav">
-        <button type="button" [disabled]="currentPage() === 1" (click)="goToPage(currentPage() - 1)" aria-label="السابق">
-          <i class="pi pi-chevron-right"></i>
-        </button>
-
+        <button type="button" [disabled]="currentPage() === 1" (click)="goToPage(currentPage() - 1)" aria-label="السابق"><i class="pi pi-chevron-right"></i></button>
         <ng-container *ngFor="let page of paginationPages()">
           <span *ngIf="page === 'dots'">...</span>
-          <button
-            *ngIf="page !== 'dots'"
-            type="button"
-            [class.active]="page === currentPage()"
-            (click)="goToPage(+page)"
-          >
-            {{ page }}
-          </button>
+          <button *ngIf="page !== 'dots'" type="button" [class.active]="page === currentPage()" (click)="goToPage(+page)">{{ page }}</button>
         </ng-container>
-
-        <button type="button" [disabled]="currentPage() === totalPages()" (click)="goToPage(currentPage() + 1)" aria-label="التالي">
-          <i class="pi pi-chevron-left"></i>
-        </button>
+        <button type="button" [disabled]="currentPage() === totalPages()" (click)="goToPage(currentPage() + 1)" aria-label="التالي"><i class="pi pi-chevron-left"></i></button>
       </div>
     </div>
 
     <!-- ====================================================== -->
-    <!-- PACKING SCAN DIALOG -->
+    <!-- SCAN DIALOG -->
     <!-- ====================================================== -->
     <p-dialog
       [(visible)]="scanDialogVisible"
@@ -230,7 +131,7 @@
       [resizable]="false"
       [closable]="!isScanning"
       [dismissableMask]="!isScanning"
-      [style]="{ width: '950px', maxWidth: '95vw' }"
+      [style]="{ width: '1100px', maxWidth: '95vw' }"
       styleClass="pk-dlg"
       (onHide)="closeScanDialog()"
     >
@@ -238,14 +139,15 @@
         <div class="pk-dlg-title">
           <span class="pk-ico"><i class="pi pi-qrcode"></i></span>
           <div>
-            <h3>Scan الغلاف الخارجي</h3>
-            <small>خطوة واحدة: امسح QR الظرف الكبير للجنة</small>
+            <h3>Scan الأظرف والغلاف الخارجي</h3>
+            <small>امسح جميع الأظرف الصغيرة بالترتيب، ثم امسح الغلاف الخارجي</small>
           </div>
         </div>
       </ng-template>
 
       <div class="pk-dlg-body" *ngIf="selectedRow">
 
+        <!-- Committee info -->
         <div class="pk-info">
           <span class="pk-ico pk-ico-white"><i class="pi pi-book"></i></span>
           <div><small>المادة</small><strong>{{ selectedRow.subject }}</strong></div>
@@ -253,70 +155,129 @@
           <div><small>المحافظة</small><strong>{{ selectedRow.governorate }}</strong></div>
         </div>
 
-        <div class="pk-scan-grid">
+        <!-- Progress -->
+        <div class="pk-progress">
+          <div class="pk-progress-head">
+            <span>
+              تقدم المسح <b>{{ completedScans }} / {{ scanSteps.length }}</b>
+              <small>({{ scannedEnvelopeCount }} / {{ envelopeTotal }} ظرف + الغلاف الخارجي)</small>
+            </span>
+            <b>{{ scanProgress }}%</b>
+          </div>
+          <div class="pk-track"><div [style.width.%]="scanProgress"></div></div>
+        </div>
 
-          <!-- Scanner -->
-          <div class="pk-box">
-            <div class="pk-label"><i class="pi pi-qrcode"></i>Scan الغلاف الخارجي</div>
+        <div class="pk-work">
 
-            <div class="pk-viewfinder">
-              <i class="pk-corner tl"></i><i class="pk-corner tr"></i>
-              <i class="pk-corner bl"></i><i class="pk-corner br"></i>
+          <!-- Steps (envelopes + outer cover) -->
+          <aside class="pk-steps pk-envelopes-scroll">
+            <button
+              type="button"
+              class="pk-step"
+              *ngFor="let step of scanSteps; let i = index"
+              [class.active]="i === currentScanIndex"
+              [class.done]="step.scanned"
+              [class.locked]="isStepLocked(i)"
+              [class.outer]="step.kind === 'outer'"
+              [disabled]="isStepLocked(i) || isScanning"
+              (click)="selectScanStep(i)"
+            >
+              <span class="pk-step-no">
+                <i *ngIf="step.scanned" class="pi pi-check"></i>
+                <i *ngIf="!step.scanned && step.kind === 'outer'" class="pi pi-box"></i>
+                <ng-container *ngIf="!step.scanned && step.kind === 'envelope'">{{ i + 1 }}</ng-container>
+              </span>
+              <span class="pk-step-info">
+                <strong>{{ step.title }}</strong>
+                <small class="pk-mono">{{ step.subtitle }}</small>
+              </span>
+              <i *ngIf="isStepLocked(i)" class="pi pi-lock pk-step-lock"></i>
+            </button>
+          </aside>
 
-              <div class="pk-fake-qr"><span *ngFor="let n of [1,2,3,4,5,6,7,8,9]"></span></div>
+          <section>
+            <div class="pk-scan-grid">
 
-              <div class="pk-laser" *ngIf="isScanning"></div>
-              <div class="pk-scanning" *ngIf="isScanning">
-                <i class="pi pi-spin pi-spinner"></i> جاري قراءة QR...
+              <!-- Scanner -->
+              <div class="pk-box pk-scanner">
+                <div class="pk-label">
+                  <i class="pi" [ngClass]="currentStep?.kind === 'outer' ? 'pi-box' : 'pi-qrcode'"></i>
+                  {{ currentStep?.title }}
+                </div>
+
+                <div class="pk-viewfinder">
+                  <i class="pk-corner tl"></i><i class="pk-corner tr"></i>
+                  <i class="pk-corner bl"></i><i class="pk-corner br"></i>
+
+                  <div class="pk-fake-qr"><span *ngFor="let n of [1,2,3,4,5,6,7,8,9]"></span></div>
+
+                  <div class="pk-laser" *ngIf="isScanning"></div>
+                  <div class="pk-scanning" *ngIf="isScanning">
+                    <i class="pi pi-spin pi-spinner"></i> جاري المسح...
+                  </div>
+                </div>
+
+                <button
+                  pButton
+                  type="button"
+                  class="pk-btn pk-btn-primary pk-block"
+                  [disabled]="isScanning || currentStep?.scanned"
+                  (click)="startScan()"
+                >
+                  <i class="pi" [ngClass]="isScanning ? 'pi-spin pi-spinner' : 'pi-qrcode'"></i>
+                  <span>{{
+                    isScanning
+                      ? 'جاري المسح...'
+                      : currentStep?.scanned
+                        ? 'تم المسح'
+                        : currentStep?.kind === 'outer'
+                          ? 'Scan الغلاف الخارجي'
+                          : 'بدء Scan'
+                  }}</span>
+                </button>
+              </div>
+
+              <!-- Result -->
+              <div class="pk-box pk-result-card">
+                <div class="pk-label">
+                  <i class="pi pi-database"></i>نتيجة القراءة
+                  <span class="pk-ok" *ngIf="currentStep?.scanned"><i class="pi pi-check"></i> ناجح</span>
+                </div>
+
+                <div class="pk-wait" *ngIf="!currentStep?.scanned">
+                  <i class="pi pi-hourglass"></i>
+                  <strong>في انتظار الـ Scan</strong>
+                  <span>بمجرد قراءة الـ QR ستظهر البيانات هنا.</span>
+                </div>
+
+                <dl class="pk-data" *ngIf="currentStep?.scanned && currentStep?.data as data">
+                  <div><dt>نوع الـ Scan</dt><dd>{{ data.scanType }}</dd></div>
+                  <div><dt>QR Code</dt><dd class="pk-mono">{{ data.qrCode }}</dd></div>
+                  <div><dt>المادة</dt><dd>{{ data.subject }}</dd></div>
+                  <div><dt>رقم اللجنة</dt><dd>{{ data.committeeNumber }}</dd></div>
+                  <div><dt>المحافظة</dt><dd>{{ data.governorate }}</dd></div>
+                  <div><dt>وقت القراءة</dt><dd>{{ data.scannedAt }}</dd></div>
+                </dl>
               </div>
             </div>
 
-            <button
-              pButton
-              type="button"
-              class="pk-btn pk-btn-primary pk-block"
-              [disabled]="isScanning || scanCompleted"
-              (click)="startScan()"
-            >
-              <i class="pi" [ngClass]="isScanning ? 'pi-spin pi-spinner' : 'pi-qrcode'"></i>
-              <span>{{ isScanning ? 'جاري المسح...' : scanCompleted ? 'تم الـ Scan' : 'بدء Scan' }}</span>
-            </button>
-          </div>
+            <div class="pk-note" *ngIf="scanMessage"><i class="pi pi-info-circle"></i>{{ scanMessage }}</div>
 
-          <!-- Result -->
-          <div class="pk-box">
-            <div class="pk-label">
-              <i class="pi pi-database"></i>بيانات الغلاف
-              <span class="pk-ok" *ngIf="scanCompleted"><i class="pi pi-check"></i>ناجح</span>
+            <div class="pk-note pk-note-success" *ngIf="allScansCompleted">
+              <i class="pi pi-check-circle"></i>
+              اكتمل مسح جميع الأظرف والغلاف الخارجي. يمكنك الآن تأكيد التغليف.
             </div>
-
-            <div class="pk-wait" *ngIf="!scanCompleted">
-              <i class="pi pi-hourglass"></i>
-              <strong>في انتظار الـ Scan</strong>
-              <span>قم بعمل Scan للـ QR الموجود على الغلاف الخارجي للجنة.</span>
-            </div>
-
-            <dl class="pk-data" *ngIf="scanCompleted && scanResult">
-              <div><dt>نوع الـ Scan</dt><dd>{{ scanResult.scanType }}</dd></div>
-              <div><dt>QR Code</dt><dd class="pk-mono">{{ scanResult.qrCode }}</dd></div>
-              <div><dt>المادة</dt><dd>{{ scanResult.subject }}</dd></div>
-              <div><dt>رقم اللجنة</dt><dd>{{ scanResult.committeeNumber }}</dd></div>
-              <div><dt>المحافظة</dt><dd>{{ scanResult.governorate }}</dd></div>
-              <div><dt>وقت القراءة</dt><dd>{{ scanResult.scannedAt }}</dd></div>
-            </dl>
-          </div>
+          </section>
         </div>
-
-        <div class="pk-note" *ngIf="scanMessage"><i class="pi pi-info-circle"></i>{{ scanMessage }}</div>
       </div>
 
       <ng-template pTemplate="footer">
-        <div class="pk-actions" *ngIf="scanCompleted">
-          <button pButton type="button" class="pk-btn pk-btn-success" (click)="confirmPacking()">
-            <i class="pi pi-check"></i>تم التغليف
+        <div class="pk-actions" *ngIf="allScansCompleted">
+          <button pButton type="button" class="pk-btn pk-btn-success" [disabled]="!canConfirmPacking" (click)="confirmPacking()">
+            <i class="pi pi-check"></i> تأكيد التغليف
           </button>
-          <button pButton type="button" class="pk-btn pk-btn-danger" (click)="openRejectDialog()">
-            <i class="pi pi-times"></i>رفض
+          <button pButton type="button" class="pk-btn pk-btn-danger" [disabled]="!canConfirmPacking" (click)="openRejectDialog()">
+            <i class="pi pi-times"></i> رفض
           </button>
         </div>
       </ng-template>
@@ -325,100 +286,52 @@
     <!-- ====================================================== -->
     <!-- REJECT DIALOG -->
     <!-- ====================================================== -->
-    <p-dialog
-      [(visible)]="rejectDialogVisible"
-      [modal]="true"
-      [baseZIndex]="10001"
-      [draggable]="false"
-      [resizable]="false"
-      [closable]="!rejectSubmitting"
-      [style]="{ width: '720px', maxWidth: '95vw' }"
-      styleClass="pk-dlg"
-    >
+    <p-dialog [(visible)]="rejectDialogVisible" [modal]="true" [baseZIndex]="10001"
+      [draggable]="false" [resizable]="false" [closable]="!rejectSubmitting"
+      [style]="{ width: '720px', maxWidth: '95vw' }" styleClass="pk-dlg">
       <ng-template pTemplate="header">
         <div class="pk-dlg-title">
           <span class="pk-ico pk-ico-danger"><i class="pi pi-times-circle"></i></span>
-          <div>
-            <h3>رفض تغليف {{ selectedRow?.subject }}</h3>
-            <small>سجّل سبب الرفض وحدد المراجعين المسؤولين عن المتابعة</small>
-          </div>
+          <div><h3>رفض تغليف {{ selectedRow?.subject }}</h3><small>سجّل سبب الرفض وحدد المراجعين المسؤولين عن المتابعة</small></div>
         </div>
       </ng-template>
-
       <div class="pk-dlg-body">
-
         <div class="pk-info">
           <div><small>المادة</small><strong>{{ selectedRow?.subject }}</strong></div>
           <div><small>اللجنة</small><strong>{{ selectedRow?.committeeNumber }}</strong></div>
           <div><small>المحافظة</small><strong>{{ selectedRow?.governorate }}</strong></div>
         </div>
-
         <div class="pk-field">
           <label>سبب الرفض <b class="pk-req">*</b></label>
-          <textarea
-            pTextarea
-            [(ngModel)]="rejectReason"
-            class="pk-input"
-            maxlength="500"
-            rows="5"
-            placeholder="اكتب سبب رفض التغليف..."
-          ></textarea>
-          <div class="pk-hint">
-            <span>يجب أن يكون السبب واضحًا ومحددًا (10 أحرف على الأقل).</span>
-            <span>{{ rejectReason.length }} / 500</span>
-          </div>
+          <textarea pTextarea [(ngModel)]="rejectReason" class="pk-input" maxlength="500" rows="5" placeholder="اكتب سبب رفض التغليف..."></textarea>
+          <div class="pk-hint"><span>يجب أن يكون السبب واضحًا ومحددًا (10 أحرف على الأقل).</span><span>{{ rejectReason.length }} / 500</span></div>
         </div>
-
         <div class="pk-field">
           <label>المراجعون المسؤولون <b class="pk-req">*</b></label>
-          <p-multiSelect
-            [(ngModel)]="selectedReviewers"
-            [options]="reviewUsers"
-            optionLabel="name"
-            placeholder="اختر المراجعين"
-            [filter]="true"
-            filterBy="name,role"
-            [showClear]="true"
-            appendTo="body"
-            styleClass="pk-input"
-          >
+          <p-multiSelect [(ngModel)]="selectedReviewers" [options]="reviewUsers" optionLabel="name"
+            placeholder="اختر المراجعين" [filter]="true" filterBy="name,role" [showClear]="true"
+            appendTo="body" styleClass="pk-input">
             <ng-template pTemplate="item" let-user>
-              <div class="pk-reviewer">
-                <span class="pk-avatar">{{ user.name.charAt(0) }}</span>
-                <span><strong>{{ user.name }}</strong><small>{{ user.role }}</small></span>
-              </div>
+              <div class="pk-reviewer"><span class="pk-avatar">{{ user.name.charAt(0) }}</span>
+                <span><strong>{{ user.name }}</strong><small>{{ user.role }}</small></span></div>
             </ng-template>
           </p-multiSelect>
-
-          <div class="pk-chips" *ngIf="selectedReviewers.length">
-            <span *ngFor="let user of selectedReviewers">{{ user.name }}</span>
-          </div>
+          <div class="pk-chips" *ngIf="selectedReviewers.length"><span *ngFor="let user of selectedReviewers">{{ user.name }}</span></div>
         </div>
-
-        <div class="pk-note">
-          <i class="pi pi-info-circle"></i>
-          عند تأكيد الرفض ستتغير حالة اللجنة إلى <strong>مرفوض</strong> ولن تظهر لها إجراءات تغليف مرة أخرى.
-        </div>
+        <div class="pk-note"><i class="pi pi-info-circle"></i> عند تأكيد الرفض ستتغير حالة اللجنة إلى <strong>مرفوض</strong> ولن تظهر لها إجراءات تغليف مرة أخرى.</div>
       </div>
-
       <ng-template pTemplate="footer">
         <div class="pk-actions">
           <button pButton type="button" class="pk-btn pk-btn-ghost" label="إلغاء" [disabled]="rejectSubmitting" (click)="closeRejectDialog()"></button>
           <button pButton type="button" class="pk-btn pk-btn-danger" [disabled]="!isRejectFormValid || rejectSubmitting" (click)="submitRejection()">
-            <i class="pi" [ngClass]="rejectSubmitting ? 'pi-spin pi-spinner' : 'pi-times'"></i>
-            {{ rejectSubmitting ? 'جاري الحفظ...' : 'تأكيد الرفض' }}
+            <i class="pi" [ngClass]="rejectSubmitting ? 'pi-spin pi-spinner' : 'pi-times'"></i>{{ rejectSubmitting ? 'جاري الحفظ...' : 'تأكيد الرفض' }}
           </button>
         </div>
       </ng-template>
     </p-dialog>
-
   </div>
 
-  <!-- System Options -->
   <ng-container system-options>
-    <span class="system-option-info">
-      <i class="pi pi-info-circle"></i>
-      يتم تسجيل التغليف من خلال Scan الغلاف الخارجي لكل لجنة.
-    </span>
+    <span class="system-option-info"><i class="pi pi-info-circle"></i> يجب مسح جميع الأظرف الصغيرة والغلاف الخارجي قبل تسجيل نتيجة التغليف.</span>
   </ng-container>
 </app-workflow-step-layout>

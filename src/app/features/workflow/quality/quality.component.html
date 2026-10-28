@@ -20,7 +20,7 @@
     <section class="qc-head">
       <div>
         <h2>فحص ومراجعة المواد</h2>
-        <p>افتح المادة، امسح جميع الأظرف والغلاف النهائي، ثم سجّل نتيجة المراجعة.</p>
+        <p>افتح المادة، امسح جميع أظرف اللجنة، ثم سجّل نتيجة المراجعة.</p>
       </div>
 
       <div class="qc-count">
@@ -235,7 +235,7 @@
           <span class="qc-ico"><i class="pi pi-qrcode"></i></span>
           <div>
             <h3>فحص المادة</h3>
-            <small>امسح الأظرف بالترتيب ثم الغلاف النهائي</small>
+            <small>امسح جميع أظرف اللجنة بالترتيب</small>
           </div>
         </div>
       </ng-template>
@@ -262,7 +262,7 @@
         <div class="qc-work">
 
           <!-- Steps -->
-          <aside class="qc-steps">
+          <aside class="qc-steps qc-envelopes-scroll">
             <button
               type="button"
               class="qc-step"
@@ -279,7 +279,6 @@
                 <strong>{{ step.title }}</strong>
                 <small>{{ step.subtitle }}</small>
               </span>
-              <i *ngIf="step.type === 'cover'" class="pi pi-file"></i>
             </button>
           </aside>
 
@@ -353,7 +352,7 @@
 
             <div class="qc-note qc-note-success" *ngIf="allScansCompleted">
               <i class="pi pi-check-circle"></i>
-              اكتمل فحص المادة. يمكنك الآن تسجيل نتيجة المراجعة.
+              اكتمل مسح جميع الأظرف. يمكنك الآن تسجيل نتيجة المراجعة.
             </div>
           </section>
         </div>

@@ -535,3 +535,110 @@
   .pk-actions .pk-btn { flex: 1; }
   .pk-pager { justify-content: center; }
 }
+
+// ---------- Scan progress ----------
+
+.pk-progress {
+  margin-bottom: 1rem;
+
+  .pk-progress-head { display: flex; justify-content: space-between; margin-bottom: .4rem; color: var(--muted); font-size: .7rem; }
+  b { color: var(--text); }
+  small { margin-inline-start: .35rem; }
+}
+
+.pk-track {
+  height: 6px;
+  overflow: hidden;
+  border-radius: 6px;
+  background: var(--border);
+
+  div { height: 100%; border-radius: inherit; background: #198754; transition: width .4s ease; }
+}
+
+// ---------- Scan workspace (same structure as Quality) ----------
+
+.pk-work {
+  display: grid;
+  grid-template-columns: 260px minmax(0, 1fr);
+  gap: 1rem;
+  align-items: start;
+}
+
+.pk-steps {
+  display: flex;
+  flex-direction: column;
+  gap: .3rem;
+  padding: .6rem;
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+}
+
+.pk-step {
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+  width: 100%;
+  padding: .6rem;
+  border: 1px solid transparent;
+  border-radius: 11px;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+
+  &:hover:not(:disabled) { background: var(--soft); }
+  &.active { border-color: rgba(124, 58, 237, .25); background: var(--soft); }
+  &.done .pk-step-no { background: #198754; color: #fff; }
+  &.locked { opacity: .55; cursor: not-allowed; }
+  &.outer { margin-top: .3rem; border-top: 1px dashed var(--border); border-radius: 0 0 11px 11px; padding-top: .8rem; }
+  &:disabled { cursor: not-allowed; }
+}
+
+.pk-step-lock { color: var(--muted); }
+
+.pk-step-no {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  background: var(--border);
+  color: var(--muted);
+  font-size: .7rem;
+  font-weight: 800;
+}
+
+//.pk-step.active .pk-step-no { background: var(--blue); color: #fff; }
+
+.pk-step-info {
+  flex: 1;
+  min-width: 0;
+
+  strong { display: block; font-size: .74rem; }
+  small { display: block; overflow: hidden; text-align: start; text-overflow: ellipsis; white-space: nowrap; }
+}
+
+.pk-envelopes-scroll {
+  max-height: 390px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  padding-inline-end: 6px;
+  scrollbar-width: thin;
+  scrollbar-color: #b8a1ef #f4f0fc;
+}
+
+.pk-envelopes-scroll::-webkit-scrollbar { width: 7px; }
+.pk-envelopes-scroll::-webkit-scrollbar-thumb { background: #b8a1ef; border-radius: 10px; }
+.pk-envelopes-scroll::-webkit-scrollbar-track { background: #f4f0fc; border-radius: 10px; }
+
+@media (max-width: 1000px) {
+  .pk-work { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 768px) {
+  .pk-envelopes-scroll { max-height: 280px; }
+}

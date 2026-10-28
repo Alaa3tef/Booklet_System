@@ -72,16 +72,158 @@ $soft: #f0f6ff;
   &:hover { background: #ffe3e6; }
 }
 
-.filters-grid { display: grid; grid-template-columns: minmax(190px, .85fr) minmax(260px, 1.5fr) auto; align-items: end; gap: 1rem; }
-.filter-field {
-  display: flex; flex-direction: column; min-width: 0; gap: .5rem;
-  > label { color: $navy; font-size: .76rem; font-weight: 750; }
+/* Filters layout */
+.filters-grid {
+  display: grid;
+  grid-template-columns: minmax(180px, 0.85fr) minmax(240px, 1.5fr) auto;
+  align-items: end;
+  gap: 1rem;
 }
-.filter-actions { display: flex; align-items: center; gap: .5rem; }
+
+.filter-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-width: 0;
+
+  > label {
+    color: $navy;
+    font-size: 0.76rem;
+    font-weight: 750;
+  }
+}
 
 .search-wrapper {
-  position: relative; min-width: 0;
-  > i { position: absolute; z-index: 1; top: 50%; right: .9rem; transform: translateY(-50%); color: #8291a6; pointer-events: none; }
+  position: relative;
+  width: 100%;
+  min-width: 0;
+
+  > i {
+    position: absolute;
+    z-index: 1;
+    top: 50%;
+    right: 0.9rem;
+    transform: translateY(-50%);
+    color: #8291a6;
+    pointer-events: none;
+  }
+}
+
+:host ::ng-deep {
+  .filter-select,
+  .filter-input {
+    @include field;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .filter-select .p-select-label {
+    display: flex;
+    align-items: center;
+    font-size: 0.77rem;
+  }
+
+  .filter-input {
+    display: block;
+    height: 44px;
+    padding: 0 2.6rem 0 0.9rem;
+    color: #20344d;
+
+    &::placeholder {
+      color: #9aa8ba;
+    }
+  }
+}
+
+.filter-actions {
+  display: flex;
+  align-items: stretch;
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  min-width: 0;
+
+  > button {
+    flex: 0 0 auto;
+    min-width: 0;
+  }
+}
+
+/* QR button */
+.print-qr-btn {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 44px;
+  padding: 0 1rem !important;
+  border: 1px solid #0891b2 !important;
+  border-radius: 10px !important;
+  background: linear-gradient(135deg, #0aa5c7, #0891b2) !important;
+  color: #fff !important;
+  font-family: inherit;
+  font-size: 0.77rem !important;
+  font-weight: 800 !important;
+  white-space: nowrap;
+  box-shadow: 0 4px 12px rgba(8, 145, 178, 0.18) !important;
+  transition: background 0.2s, transform 0.2s;
+
+  &:hover:not(:disabled) {
+    border-color: #0e7490 !important;
+    background: #0e7490 !important;
+    transform: translateY(-1px);
+  }
+
+  &:disabled {
+    opacity: 0.5 !important;
+    cursor: not-allowed;
+    box-shadow: none !important;
+    transform: none;
+  }
+}
+
+/* Tablet */
+@media (max-width: 1100px) {
+  .filters-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .filter-actions {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+
+    > button {
+      width: 100%;
+    }
+  }
+}
+
+/* Mobile */
+@media (max-width: 700px) {
+  .filters-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 1rem;
+  }
+
+  .filter-actions {
+    grid-column: auto;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .filter-actions .print-qr-btn {
+    grid-column: 1 / -1;
+  }
+
+  .filter-actions > button {
+    width: 100%;
+  }
+
+  .search-wrapper,
+  .filter-field,
+  .filter-field > * {
+    max-width: 100%;
+  }
 }
 
 :host ::ng-deep {
