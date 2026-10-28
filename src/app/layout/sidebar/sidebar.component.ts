@@ -99,6 +99,13 @@ export class SidebarComponent implements OnInit {
     },
 
     {
+      label: 'اعتماد الطباعة',
+      icon: 'pi pi-sliders-h',
+      route: '/workflow/printing-approved',
+      roles: ['quality' , 'superadmin']
+    },
+
+    {
       label: 'الطباعة',
       icon: 'pi pi-print',
       route: '/workflow/printing',

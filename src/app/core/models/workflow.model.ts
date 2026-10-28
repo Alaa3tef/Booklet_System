@@ -1,4 +1,4 @@
-export type WorkflowThemeColor = 'blue' | 'green' | 'navy' | 'purple' | 'teal';
+export type WorkflowThemeColor = 'blue' | 'green' | 'navy' | 'purple' | 'teal' | 'approve';
 
 export type WorkflowNavKey =
   | 'home'
