@@ -309,7 +309,7 @@ export default class CommitteeSetupComponent implements OnInit, OnDestroy {
 
       index: this.first() + index + 1,
       committeeNumber: String(item?.id ?? ''),
-      schoolName: String(item?.sourceFileName ?? ''),
+      subjectName: String(item?.subjectName ?? ''),
       educationalAdministration: '',
       bookletCount: Number(item?.numberOfBooklets ?? 0),
 
@@ -377,7 +377,7 @@ export default class CommitteeSetupComponent implements OnInit, OnDestroy {
 
   openErrors(row: any): void {
     this.importErrors.set(row.errors);
-    this.errorsFileName.set(row.fileName || row.schoolName);
+    this.errorsFileName.set(row.fileName || row.subjectName);
     this.importErrorsDialogVisible.set(true);
   }
 
@@ -794,7 +794,7 @@ export default class CommitteeSetupComponent implements OnInit, OnDestroy {
       ...data.map((row, index) => [
         index + 1,
         row.committeeNumber,
-        row.schoolName,
+        row.subjectName,
         this.getGovernorateLabel(row.governorate),
         this.getSubjectLabel(row.subject),
         row.educationalAdministration,
