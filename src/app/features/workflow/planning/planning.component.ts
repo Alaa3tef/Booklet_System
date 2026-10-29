@@ -18,7 +18,7 @@ import { Lookups } from '../../../shared/services/lookups';
 
 interface ReviewUser { id: number; name: string; role: string; avatar?: string; }
 interface SelectOption { label: string; value: string | number; }
-type FilterKey = 'governorate' | 'subject' | 'committee';
+type FilterKey = 'governorate' | 'subject' | 'education' | 'committee';
 type StepState = 'done' | 'current' | 'pending' | 'rejected';
 
 @Component({
@@ -48,7 +48,20 @@ export default class PlanningComponent implements OnInit {
   // ==========================================
   readonly governorates = signal<SelectOption[]>([{ label: 'كل المحافظات', value: 'all' }]);
   readonly subjects     = signal<SelectOption[]>([{ label: 'كل المواد', value: 'all' }]);
-
+  educationals: SelectOption[] = [
+    { label: 'كل الادارات التعليمية', value: 'all' },
+    { label: 'EDU-001', value: 'EDU-001' },
+    { label: 'EDU-002', value: 'EDU-002' },
+    { label: 'EDU-003', value: 'EDU-003' },
+    { label: 'EDU-004', value: 'EDU-004' },
+    { label: 'EDU-005', value: 'EDU-005' },
+    { label: 'EDU-006', value: 'EDU-006' },
+    { label: 'EDU-007', value: 'EDU-007' },
+    { label: 'EDU-008', value: 'EDU-008' },
+    { label: 'EDU-009', value: 'EDU-009' },
+    { label: 'EDU-010', value: 'EDU-010' },
+    { label: 'EDU-011', value: 'EDU-011' }
+  ];
   ngOnInit(): void { this.loadLookups(); }
 
   loadLookups(): void {
@@ -93,46 +106,48 @@ export default class PlanningComponent implements OnInit {
   // TABLE DATA  (replace with your API)
   // ==========================================
   readonly rows = signal<WorkflowStatusRow[]>([
-    { index: 1, committeeNumber: 'COM-1001', subject: 'اللغة العربية', governorate: 'القاهرة',    status: 'جاهز للطباعة', statusTone: 'success' },
-    { index: 2, committeeNumber: 'COM-1002', subject: 'الرياضيات',     governorate: 'الجيزة',     status: 'قيد الإعداد',  statusTone: 'warning' },
-    { index: 3, committeeNumber: 'COM-1003', subject: 'العلوم',        governorate: 'الإسكندرية', status: 'مرفوض',        statusTone: 'danger',
+    { index: 1, committeeNumber: 'COM-1001', subject: 'اللغة العربية', educationNumber: 'EDU-001', governorate: 'القاهرة',    status: 'جاهز لاعتماد الطباعة', statusTone: 'success' },
+    { index: 2, committeeNumber: 'COM-1002', subject: 'الرياضيات',     educationNumber: 'EDU-002', governorate: 'الجيزة',     status: 'قيد الإعداد',  statusTone: 'warning' },
+    { index: 3, committeeNumber: 'COM-1003', subject: 'العلوم',        educationNumber: 'EDU-003', governorate: 'الإسكندرية', status: 'مرفوض',        statusTone: 'danger',
       rejectionReason: 'يوجد بعض الأخطاء في محتوى المادة، كما أن بعض الأسئلة تحتاج إلى مراجعة قبل اعتماد الخطة.' },
-    { index: 4, committeeNumber: 'COM-1004', subject: 'اللغة العربية', governorate: 'القاهرة',    status: 'جاهز للطباعة', statusTone: 'success' },
-    { index: 5, committeeNumber: 'COM-1005', subject: 'الرياضيات',     governorate: 'الجيزة',     status: 'قيد الإعداد',  statusTone: 'warning' },
-    { index: 6, committeeNumber: 'COM-1006', subject: 'العلوم',        governorate: 'الإسكندرية', status: 'مرفوض',        statusTone: 'danger',
+    { index: 4, committeeNumber: 'COM-1004', subject: 'اللغة العربية', educationNumber: 'EDU-004', governorate: 'القاهرة',    status: 'جاهز لاعتماد الطباعة', statusTone: 'success' },
+    { index: 5, committeeNumber: 'COM-1005', subject: 'الرياضيات',     educationNumber: 'EDU-005', governorate: 'الجيزة',     status: 'قيد الإعداد',  statusTone: 'warning' },
+    { index: 6, committeeNumber: 'COM-1006', subject: 'العلوم',        educationNumber: 'EDU-006', governorate: 'الإسكندرية', status: 'مرفوض',        statusTone: 'danger',
       rejectionReason: 'يوجد بعض الأخطاء في محتوى المادة، كما أن بعض الأسئلة تحتاج إلى مراجعة قبل اعتماد الخطة.' },
-    { index: 7, committeeNumber: 'COM-1007', subject: 'اللغة العربية', governorate: 'القاهرة',    status: 'جاهز للطباعة', statusTone: 'success' },
+    { index: 7, committeeNumber: 'COM-1007', subject: 'اللغة العربية', governorate: 'القاهرة',    status: 'جاهز لاعتماد الطباعة', statusTone: 'success' },
     { index: 8, committeeNumber: 'COM-1008', subject: 'الرياضيات',     governorate: 'الجيزة',     status: 'قيد الإعداد',  statusTone: 'warning' },
     { index: 9, committeeNumber: 'COM-1009', subject: 'العلوم',        governorate: 'الإسكندرية', status: 'مرفوض',        statusTone: 'danger',
       rejectionReason: 'يوجد بعض الأخطاء في محتوى المادة، كما أن بعض الأسئلة تحتاج إلى مراجعة قبل اعتماد الخطة.' },
-      { index: 1, committeeNumber: 'COM-1001', subject: 'اللغة العربية', governorate: 'القاهرة',    status: 'جاهز للطباعة', statusTone: 'success' },
+      { index: 1, committeeNumber: 'COM-1001', subject: 'اللغة العربية', governorate: 'القاهرة',    status: 'جاهز لاعتماد الطباعة', statusTone: 'success' },
     { index: 2, committeeNumber: 'COM-1002', subject: 'الرياضيات',     governorate: 'الجيزة',     status: 'قيد الإعداد',  statusTone: 'warning' },
     { index: 3, committeeNumber: 'COM-1003', subject: 'العلوم',        governorate: 'الإسكندرية', status: 'مرفوض',        statusTone: 'danger',
       rejectionReason: 'يوجد بعض الأخطاء في محتوى المادة، كما أن بعض الأسئلة تحتاج إلى مراجعة قبل اعتماد الخطة.' },
-    { index: 4, committeeNumber: 'COM-1004', subject: 'اللغة العربية', governorate: 'القاهرة',    status: 'جاهز للطباعة', statusTone: 'success' },
+    { index: 4, committeeNumber: 'COM-1004', subject: 'اللغة العربية', governorate: 'القاهرة',    status: 'جاهز لاعتماد الطباعة', statusTone: 'success' },
     { index: 5, committeeNumber: 'COM-1005', subject: 'الرياضيات',     governorate: 'الجيزة',     status: 'قيد الإعداد',  statusTone: 'warning' },
     { index: 6, committeeNumber: 'COM-1006', subject: 'العلوم',        governorate: 'الإسكندرية', status: 'مرفوض',        statusTone: 'danger',
       rejectionReason: 'يوجد بعض الأخطاء في محتوى المادة، كما أن بعض الأسئلة تحتاج إلى مراجعة قبل اعتماد الخطة.' },
-      { index: 1, committeeNumber: 'COM-1001', subject: 'اللغة العربية', governorate: 'القاهرة',    status: 'جاهز للطباعة', statusTone: 'success' },
+      { index: 1, committeeNumber: 'COM-1001', subject: 'اللغة العربية', governorate: 'القاهرة',    status: 'جاهز لاعتماد الطباعة', statusTone: 'success' },
     { index: 2, committeeNumber: 'COM-1002', subject: 'الرياضيات',     governorate: 'الجيزة',     status: 'قيد الإعداد',  statusTone: 'warning' },
     { index: 3, committeeNumber: 'COM-1003', subject: 'العلوم',        governorate: 'الإسكندرية', status: 'مرفوض',        statusTone: 'danger',
       rejectionReason: 'يوجد بعض الأخطاء في محتوى المادة، كما أن بعض الأسئلة تحتاج إلى مراجعة قبل اعتماد الخطة.' },
-    { index: 4, committeeNumber: 'COM-1004', subject: 'اللغة العربية', governorate: 'القاهرة',    status: 'جاهز للطباعة', statusTone: 'success' },
+    { index: 4, committeeNumber: 'COM-1004', subject: 'اللغة العربية', governorate: 'القاهرة',    status: 'جاهز لاعتماد الطباعة', statusTone: 'success' },
     { index: 5, committeeNumber: 'COM-1005', subject: 'الرياضيات',     governorate: 'الجيزة',     status: 'قيد الإعداد',  statusTone: 'warning' },
     { index: 6, committeeNumber: 'COM-1006', subject: 'العلوم',        governorate: 'الإسكندرية', status: 'مرفوض',        statusTone: 'danger',
       rejectionReason: 'يوجد بعض الأخطاء في محتوى المادة، كما أن بعض الأسئلة تحتاج إلى مراجعة قبل اعتماد الخطة.' }
-  ]);
+  ])
 
   // ==========================================
   // FILTERS  (applied immediately, no search button needed)
   // ==========================================
   readonly searchGovernorate = signal<string | number>('all');
   readonly searchSubject     = signal<string | number>('all');
+  readonly searchEducation     = signal<string | number>('all');
   readonly searchCommittee   = signal('');
 
   setGovernorate(v: string | number): void { this.searchGovernorate.set(v ?? 'all'); this.resetPage(); }
   setSubject(v: string | number): void     { this.searchSubject.set(v ?? 'all');     this.resetPage(); }
   setCommittee(v: string): void            { this.searchCommittee.set(v ?? '');      this.resetPage(); }
+  setEducation(v: string | number): void   { this.searchEducation.set(v ?? 'all');   this.resetPage(); }
 
   private labelOf(options: SelectOption[], value: string | number): string | null {
     if (value === 'all') return null;
@@ -143,11 +158,13 @@ export default class PlanningComponent implements OnInit {
   readonly filteredRows = computed(() => {
     const gov = this.labelOf(this.governorates(), this.searchGovernorate());
     const sub = this.labelOf(this.subjects(), this.searchSubject());
+    const edu = this.searchEducation();
     const com = this.searchCommittee().trim().toLowerCase();
 
     return this.rows().filter(r =>
       (!gov || r.governorate === gov) &&
       (!sub || r.subject === sub) &&
+      (edu === 'all' || String(r.educationNumber ?? '') === String(edu)) &&
       (!com || String(r.committeeNumber).toLowerCase().includes(com))
     );
   });
@@ -157,9 +174,14 @@ export default class PlanningComponent implements OnInit {
     const list: { key: FilterKey; title: string; value: string }[] = [];
     const gov = this.labelOf(this.governorates(), this.searchGovernorate());
     const sub = this.labelOf(this.subjects(), this.searchSubject());
+    const edu = this.searchEducation();
     const com = this.searchCommittee().trim();
     if (gov) list.push({ key: 'governorate', title: 'المحافظة',   value: gov });
     if (sub) list.push({ key: 'subject',     title: 'المادة',      value: sub });
+    if (edu !== 'all') {
+      const education = this.educationals.find(option => String(option.value) === String(edu));
+      list.push({ key: 'education', title: 'الادارة التعليمية', value: education?.label ?? String(edu) });
+    }
     if (com) list.push({ key: 'committee',   title: 'رقم اللجنة', value: com });
     return list;
   });
@@ -167,6 +189,7 @@ export default class PlanningComponent implements OnInit {
   removeFilter(key: FilterKey): void {
     if (key === 'governorate') this.searchGovernorate.set('all');
     if (key === 'subject')     this.searchSubject.set('all');
+    if (key === 'education')   this.searchEducation.set('all');
     if (key === 'committee')   this.searchCommittee.set('');
     this.resetPage();
   }
@@ -174,6 +197,7 @@ export default class PlanningComponent implements OnInit {
   clearFilters(): void {
     this.searchGovernorate.set('all');
     this.searchSubject.set('all');
+    this.searchEducation.set('all');
     this.searchCommittee.set('');
     this.resetPage();
   }
@@ -233,12 +257,12 @@ export default class PlanningComponent implements OnInit {
   /** 2-step tracker: in preparation -> ready for printing (or rejected) */
   trackerSteps(row: WorkflowStatusRow): { label: string; state: StepState }[] {
     switch (row.status) {
-      case 'جاهز للطباعة':
-        return [{ label: 'قيد الإعداد', state: 'done' }, { label: 'جاهز للطباعة', state: 'current' }];
+      case 'جاهز لاعتماد الطباعة':
+        return [{ label: 'قيد الإعداد', state: 'done' }, { label: 'جاهز لاعتماد الطباعة', state: 'current' }];
       case 'مرفوض':
         return [{ label: 'قيد الإعداد', state: 'done' }, { label: 'مرفوض', state: 'rejected' }];
       default:
-        return [{ label: 'قيد الإعداد', state: 'current' }, { label: 'جاهز للطباعة', state: 'pending' }];
+        return [{ label: 'قيد الإعداد', state: 'current' }, { label: 'جاهز لاعتماد الطباعة', state: 'pending' }];
     }
   }
 
@@ -249,12 +273,12 @@ export default class PlanningComponent implements OnInit {
     // API CALL WILL BE HERE, then reload the rows
     this.rows.update(rows => rows.map(r =>
       r.index === row.index
-        ? { ...r, status: 'جاهز للطباعة', statusTone: 'success', rejectionReason: undefined }
+        ? { ...r, status: 'جاهز لاعتماد الطباعة', statusTone: 'success', rejectionReason: undefined }
         : r));
 
     this.messageService.add({
       severity: 'success', summary: 'تمت العملية', life: 3000,
-      detail: 'تم تحويل المادة إلى جاهز للطباعة'
+      detail: 'تم تحويل المادة إلى جاهز لاعتماد الطباعة'
     });
   }
 
