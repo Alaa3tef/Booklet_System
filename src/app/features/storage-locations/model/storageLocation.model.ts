@@ -1,12 +1,14 @@
 export interface StorageLocation {
   id: number;
   warehouseId: number;
-  warehouseName?: string;
-  //code: string;
+  warehouseName: string | null;
+  qrCode: string;
   area: string;
   rack: string;
   shelf: string;
-  bin: string;
+  bin: string | null;
+  totalStored: number;
+  dateCreated: string;
 }
 
 export interface StorageLocationQuery {
