@@ -68,35 +68,6 @@
             </div>
         </div>
 
-        <!-- <div class="field">
-          <label>رقم اللجنة</label>
-          <div class="input-wrapper">
-            <i class="pi pi-hashtag"></i>
-            <input
-              pInputText
-              type="text"
-              inputmode="numeric"
-              [ngModel]="searchCommittee()"
-              (ngModelChange)="setCommittee($event)"
-              placeholder="رقم اللجنة"
-            />
-          </div>
-        </div> -->
-           <!-- <div class="field">
-          <label>الادارة التعليمية </label>
-          <div class="input-wrapper">
-            <i class="pi pi-hashtag"></i>
-            <input
-              pInputText
-              type="text"
-              inputmode="numeric"
-              [ngModel]="searchEducation()"
-              (ngModelChange)="setEducation($event)"
-              placeholder="الادارة التعليمية"
-            />
-          </div>
-        </div> -->
-
         <div class="field">
           <label>الادارة التعليمية</label>
             <div class="select-wrapper">
@@ -111,6 +82,21 @@
             styleClass="archive-select"
           />
             </div>
+        </div>
+
+            <div class="field">
+          <label>رقم اللجنة</label>
+          <div class="input-wrapper">
+            <i class="pi pi-hashtag"></i>
+            <input
+              pInputText
+              type="text"
+              inputmode="numeric"
+              [ngModel]="searchCommittee()"
+              (ngModelChange)="setCommittee($event)"
+              placeholder="رقم اللجنة"
+            />
+          </div>
         </div>
       </div>
 

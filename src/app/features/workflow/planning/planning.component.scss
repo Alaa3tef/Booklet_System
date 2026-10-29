@@ -65,6 +65,9 @@
 }
 
 .planning-search-content .fields-grid { margin-bottom: 0; }
+.planning-search-content .fields-grid.cols-4 {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
 
 /* committee number input */
 .committee-search-field { min-width: 0; }
@@ -512,6 +515,10 @@ $red:    #dc2626;
 /* =========================================================
    RESPONSIVE (search card + dialog)
 ========================================================= */
+@media (max-width: 1000px) {
+  .planning-search-content .fields-grid.cols-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
 @media (max-width: 700px) {
   .planning-search-card { flex-direction: column; }
 

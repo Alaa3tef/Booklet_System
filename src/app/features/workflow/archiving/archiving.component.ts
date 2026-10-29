@@ -133,11 +133,13 @@ export default class ArchivingComponent {
   readonly filteredRows = computed(() => {
     const gov = this.searchGovernorate();
     const sub = this.searchSubject();
+    const commit = this.searchCommittee();
     const edu = this.searchEducation().trim();
 
     return this.rows().filter(r =>
       (!gov || r.governorate === gov) &&
       (!sub || r.subject === sub) &&
+      (!commit || r.committeeNumber === commit) &&
       (!edu || r.educationNumber.includes(edu))
     );
   });
@@ -147,6 +149,7 @@ export default class ArchivingComponent {
     const list: { key: FilterKey; title: string; value: string }[] = [];
     if (this.searchGovernorate()) list.push({ key: 'governorate', title: 'المحافظة',   value: this.searchGovernorate()! });
     if (this.searchSubject())     list.push({ key: 'subject',     title: 'المادة',      value: this.searchSubject()! });
+    if(this.searchCommittee())      list.push({ key: 'committee', title: 'اللجنة', value: this.searchCommittee() });
     if (this.searchEducation().trim()) list.push({ key: 'education', title: 'الادارة التعليمية', value: this.searchEducation().trim() });
     return list;
   });
@@ -155,6 +158,7 @@ export default class ArchivingComponent {
     if (key === 'governorate') this.searchGovernorate.set(null);
     if (key === 'subject')     this.searchSubject.set(null);
     if (key === 'education')   this.searchEducation.set('');
+    if (key === 'committee')   this.searchCommittee.set('');
     this.resetPage();
   }
 

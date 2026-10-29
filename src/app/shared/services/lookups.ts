@@ -17,5 +17,8 @@ export class Lookups {
    getLookupSubjectData() {
     return this.http.get(`${this.baseUrl}/Subjects`);
   }
-
+  // الادارة التعليمية
+ getLookupEducationAdminstrationData() {
+    return this.http.get(`${this.baseUrl}/EducationAdministrations`);
+  }
 }
