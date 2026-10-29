@@ -44,7 +44,7 @@
             </button> -->
           </div>
 
-          <div class="fields-grid cols-3">
+          <div class="fields-grid cols-4">
 
             <div class="field">
               <label for="governorate">المحافظة</label>
@@ -79,6 +79,22 @@
               />
               </div>
             </div>
+ <div class="field">
+          <label>الادارة التعليمية</label>
+            <div class="select-wrapper">
+            <i class="pi pi-book"></i>
+          <p-select
+            [options]="educationals"
+            [ngModel]="searchEducation()"
+            (ngModelChange)="setEducation($event)"
+            optionLabel="label"
+            optionValue="value"
+            placeholder="اختر الادارة التعليمية"
+            styleClass="archive-select"
+            appendTo="body"
+          />
+            </div>
+        </div>
 
             <div class="field committee-search-field">
               <label for="committeeNumber">رقم اللجنة</label>
@@ -206,10 +222,10 @@
             <!-- actions -->
             <footer class="plan-action">
 
-              @if (row.status === 'جاهز للطباعة') {
+              @if (row.status === 'جاهز لاعتماد الطباعة') {
                 <div class="completed-action">
                   <i class="pi pi-check-circle"></i>
-                  المادة جاهزة للطباعة
+                  المادة جاهزة  لإعتماد الطباعة
                 </div>
               } @else if (row.status === 'مرفوض') {
                 <button type="button" class="action-btn view-reason" (click)="openRejectionReasonDialog(row)">
@@ -220,7 +236,7 @@
                 <div class="action-pair">
                   <button type="button" class="action-btn ready" (click)="markReady(row)">
                     <i class="pi pi-check"></i>
-                    <span>جاهز للطباعة</span>
+                    <span>جاهز لاعتماد الطباعة</span>
                   </button>
                   <button type="button" class="action-btn reject" (click)="openRejectDialog(row)">
                     <i class="pi pi-times-circle"></i>

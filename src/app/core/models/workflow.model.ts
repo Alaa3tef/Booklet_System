@@ -20,6 +20,7 @@ export interface WorkflowStatusRow {
   index: number;
   committeeNumber?: string;
   subject: string;
+  educationNumber?: string;
   governorate?: string;
   location?: string;
   status: string;
