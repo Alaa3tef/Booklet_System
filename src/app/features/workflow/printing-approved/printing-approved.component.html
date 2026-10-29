@@ -58,6 +58,27 @@
               </div>
             </div>
 
+            <!-- الإدارة التعليمية -->
+<div class="filter-field">
+  <label for="pa-administration">الإدارة التعليمية</label>
+
+  <div class="select-wrapper">
+    <i class="pi pi-building"></i>
+
+    <p-select
+      inputId="pa-administration"
+      [options]="educationals"
+      optionLabel="label"
+      optionValue="value"
+      [ngModel]="educationFilter()"
+      (ngModelChange)="educationFilter.set($event)"
+      placeholder="كل الإدارات التعليمية"
+      appendTo="body"
+      [showClear]="false"
+    />
+  </div>
+</div>
+
             <div class="filter-field">
               <label for="pa-subject">المادة</label>
               <div class="select-wrapper">
@@ -76,6 +97,8 @@
                 />
               </div>
             </div>
+
+            
 
             <div class="filter-field committee-search-field">
               <label for="pa-committee">رقم اللجنة</label>
