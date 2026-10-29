@@ -94,6 +94,10 @@ export default class PackingComponent implements OnInit {
   readonly DONE = DONE;
   readonly REJECTED = REJECTED;
 
+  // نفس مصدر الـ options اللي في صفحة الجودة
+educationals = [ /* نفس الـ options */ ];
+
+educationFilter = signal<string | number | null>(null);
   readonly essentials = [
     'تغليف الأظرف الصغيرة للجنة في ظرف كبير',
     'عمل Scan للـ QR الخارجي للجنة بالكامل',
@@ -426,7 +430,7 @@ export default class PackingComponent implements OnInit {
     const filters = this.appliedFilters();
 
     return !!(
-      filters.subject ||
+      filters.subject || this.educationFilter() ||
       filters.governorate ||
       filters.committee.trim()
     );
@@ -448,6 +452,7 @@ export default class PackingComponent implements OnInit {
 
   resetFilters(): void {
     this.subjectFilter.set(null);
+    this.educationFilter.set(null);
     this.governorateFilter.set(null);
     this.committeeFilter.set('');
     this.statusFilter.set(null);

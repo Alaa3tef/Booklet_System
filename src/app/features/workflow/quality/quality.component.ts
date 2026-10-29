@@ -84,7 +84,22 @@ export default class QualityComponent implements OnInit {
   // =========================
   // Essentials
   // =========================
-
+ educationals: any[] = [
+    { label: 'كل الادارات التعليمية', value: 'all' },
+    { label: 'EDU-001', value: 'EDU-001' },
+    { label: 'EDU-002', value: 'EDU-002' },
+    { label: 'EDU-003', value: 'EDU-003' },
+    { label: 'EDU-004', value: 'EDU-004' },
+    { label: 'EDU-005', value: 'EDU-005' },
+    { label: 'EDU-006', value: 'EDU-006' },
+    { label: 'EDU-007', value: 'EDU-007' },
+    { label: 'EDU-008', value: 'EDU-008' },
+    { label: 'EDU-009', value: 'EDU-009' },
+    { label: 'EDU-010', value: 'EDU-010' },
+    { label: 'EDU-011', value: 'EDU-011' }
+  ];
+   readonly searchEducation   = signal('');
+   setEducation(v: string): void          { this.searchEducation.set(v ?? ''); this.resetPage(); }
   readonly essentials = [
     'مسح QR الخاص بكل مادة',
     'مسح جميع أظرف اللجنة',
@@ -123,6 +138,7 @@ export default class QualityComponent implements OnInit {
     this.loadSubjects();
   }
 
+  private resetPage(): void { this.currentPage.set(1); }
   /**
    * تحميل المحافظات من:
    * GET api/Governorates
@@ -337,12 +353,14 @@ export default class QualityComponent implements OnInit {
 
   readonly subjectFilter = signal<string | null>(null);
   readonly governorateFilter = signal<string | null>(null);
+   readonly educationFilter = signal<string | null>(null);
   readonly committeeFilter = signal('');
   readonly statusFilter = signal<string | null>(null);
 
   private readonly appliedFilters = signal({
     subject: null as string | null,
     governorate: null as string | null,
+    education: null as string | null,
     committee: ''
   });
 
@@ -432,7 +450,8 @@ readonly governorateOptions = computed<LookupOption[]>(() =>
     this.appliedFilters.set({
       subject: this.subjectFilter(),
       governorate: this.governorateFilter(),
-      committee: this.committeeFilter()
+      committee: this.committeeFilter(),
+      education : this.educationFilter()
     });
 
     this.currentPage.set(1);
@@ -442,7 +461,7 @@ readonly governorateOptions = computed<LookupOption[]>(() =>
     this.subjectFilter.set(null);
     this.governorateFilter.set(null);
     this.committeeFilter.set('');
-
+    this.educationFilter.set(null)
     this.applyFilters();
   }
 

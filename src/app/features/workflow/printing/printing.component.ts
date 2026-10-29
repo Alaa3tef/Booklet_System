@@ -63,7 +63,10 @@ interface PrintingRow extends WorkflowStatusRow {
 export default class PrintingComponent implements OnInit {
   private readonly lookupsService = inject(Lookups);
   private readonly committeeInput$ = new Subject<string>();
+  selectedEducation: string | number | null = null;
 
+// عندك educationals أصلاً في صفحة الجودة، استخدمي نفس المصدر
+educationals = [ /* نفس الـ options اللي في صفحة الجودة */ ];
   // ==========================================
   // Page configuration
   // ==========================================
@@ -314,6 +317,7 @@ return { label, value };
     return !!(
       this.selectedGovernorate ||
       this.selectedSubject ||
+      this.selectedEducation ||
       this.selectedCommittee.trim()
     );
   }
@@ -508,7 +512,7 @@ return { label, value };
     this.selectedGovernorate = '';
     this.selectedSubject = '';
     this.selectedCommittee = '';
-
+    this.selectedEducation = '';
     // إلغاء أي قيمة بحث معلقة قبل تطبيق الفلاتر الجديدة
     this.committeeInput$.next('');
 

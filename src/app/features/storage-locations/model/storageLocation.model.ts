@@ -22,14 +22,17 @@ export interface PagedResult<T> {
   totalCount: number;
 }
 
+
 export interface CreateStorageLocationPayload {
   warehouseId: number;
-  //code: string;
-  areas?: number;
-  racksPerArea?: number;
-  shelvesPerRack?: number;
-  binsPerArea?: number;
+  racks: number;
+  shelvesPerRack: number;
+  binsPerRack: number;
+  constantRacks: number;
+  shelvesPerConstantRack: number;
+  binsPerConstantRack: number;
 }
+
 
 // PUT body has no warehouseId
 export type UpdateStorageLocationPayload = Omit<CreateStorageLocationPayload, 'warehouseId'>;

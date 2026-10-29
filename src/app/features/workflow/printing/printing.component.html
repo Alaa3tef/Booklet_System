@@ -51,7 +51,23 @@
           styleClass="pr-input"
         />
       </div>
-
+<div class="pr-field">
+  <label for="printing-education">الإدارة التعليمية</label>
+  <p-select
+    inputId="printing-education"
+    [options]="educationals"
+    [(ngModel)]="selectedEducation"
+    (ngModelChange)="onFilterChange()"
+    optionLabel="label"
+    optionValue="value"
+    placeholder="كل الإدارات"
+    [filter]="true"
+    filterPlaceholder="ابحث عن إدارة..."
+    emptyMessage="لا توجد إدارات"
+    [showClear]="true"
+    styleClass="pr-input"
+  />
+</div>
       <div class="pr-field">
         <label for="printing-subject">المادة</label>
         <p-select

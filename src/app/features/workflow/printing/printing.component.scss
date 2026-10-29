@@ -181,21 +181,81 @@
 
 .pr-filters {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr)) auto;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) auto;
   align-items: end;
   gap: 1rem;
   margin-bottom: 1rem;
 
   .pr-field { margin: 0; }
+
+  .p-select.pr-input,
+  .pr-input {
+    width: 100%;
+    height: 42px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    font-size: .75rem;
+    transition: border-color .2s, box-shadow .2s;
+
+    &:hover { border-color: var(--blue); }
+
+    &.p-focus,
+    &:focus {
+      border-color: var(--blue);
+      box-shadow: 0 0 0 3px rgba(22, 163, 74, .12); // أخضر بدل الأزرق
+    }
+
+    .p-select-label {
+      display: flex;
+      align-items: center;
+      font-size: .75rem;
+    }
+
+    .p-select-label.p-placeholder { color: var(--muted); }
+  }
+
+  // زرار إعادة التعيين مربع بحجم الحقول
+  > .pr-btn {
+    width: 42px;
+    padding-inline: 0;
+  }
 }
 
 .pr-search {
   position: relative;
+  display: block;
 
-  i { position: absolute; top: 50%; inset-inline-start: .85rem; transform: translateY(-50%); color: var(--muted); pointer-events: none; }
-  .pr-input { padding-inline-start: 2.3rem; }
+  i {
+    position: absolute;
+    top: 50%;
+    inset-inline-start: .85rem;
+    transform: translateY(-50%);
+    color: var(--muted);
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  .pr-input {
+    padding-inline-start: 2.3rem;
+  }
 }
 
+@media (max-width: 1200px) {
+  .pr-filters {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+
+    > .pr-btn {
+      grid-column: 1 / -1;
+      justify-self: end;
+      width: 42px;
+    }
+  }
+}
+
+@media (max-width: 600px) {
+  .pr-filters { grid-template-columns: 1fr; }
+}
 .pr-tabs {
   display: flex;
   flex-wrap: wrap;

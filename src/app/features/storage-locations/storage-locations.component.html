@@ -158,7 +158,6 @@
     <div class="table-responsive">
       <p-table
         [value]="rows()"
-        [loading]="loading()"
         [tableStyle]="{ 'min-width': '940px' }"
         styleClass="sl-table"
       >
@@ -401,113 +400,217 @@
 
   <div class="dialog-body">
 
-    <!-- ========== فورم الإضافة (أرقام) ========== -->
-    <form
-      *ngIf="editingId() === null"
-      [formGroup]="addForm"
-      (ngSubmit)="save()"
-      class="location-form"
-      novalidate
-    >
-      <div class="form-section-heading">
-        <i class="pi pi-info-circle"></i>
-        <span>البيانات الأساسية</span>
-      </div>
+   
+<!-- ========== فورم الإضافة ========== -->
+<form
+  *ngIf="editingId() === null"
+  [formGroup]="addForm"
+  (ngSubmit)="save()"
+  class="location-form"
+  novalidate
+>
+  <div class="form-section-heading">
+    <i class="pi pi-info-circle"></i>
+    <span>البيانات الأساسية</span>
+  </div>
 
-      <div class="form-grid">
-        <div class="dialog-field">
-          <label for="addWarehouse">المخزن <span class="required">*</span></label>
-          <p-select
-            inputId="addWarehouse"
-            formControlName="warehouseId"
-            [options]="warehouses()"
-            optionLabel="name"
-            optionValue="id"
-            placeholder="اختر المخزن"
-            [filter]="true"
-            filterPlaceholder="ابحث عن مخزن..."
-            appendTo="body"
-            panelStyleClass="sl-select-panel"
-            styleClass="form-select"
-          ></p-select>
-          <small class="field-error" *ngIf="invalid(addForm, 'warehouseId')">
-            يجب اختيار المخزن.
-          </small>
-        </div>
-      </div>
+  <div class="form-grid">
+    <div class="dialog-field">
+      <label for="addWarehouse">
+        المخزن <span class="required">*</span>
+      </label>
 
-      <div class="form-section-heading location-section-heading">
-        <i class="pi pi-sitemap"></i>
-        <span>تفاصيل موقع التخزين</span>
-      </div>
+      <p-select
+        inputId="addWarehouse"
+        formControlName="warehouseId"
+        [options]="warehouses()"
+        optionLabel="name"
+        optionValue="id"
+        placeholder="اختر المخزن"
+        [filter]="true"
+        filterPlaceholder="ابحث عن مخزن..."
+        appendTo="body"
+        panelStyleClass="sl-select-panel"
+        styleClass="form-select"
+      ></p-select>
 
-      <div class="form-grid">
-        <div class="dialog-field">
-          <label for="addAreas">عدد المناطق <span class="required">*</span></label>
-          <p-inputNumber
-            inputId="addAreas"
-            formControlName="areas"
-            [min]="1"
-            [useGrouping]="false"
-            [showButtons]="true"
-            inputStyleClass="form-input"
-          ></p-inputNumber>
-          <small class="field-error" *ngIf="invalid(addForm, 'areas')">
-            أدخل رقمًا صحيحًا (1 أو أكثر).
-          </small>
-        </div>
+      <small
+        class="field-error"
+        *ngIf="invalid(addForm, 'warehouseId')"
+      >
+        يجب اختيار المخزن.
+      </small>
+    </div>
+  </div>
 
-        <div class="dialog-field">
-          <label for="addRacks">عدد الرفوف <span class="required">*</span></label>
-          <p-inputNumber
-            inputId="addRacks"
-            formControlName="racksPerArea"
-            [min]="1"
-            [useGrouping]="false"
-            [showButtons]="true"
-            inputStyleClass="form-input"
-          ></p-inputNumber>
-          <small class="field-error" *ngIf="invalid(addForm, 'racksPerArea')">
-            أدخل رقمًا صحيحًا (1 أو أكثر).
-          </small>
-        </div>
+  <div class="form-section-heading location-section-heading">
+    <i class="pi pi-sitemap"></i>
+    <span>إعدادات إنشاء مواقع التخزين</span>
+  </div>
 
-        <div class="dialog-field">
-          <label for="addShelves">عدد الدواليب <span class="required">*</span></label>
-          <p-inputNumber
-            inputId="addShelves"
-            formControlName="shelvesPerRack"
-            [min]="1"
-            [useGrouping]="false"
-            [showButtons]="true"
-            inputStyleClass="form-input"
-          ></p-inputNumber>
-          <small class="field-error" *ngIf="invalid(addForm, 'shelvesPerRack')">
-            أدخل رقمًا صحيحًا (1 أو أكثر).
-          </small>
-        </div>
+  <div class="form-grid">
 
-        <div class="dialog-field">
-          <label for="addBins">عدد الصناديق <span class="required">*</span></label>
-          <p-inputNumber
-            inputId="addBins"
-            formControlName="binsPerArea"
-            [min]="1"
-            [useGrouping]="false"
-            [showButtons]="true"
-            inputStyleClass="form-input"
-          ></p-inputNumber>
-          <small class="field-error" *ngIf="invalid(addForm, 'binsPerArea')">
-            أدخل رقمًا صحيحًا (1 أو أكثر).
-          </small>
-        </div>
-      </div>
+    <!-- عدد الرفوف -->
+    <div class="dialog-field">
+      <label for="addRacks">
+        عدد الرفوف
+        <span class="required">*</span>
+      </label>
 
-      <div class="form-note">
-        <i class="pi pi-shield"></i>
-        <span>الحقول التي بجوارها علامة النجمة إلزامية.</span>
-      </div>
-    </form>
+      <p-inputNumber
+        inputId="addRacks"
+        formControlName="racks"
+        [min]="0"
+        [useGrouping]="false"
+        [showButtons]="true"
+        inputStyleClass="form-input"
+        styleClass="w-full"
+      ></p-inputNumber>
+
+      <small
+        class="field-error"
+        *ngIf="invalid(addForm, 'racks')"
+      >
+        أدخل عددًا صحيحًا لا يقل عن صفر.
+      </small>
+    </div>
+
+    <!-- الأدوار لكل رف -->
+    <div class="dialog-field">
+      <label for="addShelvesPerRack">
+        عدد الأدوار في كل رف
+        <span class="required">*</span>
+      </label>
+
+      <p-inputNumber
+        inputId="addShelvesPerRack"
+        formControlName="shelvesPerRack"
+        [min]="0"
+        [useGrouping]="false"
+        [showButtons]="true"
+        inputStyleClass="form-input"
+        styleClass="w-full"
+      ></p-inputNumber>
+
+      <small
+        class="field-error"
+        *ngIf="invalid(addForm, 'shelvesPerRack')"
+      >
+        أدخل عددًا صحيحًا لا يقل عن صفر.
+      </small>
+    </div>
+
+    <!-- الصناديق لكل رف -->
+    <div class="dialog-field">
+      <label for="addBinsPerRack">
+        عدد الصناديق في كل رف
+        <span class="required">*</span>
+      </label>
+
+      <p-inputNumber
+        inputId="addBinsPerRack"
+        formControlName="binsPerRack"
+        [min]="0"
+        [useGrouping]="false"
+        [showButtons]="true"
+        inputStyleClass="form-input"
+        styleClass="w-full"
+      ></p-inputNumber>
+
+      <small
+        class="field-error"
+        *ngIf="invalid(addForm, 'binsPerRack')"
+      >
+        أدخل عددًا صحيحًا لا يقل عن صفر.
+      </small>
+    </div>
+
+    <!-- الرفوف الثابتة -->
+    <div class="dialog-field">
+      <label for="addConstantRacks">
+        عدد الرفوف الثابتة
+        <span class="required">*</span>
+      </label>
+
+      <p-inputNumber
+        inputId="addConstantRacks"
+        formControlName="constantRacks"
+        [min]="0"
+        [useGrouping]="false"
+        [showButtons]="true"
+        inputStyleClass="form-input"
+        styleClass="w-full"
+      ></p-inputNumber>
+
+      <small
+        class="field-error"
+        *ngIf="invalid(addForm, 'constantRacks')"
+      >
+        أدخل عددًا صحيحًا لا يقل عن صفر.
+      </small>
+    </div>
+
+    <!-- الأدوار لكل رف ثابت -->
+    <div class="dialog-field">
+      <label for="addShelvesPerConstantRack">
+        عدد الأدوار في كل رف ثابت
+        <span class="required">*</span>
+      </label>
+
+      <p-inputNumber
+        inputId="addShelvesPerConstantRack"
+        formControlName="shelvesPerConstantRack"
+        [min]="0"
+        [useGrouping]="false"
+        [showButtons]="true"
+        inputStyleClass="form-input"
+        styleClass="w-full"
+      ></p-inputNumber>
+
+      <small
+        class="field-error"
+        *ngIf="invalid(addForm, 'shelvesPerConstantRack')"
+      >
+        أدخل عددًا صحيحًا لا يقل عن صفر.
+      </small>
+    </div>
+
+    <!-- الصناديق لكل رف ثابت -->
+    <div class="dialog-field">
+      <label for="addBinsPerConstantRack">
+        عدد الصناديق في كل رف ثابت
+        <span class="required">*</span>
+      </label>
+
+      <p-inputNumber
+        inputId="addBinsPerConstantRack"
+        formControlName="binsPerConstantRack"
+        [min]="0"
+        [useGrouping]="false"
+        [showButtons]="true"
+        inputStyleClass="form-input"
+        styleClass="w-full"
+      ></p-inputNumber>
+
+      <small
+        class="field-error"
+        *ngIf="invalid(addForm, 'binsPerConstantRack')"
+      >
+        أدخل عددًا صحيحًا لا يقل عن صفر.
+      </small>
+    </div>
+
+  </div>
+
+  <div class="form-note">
+    <i class="pi pi-info-circle"></i>
+    <span>
+      أدخل أعداد الرفوف والأدوار والصناديق المطلوبة لإنشاء مواقع التخزين.
+      يمكن إدخال صفر في الحقول التي لا تحتاج إلى إنشاء عناصر إضافية.
+    </span>
+  </div>
+</form>
+
 
     <!-- ========== فورم التعديل (نصوص) ========== -->
     <ng-container *ngIf="editingId() !== null">
@@ -563,7 +666,7 @@
         </div>
 
         <div class="form-grid">
-          <div class="dialog-field">
+          <!-- <div class="dialog-field">
             <label for="editArea">المنطقة <span class="required">*</span></label>
             <input
               id="editArea"
@@ -575,7 +678,7 @@
               dir="auto"
             />
             <small class="field-error" *ngIf="invalid(editForm, 'area')">المنطقة مطلوبة.</small>
-          </div>
+          </div> -->
 
           <div class="dialog-field">
             <label for="editRack">الرف <span class="required">*</span></label>
