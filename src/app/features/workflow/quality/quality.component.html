@@ -35,70 +35,85 @@
     <!-- ========== Filters ========== -->
     <section class="qc-box qc-filters">
 
-      <div class="qc-field">
-        <label>المحافظة</label>
-        <p-select
-  [options]="governorateOptions()"
-  [ngModel]="governorateFilter()"
-  (ngModelChange)="governorateFilter.set($event)"
-  optionLabel="label"
-  optionValue="value"
-  placeholder="اختر المحافظة"
-  [loading]="governoratesLoading()"
-  [showClear]="true"
-  appendTo="body">
-</p-select>
-      </div>
-       <div class="qc-field">
-        <label>المادة</label>
-        <p-select
-  [options]="subjectOptions()"
-  [ngModel]="subjectFilter()"
-  (ngModelChange)="subjectFilter.set($event)"
-  optionLabel="label"
-  optionValue="value"
-  placeholder="اختر المادة"
-  [loading]="subjectsLoading()"
-  [showClear]="true"
-  appendTo="body">
-</p-select>
-      </div>
+  <div class="qc-field">
+    <label>المحافظة</label>
+    <p-select
+      [options]="governorateOptions()"
+      [ngModel]="governorateFilter()"
+      (ngModelChange)="governorateFilter.set($event)"
+      optionLabel="label"
+      optionValue="value"
+      placeholder="اختر المحافظة"
+      [loading]="governoratesLoading()"
+      [showClear]="true"
+      appendTo="body"
+      styleClass="qc-input">
+    </p-select>
+  </div>
 
-      <div class="qc-field">
-        <label>رقم اللجنة</label>
-        <span class="qc-search">
-          <i class="pi pi-hashtag"></i>
-          <input
-            pInputText
-            type="text"
-            inputmode="numeric"
-            class="qc-input"
-            placeholder="مثال: 101"
-            maxlength="10"
-            [ngModel]="committeeFilter()"
-            (ngModelChange)="committeeFilter.set($event)"
-            (keydown.enter)="applyFilters()"
-          />
-        </span>
-      </div>
+  <div class="qc-field">
+    <label>الإدارة التعليمية</label>
+    <p-select
+      [options]="educationals"
+      [ngModel]="educationFilter()"
+      (ngModelChange)="educationFilter.set($event)"
+      optionLabel="label"
+      optionValue="value"
+      placeholder="اختر الإدارة التعليمية"
+      [showClear]="true"
+      appendTo="body"
+      styleClass="qc-input">
+    </p-select>
+  </div>
 
-      <div class="qc-actions">
-        <button pButton type="button" class="qc-btn qc-btn-primary" (click)="applyFilters()">
-          <i class="pi pi-search"></i><span>بحث</span>
-        </button>
-        <button
-          pButton
-          type="button"
-          class="qc-btn qc-btn-ghost"
-          pTooltip="إعادة تعيين"
-          tooltipPosition="top"
-          [disabled]="!hasActiveFilters()"
-          (click)="resetFilters()"
-        >
-          <i class="pi pi-filter-slash"></i>
-        </button>
-      </div>
-    </section>
+  <div class="qc-field">
+    <label>المادة</label>
+    <p-select
+      [options]="subjectOptions()"
+      [ngModel]="subjectFilter()"
+      (ngModelChange)="subjectFilter.set($event)"
+      optionLabel="label"
+      optionValue="value"
+      placeholder="اختر المادة"
+      [loading]="subjectsLoading()"
+      [showClear]="true"
+      appendTo="body"
+      styleClass="qc-input">
+    </p-select>
+  </div>
+
+  <div class="qc-field">
+    <label>رقم اللجنة</label>
+    <span class="qc-search">
+      <i class="pi pi-hashtag"></i>
+      <input
+        pInputText
+        type="text"
+        inputmode="numeric"
+        class="qc-input"
+        placeholder="مثال: 101"
+        maxlength="10"
+        [ngModel]="committeeFilter()"
+        (ngModelChange)="committeeFilter.set($event)"
+        (keydown.enter)="applyFilters()" />
+    </span>
+  </div>
+
+  <div class="qc-actions">
+    <button pButton type="button" class="qc-btn qc-btn-primary" (click)="applyFilters()">
+      <i class="pi pi-search"></i><span>بحث</span>
+    </button>
+    <button
+      pButton
+      type="button"
+      class="qc-btn qc-btn-ghost qc-btn-icon"
+      pTooltip="إعادة تعيين"
+      tooltipPosition="top"
+      (click)="resetFilters()">
+      <i class="pi pi-filter-slash"></i>
+    </button>
+  </div>
+</section>
 
     <!-- ========== Status tabs ========== -->
     <nav class="qc-tabs">

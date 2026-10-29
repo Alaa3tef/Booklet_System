@@ -123,22 +123,50 @@ export default class StorageLocationsComponent implements OnInit {
   readonly saving = signal(false);
 
   // فورم الإضافة: أرقام (عدد)
-  readonly addForm = this.fb.group({
-    warehouseId: this.fb.control<number | null>(null, Validators.required),
-    areas: this.fb.control<number | null>(null, [
-      Validators.required,
-      Validators.min(1),
-    ]),
-    racksPerArea: this.fb.control<number | null>(null, [
-      Validators.required,
-      Validators.min(1),
-    ]),
-    shelvesPerRack: this.fb.control<number | null>(null, [
-      Validators.required,
-      Validators.min(1),
-    ]),
-    binsPerArea: this.fb.control<number | null>(null, [Validators.min(1)]),
-  });
+ 
+readonly addForm = this.fb.group({
+  warehouseId: this.fb.control<number | null>(
+    null,
+    Validators.required
+  ),
+
+  racks: this.fb.nonNullable.control(0, [
+    Validators.required,
+    Validators.min(0),
+    Validators.pattern(/^\d+$/),
+  ]),
+
+  shelvesPerRack: this.fb.nonNullable.control(0, [
+    Validators.required,
+    Validators.min(0),
+    Validators.pattern(/^\d+$/),
+  ]),
+
+  binsPerRack: this.fb.nonNullable.control(0, [
+    Validators.required,
+    Validators.min(0),
+    Validators.pattern(/^\d+$/),
+  ]),
+
+  constantRacks: this.fb.nonNullable.control(0, [
+    Validators.required,
+    Validators.min(0),
+    Validators.pattern(/^\d+$/),
+  ]),
+
+  shelvesPerConstantRack: this.fb.nonNullable.control(0, [
+    Validators.required,
+    Validators.min(0),
+    Validators.pattern(/^\d+$/),
+  ]),
+
+  binsPerConstantRack: this.fb.nonNullable.control(0, [
+    Validators.required,
+    Validators.min(0),
+    Validators.pattern(/^\d+$/),
+  ]),
+});
+
 
   // فورم التعديل: نصوص (قيمة الموقع)
   readonly editForm = this.fb.group({
@@ -433,38 +461,43 @@ printQr(id?: number): void {
     const id = this.editingId();
     let request$: Observable<unknown>;
 
-    if (id === null) {
-      const v = this.addForm.getRawValue();
-      request$ = this.api.create({
-        warehouseId: v.warehouseId!,
-        areas: v.areas!,
-        racksPerArea: v.racksPerArea!,
-        shelvesPerRack: v.shelvesPerRack!,
-        binsPerArea: v.binsPerArea!,
-      });
-    } else {
-      const v = this.editForm.getRawValue();
-      request$ = this.api.update(id, {
-        area: v.area.trim(),
-        rack: v.rack.trim(),
-        shelf: v.shelf.trim(),
-        bin: v.bin.trim(),
-        qrCode: v.qrCode.trim()
-      });
-    }
+ 
+if (id === null) {
+  const v = this.addForm.getRawValue();
+
+  request$ = this.api.create({
+    warehouseId: v.warehouseId!,
+    racks: v.racks,
+    shelvesPerRack: v.shelvesPerRack,
+    binsPerRack: v.binsPerRack,
+    constantRacks: v.constantRacks,
+    shelvesPerConstantRack: v.shelvesPerConstantRack,
+    binsPerConstantRack: v.binsPerConstantRack,
+  });
+} else {
+  const v = this.editForm.getRawValue();
+
+  request$ = this.api.update(id, {
+    area: v.area.trim(),
+    rack: v.rack.trim(),
+    shelf: v.shelf.trim(),
+    bin: v.bin.trim(),
+    qrCode: v.qrCode.trim(),
+  });
+}
+
 
     this.saving.set(true);
 
     request$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: () => {
+      next: (res:any) => {
         this.saving.set(false);
         this.formVisible = false;
 
         this.toast.add({
           severity: "success",
           summary: "تم بنجاح",
-          detail:
-            id === null ? "تمت إضافة موقع التخزين" : "تم تعديل موقع التخزين",
+          detail: res.message,
         });
 
         this.load();

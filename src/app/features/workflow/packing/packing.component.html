@@ -36,6 +36,14 @@
           emptyMessage="لا توجد محافظات" styleClass="pk-input" />
       </div>
       <div class="pk-field">
+  <label>الإدارة التعليمية</label>
+  <p-select [options]="educationals" optionLabel="label" optionValue="value"
+    placeholder="كل الإدارات" [ngModel]="educationFilter()"
+    (ngModelChange)="educationFilter.set($event)"
+    [showClear]="true" [filter]="true" filterPlaceholder="ابحث عن إدارة..."
+    emptyMessage="لا توجد إدارات" styleClass="pk-input" />
+</div>
+      <div class="pk-field">
         <label>المادة</label>
         <p-select [options]="subjectOptions()" optionLabel="label" optionValue="value"
           placeholder="كل المواد" [ngModel]="subjectFilter()"
@@ -56,10 +64,10 @@
         <button pButton type="button" class="pk-btn pk-btn-primary" (click)="applyFilters()">
           <i class="pi pi-search"></i><span>بحث</span>
         </button>
-        <button pButton type="button" class="pk-btn pk-btn-ghost" pTooltip="إعادة تعيين"
-          tooltipPosition="top" [disabled]="!hasActiveFilters()" (click)="resetFilters()">
-          <i class="pi pi-filter-slash"></i>
-        </button>
+        <button pButton type="button" class="pk-btn pk-btn-ghost pk-btn-icon" pTooltip="إعادة تعيين"
+  tooltipPosition="top"  (click)="resetFilters()">
+  <i class="pi pi-filter-slash"></i>
+</button>
       </div>
     </section>
 
