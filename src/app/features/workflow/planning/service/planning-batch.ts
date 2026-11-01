@@ -1,9 +1,7 @@
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { AppConfigService } from '../../../../shared/services/app-config.service';
-
-
 
 export interface ApiResponse<T> {
   success: boolean;
@@ -65,17 +63,69 @@ export interface BatchDetails {
   committees: BatchCommittee[];
 }
 
+/** GET api/Planning/delivery-orders/governorates */
+export interface GovernorateDeliveryReadiness {
+  governorateId: number;
+  governorateName: string | null;
+  canCreate: boolean;
+  totalBatches: number;
+  storedBatches: number;
+  totalCommittees: number;
+  totalBoxes: number;
+  blockingReasons: string[] | null;
+}
+
+export interface DeliveryOrdersGovernoratesQuery {
+  year?: number;
+  roundId?: number;
+  educationalStageId?: number;
+  onlyEligible?: boolean;
+}
+
 @Injectable({ providedIn: 'root' })
 export class PlanningService {
   private readonly http = inject(HttpClient);
   private readonly appConfig = inject(AppConfigService);
   private readonly baseUrl = `${this.appConfig.baseURL}api/Planning`;
 
-  getBatchesForApprove(): Observable<ApiResponse<PlanningBatch[]>> {
-    return this.http.get<ApiResponse<PlanningBatch[]>>(`${this.baseUrl}/batches/for-approve`);
+  getBatchesForApprove(governorateId?: number, subjectId?: number): Observable<ApiResponse<PlanningBatch[]>> {
+    let params = new HttpParams();
+    if (governorateId != null && governorateId > 0) {
+      params = params.set('GovernorateId', governorateId.toString());
+    }
+    if (subjectId != null && subjectId > 0) {
+      params = params.set('SubjectId', subjectId.toString());
+    }
+    return this.http.get<ApiResponse<PlanningBatch[]>>(`${this.baseUrl}/batches/for-approve`, { params });
   }
 
   getBatchDetails(batchId: number): Observable<ApiResponse<BatchDetails>> {
     return this.http.get<ApiResponse<BatchDetails>>(`${this.baseUrl}/batches/${batchId}`);
   }
+
+  sendBatchesToPreQuality(batchIds: number[]): Observable<ApiResponse<unknown>> {
+    return this.http.post<ApiResponse<unknown>>(
+      `${this.baseUrl}/batches/send-to-pre-quality`,
+      { batchIds }
+    );
+  }
+
+  getDeliveryOrdersGovernorates(query: DeliveryOrdersGovernoratesQuery): Observable<ApiResponse<GovernorateDeliveryReadiness[]>> {
+    let params = new HttpParams();
+    if (query.year != null && query.year > 0) {
+      params = params.set('Year', query.year.toString());
+    }
+    if (query.roundId != null && query.roundId > 0) {
+      params = params.set('RoundId', query.roundId.toString());
+    }
+    if (query.educationalStageId != null && query.educationalStageId > 0) {
+      params = params.set('EducationalStageId', query.educationalStageId.toString());
+    }
+    if (query.onlyEligible != null) {
+      params = params.set('OnlyEligible', String(query.onlyEligible));
+    }
+    return this.http.get<ApiResponse<GovernorateDeliveryReadiness[]>>(`${this.baseUrl}/delivery-orders/governorates`, { params });
+  }
+
+
 }
