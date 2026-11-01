@@ -76,7 +76,7 @@ export class QualityService {
 
   /** لو baseURL مش بيحتوي على /api ضيفيها هنا */
   private get url(): string {
-    return `${this.config.baseURL}/Quality`;
+    return `${this.config.baseURL}api/Quality`;
   }
 
   /**
