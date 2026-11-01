@@ -65,6 +65,9 @@
 }
 
 .planning-search-content .fields-grid { margin-bottom: 0; }
+.planning-search-content .fields-grid.cols-3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
 .planning-search-content .fields-grid.cols-4 {
   grid-template-columns: repeat(4, minmax(0, 1fr));
 }
@@ -215,12 +218,31 @@ $red:    #dc2626;
   &.warning { --accent: #{$amber}; --accent-soft: #fff6dd; }
   &.success { --accent: #{$green}; --accent-soft: #def7e8; }
   &.danger  { --accent: #{$red};   --accent-soft: #fde8e8; }
+
+  &.selected {
+    border-color: #1565c0;
+    background: #f8fbff;
+    box-shadow: 0 0 0 3px rgba(21, 101, 192, .18);
+  }
 }
 
 .plan-top { display: flex; align-items: center; gap: 10px; }
 
+.top-select {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.batch-check {
+  width: 19px;
+  height: 19px;
+  accent-color: #1565c0;
+  cursor: pointer;
+}
+
 .plan-no {
-  flex: 0 0 34px; height: 34px; display: grid; place-items: center;
+  flex: 0 0 auto; min-width: 34px; padding: 0 8px; height: 34px; display: grid; place-items: center;
   border-radius: 10px; background: #f1f5f9; color: $muted; font-size: 13px; font-weight: 800;
 }
 
@@ -228,6 +250,37 @@ $red:    #dc2626;
   flex: 1; min-width: 0;
   strong { display: block; font-size: 16px; font-weight: 800; color: $ink;
            white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  h4 { margin: 0; }
+}
+
+.select-all-materials {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  border: 1px solid #d6e2f3;
+  border-radius: 10px;
+  background: #f3f8ff;
+  color: #0b4a9c;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  input {
+    width: 17px;
+    height: 17px;
+    accent-color: #1565c0;
+    cursor: pointer;
+  }
+  &:hover {
+    background: #e8f1ff;
+  }
 }
 /* ---------- info tiles ---------- */
 .info-tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
@@ -310,6 +363,19 @@ $red:    #dc2626;
 
   &.view-reason { background: #fff; color: #b42318; border: 1px solid rgba(180, 35, 24, .3);
                   &:hover { background: #fef3f2; } }
+
+  &.details-btn {
+    background: #f1f5f9;
+    color: #0b2e4f;
+    border: 1px solid #cbd5e1;
+    font-size: 13.5px;
+    padding: 10px 16px;
+    &:hover {
+      background: #e2e8f0;
+      color: #0f172a;
+      border-color: #94a3b8;
+    }
+  }
 }
 
 .completed-action {
@@ -576,4 +642,461 @@ $red:    #dc2626;
   .action-pair {
     grid-template-columns: minmax(0, 1fr);
   }
+}
+/* =========================================================
+   APPEND THIS BLOCK TO THE END of your planning.component.scss.
+   It replaces the previous "planning-sources" block: if you already
+   appended that one, delete it first, then paste this one.
+========================================================= */
+
+/* ---------- filters: 5 fields that adapt to the width ---------- */
+.planning-search-content .fields-grid.cols-auto {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 16px;
+}
+
+/* ---------- section header: page-size selector + count ---------- */
+.header-tools { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+
+.page-size-box { display: flex; align-items: center; gap: 10px; color: #64748b; font-size: 13px; }
+
+:host ::ng-deep .page-size-box .pagination-size-select {
+  min-width: 96px;
+  .p-select { min-height: 36px; border-radius: 9px; border-color: #dfe3e8; box-shadow: none; }
+  .p-select-label { font-size: 13px; color: #334155; }
+}
+
+/* ---------- committee data block on the material card (IT) ---------- */
+.source {
+  border-radius: 14px; padding: 10px 12px 12px;
+  background: #f3f8ff; border: 1px solid #d6e6fb;
+}
+.source-head { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+.source-icon {
+  width: 26px; height: 26px; flex-shrink: 0; display: grid; place-items: center;
+  border-radius: 8px; background: #fff; color: #1565c0; font-size: 12px;
+}
+.source-title { flex: 1; font-size: 13px; font-weight: 800; color: #172033; }
+.source-tag {
+  padding: 2px 9px; border-radius: 999px; background: #fff; color: #1565c0;
+  font-size: 10.5px; font-weight: 800; letter-spacing: .4px;
+}
+.source-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.source-grid .span-2 { grid-column: 1 / -1; }
+.source .info-tile { background: #fff; border-color: #e3ebf7; }
+.source-grid .info-tile strong { font-size: 13.5px; }
+
+/* ---------- code chip + empty box (shared by both views) ---------- */
+.code-chip {
+  flex-shrink: 0; padding: 4px 11px; border-radius: 8px;
+  background: #e5f6f3; color: #0b7a6f;
+  font-family: ui-monospace, Consolas, monospace; font-size: 13px; font-weight: 800; letter-spacing: .5px;
+}
+
+.wh-empty {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 16px; border: 2px dashed #bfe3de; border-radius: 12px;
+  color: #6b9a94; font-size: 13px; font-weight: 600; background: rgba(255, 255, 255, .6);
+}
+
+/* =========================================================
+   VIEW SWITCH (tabs)
+========================================================= */
+.view-tabs {
+  display: inline-flex; gap: 6px; padding: 5px;
+  margin-bottom: 18px;
+  background: #fff; border: 1px solid #e3e8f2; border-radius: 14px;
+  box-shadow: 0 1px 3px rgba(16, 36, 80, .05);
+}
+
+.view-tab {
+  display: inline-flex; align-items: center; gap: 9px;
+  padding: 10px 18px; border: 0; border-radius: 10px;
+  background: transparent; color: #64748b;
+  font: inherit; font-size: 14px; font-weight: 700; cursor: pointer;
+  transition: background .15s, color .15s, box-shadow .15s;
+
+  i { font-size: 14px; }
+  &:hover:not(.active) { background: #f1f5f9; color: #1565c0; }
+  &:focus-visible { outline: 2px solid #1565c0; outline-offset: 2px; }
+
+  &.active {
+    background: #1565c0; color: #fff;
+    box-shadow: 0 4px 12px rgba(21, 101, 192, .28);
+    .tab-count { background: rgba(255, 255, 255, .22); color: #fff; }
+  }
+}
+
+.tab-count {
+  min-width: 24px; padding: 2px 9px; border-radius: 999px; text-align: center;
+  background: #eef2f7; color: #475569; font-size: 12px; font-weight: 800;
+  &.selected { background: #fff6dd; color: #a16207; }
+}
+
+/* =========================================================
+   DELIVERY ORDERS VIEW & GOVERNORATE READINESS
+========================================================= */
+.delivery-orders-view {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.delivery-hero-img {
+  background: #f0fdf4 !important;
+}
+
+.action-btn-search {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 18px;
+  border-radius: 10px;
+  border: none;
+  background: #1565c0;
+  color: #fff;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all .2s;
+  &:hover:not(:disabled) {
+    background: #0d47a1;
+  }
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}
+
+/* KPI Summary Strip */
+.kpi-strip {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 1rem;
+}
+
+.kpi-card {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.15rem 1.25rem;
+  background: #fff;
+  border: 1px solid #e3e8f2;
+  border-radius: 14px;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.03);
+  transition: transform .2s, box-shadow .2s;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(15, 23, 42, 0.06);
+  }
+}
+
+.kpi-icon {
+  width: 46px;
+  height: 46px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  flex-shrink: 0;
+}
+
+.kpi-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+
+  small {
+    font-size: 12px;
+    color: #64748b;
+    font-weight: 600;
+  }
+
+  strong {
+    font-size: 1.35rem;
+    font-weight: 800;
+    color: #0b2e4f;
+    line-height: 1.2;
+  }
+}
+
+.total-govs .kpi-icon { background: #eef6ff; color: #1565c0; }
+.eligible-govs .kpi-icon { background: #e8f9f1; color: #107c41; }
+.total-batches .kpi-icon { background: #f5f3ff; color: #6d28d9; }
+.stored-batches .kpi-icon { background: #e6f6f4; color: #0b7a6f; }
+.total-boxes .kpi-icon { background: #fff7ed; color: #c2410c; }
+
+/* Governorates Grid */
+.gov-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 1.25rem;
+}
+
+.gov-card {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1.25rem;
+  background: #fff;
+  border: 2px solid #e3e8f2;
+  border-radius: 16px;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+  transition: all .2s;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+  }
+
+  &.eligible {
+    border-color: #a7f3d0;
+    &:hover { border-color: #34d399; }
+  }
+
+  &.blocked {
+    border-color: #fed7aa;
+    &:hover { border-color: #fb923c; }
+  }
+}
+
+.gov-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.gov-title-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.gov-icon-badge {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: #f1f5f9;
+  color: #1565c0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+}
+
+.gov-title {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+
+  h5 {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 800;
+    color: #0b2e4f;
+  }
+
+  small {
+    font-size: 11.5px;
+    color: #64748b;
+  }
+}
+
+/* Progress Bar */
+.storage-progress-box {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 9px 12px;
+  border-radius: 10px;
+  background: #f8fafc;
+  border: 1px solid #edf2f7;
+}
+
+.progress-labels {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+  color: #475569;
+  b { font-weight: 700; color: #0b2e4f; }
+}
+
+.progress-track {
+  width: 100%;
+  height: 7px;
+  background: #e2e8f0;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: #f59e0b;
+  transition: width .3s ease;
+
+  &.complete {
+    background: #10b981;
+  }
+}
+
+/* Stats Grid */
+.gov-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+
+.gov-stat-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+
+  small {
+    font-size: 11px;
+    color: #64748b;
+  }
+
+  strong {
+    font-size: 14px;
+    font-weight: 800;
+    color: #0f172a;
+  }
+}
+
+/* Blocking reasons */
+.blocking-reasons-box {
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  color: #92400e;
+  font-size: 12px;
+
+  .blocking-head {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: 700;
+    margin-bottom: 6px;
+    i { font-size: 13px; }
+  }
+
+  ul {
+    margin: 0;
+    padding-inline-start: 1.25rem;
+    li {
+      line-height: 1.5;
+      margin-bottom: 2px;
+    }
+  }
+}
+
+/* Batch Details Dialog */
+.batch-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  padding: 1rem;
+  background: #f8fbff;
+  border: 1px solid #d6e6fb;
+  border-radius: 12px;
+  margin-bottom: 1.25rem;
+}
+
+.summary-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  small { color: #64748b; font-size: 11.5px; }
+  strong { color: #0b2e4f; font-size: 13.5px; font-weight: 700; }
+}
+
+.committees-table-title {
+  margin: 0 0 0.85rem;
+  font-size: 14px;
+  font-weight: 800;
+  color: #0b2e4f;
+}
+
+.loading-state, .dialog-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 3rem 1rem;
+  color: #64748b;
+  font-size: 14px;
+  font-weight: 600;
+  i { font-size: 2rem; color: #1565c0; }
+}
+
+/* ----- floating action bar ----- */
+.assign-bar {
+  position: sticky; bottom: 14px; z-index: 20;
+  display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;
+  padding: 12px 16px;
+  background: #0b2e4f; color: #fff;
+  border-radius: 16px;
+  box-shadow: 0 12px 32px rgba(11, 46, 79, .35);
+  animation: bar-in .2s ease;
+}
+
+.assign-bar-info {
+  display: flex; align-items: center; gap: 9px; flex-wrap: wrap; font-size: 14px;
+  strong { font-size: 18px; font-weight: 800; }
+  .code-chip { background: rgba(255, 255, 255, .15); color: #fff; }
+  i { font-size: 12px; opacity: .8; }
+}
+.assign-bar-name { font-weight: 700; }
+.assign-bar-hint { color: #ffd479; font-size: 12.5px; font-weight: 700; }
+
+.assign-bar-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+
+.bar-btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 10px 16px; border-radius: 10px; border: 1px solid transparent;
+  font: inherit; font-size: 13.5px; font-weight: 800; cursor: pointer;
+  transition: background .15s, transform .15s, opacity .15s;
+
+  &:hover:not(:disabled) { transform: translateY(-1px); }
+  &:disabled { opacity: .45; cursor: not-allowed; }
+  &:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+
+  &.primary { background: #16a06b; color: #fff; &:hover:not(:disabled) { background: #12865a; } }
+  &.ghost { background: transparent; color: #d6e2f3; border-color: rgba(255, 255, 255, .25);
+            &:hover { background: rgba(255, 255, 255, .1); } }
+  &.outline-danger { background: transparent; color: #ffb4ab; border-color: rgba(255, 180, 171, .45);
+                     &:hover { background: rgba(255, 180, 171, .12); } }
+}
+
+@keyframes bar-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+/* ---------- responsive ---------- */
+@media (max-width: 1180px) { .pick-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 760px) {
+  .pick-grid { grid-template-columns: 1fr; }
+  .step-head { flex-wrap: wrap; }
+  .select-all { width: 100%; justify-content: center; }
+  .view-tabs { width: 100%; }
+  .view-tab { flex: 1; justify-content: center; padding-inline: 10px; }
+  .assign-bar { bottom: 8px; }
+  .assign-bar-actions { width: 100%; }
+  .bar-btn { flex: 1; justify-content: center; }
+  .header-tools { width: 100%; justify-content: space-between; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .assign-bar, .view-tab, .wh-option, .pick-card, .bar-btn { animation: none; transition: none; }
 }

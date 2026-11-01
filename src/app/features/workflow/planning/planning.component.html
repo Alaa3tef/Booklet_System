@@ -2,552 +2,774 @@
   stepNumber="01"
   englishLabel="Planning"
   arabicTitle="مستخدم الإعداد"
-  arabicSubtitle="البحث عن المواد وتغيير حالتها"
+  arabicSubtitle="إدارة دفعات التخطيط وجاهزية أوامر التوزيع بالمحافظات"
   theme="blue"
   activeNavKey="planning"
   illustrationIcon="pi pi-desktop"
   illustrationTaglineTop="التخطيط اليوم"
   illustrationTaglineBottom="لصناعة تعليم أفضل"
   panelIcon="pi pi-sliders-h"
-  panelTitle="البحث في خطط الإنتاج"
+  panelTitle="إدارة وتخطيط الدفعات وأوامر التوزيع"
   functionLabel="مستخدم الإعداد"
   [essentials]="essentials"
-  resultText="يمكن تغيير حالة كل مادة مباشرة من البطاقة"
+  resultText="متابعة جاهزية الدفعات وتوزيع المحافظات بسهولة ودقة"
 >
 
   <div panel-content>
 
     <!-- ==========================================
-         SEARCH SECTION
+         VIEW SWITCH (tabs)
     =========================================== -->
-    <div class="search-section">
+    <div class="view-tabs" role="tablist" aria-label="عرض الصفحة">
 
-      <div class="planning-search-card">
+      <button
+        type="button"
+        role="tab"
+        class="view-tab"
+        [class.active]="activeTab() === 'materials'"
+        [attr.aria-selected]="activeTab() === 'materials'"
+        (click)="setTab('materials')">
+        <i class="pi pi-book"></i>
+        <span>دفعات المواد</span>
+        <span class="tab-count">{{ filteredBatches().length }}</span>
+        @if (selectedCount() > 0) {
+          <span class="tab-count selected">{{ selectedCount() }} محددة</span>
+        }
+      </button>
 
-        <div class="planning-image">
-          <img src="assets/images/planning.png" alt="التخطيط" />
-        </div>
+      <button
+        type="button"
+        role="tab"
+        class="view-tab"
+        [class.active]="activeTab() === 'delivery-orders'"
+        [attr.aria-selected]="activeTab() === 'delivery-orders'"
+        (click)="setTab('delivery-orders')">
+        <i class="pi pi-truck"></i>
+        <span>أوامر التوزيع بالمحافظات</span>
+        <span class="tab-count">{{ filteredDeliveryGovernorates().length }}</span>
+      </button>
 
-        <div class="planning-search-content">
-
-          <div class="planning-search-title">
-            <div class="planning-search-icon"><i class="pi pi-search"></i></div>
-
-            <div class="planning-search-text">
-              <h3>البحث في خطط الإنتاج</h3>
-              <p>اختر المحافظة والمادة لعرض الخطة المطلوبة</p>
-            </div>
-
-            <!-- <button type="button" class="clear-all-btn" (click)="clearFilters()">
-              <i class="pi pi-filter-slash"></i>
-              مسح البحث
-            </button> -->
-          </div>
-
-          <div class="fields-grid cols-4">
-
-            <div class="field">
-              <label for="governorate">المحافظة</label>
-              <div class="select-wrapper">
-                <i class="pi pi-map-marker"></i>
-              <p-select
-                inputId="governorate"
-                [options]="governorates()"
-                [ngModel]="searchGovernorate()"
-                (ngModelChange)="setGovernorate($event)"
-                optionLabel="label"
-                optionValue="value"
-                styleClass="w-full"
-                appendTo="body"
-              />
-              </div>
-            </div>
-
-            <div class="field">
-              <label for="subject">المادة</label>
-               <div class="select-wrapper">
-            <i class="pi pi-book"></i>
-              <p-select
-                inputId="subject"
-                [options]="subjects()"
-                [ngModel]="searchSubject()"
-                (ngModelChange)="setSubject($event)"
-                optionLabel="label"
-                optionValue="value"
-                styleClass="w-full"
-                appendTo="body"
-              />
-              </div>
-            </div>
- <div class="field">
-          <label>الادارة التعليمية</label>
-            <div class="select-wrapper">
-            <i class="pi pi-book"></i>
-          <p-select
-            [options]="educationals"
-            [ngModel]="searchEducation()"
-            (ngModelChange)="setEducation($event)"
-            optionLabel="label"
-            optionValue="value"
-            placeholder="اختر الادارة التعليمية"
-            styleClass="archive-select"
-            appendTo="body"
-          />
-            </div>
-        </div>
-
-            <div class="field committee-search-field">
-              <label for="committeeNumber">رقم اللجنة</label>
-
-              <div class="committee-input-wrapper">
-                <i class="pi pi-hashtag"></i>
-
-                <input
-                  id="committeeNumber"
-                  type="text"
-                  pInputText
-                  [ngModel]="searchCommittee()"
-                  (ngModelChange)="setCommittee($event)"
-                  placeholder="أدخل رقم اللجنة"
-                  autocomplete="off"
-                />
-
-                @if (searchCommittee()) {
-                  <button
-                    type="button"
-                    class="clear-search-btn"
-                    aria-label="مسح رقم اللجنة"
-                    pTooltip="مسح"
-                    tooltipPosition="top"
-                    (click)="setCommittee('')">
-                    <i class="pi pi-times"></i>
-                  </button>
-                }
-              </div>
-            </div>
-
-          </div>
-
-          <!-- ===== what is being filtered ===== -->
-          @if (activeFilters().length) {
-            <div class="active-filters" role="status" aria-live="polite">
-
-              <span class="af-label"><i class="pi pi-filter"></i> الفلاتر المطبّقة</span>
-
-              @for (f of activeFilters(); track f.key) {
-                <span class="af-chip">
-                  <small>{{ f.title }}:</small>
-                  <b>{{ f.value }}</b>
-                  <button type="button" [attr.aria-label]="'إزالة فلتر ' + f.title" (click)="removeFilter(f.key)">
-                    <i class="pi pi-times"></i>
-                  </button>
-                </span>
-              }
-
-              <span class="af-count">
-                النتائج <b>{{ filteredRows().length }}</b> من <b>{{ rows().length }}</b> مادة
-              </span>
-
-            </div>
-          }
-
-        </div>
-      </div>
     </div>
 
-
     <!-- ==========================================
-         CARDS SECTION
+         TAB 1 : MATERIALS / BATCHES
     =========================================== -->
-    <div class="table-section">
+    @if (activeTab() === 'materials') {
 
-      <div class="table-header">
-        <h4>الخطط المسجلة</h4>
-        <span class="results-count">{{ filteredRows().length }} مادة</span>
-      </div>
+      <!-- SEARCH SECTION -->
+      <div class="search-section">
+        <div class="planning-search-card">
+          <div class="planning-image">
+            <img src="assets/images/planning.png" alt="التخطيط" />
+          </div>
 
-      <div class="plan-grid">
-
-        @for (row of paginatedRows(); track row.index) {
-
-          <article class="plan" [ngClass]="row.statusTone">
-
-            <!-- top -->
-            <header class="plan-top">
-              <span class="plan-no">{{ row.index }}</span>
-
-              <div class="plan-title">
-                <strong>{{ row.subject }}</strong>
+          <div class="planning-search-content">
+            <div class="planning-search-title">
+              <div class="planning-search-icon"><i class="pi pi-search"></i></div>
+              <div class="planning-search-text">
+                <h3>البحث في دفعات المواد الجاهزة للاعتماد</h3>
+                <p>اختر المحافظة والمادة لجلب الدفعات الجاهزة وتحديدها</p>
               </div>
 
-              <span class="status-pill" [ngClass]="row.statusTone">{{ row.status }}</span>
-            </header>
+              <button type="button" class="clear-all-btn" (click)="clearFilters()">
+                <i class="pi pi-filter-slash"></i>
+                مسح البحث
+              </button>
+            </div>
 
-            <!-- info tiles -->
-            <div class="info-tiles">
-              <div class="info-tile">
-                <small>المحافظة</small>
-                <strong><i class="pi pi-map-marker"></i>{{ row.governorate }}</strong>
+            <div class="fields-grid cols-3">
+              <!-- Governorate -->
+              <div class="field">
+                <label for="governorate">المحافظة</label>
+                <div class="select-wrapper">
+                  <i class="pi pi-map-marker"></i>
+                  <p-select
+                    inputId="governorate"
+                    [options]="governorates()"
+                    [ngModel]="searchGovernorate()"
+                    (ngModelChange)="setGovernorate($event)"
+                    optionLabel="label"
+                    optionValue="value"
+                    styleClass="w-full"
+                    appendTo="body"
+                    [loading]="lookupsLoading()"
+                    placeholder="اختر المحافظة"
+                  />
+                </div>
               </div>
-              <div class="info-tile">
-                <small>رقم اللجنة</small>
-                <strong class="committee" dir="ltr"><i class="pi pi-hashtag"></i>{{ row.committeeNumber }}</strong>
+
+              <!-- Subject -->
+              <div class="field">
+                <label for="subject">المادة</label>
+                <div class="select-wrapper">
+                  <i class="pi pi-book"></i>
+                  <p-select
+                    inputId="subject"
+                    [options]="subjects()"
+                    [ngModel]="searchSubject()"
+                    (ngModelChange)="setSubject($event)"
+                    optionLabel="label"
+                    optionValue="value"
+                    styleClass="w-full"
+                    appendTo="body"
+                    [loading]="lookupsLoading()"
+                    placeholder="اختر المادة"
+                  />
+                </div>
+              </div>
+
+              <!-- Search query in batch name / id -->
+              <div class="field committee-search-field">
+                <label for="batchSearch">بحث سريع</label>
+                <div class="committee-input-wrapper">
+                  <i class="pi pi-hashtag"></i>
+                  <input
+                    id="batchSearch"
+                    type="text"
+                    pInputText
+                    [ngModel]="searchBatchQuery()"
+                    (ngModelChange)="setBatchQuery($event)"
+                    placeholder="اسم الدفعة أو رقمها..."
+                    autocomplete="off"
+                  />
+                  @if (searchBatchQuery()) {
+                    <button
+                      type="button"
+                      class="clear-search-btn"
+                      aria-label="مسح البحث السريع"
+                      pTooltip="مسح"
+                      tooltipPosition="top"
+                      (click)="setBatchQuery('')">
+                      <i class="pi pi-times"></i>
+                    </button>
+                  }
+                </div>
               </div>
             </div>
 
-            <!-- tracker -->
-            <ol class="tracker" [attr.aria-label]="'الحالة: ' + row.status">
-              @for (step of trackerSteps(row); track step.label) {
-                <li [ngClass]="step.state">
-                  <span class="tracker-dot">
-                    @if (step.state === 'rejected') {
+            <!-- Active filters chips -->
+            @if (activeFilters().length) {
+              <div class="active-filters" role="status" aria-live="polite">
+                <span class="af-label"><i class="pi pi-filter"></i> الفلاتر المطبّقة:</span>
+                @for (f of activeFilters(); track f.key) {
+                  <span class="af-chip">
+                    <small>{{ f.title }}:</small>
+                    <b>{{ f.value }}</b>
+                    <button type="button" [attr.aria-label]="'إزالة فلتر ' + f.title" (click)="removeFilter(f.key)">
                       <i class="pi pi-times"></i>
-                    } @else if (step.state !== 'pending') {
-                      <i class="pi pi-check"></i>
-                    }
+                    </button>
                   </span>
-                  <span class="tracker-label">{{ step.label }}</span>
-                </li>
-              }
-            </ol>
-
-            <!-- rejected: short reason preview -->
-            @if (row.status === 'مرفوض') {
-              <div class="reason-preview">
-                <i class="pi pi-exclamation-circle"></i>
-                <p>{{ row.rejectionReason || 'لم يتم تسجيل سبب الرفض.' }}</p>
+                }
+                <!-- <button type="button" class="af-reset" (click)="clearFilters()">مسح الكل</button> -->
               </div>
             }
-
-            <!-- actions -->
-            <footer class="plan-action">
-
-              @if (row.status === 'جاهز لاعتماد الطباعة') {
-                <div class="completed-action">
-                  <i class="pi pi-check-circle"></i>
-                  المادة جاهزة  لإعتماد الطباعة
-                </div>
-              } @else if (row.status === 'مرفوض') {
-                <button type="button" class="action-btn view-reason" (click)="openRejectionReasonDialog(row)">
-                  <i class="pi pi-eye"></i>
-                  <span>عرض سبب الرفض</span>
-                </button>
-              } @else {
-                <div class="action-pair">
-                  <button type="button" class="action-btn ready" (click)="markReady(row)">
-                    <i class="pi pi-check"></i>
-                    <span>جاهز لاعتماد الطباعة</span>
-                  </button>
-                  <button type="button" class="action-btn reject" (click)="openRejectDialog(row)">
-                    <i class="pi pi-times-circle"></i>
-                    <span>رفض</span>
-                  </button>
-                </div>
-              }
-
-            </footer>
-
-          </article>
-
-        } @empty {
-
-          <div class="empty-state">
-            <span class="empty-icon"><i class="pi pi-search"></i></span>
-            <strong>لا توجد نتائج</strong>
-            <span>
-              @if (activeFilters().length) { لا توجد مواد مطابقة للفلاتر المحددة } @else { لا توجد مواد مسجلة حاليًا }
-            </span>
-            @if (activeFilters().length) {
-              <button type="button" class="empty-clear" (click)="clearFilters()">
-                <i class="pi pi-filter-slash"></i> مسح الفلاتر
-              </button>
-            }
           </div>
-
-        }
-
+        </div>
       </div>
 
-
-      <!-- ==========================================
-           PAGINATION
-      =========================================== -->
-      @if (filteredRows().length > 0) {
-        <div class="printing-pagination">
-
-          <div class="pagination-info">
-            <span class="pagination-info-icon"><i class="pi pi-list"></i></span>
-            <span>
-              عرض
-              <strong>{{ paginationStart() }}</strong>
-              -
-              <strong>{{ paginationEnd() }}</strong>
-              من
-              <strong>{{ filteredRows().length }}</strong>
-              مادة
-            </span>
+      <!-- BATCHES CARDS SECTION -->
+      <div class="table-section">
+        <div class="table-header">
+          <div class="header-right">
+            <h4>الدفعات الجاهزة للاعتماد</h4>
+            <!-- Select All Checkbox moved from warehouses to materials -->
+            <label class="select-all-materials">
+              <input
+                type="checkbox"
+                [checked]="allSelected()"
+                [indeterminate]="someSelected()"
+                [disabled]="filteredBatches().length === 0"
+                (change)="toggleAll()"
+              />
+              <span>تحديد الكل ({{ filteredBatches().length }})</span>
+            </label>
           </div>
 
-          <div class="pagination-size">
-            <span>عدد البطاقات</span>
-            <p-select
-              [options]="[
-                { label: '6',  value: 6 },
-                { label: '12', value: 12 },
-                { label: '24', value: 24 }
-              ]"
-              optionLabel="label"
-              optionValue="value"
-              [ngModel]="pageSize()"
-              (ngModelChange)="pageSize.set($event); onPageSizeChange()"
-              styleClass="pagination-size-select"
-            />
+          <div class="header-tools">
+            <div class="page-size-box">
+              <span>عدد البطاقات</span>
+              <p-select
+                [options]="pageSizeOptions"
+                optionLabel="label"
+                optionValue="value"
+                [ngModel]="pageSize()"
+                (ngModelChange)="pageSize.set($event); onPageSizeChange()"
+                appendTo="body"
+                styleClass="pagination-size-select"
+              />
+            </div>
+
+            <span class="results-count">{{ filteredBatches().length }} دفعة</span>
           </div>
+        </div>
 
-          @if (totalPages() > 1) {
-            <div class="pagination-controls">
+        @if (batchesLoading()) {
+          <div class="loading-state">
+            <i class="pi pi-spin pi-spinner"></i>
+            <span>جاري تحميل دفعات التخطيط...</span>
+          </div>
+        } @else {
+          <div class="plan-grid">
+            @for (batch of paginatedBatches(); track batch.batchId) {
+              <article class="plan success" [class.selected]="isSelected(batch)">
 
-              <button type="button" class="pagination-arrow"
-                [disabled]="currentPage() === 1" (click)="previousPage()"
-                pTooltip="الصفحة السابقة" tooltipPosition="top">
-                <i class="pi pi-chevron-right"></i>
-              </button>
+                <!-- Card Header with Checkbox -->
+                <header class="plan-top">
+                  <div class="top-select">
+                    <input
+                      type="checkbox"
+                      class="batch-check"
+                      [checked]="isSelected(batch)"
+                      (change)="toggleBatch(batch)"
+                      [attr.aria-label]="'تحديد الدفعة ' + batch.batchName"
+                    />
+                    <span class="plan-no">#{{ batch.batchId }}</span>
+                  </div>
 
-              @for (page of paginationPages(); track $index) {
-                @if (page === 'dots') {
-                  <span class="pagination-dots">...</span>
-                } @else {
-                  <button type="button" class="pagination-page"
-                    [class.active]="page === currentPage()"
-                    [attr.aria-current]="page === currentPage() ? 'page' : null"
-                    (click)="goToPage(page)">
-                    {{ page }}
+                  <div class="plan-title">
+                    <strong>{{ batch.batchName }}</strong>
+                  </div>
+
+                  <span class="status-pill success">{{ batch.statusNameAr || 'جاهز للاعتماد' }}</span>
+                </header>
+
+                <!-- Batch Details Section -->
+                <section class="source source-it">
+                  <div class="source-head">
+                    <span class="source-icon"><i class="pi pi-info-circle"></i></span>
+                    <span class="source-title">بيانات الدفعة</span>
+                    <span class="source-tag">دفعة إنتاج</span>
+                  </div>
+
+                  <div class="source-grid">
+                    <div class="info-tile">
+                      <small>الدور</small>
+                      <strong><i class="pi pi-calendar"></i>{{ batch.roundName || '—' }}</strong>
+                    </div>
+
+                    <div class="info-tile">
+                      <small>السنة</small>
+                      <strong><i class="pi pi-calendar-plus"></i>{{ batch.year }}</strong>
+                    </div>
+
+                    <div class="info-tile span-2">
+                      <small>إجمالي اللجان</small>
+                      <strong><i class="pi pi-users"></i>{{ batch.totalCommittees }} لجنة</strong>
+                    </div>
+                  </div>
+                </section>
+
+                <!-- Status Tracker -->
+                <ol class="tracker" [attr.aria-label]="'الحالة: ' + (batch.statusNameAr || 'جاهز للاعتماد')">
+                  @for (step of trackerSteps(batch); track step.label) {
+                    <li [ngClass]="step.state">
+                      <span class="tracker-dot">
+                        @if (step.state === 'current' || step.state === 'done') {
+                          <i class="pi pi-check"></i>
+                        }
+                      </span>
+                      <span class="tracker-label">{{ step.label }}</span>
+                    </li>
+                  }
+                </ol>
+
+                <!-- Actions -->
+                <footer class="plan-action">
+                  <button
+                    type="button"
+                    class="action-btn details-btn"
+                    (click)="openBatchDetails(batch.batchId)">
+                    <i class="pi pi-list"></i>
+                    <span>عرض تفاصيل اللجان</span>
+                  </button>
+                </footer>
+
+              </article>
+            } @empty {
+              <div class="empty-state">
+                <span class="empty-icon"><i class="pi pi-inbox"></i></span>
+                <strong>لا توجد دفعات جاهزة للاعتماد</strong>
+                <span>
+                  @if (activeFilters().length) {
+                    لا توجد دفعات مطابقة للفلاتر المحددة
+                  } @else {
+                    لا توجد دفعات مسجلة حاليًا
+                  }
+                </span>
+                @if (activeFilters().length) {
+                  <button type="button" class="empty-clear" (click)="clearFilters()">
+                    <i class="pi pi-filter-slash"></i> مسح الفلاتر
                   </button>
                 }
-              }
+              </div>
+            }
+          </div>
 
-              <button type="button" class="pagination-arrow"
-                [disabled]="currentPage() === totalPages()" (click)="nextPage()"
-                pTooltip="الصفحة التالية" tooltipPosition="top">
-                <i class="pi pi-chevron-left"></i>
-              </button>
+          <!-- Pagination -->
+          @if (!showAll() && totalPages() > 1) {
+            <nav class="pagination" aria-label="تنقل الصفحات">
+              <span class="page-info">
+                عرض {{ paginationStart() }} - {{ paginationEnd() }} من {{ filteredBatches().length }}
+              </span>
 
-            </div>
+              <div class="pages-wrapper">
+                <button
+                  type="button"
+                  class="page-btn nav-btn"
+                  [disabled]="currentPage() === 1"
+                  (click)="previousPage()"
+                  aria-label="الصفحة السابقة">
+                  <i class="pi pi-chevron-right"></i>
+                  <span>السابق</span>
+                </button>
+
+                @for (p of paginationPages(); track $index) {
+                  @if (p === 'dots') {
+                    <span class="dots" aria-hidden="true">...</span>
+                  } @else {
+                    <button
+                      type="button"
+                      class="page-btn num-btn"
+                      [class.active]="p === currentPage()"
+                      [attr.aria-current]="p === currentPage() ? 'page' : null"
+                      (click)="goToPage(p)">
+                      {{ p }}
+                    </button>
+                  }
+                }
+
+                <button
+                  type="button"
+                  class="page-btn nav-btn"
+                  [disabled]="currentPage() === totalPages()"
+                  (click)="nextPage()"
+                  aria-label="الصفحة التالية">
+                  <span>التالي</span>
+                  <i class="pi pi-chevron-left"></i>
+                </button>
+              </div>
+            </nav>
           }
+        }
+      </div>
 
+      <!-- FLOATING SELECTION BAR FOR MATERIALS (MOVED FROM WAREHOUSES) -->
+      @if (selectedCount() > 0) {
+        <div class="assign-bar" role="region" aria-live="polite">
+          <div class="assign-bar-info">
+            <i class="pi pi-check-circle"></i>
+            <strong>{{ selectedCount() }}</strong>
+            <span>دفعة محددة من أصل {{ filteredBatches().length }}</span>
+          </div>
+
+          <div class="assign-bar-actions">
+            <button
+              type="button"
+              class="bar-btn primary"
+              [disabled]="approvingBatches()"
+              (click)="approveSelectedBatches()">
+              <i class="pi" [class.pi-spin]="approvingBatches()" [class.pi-send]="!approvingBatches()" [class.pi-spinner]="approvingBatches()"></i>
+              <span>{{ approvingBatches() ? 'جارٍ الاعتماد...' : 'اعتماد وإرسال لما قبل الجودة' }}</span>
+            </button>
+
+            <button type="button" class="bar-btn ghost" (click)="toggleAll()">
+              <i class="pi pi-check-square"></i>
+              <span>{{ allSelected() ? 'إلغاء تحديد الكل' : 'تحديد جميع الدفعات' }}</span>
+            </button>
+
+            <button type="button" class="bar-btn outline-danger" (click)="clearSelection()">
+              <i class="pi pi-times"></i>
+              <span>إلغاء التحديد</span>
+            </button>
+          </div>
         </div>
       }
 
+    } @else {
 
       <!-- ==========================================
-           REJECT DIALOG
+           TAB 2 : DELIVERY ORDERS BY GOVERNORATE
+           GET api/Planning/delivery-orders/governorates
       =========================================== -->
-      <p-dialog
-        [(visible)]="rejectDialogVisible"
-        [modal]="true" [baseZIndex]="10000"
-        [draggable]="false" [resizable]="false"
-        [closable]="!rejectSubmitting"
-        [dismissableMask]="!rejectSubmitting"
-        [style]="{ width: '720px', maxWidth: 'calc(100vw - 2rem)' }"
-        appendTo="body"
-        styleClass="reject-dialog"
-        header="رفض المادة"
-      >
-        <div class="reject-dialog-content">
+      <div class="delivery-orders-view">
 
-          <div class="reject-intro">
-            <div class="reject-icon"><i class="pi pi-exclamation-triangle"></i></div>
-            <div class="reject-intro-text">
-              <h3>رفض مادة {{ selectedRow?.subject }}</h3>
-              <p>يرجى توضيح سبب الرفض وتحديد المستخدمين المسؤولين عن المراجعة.</p>
+        <!-- SEARCH / FILTER CARD FOR DELIVERY ORDERS -->
+        <div class="planning-search-card delivery-search-card">
+          <div class="planning-image delivery-hero-img">
+            <img src="assets/images/planning.png" alt="أوامر التوزيع" />
+          </div>
+
+          <div class="planning-search-content">
+            <div class="planning-search-title">
+              <div class="planning-search-icon"><i class="pi pi-truck"></i></div>
+              <div class="planning-search-text">
+                <h3>جاهزية أوامر التوزيع بالمحافظات</h3>
+                <p>متابعة وتصفية المحافظات الجاهزة لإنشاء أوامر التوزيع بناءً على السنة والدور والمرحلة التعليمية</p>
+              </div>
+
+              <button
+                type="button"
+                class="action-btn-search"
+                [disabled]="deliveryLoading()"
+                (click)="loadDeliveryGovernorates()">
+                <i class="pi" [ngClass]="deliveryLoading() ? 'pi-spin pi-spinner' : 'pi-sync'"></i>
+                <span>تحديث البيانات</span>
+              </button>
+            </div>
+
+            <!-- Parameters Grid (Year, RoundId, EducationalStageId, OnlyEligible) -->
+            <div class="fields-grid cols-4">
+
+              <!-- Year -->
+              <div class="field">
+                <label for="deliveryYear">السنة (Year)</label>
+                <div class="select-wrapper">
+                  <i class="pi pi-calendar"></i>
+                  <input
+                    pInputText
+                    id="deliveryYear"
+                    [ngModel]="deliveryYear()"
+                    (ngModelChange)="deliveryYear.set($event)"
+                    (change)="loadDeliveryGovernorates()"
+                    type="number"
+                    min="1"
+                    step="1"
+                    class="w-full"
+                  />
+                </div>
+              </div>
+
+              <!-- RoundId -->
+              <div class="field">
+                <label for="deliveryRound">الدور (RoundId)</label>
+                <div class="select-wrapper">
+                  <i class="pi pi-clock"></i>
+                  <p-select
+                    inputId="deliveryRound"
+                    [options]="rounds()"
+                    [ngModel]="deliveryRoundId()"
+                    (ngModelChange)="deliveryRoundId.set($event); loadDeliveryGovernorates()"
+                    optionLabel="label"
+                    optionValue="value"
+                    styleClass="w-full"
+                    appendTo="body"
+                    [loading]="lookupsLoading()"
+                    placeholder="اختر الدور"
+                  />
+                </div>
+              </div>
+
+              <!-- EducationalStageId -->
+              <div class="field">
+                <label for="deliveryStage">المرحلة التعليمية (EducationalStageId)</label>
+                <div class="select-wrapper">
+                  <i class="pi pi-graduation-cap"></i>
+                  <p-select
+                    inputId="deliveryStage"
+                    [options]="educationalStages()"
+                    [ngModel]="deliveryEducationalStageId()"
+                    (ngModelChange)="deliveryEducationalStageId.set($event); loadDeliveryGovernorates()"
+                    optionLabel="label"
+                    optionValue="value"
+                    styleClass="w-full"
+                    appendTo="body"
+                    [loading]="lookupsLoading()"
+                    placeholder="اختر المرحلة"
+                  />
+                </div>
+              </div>
+
+              <!-- OnlyEligible -->
+              <div class="field">
+                <label for="deliveryEligible">المؤهلة فقط (OnlyEligible)</label>
+                <div class="select-wrapper">
+                  <i class="pi pi-check-circle"></i>
+                  <p-select
+                    inputId="deliveryEligible"
+                    [options]="eligibleOptions"
+                    [ngModel]="deliveryEligibleFilter()"
+                    (ngModelChange)="deliveryEligibleFilter.set($event); loadDeliveryGovernorates()"
+                    optionLabel="label"
+                    optionValue="value"
+                    styleClass="w-full"
+                    appendTo="body"
+                  />
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+
+        <!-- KPI METRICS STRIP -->
+        <div class="kpi-strip">
+          <div class="kpi-card total-govs">
+            <div class="kpi-icon"><i class="pi pi-map"></i></div>
+            <div class="kpi-content">
+              <small>إجمالي المحافظات</small>
+              <strong>{{ totalGovernoratesCount() }}</strong>
             </div>
           </div>
 
-          <div class="material-summary">
-            <div class="summary-item">
-              <span class="summary-label">المادة</span>
-              <span class="summary-value">{{ selectedRow?.subject }}</span>
-            </div>
-            <div class="summary-divider"></div>
-            <div class="summary-item">
-              <span class="summary-label">المحافظة</span>
-              <span class="summary-value">{{ selectedRow?.governorate }}</span>
-            </div>
-            <div class="summary-divider"></div>
-            <div class="summary-item">
-              <span class="summary-label">الحالة الحالية</span>
-              <span class="summary-value">{{ selectedRow?.status }}</span>
+          <div class="kpi-card eligible-govs">
+            <div class="kpi-icon"><i class="pi pi-check-circle"></i></div>
+            <div class="kpi-content">
+              <small>المحافظات المؤهلة (جاهزة)</small>
+              <strong class="text-success">{{ eligibleGovernoratesCount() }}</strong>
             </div>
           </div>
 
-          <div class="dialog-field">
-            <label for="rejectReason">
-              سبب الرفض <span class="required">*</span>
-            </label>
+          <div class="kpi-card total-batches">
+            <div class="kpi-icon"><i class="pi pi-box"></i></div>
+            <div class="kpi-content">
+              <small>إجمالي الدفعات</small>
+              <strong>{{ totalBatchesSum() }}</strong>
+            </div>
+          </div>
 
-            <textarea
-              pTextarea
-              id="rejectReason"
-              [(ngModel)]="rejectReason"
-              [rows]="5"
-              [autoResize]="true"
-              maxlength="500"
-              placeholder="اكتب سبب رفض المادة بالتفصيل..."
-              class="reject-textarea"
-            ></textarea>
+          <div class="kpi-card stored-batches">
+            <div class="kpi-icon"><i class="pi pi-warehouse"></i></div>
+            <div class="kpi-content">
+              <small>الدفعات المخزنة</small>
+              <strong class="text-primary">{{ storedBatchesSum() }}</strong>
+            </div>
+          </div>
 
-            <div class="field-footer">
-              <small [class.invalid-counter]="rejectReason.length > 0 && rejectReason.trim().length < 10">
-                {{ rejectReason.length }}/500
-              </small>
+          <div class="kpi-card total-boxes">
+            <div class="kpi-icon"><i class="pi pi-inbox"></i></div>
+            <div class="kpi-content">
+              <small>إجمالي الصناديق</small>
+              <strong>{{ totalBoxesSum() }}</strong>
+            </div>
+          </div>
+        </div>
 
-              @if (rejectReason.length > 0 && rejectReason.trim().length < 10) {
-                <small class="field-error">يجب أن يكون سبب الرفض 10 أحرف على الأقل</small>
+        <!-- GOVERNORATES CARDS GRID -->
+        <div class="table-section">
+          <div class="table-header">
+            <h4>نتائج جاهزية المحافظات لأوامر التوزيع</h4>
+            <span class="results-count">{{ filteredDeliveryGovernorates().length }} محافظة</span>
+          </div>
+
+          @if (deliveryLoading()) {
+            <div class="loading-state">
+              <i class="pi pi-spin pi-spinner"></i>
+              <span>جاري استرجاع جاهزية أوامر التوزيع بالمحافظات...</span>
+            </div>
+          } @else {
+            <div class="gov-grid">
+              @for (gov of filteredDeliveryGovernorates(); track gov.governorateId) {
+                <div class="gov-card" [class.eligible]="gov.canCreate" [class.blocked]="!gov.canCreate">
+
+                  <!-- Header -->
+                  <header class="gov-head">
+                    <div class="gov-title-wrapper">
+                      <div class="gov-icon-badge">
+                        <i class="pi pi-map-marker"></i>
+                      </div>
+                      <div class="gov-title">
+                        <h5>{{ gov.governorateName || 'محافظة #' + gov.governorateId }}</h5>
+                        <small>كود المحافظة: #{{ gov.governorateId }}</small>
+                      </div>
+                    </div>
+
+                    <!-- Readiness status pill -->
+                    @if (gov.canCreate) {
+                      <span class="status-pill success">
+                        <i class="pi pi-check-circle"></i>
+                        جاهز لأمر التوزيع
+                      </span>
+                    } @else {
+                      <span class="status-pill warning">
+                        <i class="pi pi-exclamation-triangle"></i>
+                        غير مؤهل حاليًا
+                      </span>
+                    }
+                  </header>
+
+                  <!-- Storage Progress -->
+                  <div class="storage-progress-box">
+                    <div class="progress-labels">
+                      <span>نسبة الدفعات المخزنة</span>
+                      <b>{{ gov.storedBatches }} من {{ gov.totalBatches }} ({{ getStoredProgress(gov) }}%)</b>
+                    </div>
+                    <div class="progress-track">
+                      <div
+                        class="progress-fill"
+                        [class.complete]="gov.canCreate"
+                        [style.width.%]="getStoredProgress(gov)">
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Details Grid -->
+                  <div class="gov-stats-grid">
+                    <div class="gov-stat-tile">
+                      <small>الدفعات المخزنة</small>
+                      <strong>{{ gov.storedBatches }}</strong>
+                    </div>
+
+                    <div class="gov-stat-tile">
+                      <small>إجمالي الدفعات</small>
+                      <strong>{{ gov.totalBatches }}</strong>
+                    </div>
+
+                    <div class="gov-stat-tile">
+                      <small>إجمالي اللجان</small>
+                      <strong>{{ gov.totalCommittees }}</strong>
+                    </div>
+
+                    <div class="gov-stat-tile">
+                      <small>إجمالي الصناديق</small>
+                      <strong>{{ gov.totalBoxes }}</strong>
+                    </div>
+                  </div>
+
+                  <!-- Blocking Reasons Alert (if any) -->
+                  @if (gov.blockingReasons && gov.blockingReasons.length > 0) {
+                    <div class="blocking-reasons-box">
+                      <div class="blocking-head">
+                        <i class="pi pi-exclamation-circle"></i>
+                        <span>موانع إنشاء أمر التوزيع:</span>
+                      </div>
+                      <ul>
+                        @for (reason of gov.blockingReasons; track $index) {
+                          <li>{{ reason }}</li>
+                        }
+                      </ul>
+                    </div>
+                  }
+
+                </div>
+              } @empty {
+                <div class="empty-state">
+                  <span class="empty-icon"><i class="pi pi-truck"></i></span>
+                  <strong>لا توجد محافظات مطابقة للبحث</strong>
+                  <span>جرّب تعديل خيارات الفلترة أو الضغط على زر تحديث البيانات</span>
+                </div>
               }
             </div>
-          </div>
-
-          <div class="dialog-field">
-            <label for="reviewers">
-              المستخدمون المسؤولون عن المراجعة <span class="required">*</span>
-            </label>
-
-            <p-multiselect
-              inputId="reviewers"
-              [options]="reviewUsers"
-              [(ngModel)]="selectedReviewers"
-              optionLabel="name"
-              [filter]="true"
-              filterBy="name,role"
-              placeholder="اختر المستخدمين المراجعين"
-              appendTo="body"
-              styleClass="w-full reviewers-select"
-              [showClear]="true"
-              [maxSelectedLabels]="2"
-              selectedItemsLabel="{0} مستخدمين مختارين"
-            >
-              <ng-template pTemplate="selecteditems" let-values>
-                <div class="selected-reviewers">
-                  @for (user of values; track user.id) {
-                    <span class="reviewer-chip">
-                      <span class="reviewer-avatar">{{ user.name.charAt(0) }}</span>
-                      <span>{{ user.name }}</span>
-                    </span>
-                  }
-                </div>
-              </ng-template>
-
-              <ng-template pTemplate="item" let-user>
-                <div class="reviewer-option">
-                  <div class="reviewer-avatar">{{ user.name.charAt(0) }}</div>
-                  <div class="reviewer-info">
-                    <span class="reviewer-name">{{ user.name }}</span>
-                    <span class="reviewer-role">{{ user.role }}</span>
-                  </div>
-                </div>
-              </ng-template>
-            </p-multiselect>
-
-            <small class="field-hint">يمكنك اختيار أكثر من مستخدم لمراجعة المادة.</small>
-          </div>
-
-          <div class="reject-warning">
-            <i class="pi pi-info-circle"></i>
-            <span>
-              سيتم تغيير حالة المادة إلى <strong>مرفوض</strong>
-              وإرسالها للمستخدمين المحددين للمراجعة.
-            </span>
-          </div>
-
+          }
         </div>
 
-        <ng-template pTemplate="footer">
-          <div class="dialog-footer">
-            <button pButton type="button" label="إلغاء" icon="pi pi-times"
-              class="p-button-text cancel-btn"
-              [disabled]="rejectSubmitting" (click)="closeRejectDialog()"></button>
+      </div>
 
-            <button pButton type="button" label="تأكيد الرفض" icon="pi pi-send"
-              class="reject-submit-btn"
-              [loading]="rejectSubmitting"
-              [disabled]="!isRejectFormValid || rejectSubmitting"
-              (click)="submitRejection()"></button>
-          </div>
-        </ng-template>
-      </p-dialog>
-
-
-      <!-- ==========================================
-           VIEW REJECTION REASON DIALOG
-      =========================================== -->
-      <p-dialog
-        [(visible)]="rejectionReasonDialogVisible"
-        [modal]="true" [baseZIndex]="10000"
-        [draggable]="false" [resizable]="false"
-        [closable]="true" [dismissableMask]="true"
-        [style]="{ width: '620px', maxWidth: 'calc(100vw - 2rem)' }"
-        appendTo="body"
-        styleClass="rejection-reason-dialog"
-      >
-        <ng-template pTemplate="header">
-          <div class="rejection-dialog-header">
-            <div class="rejection-dialog-icon"><i class="pi pi-info-circle"></i></div>
-            <div class="rejection-dialog-title">
-              <h3>سبب رفض المادة</h3>
-              <span>تفاصيل سبب الرفض المسجل</span>
-            </div>
-          </div>
-        </ng-template>
-
-        <div class="rejection-reason-content">
-
-          <div class="rejection-material-card">
-            <div class="rejection-material-icon"><i class="pi pi-book"></i></div>
-            <div class="rejection-material-info">
-              <span class="rejection-label">المادة</span>
-              <strong>{{ selectedRow?.subject }}</strong>
-            </div>
-            <div class="rejection-status"><span class="status-pill danger">مرفوض</span></div>
-          </div>
-
-          <div class="rejection-meta">
-            <div class="rejection-meta-item">
-              <i class="pi pi-map-marker"></i>
-              <div><span>المحافظة</span><strong>{{ selectedRow?.governorate }}</strong></div>
-            </div>
-            <div class="rejection-meta-item">
-              <i class="pi pi-file"></i>
-              <div><span>رقم المادة</span><strong>{{ selectedRow?.index }}</strong></div>
-            </div>
-          </div>
-
-          <div class="rejection-reason-box">
-            <div class="rejection-reason-heading">
-              <div class="reason-title">
-                <i class="pi pi-times-circle"></i>
-                <span>سبب الرفض</span>
-              </div>
-            </div>
-            <div class="rejection-reason-text">{{ selectedRejectionReason }}</div>
-          </div>
-
-          <div class="rejection-info">
-            <i class="pi pi-info-circle"></i>
-            <span>يمكنك مراجعة سبب الرفض قبل إعادة المادة إلى مرحلة الإعداد وإجراء التعديلات المطلوبة.</span>
-          </div>
-
-        </div>
-
-        <ng-template pTemplate="footer">
-          <div class="rejection-dialog-footer">
-            <button pButton type="button" label="إغلاق" icon="pi pi-times"
-              class="p-button-text" (click)="closeRejectionReasonDialog()"></button>
-          </div>
-        </ng-template>
-      </p-dialog>
-
-    </div>
+    }
 
   </div>
 
 </app-workflow-step-layout>
+
+<!-- ==========================================
+     BATCH DETAILS DIALOG
+=========================================== -->
+<p-dialog
+  [(visible)]="batchDetailsDialogVisible"
+  [modal]="true"
+  [draggable]="false"
+  [resizable]="false"
+  [style]="{ width: '90vw', maxWidth: '1000px' }"
+  header="تفاصيل الدفعة واللجان"
+  (onHide)="closeBatchDetails()">
+
+  @if (batchDetailsLoading) {
+    <div class="dialog-loading">
+      <i class="pi pi-spin pi-spinner"></i>
+      <span>جاري تحميل تفاصيل الدفعة...</span>
+    </div>
+  } @else if (selectedBatchDetails) {
+    <div class="batch-details-content" dir="rtl">
+
+      <!-- Summary Info Banner -->
+      <div class="batch-summary-grid">
+        <div class="summary-item">
+          <small>المحافظة:</small>
+          <strong>{{ selectedBatchDetails.governorateName }}</strong>
+        </div>
+
+        <div class="summary-item">
+          <small>المادة:</small>
+          <strong>{{ selectedBatchDetails.subjectName }}</strong>
+        </div>
+
+        <div class="summary-item">
+          <small>المرحلة التعليمية:</small>
+          <strong>{{ selectedBatchDetails.educationalStageName }}</strong>
+        </div>
+
+        <div class="summary-item">
+          <small>الدور:</small>
+          <strong>{{ selectedBatchDetails.roundName }}</strong>
+        </div>
+
+        <div class="summary-item">
+          <small>السنة:</small>
+          <strong>{{ selectedBatchDetails.year }}</strong>
+        </div>
+
+        <div class="summary-item">
+          <small>إجمالي اللجان:</small>
+          <strong>{{ selectedBatchDetails.totalCommittees }}</strong>
+        </div>
+
+        <div class="summary-item">
+          <small>إجمالي البوكليت:</small>
+          <strong>{{ (selectedBatchDetails.totalRequiredBooklets || 0) + (selectedBatchDetails.totalBonusBooklets || 0) }}</strong>
+        </div>
+
+        <div class="summary-item">
+          <small>إجمالي الصناديق:</small>
+          <strong>{{ selectedBatchDetails.totalBoxes }}</strong>
+        </div>
+      </div>
+
+      <!-- Committees Table -->
+      <h5 class="committees-table-title">قائمة اللجان التابعة للدفعة ({{ selectedBatchDetails.committees.length }} لجنة)</h5>
+
+      <p-table
+        [value]="selectedBatchDetails.committees || []"
+        [paginator]="true"
+        [rows]="5"
+        styleClass="p-datatable-sm p-datatable-striped"
+        responsiveLayout="scroll">
+
+        <ng-template pTemplate="header">
+          <tr>
+            <th>رقم اللجنة</th>
+            <th>اسم المدرسة / اللجنة</th>
+            <th>الإدارة التعليمية</th>
+            <th>نوع اللجنة</th>
+            <th>البوكليت المطلوب</th>
+            <th>البوكليت الاحتياطي</th>
+            <th>الصناديق</th>
+          </tr>
+        </ng-template>
+
+        <ng-template pTemplate="body" let-c>
+          <tr>
+            <td dir="ltr" class="font-bold">{{ c.committeeNumber }}</td>
+            <td>{{ c.schoolName }}</td>
+            <td>{{ c.educationalAdministration || '—' }}</td>
+            <td>{{ c.committeeType || '—' }}</td>
+            <td>{{ c.requiredBookletCount }}</td>
+            <td>{{ c.bonusBookletCount }}</td>
+            <td>{{ c.boxCount }}</td>
+          </tr>
+        </ng-template>
+
+        <ng-template pTemplate="emptymessage">
+          <tr>
+            <td colspan="7" class="text-center py-4">لا توجد لجان مسجلة في هذه الدفعة.</td>
+          </tr>
+        </ng-template>
+
+      </p-table>
+
+    </div>
+  }
+
+  <ng-template pTemplate="footer">
+    <button pButton type="button" label="إغلاق" class="p-button-secondary" (click)="closeBatchDetails()"></button>
+  </ng-template>
+
+</p-dialog>

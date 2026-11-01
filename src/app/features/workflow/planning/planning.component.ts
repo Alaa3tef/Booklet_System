@@ -1,367 +1,636 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { forkJoin } from 'rxjs';
+import { forkJoin, of, catchError } from 'rxjs';
 
 import { SelectModule } from 'primeng/select';
 import { InputTextModule } from 'primeng/inputtext';
 import { DialogModule } from 'primeng/dialog';
 import { ButtonModule } from 'primeng/button';
 import { TextareaModule } from 'primeng/textarea';
-import { MultiSelectModule } from 'primeng/multiselect';
 import { TooltipModule } from 'primeng/tooltip';
+import { TableModule } from 'primeng/table';
 import { MessageService } from 'primeng/api';
 
 import { WorkflowStepLayoutComponent } from '../../../shared/workflow-step-layout/workflow-step-layout.component';
-import { WorkflowStatusRow } from '../../../core/models/workflow.model';
 import { Lookups } from '../../../shared/services/lookups';
+import { CommitteeService } from '../../committee-setup/service/committee-service';
+import {
+  PlanningService,
+  PlanningBatch,
+  BatchDetails,
+  GovernorateDeliveryReadiness,
+  DeliveryOrdersGovernoratesQuery
+} from './service/planning-batch';
 
-interface ReviewUser { id: number; name: string; role: string; avatar?: string; }
-interface SelectOption { label: string; value: string | number; }
-type FilterKey = 'governorate' | 'subject' | 'education' | 'committee';
+interface SelectOption {
+  label: string;
+  value: string | number;
+}
+
 type StepState = 'done' | 'current' | 'pending' | 'rejected';
 
 @Component({
   selector: 'app-planning',
   standalone: true,
   imports: [
-    CommonModule, FormsModule,
-    SelectModule, InputTextModule, MultiSelectModule,
-    DialogModule, ButtonModule, TextareaModule, TooltipModule,
+    CommonModule,
+    FormsModule,
+    SelectModule,
+    InputTextModule,
+    DialogModule,
+    ButtonModule,
+    TextareaModule,
+    TooltipModule,
+    TableModule,
     WorkflowStepLayoutComponent
   ],
   templateUrl: './planning.component.html',
   styleUrl: './planning.component.scss'
 })
 export default class PlanningComponent implements OnInit {
-
   private readonly lookupService = inject(Lookups);
+  private readonly committeeService = inject(CommitteeService);
+  private readonly planningService = inject(PlanningService);
   private readonly messageService = inject(MessageService);
 
-  // ==========================================
-  // ESSENTIALS
-  // ==========================================
-  readonly essentials = ['البحث بالمحافظة', 'البحث بالمادة', 'تغيير حالة المادة'];
+  readonly essentials = [
+    'البحث بالمحافظة والمادة',
+    'تحديد دفعات المواد للاعتماد',
+    'جاهزية أوامر التوزيع بالمحافظات',
+    'عرض تفاصيل لجان الدفعة'
+  ];
 
   // ==========================================
-  // FILTER OPTIONS (signals, so filters react when lookups arrive)
+  // TABS ('materials' | 'delivery-orders')
+  // ==========================================
+  readonly activeTab = signal<'materials' | 'delivery-orders'>('materials');
+
+  setTab(tab: 'materials' | 'delivery-orders'): void {
+    this.activeTab.set(tab);
+    if (tab === 'delivery-orders' && this.deliveryGovernorates().length === 0 && !this.deliveryLoading()) {
+      this.loadDeliveryGovernorates();
+    }
+  }
+
+  // ==========================================
+  // LOOKUPS
   // ==========================================
   readonly governorates = signal<SelectOption[]>([{ label: 'كل المحافظات', value: 'all' }]);
-  readonly subjects     = signal<SelectOption[]>([{ label: 'كل المواد', value: 'all' }]);
-  educationals: SelectOption[] = [
-    { label: 'كل الادارات التعليمية', value: 'all' },
-    { label: 'EDU-001', value: 'EDU-001' },
-    { label: 'EDU-002', value: 'EDU-002' },
-    { label: 'EDU-003', value: 'EDU-003' },
-    { label: 'EDU-004', value: 'EDU-004' },
-    { label: 'EDU-005', value: 'EDU-005' },
-    { label: 'EDU-006', value: 'EDU-006' },
-    { label: 'EDU-007', value: 'EDU-007' },
-    { label: 'EDU-008', value: 'EDU-008' },
-    { label: 'EDU-009', value: 'EDU-009' },
-    { label: 'EDU-010', value: 'EDU-010' },
-    { label: 'EDU-011', value: 'EDU-011' }
+  readonly subjects = signal<SelectOption[]>([{ label: 'كل المواد', value: 'all' }]);
+  readonly rounds = signal<SelectOption[]>([{ label: 'كل الأدوار', value: 'all' }]);
+  readonly educationalStages = signal<SelectOption[]>([{ label: 'كل المراحل', value: 'all' }]);
+  readonly lookupsLoading = signal(false);
+
+  readonly eligibleOptions: SelectOption[] = [
+    { label: 'كل المحافظات', value: 'all' },
+    { label: 'المؤهلة فقط (جاهزة للتوزيع)', value: 'true' },
+    { label: 'غير المؤهلة', value: 'false' }
   ];
-  ngOnInit(): void { this.loadLookups(); }
 
-  loadLookups(): void {
-    forkJoin({
-      governorates: this.lookupService.getLookupGovernorateData(),
-      subjects: this.lookupService.getLookupSubjectData()
-    }).subscribe({
-      next: (res: any) => {
-        const g = res.governorates?.data?.data ?? [];
-        const s = res.subjects?.data?.data ?? [];
+  // ==========================================
+  // TAB 1: MATERIALS / BATCHES (دفعات المواد)
+  // ==========================================
+  readonly batches = signal<PlanningBatch[]>([]);
+  readonly batchesLoading = signal(false);
+  readonly approvingBatches = signal(false);
 
-        this.governorates.set([
-          { label: 'كل المحافظات', value: 'all' },
-          ...g.map((i: any) => ({ label: i.nameAr ?? i.name, value: i.id }))
-        ]);
-        this.subjects.set([
-          { label: 'كل المواد', value: 'all' },
-          ...s.map((i: any) => ({ label: i.name, value: i.id }))
-        ]);
-      },
-      error: err => {
-        console.error('Error loading lookups:', err);
+  readonly searchGovernorate = signal<string | number>('all');
+  readonly searchSubject = signal<string | number>('all');
+  readonly searchBatchQuery = signal('');
+
+  // Selection moved from warehouses into materials:
+  private readonly selectedBatchIds = signal<Set<number>>(new Set<number>());
+
+  readonly filteredBatches = computed(() => {
+    const query = this.searchBatchQuery().trim().toLowerCase();
+    const list = this.batches();
+    if (!query) return list;
+    return list.filter(b =>
+      b.batchName?.toLowerCase().includes(query) ||
+      String(b.batchId).includes(query) ||
+      b.roundName?.toLowerCase().includes(query) ||
+      b.statusNameAr?.toLowerCase().includes(query)
+    );
+  });
+
+  readonly selectedBatches = computed(() =>
+    this.filteredBatches().filter(b => this.selectedBatchIds().has(b.batchId))
+  );
+
+  readonly selectedCount = computed(() => this.selectedBatchIds().size);
+
+  readonly allSelected = computed(() =>
+    this.filteredBatches().length > 0 &&
+    this.filteredBatches().every(b => this.selectedBatchIds().has(b.batchId))
+  );
+
+  readonly someSelected = computed(() =>
+    this.selectedCount() > 0 && !this.allSelected()
+  );
+
+  isSelected(batch: PlanningBatch): boolean {
+    return this.selectedBatchIds().has(batch.batchId);
+  }
+
+  toggleBatch(batch: PlanningBatch): void {
+    this.selectedBatchIds.update(current => {
+      const next = new Set(current);
+      if (next.has(batch.batchId)) next.delete(batch.batchId);
+      else next.add(batch.batchId);
+      return next;
+    });
+  }
+
+  toggleAll(): void {
+    if (this.allSelected()) {
+      this.clearSelection();
+      return;
+    }
+    const next = new Set(this.selectedBatchIds());
+    this.filteredBatches().forEach(b => next.add(b.batchId));
+    this.selectedBatchIds.set(next);
+  }
+
+  clearSelection(): void {
+    this.selectedBatchIds.set(new Set<number>());
+  }
+
+  approveSelectedBatches(): void {
+    const batchIds = [...this.selectedBatchIds()];
+    if (batchIds.length === 0 || this.approvingBatches()) return;
+
+    this.approvingBatches.set(true);
+    this.planningService.sendBatchesToPreQuality(batchIds).subscribe({
+      next: response => {
+        this.approvingBatches.set(false);
         this.messageService.add({
-          severity: 'error', summary: 'خطأ', life: 3000,
-          detail: err.error?.message || 'فشل تحميل بيانات القوائم'
+          severity: 'success',
+          summary: 'تم الاعتماد',
+          detail: response?.message || 'تم إرسال الدفعات إلى مرحلة ما قبل الجودة',
+          life: 3000
+        });
+        this.clearSelection();
+        this.loadBatches();
+      },
+      error: error => {
+        this.approvingBatches.set(false);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'خطأ',
+          detail: error?.error?.message || error?.message || 'فشل إرسال الدفعات إلى مرحلة ما قبل الجودة',
+          life: 4000
         });
       }
     });
   }
 
   // ==========================================
-  // REVIEW USERS
+  // PAGINATION FOR BATCHES
   // ==========================================
-  readonly reviewUsers: ReviewUser[] = [
-    { id: 1, name: 'أحمد محمد',  role: 'مراجع أول' },
-    { id: 2, name: 'محمد علي',   role: 'مراجع جودة' },
-    { id: 3, name: 'سارة أحمد',  role: 'مراجع محتوى' },
-    { id: 4, name: 'محمود حسن',  role: 'مراجع نهائي' }
+  readonly pageSize = signal(6);
+  readonly currentPage = signal(1);
+
+  readonly pageSizeOptions = [
+    { label: '6', value: 6 },
+    { label: '12', value: 12 },
+    { label: '24', value: 24 },
+    { label: 'الكل', value: 0 }
   ];
 
-  // ==========================================
-  // TABLE DATA  (replace with your API)
-  // ==========================================
-  readonly rows = signal<WorkflowStatusRow[]>([
-    { index: 1, committeeNumber: 'COM-1001', subject: 'اللغة العربية', educationNumber: 'EDU-001', governorate: 'القاهرة',    status: 'جاهز لاعتماد الطباعة', statusTone: 'success' },
-    { index: 2, committeeNumber: 'COM-1002', subject: 'الرياضيات',     educationNumber: 'EDU-002', governorate: 'الجيزة',     status: 'قيد الإعداد',  statusTone: 'warning' },
-    { index: 3, committeeNumber: 'COM-1003', subject: 'العلوم',        educationNumber: 'EDU-003', governorate: 'الإسكندرية', status: 'مرفوض',        statusTone: 'danger',
-      rejectionReason: 'يوجد بعض الأخطاء في محتوى المادة، كما أن بعض الأسئلة تحتاج إلى مراجعة قبل اعتماد الخطة.' },
-    { index: 4, committeeNumber: 'COM-1004', subject: 'اللغة العربية', educationNumber: 'EDU-004', governorate: 'القاهرة',    status: 'جاهز لاعتماد الطباعة', statusTone: 'success' },
-    { index: 5, committeeNumber: 'COM-1005', subject: 'الرياضيات',     educationNumber: 'EDU-005', governorate: 'الجيزة',     status: 'قيد الإعداد',  statusTone: 'warning' },
-    { index: 6, committeeNumber: 'COM-1006', subject: 'العلوم',        educationNumber: 'EDU-006', governorate: 'الإسكندرية', status: 'مرفوض',        statusTone: 'danger',
-      rejectionReason: 'يوجد بعض الأخطاء في محتوى المادة، كما أن بعض الأسئلة تحتاج إلى مراجعة قبل اعتماد الخطة.' },
-    { index: 7, committeeNumber: 'COM-1007', subject: 'اللغة العربية', governorate: 'القاهرة',    status: 'جاهز لاعتماد الطباعة', statusTone: 'success' },
-    { index: 8, committeeNumber: 'COM-1008', subject: 'الرياضيات',     governorate: 'الجيزة',     status: 'قيد الإعداد',  statusTone: 'warning' },
-    { index: 9, committeeNumber: 'COM-1009', subject: 'العلوم',        governorate: 'الإسكندرية', status: 'مرفوض',        statusTone: 'danger',
-      rejectionReason: 'يوجد بعض الأخطاء في محتوى المادة، كما أن بعض الأسئلة تحتاج إلى مراجعة قبل اعتماد الخطة.' },
-      { index: 1, committeeNumber: 'COM-1001', subject: 'اللغة العربية', governorate: 'القاهرة',    status: 'جاهز لاعتماد الطباعة', statusTone: 'success' },
-    { index: 2, committeeNumber: 'COM-1002', subject: 'الرياضيات',     governorate: 'الجيزة',     status: 'قيد الإعداد',  statusTone: 'warning' },
-    { index: 3, committeeNumber: 'COM-1003', subject: 'العلوم',        governorate: 'الإسكندرية', status: 'مرفوض',        statusTone: 'danger',
-      rejectionReason: 'يوجد بعض الأخطاء في محتوى المادة، كما أن بعض الأسئلة تحتاج إلى مراجعة قبل اعتماد الخطة.' },
-    { index: 4, committeeNumber: 'COM-1004', subject: 'اللغة العربية', governorate: 'القاهرة',    status: 'جاهز لاعتماد الطباعة', statusTone: 'success' },
-    { index: 5, committeeNumber: 'COM-1005', subject: 'الرياضيات',     governorate: 'الجيزة',     status: 'قيد الإعداد',  statusTone: 'warning' },
-    { index: 6, committeeNumber: 'COM-1006', subject: 'العلوم',        governorate: 'الإسكندرية', status: 'مرفوض',        statusTone: 'danger',
-      rejectionReason: 'يوجد بعض الأخطاء في محتوى المادة، كما أن بعض الأسئلة تحتاج إلى مراجعة قبل اعتماد الخطة.' },
-      { index: 1, committeeNumber: 'COM-1001', subject: 'اللغة العربية', governorate: 'القاهرة',    status: 'جاهز لاعتماد الطباعة', statusTone: 'success' },
-    { index: 2, committeeNumber: 'COM-1002', subject: 'الرياضيات',     governorate: 'الجيزة',     status: 'قيد الإعداد',  statusTone: 'warning' },
-    { index: 3, committeeNumber: 'COM-1003', subject: 'العلوم',        governorate: 'الإسكندرية', status: 'مرفوض',        statusTone: 'danger',
-      rejectionReason: 'يوجد بعض الأخطاء في محتوى المادة، كما أن بعض الأسئلة تحتاج إلى مراجعة قبل اعتماد الخطة.' },
-    { index: 4, committeeNumber: 'COM-1004', subject: 'اللغة العربية', governorate: 'القاهرة',    status: 'جاهز لاعتماد الطباعة', statusTone: 'success' },
-    { index: 5, committeeNumber: 'COM-1005', subject: 'الرياضيات',     governorate: 'الجيزة',     status: 'قيد الإعداد',  statusTone: 'warning' },
-    { index: 6, committeeNumber: 'COM-1006', subject: 'العلوم',        governorate: 'الإسكندرية', status: 'مرفوض',        statusTone: 'danger',
-      rejectionReason: 'يوجد بعض الأخطاء في محتوى المادة، كما أن بعض الأسئلة تحتاج إلى مراجعة قبل اعتماد الخطة.' }
-  ])
+  readonly showAll = computed(() => this.pageSize() === 0);
 
-  // ==========================================
-  // FILTERS  (applied immediately, no search button needed)
-  // ==========================================
-  readonly searchGovernorate = signal<string | number>('all');
-  readonly searchSubject     = signal<string | number>('all');
-  readonly searchEducation     = signal<string | number>('all');
-  readonly searchCommittee   = signal('');
+  readonly totalPages = computed(() =>
+    this.showAll()
+      ? 1
+      : Math.max(1, Math.ceil(this.filteredBatches().length / this.pageSize()))
+  );
 
-  setGovernorate(v: string | number): void { this.searchGovernorate.set(v ?? 'all'); this.resetPage(); }
-  setSubject(v: string | number): void     { this.searchSubject.set(v ?? 'all');     this.resetPage(); }
-  setCommittee(v: string): void            { this.searchCommittee.set(v ?? '');      this.resetPage(); }
-  setEducation(v: string | number): void   { this.searchEducation.set(v ?? 'all');   this.resetPage(); }
+  readonly paginatedBatches = computed(() => {
+    if (this.showAll()) return this.filteredBatches();
+    const page = Math.min(this.currentPage(), this.totalPages());
+    const start = (page - 1) * this.pageSize();
+    return this.filteredBatches().slice(start, start + this.pageSize());
+  });
+
+  readonly paginationStart = computed(() => {
+    if (this.filteredBatches().length === 0) return 0;
+    return this.showAll() ? 1 : (this.currentPage() - 1) * this.pageSize() + 1;
+  });
+
+  readonly paginationEnd = computed(() =>
+    this.showAll()
+      ? this.filteredBatches().length
+      : Math.min(this.currentPage() * this.pageSize(), this.filteredBatches().length)
+  );
+
+  readonly paginationPages = computed<(number | 'dots')[]>(() => {
+    const total = this.totalPages();
+    const cur = Math.min(this.currentPage(), total);
+    const wanted = new Set<number>([1, total, cur - 1, cur, cur + 1]);
+    const sorted = [...wanted].filter(p => p >= 1 && p <= total).sort((a, b) => a - b);
+
+    const pages: (number | 'dots')[] = [];
+    sorted.forEach((p, i) => {
+      if (i > 0 && p - sorted[i - 1] > 1) pages.push('dots');
+      pages.push(p);
+    });
+    return pages;
+  });
+
+  private resetPage(): void {
+    this.currentPage.set(1);
+  }
+
+  onPageSizeChange(): void {
+    this.resetPage();
+  }
+
+  goToPage(p: number): void {
+    if (p >= 1 && p <= this.totalPages()) this.currentPage.set(p);
+  }
+
+  previousPage(): void {
+    this.goToPage(this.currentPage() - 1);
+  }
+
+  nextPage(): void {
+    this.goToPage(this.currentPage() + 1);
+  }
+
+  // Active filters helper
+  readonly activeFilters = computed(() => {
+    const list: { key: string; title: string; value: string }[] = [];
+    const gov = this.labelOf(this.governorates(), this.searchGovernorate());
+    const sub = this.labelOf(this.subjects(), this.searchSubject());
+    const query = this.searchBatchQuery().trim();
+
+    if (gov) list.push({ key: 'governorate', title: 'المحافظة', value: gov });
+    if (sub) list.push({ key: 'subject', title: 'المادة', value: sub });
+    if (query) list.push({ key: 'query', title: 'اسم/رقم الدفعة', value: query });
+    return list;
+  });
+
+  removeFilter(key: string): void {
+    if (key === 'governorate') this.searchGovernorate.set('all');
+    if (key === 'subject') this.searchSubject.set('all');
+    if (key === 'query') this.searchBatchQuery.set('');
+    this.resetPage();
+    this.loadBatches();
+  }
+
+  clearFilters(): void {
+    this.searchGovernorate.set('all');
+    this.searchSubject.set('all');
+    this.searchBatchQuery.set('');
+    this.resetPage();
+    this.loadBatches();
+  }
+
+  setGovernorate(v: string | number): void {
+    this.searchGovernorate.set(v ?? 'all');
+    this.resetPage();
+    this.loadBatches();
+  }
+
+  setSubject(v: string | number): void {
+    this.searchSubject.set(v ?? 'all');
+    this.resetPage();
+    this.loadBatches();
+  }
+
+  setBatchQuery(v: string): void {
+    this.searchBatchQuery.set(v ?? '');
+    this.resetPage();
+  }
 
   private labelOf(options: SelectOption[], value: string | number): string | null {
     if (value === 'all') return null;
     return options.find(o => o.value === value)?.label ?? null;
   }
 
-  // rows carry the NAME of the governorate / subject, so we compare by label
-  readonly filteredRows = computed(() => {
-    const gov = this.labelOf(this.governorates(), this.searchGovernorate());
-    const sub = this.labelOf(this.subjects(), this.searchSubject());
-    const edu = this.searchEducation();
-    const com = this.searchCommittee().trim().toLowerCase();
+  // ==========================================
+  // TAB 2: DELIVERY ORDERS / GOVERNORATES
+  // ==========================================
+  readonly deliveryGovernorates = signal<GovernorateDeliveryReadiness[]>([]);
+  readonly deliveryLoading = signal(false);
 
-    return this.rows().filter(r =>
-      (!gov || r.governorate === gov) &&
-      (!sub || r.subject === sub) &&
-      (edu === 'all' || String(r.educationNumber ?? '') === String(edu)) &&
-      (!com || String(r.committeeNumber).toLowerCase().includes(com))
-    );
-  });
+  readonly deliveryYear = signal<number | null>(null);
+  readonly deliveryRoundId = signal<string | number>('all');
+  readonly deliveryEducationalStageId = signal<string | number>('all');
+  readonly deliveryEligibleFilter = signal<string>('all');
 
-  /** feeds the "filters applied" bar */
-  readonly activeFilters = computed(() => {
-    const list: { key: FilterKey; title: string; value: string }[] = [];
-    const gov = this.labelOf(this.governorates(), this.searchGovernorate());
-    const sub = this.labelOf(this.subjects(), this.searchSubject());
-    const edu = this.searchEducation();
-    const com = this.searchCommittee().trim();
-    if (gov) list.push({ key: 'governorate', title: 'المحافظة',   value: gov });
-    if (sub) list.push({ key: 'subject',     title: 'المادة',      value: sub });
-    if (edu !== 'all') {
-      const education = this.educationals.find(option => String(option.value) === String(edu));
-      list.push({ key: 'education', title: 'الادارة التعليمية', value: education?.label ?? String(edu) });
+  readonly totalGovernoratesCount = computed(() => this.deliveryGovernorates().length);
+  readonly eligibleGovernoratesCount = computed(
+    () => this.deliveryGovernorates().filter(g => g.canCreate).length
+  );
+  readonly totalBatchesSum = computed(() =>
+    this.deliveryGovernorates().reduce((sum, g) => sum + (g.totalBatches || 0), 0)
+  );
+  readonly storedBatchesSum = computed(() =>
+    this.deliveryGovernorates().reduce((sum, g) => sum + (g.storedBatches || 0), 0)
+  );
+  readonly totalCommitteesSum = computed(() =>
+    this.deliveryGovernorates().reduce((sum, g) => sum + (g.totalCommittees || 0), 0)
+  );
+  readonly totalBoxesSum = computed(() =>
+    this.deliveryGovernorates().reduce((sum, g) => sum + (g.totalBoxes || 0), 0)
+  );
+
+  // Filtered governorates view
+  readonly filteredDeliveryGovernorates = computed(() => {
+    const list = this.deliveryGovernorates();
+    const eligibleFilter = this.deliveryEligibleFilter();
+    if (eligibleFilter === 'true') {
+      return list.filter(g => g.canCreate);
     }
-    if (com) list.push({ key: 'committee',   title: 'رقم اللجنة', value: com });
+    if (eligibleFilter === 'false') {
+      return list.filter(g => !g.canCreate);
+    }
     return list;
   });
 
-  removeFilter(key: FilterKey): void {
-    if (key === 'governorate') this.searchGovernorate.set('all');
-    if (key === 'subject')     this.searchSubject.set('all');
-    if (key === 'education')   this.searchEducation.set('all');
-    if (key === 'committee')   this.searchCommittee.set('');
-    this.resetPage();
+  // ==========================================
+  // BATCH DETAILS DIALOG
+  // ==========================================
+  batchDetailsDialogVisible = false;
+  batchDetailsLoading = false;
+  selectedBatchDetails: BatchDetails | null = null;
+
+  openBatchDetails(batchId: number): void {
+    this.batchDetailsDialogVisible = true;
+    this.batchDetailsLoading = true;
+    this.selectedBatchDetails = null;
+
+    this.planningService.getBatchDetails(batchId).subscribe({
+      next: res => {
+        const raw = res as any;
+        const data = raw?.data?.data ?? raw?.data ?? raw;
+        if (data && !data.committees) {
+          data.committees = [];
+        }
+        this.selectedBatchDetails = data;
+        this.batchDetailsLoading = false;
+      },
+      error: err => {
+        console.error('Error loading batch details:', err);
+        this.batchDetailsLoading = false;
+        this.messageService.add({
+          severity: 'error',
+          summary: 'خطأ',
+          detail: err.error?.message || 'فشل تحميل تفاصيل الدفعة',
+          life: 3000
+        });
+      }
+    });
   }
 
-  clearFilters(): void {
-    this.searchGovernorate.set('all');
-    this.searchSubject.set('all');
-    this.searchEducation.set('all');
-    this.searchCommittee.set('');
-    this.resetPage();
+  closeBatchDetails(): void {
+    this.batchDetailsDialogVisible = false;
+    this.selectedBatchDetails = null;
   }
 
   // ==========================================
-  // PAGINATION  (6 per page = 2 rows x 3 cards)
+  // LIFECYCLE
   // ==========================================
-  readonly pageSize    = signal(6);
-  readonly currentPage = signal(1);
-
-  readonly totalPages = computed(() =>
-    Math.max(1, Math.ceil(this.filteredRows().length / this.pageSize())));
-
-  readonly paginatedRows = computed(() => {
-    const page = Math.min(this.currentPage(), this.totalPages());
-    const start = (page - 1) * this.pageSize();
-    return this.filteredRows().slice(start, start + this.pageSize());
-  });
-
-  readonly paginationStart = computed(() =>
-    this.filteredRows().length === 0 ? 0 : (this.currentPage() - 1) * this.pageSize() + 1);
-
-  readonly paginationEnd = computed(() =>
-    Math.min(this.currentPage() * this.pageSize(), this.filteredRows().length));
+  ngOnInit(): void {
+    this.loadLookups();
+    this.loadBatches();
+  }
 
   /**
-   * Page numbers with dots (dots appear as soon as there are more than 3 pages
-   * and at least one page is hidden):
-   *   5 pages -> 1 2 ... 5  |  1 2 3 ... 5  |  1 2 3 4 5  |  1 ... 3 4 5  |  1 ... 4 5
-   *   9 pages -> 1 2 ... 9  |  1 2 3 ... 9  |  1 ... 4 5 6 ... 9  |  1 ... 7 8 9
+   * Helper to robustly extract an Array from any API response structure.
    */
-  readonly paginationPages = computed<(number | 'dots')[]>(() => {
-    const total = this.totalPages();
-    const cur = Math.min(this.currentPage(), total);
+  private extractLookupArray(response: any): any[] {
+    if (!response) return [];
+    if (Array.isArray(response)) return response;
 
-    // first page + last page + the page before/after the current one
-    const wanted = new Set<number>([1, total, cur - 1, cur, cur + 1]);
-    const sorted = [...wanted].filter(p => p >= 1 && p <= total).sort((a, b) => a - b);
-
-    const pages: (number | 'dots')[] = [];
-    sorted.forEach((p, i) => {
-      if (i > 0 && p - sorted[i - 1] > 1) pages.push('dots');   // hidden pages in between
-      pages.push(p);
-    });
-    return pages;
-  });
-
-  private resetPage(): void { this.currentPage.set(1); }
-  onPageSizeChange(): void { this.resetPage(); }
-  goToPage(p: number): void { if (p >= 1 && p <= this.totalPages()) this.currentPage.set(p); }
-  previousPage(): void { this.goToPage(this.currentPage() - 1); }
-  nextPage(): void     { this.goToPage(this.currentPage() + 1); }
-
-  // ==========================================
-  // CARD HELPERS
-  // ==========================================
-  /** 2-step tracker: in preparation -> ready for printing (or rejected) */
-  trackerSteps(row: WorkflowStatusRow): { label: string; state: StepState }[] {
-    switch (row.status) {
-      case 'جاهز لاعتماد الطباعة':
-        return [{ label: 'قيد الإعداد', state: 'done' }, { label: 'جاهز لاعتماد الطباعة', state: 'current' }];
-      case 'مرفوض':
-        return [{ label: 'قيد الإعداد', state: 'done' }, { label: 'مرفوض', state: 'rejected' }];
-      default:
-        return [{ label: 'قيد الإعداد', state: 'current' }, { label: 'جاهز لاعتماد الطباعة', state: 'pending' }];
+    const possibleKeys = ['data', 'items', 'result', 'results', 'records', 'value'];
+    for (const key of possibleKeys) {
+      const val = response[key];
+      if (Array.isArray(val)) return val;
+      if (val && typeof val === 'object') {
+        const nested = this.extractLookupArray(val);
+        if (nested.length > 0) return nested;
+      }
     }
+    return [];
   }
 
-  // ==========================================
-  // CHANGE STATUS -> READY
-  // ==========================================
-  markReady(row: WorkflowStatusRow): void {
-    // API CALL WILL BE HERE, then reload the rows
-    this.rows.update(rows => rows.map(r =>
-      r.index === row.index
-        ? { ...r, status: 'جاهز لاعتماد الطباعة', statusTone: 'success', rejectionReason: undefined }
-        : r));
+  /**
+   * Maps an array of lookup objects to SelectOption items with numeric value and Arabic label.
+   */
+  private mapToOptions(
+    rawList: any[],
+    defaultLabel: string,
+    idKeys: string[] = ['id', 'roundId', 'educationalStageId', 'governorateId', 'subjectId', 'code', 'value']
+  ): SelectOption[] {
+    const options: SelectOption[] = [{ label: defaultLabel, value: 'all' }];
+    if (!Array.isArray(rawList)) return options;
 
-    this.messageService.add({
-      severity: 'success', summary: 'تمت العملية', life: 3000,
-      detail: 'تم تحويل المادة إلى جاهز لاعتماد الطباعة'
+    rawList.forEach((item: any) => {
+      if (!item) return;
+
+      // Extract ID / Value
+      let value: number | string | null = null;
+      for (const k of idKeys) {
+        if (item[k] !== undefined && item[k] !== null && String(item[k]).trim() !== '') {
+          const num = Number(item[k]);
+          value = !isNaN(num) && num > 0 ? num : item[k];
+          break;
+        }
+      }
+
+      // Extract Label
+      const nameKeys = ['nameAr', 'arabicName', 'name', 'title', 'roundName', 'governorateName', 'subjectName', 'stageName', 'label'];
+      let label: string | null = null;
+      for (const k of nameKeys) {
+        if (item[k] !== undefined && item[k] !== null && String(item[k]).trim() !== '') {
+          label = String(item[k]).trim();
+          break;
+        }
+      }
+
+      if (value != null && label) {
+        options.push({ label, value });
+      }
+    });
+
+    return options;
+  }
+
+  loadLookups(): void {
+    this.lookupsLoading.set(true);
+
+    forkJoin({
+      governorates: this.lookupService.getLookupGovernorateData().pipe(
+        catchError(e => {
+          console.error('Gov lookup err:', e);
+          return of([]);
+        })
+      ),
+      subjects: this.lookupService.getLookupSubjectData().pipe(
+        catchError(e => {
+          console.error('Subject lookup err:', e);
+          return of([]);
+        })
+      ),
+      rounds: this.committeeService.getRounds().pipe(
+        catchError(e => {
+          console.error('Rounds lookup err:', e);
+          return of([]);
+        })
+      ),
+      stages: this.committeeService.getEducationstages().pipe(
+        catchError(e => {
+          console.error('Stages lookup err:', e);
+          return of([]);
+        })
+      )
+    }).subscribe({
+      next: ({ governorates, subjects, rounds, stages }) => {
+        const gList = this.extractLookupArray(governorates);
+        const sList = this.extractLookupArray(subjects);
+        const rList = this.extractLookupArray(rounds);
+        const stList = this.extractLookupArray(stages);
+
+        const gOpts = this.mapToOptions(gList, 'كل المحافظات');
+        const sOpts = this.mapToOptions(sList, 'كل المواد');
+        const rOpts = this.mapToOptions(rList, 'اختر الدور');
+        const stOpts = this.mapToOptions(stList, 'كل المراحل التعليمية');
+
+        this.governorates.set(gOpts);
+        this.subjects.set(sOpts);
+        this.rounds.set(rOpts);
+        this.educationalStages.set(stOpts);
+
+        // Auto-select first real round for delivery orders if not selected
+        const firstRound = rOpts.find(r => r.value !== 'all');
+        if (firstRound && (this.deliveryRoundId() === 'all' || !this.deliveryRoundId())) {
+          this.deliveryRoundId.set(firstRound.value);
+        }
+
+        // Auto-select first real stage for delivery orders if not selected
+        const firstStage = stOpts.find(s => s.value !== 'all');
+        if (firstStage && (this.deliveryEducationalStageId() === 'all' || !this.deliveryEducationalStageId())) {
+          this.deliveryEducationalStageId.set(firstStage.value);
+        }
+
+        this.lookupsLoading.set(false);
+
+        // If delivery orders tab is open, load delivery governorates
+        if (this.activeTab() === 'delivery-orders') {
+          this.loadDeliveryGovernorates();
+        }
+      },
+      error: err => {
+        console.error('Error in forkJoin lookups:', err);
+        this.lookupsLoading.set(false);
+      }
     });
   }
 
-  // ==========================================
-  // REJECT DIALOG
-  // ==========================================
-  selectedRow: WorkflowStatusRow | null = null;
+  /**
+   * GET api/Planning/batches/for-approve?GovernorateId=&SubjectId=
+   */
+  loadBatches(): void {
+    this.batchesLoading.set(true);
 
-  rejectDialogVisible = false;
-  rejectReason = '';
-  selectedReviewers: ReviewUser[] = [];
-  rejectSubmitting = false;
+    const govVal = this.searchGovernorate();
+    const subVal = this.searchSubject();
 
-  openRejectDialog(row: WorkflowStatusRow): void {
-    this.selectedRow = row;
-    this.rejectReason = '';
-    this.selectedReviewers = [];
-    this.rejectSubmitting = false;
-    this.rejectDialogVisible = true;
+    const govId = govVal !== 'all' && Number(govVal) > 0 ? Number(govVal) : undefined;
+    const subId = subVal !== 'all' && Number(subVal) > 0 ? Number(subVal) : undefined;
+
+    this.planningService.getBatchesForApprove(govId, subId).subscribe({
+      next: res => {
+        const list = this.extractLookupArray(res);
+        this.batches.set(list);
+        this.batchesLoading.set(false);
+      },
+      error: err => {
+        console.error('Error loading planning batches:', err);
+        this.batchesLoading.set(false);
+        this.batches.set([]);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'خطأ',
+          detail: err.error?.message || 'فشل تحميل دفعات التخطيط الجاهزة للاعتماد',
+          life: 3000
+        });
+      }
+    });
   }
 
-  closeRejectDialog(): void {
-    if (this.rejectSubmitting) return;
-    this.rejectDialogVisible = false;
-    this.rejectReason = '';
-    this.selectedReviewers = [];
-  }
+  /**
+   * GET api/Planning/delivery-orders/governorates
+   * Query params: Year, RoundId, EducationalStageId, OnlyEligible
+   */
+  loadDeliveryGovernorates(): void {
+    const roundVal = this.deliveryRoundId();
 
-  get isRejectFormValid(): boolean {
-    return this.rejectReason.trim().length >= 10 && this.selectedReviewers.length > 0;
-  }
+    // RoundId is mandatory for the backend! If not set, pick the first valid round or wait
+    let validRoundId: number | undefined;
+    if (roundVal && roundVal !== 'all' && Number(roundVal) > 0) {
+      validRoundId = Number(roundVal);
+    } else {
+      const firstRound = this.rounds().find(r => r.value !== 'all');
+      if (firstRound && Number(firstRound.value) > 0) {
+        validRoundId = Number(firstRound.value);
+        this.deliveryRoundId.set(validRoundId);
+      }
+    }
 
-  submitRejection(): void {
-    if (!this.selectedRow || !this.isRejectFormValid) return;
+    if (!validRoundId) {
+      // No round chosen yet, do not trigger 400 error
+      this.deliveryGovernorates.set([]);
+      return;
+    }
 
-    this.rejectSubmitting = true;
+    this.deliveryLoading.set(true);
 
-    const rejectionData = {
-      rowIndex: this.selectedRow.index,
-      subject: this.selectedRow.subject,
-      governorate: this.selectedRow.governorate,
-      reason: this.rejectReason.trim(),
-      reviewerIds: this.selectedReviewers.map(u => u.id)
+    const yearVal = this.deliveryYear();
+    const stageVal = this.deliveryEducationalStageId();
+    const eligibleVal = this.deliveryEligibleFilter();
+
+    const query: DeliveryOrdersGovernoratesQuery = {
+      year: yearVal != null && yearVal > 0 ? yearVal : undefined,
+      roundId: validRoundId,
+      educationalStageId: stageVal !== 'all' && Number(stageVal) > 0 ? Number(stageVal) : undefined,
+      onlyEligible: eligibleVal === 'true' ? true : eligibleVal === 'false' ? false : undefined
     };
-    console.log('Reject Request:', rejectionData);
 
-    // API CALL WILL BE HERE
-    setTimeout(() => {
-      const rowIndex = this.selectedRow?.index;
-      if (!rowIndex) { this.rejectSubmitting = false; return; }
-
-      const reason = this.rejectReason.trim();
-      this.rows.update(rows => rows.map(r =>
-        r.index === rowIndex
-          ? { ...r, status: 'مرفوض', statusTone: 'danger', rejectionReason: reason }
-          : r));
-
-      this.rejectSubmitting = false;
-      this.rejectDialogVisible = false;
-      this.selectedRow = null;
-      this.rejectReason = '';
-      this.selectedReviewers = [];
-
-      this.messageService.add({ severity: 'success', summary: 'تمت العملية', life: 3000, detail: 'تم رفض المادة بنجاح' });
-    }, 800);
+    this.planningService.getDeliveryOrdersGovernorates(query).subscribe({
+      next: res => {
+        const list = this.extractLookupArray(res);
+        this.deliveryGovernorates.set(list);
+        this.deliveryLoading.set(false);
+      },
+      error: err => {
+        console.error('Error loading delivery governorates:', err);
+        this.deliveryLoading.set(false);
+        this.deliveryGovernorates.set([]);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'خطأ',
+          detail: err.error?.message || 'فشل تحميل بيانات أوامر التوزيع بالمحافظات',
+          life: 3000
+        });
+      }
+    });
   }
 
-  // ==========================================
-  // VIEW REJECTION REASON
-  // ==========================================
-  rejectionReasonDialogVisible = false;
-  selectedRejectionReason = '';
-
-  openRejectionReasonDialog(row: WorkflowStatusRow): void {
-    if (row.status !== 'مرفوض') return;
-    this.selectedRow = row;
-    this.selectedRejectionReason = row.rejectionReason?.trim() || 'لم يتم تسجيل سبب الرفض.';
-    this.rejectionReasonDialogVisible = true;
+  // Helper for batch tracker steps
+  trackerSteps(batch: PlanningBatch): { label: string; state: StepState }[] {
+    return [
+      { label: batch.statusNameAr || 'بانتظار التخطيط', state: 'current' },
+      { label: batch.nextStatusNameAr || 'بانتظار اعتماد الطباعة', state: 'pending' }
+    ];
   }
 
-  closeRejectionReasonDialog(): void {
-    this.rejectionReasonDialogVisible = false;
-    this.selectedRejectionReason = '';
-    this.selectedRow = null;
+  // Calculate storage completion percentage for governorates
+  getStoredProgress(gov: GovernorateDeliveryReadiness): number {
+    if (!gov.totalBatches || gov.totalBatches <= 0) return 0;
+    return Math.min(100, Math.round(((gov.storedBatches || 0) / gov.totalBatches) * 100));
   }
 }
