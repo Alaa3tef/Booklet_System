@@ -34,7 +34,7 @@ const workflowRouteByRole: Record<string, string> = {
   // archiving: '/workflow/archiving',
   storage: '/workflow/archiving',
   warehouse: '/warehouses',
-  'pre quality': '/workflow/printing-approved',
+  prequality: '/workflow/printing-approved',
 
   // warehouses: '/warehouses',
   // 'warehouse management': '/warehouses'

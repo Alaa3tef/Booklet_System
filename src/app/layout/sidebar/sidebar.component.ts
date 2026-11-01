@@ -102,7 +102,7 @@ export class SidebarComponent implements OnInit {
       label: 'اعتماد الطباعة',
       icon: 'pi pi-sliders-h',
       route: '/workflow/printing-approved',
-      roles: ['pre-quality' , 'superadmin']
+      roles: ['prequality' , 'superadmin']
     },
 
     {
@@ -259,7 +259,7 @@ private isITRole(role: string): boolean {
       'packaging',
       'archiving',
       'archive',
-      'pre-quality',
+      'prequality',
 
       'التخطيط',
       'الإعداد',
