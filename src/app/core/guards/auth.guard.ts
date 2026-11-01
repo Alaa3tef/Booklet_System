@@ -20,7 +20,11 @@ const dashboardRoles = new Set([
 const workflowRouteByRole: Record<string, string> = {
   // planning: '/workflow/planning',
   // plan: '/workflow/planning',
-  projectmgmt: '/workflow/planning',
+  // projectmgmt: '/workflow/planning',
+  // 'project mgmt': '/workflow/planning',
+  // 'project management': '/workflow/planning',
+  // projectmanagement: '/workflow/planning',
+  projectmanagment: '/workflow/planning',
   printing: '/workflow/printing',
   // print: '/workflow/printing',
   quality: '/workflow/quality',
