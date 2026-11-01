@@ -1,98 +1,149 @@
 // core/services/printing.service.ts
-import { HttpClient, HttpParams } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable, delay, of, tap } from 'rxjs';
-import { WorkflowStatusRow } from '../../../../core/models/workflow.model';
+import { Observable, map } from 'rxjs';
+
 import { AppConfigService } from '../../../../shared/services/app-config.service';
-import { MOCK_ROWS } from '../printing.mock';
 
+// ==========================================
+// API wrapper
+// ==========================================
 
+interface ApiResponse<T> {
+  success: boolean;
+  message: string | null;
+  data: T;
+  statusCode: number;
+  errors: unknown;
+  count?: number;
+}
+
+// ==========================================
+// Raw DTOs (نفس شكل الـ response)
+// ==========================================
+
+interface BatchDto {
+  batchId: number;
+  label: string;
+  governorateName: string;
+  subjectName: string;
+  year: number;
+  roundName: string;
+  status: string;
+  pendingCommitteeCount: number;
+}
+
+interface CommitteeDto {
+  committeeId: number;
+  committeeNumber: string;
+  requiredBookletCount: number;
+  bonusBookletCount: number;
+  requiredEnvelopeCount: number;
+  bonusEnvelopeCount: number;
+  boxCount: number;
+}
+
+// ==========================================
+// Models (اللي بتستخدمها الـ component)
+// ==========================================
+
+/** دفعة = مادة + محافظة */
+export interface PrintingBatch {
+  id: number;
+  label: string;
+  governorate: string;
+  subject: string;
+  year: number | null;
+  round: string;
+  status: string;
+  pendingCommittees: number;
+}
+
+export interface PrintingCommittee {
+  id: number;
+  committeeNumber: string;
+  requiredBooklets: number;
+  bonusBooklets: number;
+  requiredEnvelopes: number;
+  bonusEnvelopes: number;
+  boxCount: number;
+}
+
+/** PUT /api/Printing/batches/{batchId}/print */
+export interface PrintBatchRequest {
+  committeeIds: number[];
+}
 
 @Injectable({ providedIn: 'root' })
 export class PrintingService {
   private readonly http = inject(HttpClient);
   private readonly config = inject(AppConfigService);
 
-  /** true = القائمة من الـ mock | false = القائمة من الـ backend */
-  private readonly useMockList = true;
-
-  private mockRows: any[] = [...MOCK_ROWS];
-
+  /** لو baseURL مش بيحتوي على /api ضيفيها هنا */
   private get url(): string {
-    return `${this.config.baseURL}/printing`;
+    return `${this.config.baseURL}api/Printing`;
   }
 
-  // ==========================================
-  // LIST
-  // ==========================================
-
-  getList(filters: any): Observable<any> {
-    return this.useMockList ? this.getMockList(filters) : this.getRealList(filters);
+  /** GET /api/Printing/batches */
+  getBatches(): Observable<PrintingBatch[]> {
+    return this.http
+      .get<ApiResponse<BatchDto[]>>(`${this.url}/batches`)
+      .pipe(
+        map(res => this.unwrap(res) ?? []),
+        map(list =>
+          list.map(
+            (b): PrintingBatch => ({
+              id: b.batchId,
+              label: (b.label ?? '').trim(),
+              governorate: (b.governorateName ?? '').trim(),
+              subject: (b.subjectName ?? '').trim(),
+              year: b.year ?? null,
+              round: (b.roundName ?? '').trim(),
+              status: b.status ?? '',
+              pendingCommittees: b.pendingCommitteeCount ?? 0
+            })
+          )
+        )
+      );
   }
 
-  private getRealList(filters: any): Observable<any> {
-    let params = new HttpParams()
-      .set('page', filters.page)
-      .set('pageSize', filters.pageSize);
-
-    if (filters.governorate !== 'all') params = params.set('governorate', filters.governorate);
-    if (filters.subject !== 'all') params = params.set('subject', filters.subject);
-
-    const committee = filters.committeeNumber.trim();
-    if (committee) params = params.set('committeeNumber', committee);
-
-    return this.http.get<any>(this.url, { params });
+  /** GET /api/Printing/batches/{batchId}/committees */
+  getCommittees(batchId: number): Observable<PrintingCommittee[]> {
+    return this.http
+      .get<ApiResponse<CommitteeDto[]>>(`${this.url}/batches/${batchId}/committees`)
+      .pipe(
+        map(res => this.unwrap(res) ?? []),
+        map(list =>
+          list.map(
+            (c): PrintingCommittee => ({
+              id: c.committeeId,
+              committeeNumber: String(c.committeeNumber ?? c.committeeId),
+              requiredBooklets: c.requiredBookletCount ?? 0,
+              bonusBooklets: c.bonusBookletCount ?? 0,
+              requiredEnvelopes: c.requiredEnvelopeCount ?? 0,
+              bonusEnvelopes: c.bonusEnvelopeCount ?? 0,
+              boxCount: c.boxCount ?? 0
+            })
+          )
+        )
+      );
   }
 
-  private getMockList(f: any): Observable<any> {
-    const committee = f.committeeNumber.trim();
+  /** PUT /api/Printing/batches/{batchId}/print  body: { committeeIds: [...] } */
+  printCommittees(batchId: number, committeeIds: number[]): Observable<void> {
+    const body: PrintBatchRequest = { committeeIds };
 
-    const filtered = this.mockRows.filter(
-      r =>
-        (f.governorate === 'all' || r.governorateCode === f.governorate) &&
-        (f.subject === 'all' || r.subjectCode === f.subject) &&
-        (!committee || r.committeeNumber.includes(committee))
-    );
-
-    const start = (f.page - 1) * f.pageSize;
-    const items = filtered
-      .slice(start, start + f.pageSize)
-      .map((r, i) => ({ ...r, index: start + i + 1 }));
-
-    return of({ items, total: filtered.length }).pipe(delay(300));
+    return this.http
+      .put<ApiResponse<unknown>>(`${this.url}/batches/${batchId}/print`, body)
+      .pipe(map(res => void this.unwrap(res)));
   }
 
-  // ==========================================
-  // ACTIONS (Backend حقيقي)
-  // ==========================================
+  /** يرمي error برسالة السيرفر لو success = false */
+  private unwrap<T>(res: ApiResponse<T>): T {
+    if (res && res.success === false) {
+      throw new Error(res.message || 'حدث خطأ غير متوقع');
+    }
 
-  finish(id: number): Observable<void> {
-    return this.http.patch<void>(`${this.url}/${id}/finish`, {}).pipe(
-      tap(() =>
-        this.patchMock(id, {
-          status: 'تم الانتهاء',
-          statusTone: 'success',
-          rejectionReason: undefined
-        })
-      )
-    );
-  }
-
-  reject(id: number, payload: any): Observable<void> {
-    return this.http.post<void>(`${this.url}/${id}/reject`, payload).pipe(
-      tap(() =>
-        this.patchMock(id, {
-          status: 'مرفوض',
-          statusTone: 'danger',
-          rejectionReason: payload.reason
-        })
-      )
-    );
-  }
-
-  /** بيحدّث الـ mock بعد نجاح الـ endpoint عشان الجدول يعكس التغيير */
-  private patchMock(id: number, patch: Partial<WorkflowStatusRow>): void {
-    if (!this.useMockList) return;
-    this.mockRows = this.mockRows.map(r => (r.id === id ? { ...r, ...patch } : r));
+    return res?.data;
   }
 }
