@@ -564,3 +564,35 @@
 @media (prefers-reduced-motion: reduce) {
   .approval-card, .approval-action { transition: none; }
 }
+
+/* =========================================================
+   LOADING / ERROR / HIGHLIGHT  (جديد)
+========================================================= */
+.pa-state {
+  display: flex; flex-direction: column; align-items: center; gap: .6rem;
+  padding: 3rem 1rem; border: 1px dashed #cbd5e1; border-radius: 16px; background: #fff;
+  color: var(--pa-muted); text-align: center;
+  i { font-size: 1.6rem; color: var(--pa-teal); }
+  strong { color: var(--pa-ink); font-size: .9rem; }
+}
+
+.pa-alert {
+  display: flex; align-items: center; flex-wrap: wrap; gap: .6rem;
+  margin-bottom: 1rem; padding: .75rem 1rem;
+  border: 1px solid #f5c2c0; border-radius: 12px; background: var(--pa-red-soft); color: #7f2722;
+  font-size: .8rem;
+  i { color: var(--pa-red); }
+  span { flex: 1; min-width: 0; }
+}
+
+.pa-inline-warn {
+  display: flex; align-items: center; gap: .45rem; margin-top: .7rem; padding: .5rem .7rem;
+  border: 1px solid #f3dca2; border-radius: 9px; background: #fffbeb; color: #946200; font-size: .72rem;
+}
+
+/* عدد اللجان بشكل بارز */
+.approval-detail.highlight {
+  border-color: #cce7e9;
+  background: var(--pa-teal-soft);
+  strong { color: var(--pa-teal-dark); font-size: .95rem; }
+}
