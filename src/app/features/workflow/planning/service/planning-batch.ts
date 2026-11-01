@@ -75,11 +75,27 @@ export interface GovernorateDeliveryReadiness {
   blockingReasons: string[] | null;
 }
 
+export interface DeliveryOrderReadiness extends GovernorateDeliveryReadiness {
+  year: number;
+  roundId: number;
+  roundName: string;
+  educationalStageId: number;
+  educationalStageName: string;
+}
+
 export interface DeliveryOrdersGovernoratesQuery {
   year?: number;
   roundId?: number;
   educationalStageId?: number;
   onlyEligible?: boolean;
+}
+
+export interface CreateDeliveryOrderRequest {
+  year: number;
+  roundId: number;
+  educationalStageId: number;
+  governorateId: number;
+  deliveryDate: string;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -111,21 +127,32 @@ export class PlanningService {
   }
 
   getDeliveryOrdersGovernorates(query: DeliveryOrdersGovernoratesQuery): Observable<ApiResponse<GovernorateDeliveryReadiness[]>> {
-    let params = new HttpParams();
-    if (query.year != null && query.year > 0) {
-      params = params.set('Year', query.year.toString());
-    }
-    if (query.roundId != null && query.roundId > 0) {
-      params = params.set('RoundId', query.roundId.toString());
-    }
-    if (query.educationalStageId != null && query.educationalStageId > 0) {
-      params = params.set('EducationalStageId', query.educationalStageId.toString());
-    }
-    if (query.onlyEligible != null) {
-      params = params.set('OnlyEligible', String(query.onlyEligible));
-    }
-    return this.http.get<ApiResponse<GovernorateDeliveryReadiness[]>>(`${this.baseUrl}/delivery-orders/governorates`, { params });
+    // let params = new HttpParams();
+    // if (query.year != null && query.year > 0) {
+    //   params = params.set('Year', query.year.toString());
+    // }
+    // if (query.roundId != null && query.roundId > 0) {
+    //   params = params.set('RoundId', query.roundId.toString());
+    // }
+    // if (query.educationalStageId != null && query.educationalStageId > 0) {
+    //   params = params.set('EducationalStageId', query.educationalStageId.toString());
+    // }
+    // if (query.onlyEligible != null) {
+    //   params = params.set('OnlyEligible', String(query.onlyEligible));
+    // }
+    return this.http.get<ApiResponse<GovernorateDeliveryReadiness[]>>(`${this.baseUrl}/delivery-orders/governorates`);
   }
 
+  getDeliveryOrderReadiness(governorateId: number): Observable<ApiResponse<DeliveryOrderReadiness>> {
+    const params = new HttpParams().set('GovernorateId', governorateId.toString());
+    return this.http.get<ApiResponse<DeliveryOrderReadiness>>(
+      `${this.baseUrl}/delivery-orders/readiness`,
+      { params }
+    );
+  }
+
+  createDeliveryOrder(request: CreateDeliveryOrderRequest): Observable<ApiResponse<unknown>> {
+    return this.http.post<ApiResponse<unknown>>(`${this.baseUrl}/delivery-orders`, request);
+  }
 
 }

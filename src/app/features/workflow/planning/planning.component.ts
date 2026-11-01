@@ -20,6 +20,7 @@ import {
   PlanningBatch,
   BatchDetails,
   GovernorateDeliveryReadiness,
+  DeliveryOrderReadiness,
   DeliveryOrdersGovernoratesQuery
 } from './service/planning-batch';
 
@@ -29,6 +30,12 @@ interface SelectOption {
 }
 
 type StepState = 'done' | 'current' | 'pending' | 'rejected';
+
+function todayAsDateInput(): string {
+  const date = new Date();
+  const offset = date.getTimezoneOffset();
+  return new Date(date.getTime() - offset * 60_000).toISOString().slice(0, 10);
+}
 
 @Component({
   selector: 'app-planning',
@@ -99,7 +106,6 @@ export default class PlanningComponent implements OnInit {
   readonly searchSubject = signal<string | number>('all');
   readonly searchBatchQuery = signal('');
 
-  // Selection moved from warehouses into materials:
   private readonly selectedBatchIds = signal<Set<number>>(new Set<number>());
 
   readonly filteredBatches = computed(() => {
@@ -315,10 +321,100 @@ export default class PlanningComponent implements OnInit {
   readonly deliveryGovernorates = signal<GovernorateDeliveryReadiness[]>([]);
   readonly deliveryLoading = signal(false);
 
-  readonly deliveryYear = signal<number | null>(null);
   readonly deliveryRoundId = signal<string | number>('all');
-  readonly deliveryEducationalStageId = signal<string | number>('all');
   readonly deliveryEligibleFilter = signal<string>('all');
+  readonly createDeliveryYear = signal<number | null>(null);
+  readonly createDeliveryRoundId = signal<string | number>('all');
+  readonly createDeliveryEducationalStageId = signal<string | number>('all');
+  readonly deliveryDate = signal(todayAsDateInput());
+  readonly deliveryOrderDialogVisible = signal(false);
+  readonly pendingDeliveryGovernorate = signal<GovernorateDeliveryReadiness | null>(null);
+  readonly deliveryReadinessLoading = signal(false);
+  readonly deliveryReadinessError = signal('');
+  readonly deliveryCreateValidationError = signal('');
+  readonly creatingDeliveryFor = signal<number | null>(null);
+  readonly createdDeliveryOrders = signal<Record<number, boolean>>({});
+
+  // ---------- reasons (blocking reasons + failed-create errors) ----------
+  readonly deliveryErrors = signal<Record<number, string[]>>({});
+  readonly reasonsDialogVisible = signal(false);
+  readonly reasonsDialogGovernorate = signal<GovernorateDeliveryReadiness | null>(null);
+
+  readonly reasonsDialogList = computed(() => {
+    const gov = this.reasonsDialogGovernorate();
+    if (!gov) return [];
+    // read the signal so the list stays in sync with new errors
+    this.deliveryErrors();
+    return this.getReasons(gov);
+  });
+
+  /** blocking reasons from the API + errors from a failed create attempt */
+  getReasons(gov: GovernorateDeliveryReadiness): string[] {
+    const blocking = gov.blockingReasons ?? [];
+    const failed = this.deliveryErrors()[gov.governorateId] ?? [];
+    return [...new Set([...blocking, ...failed].filter(r => !!r?.trim()))];
+  }
+
+  /** an order was created in this session */
+  hasOrder(gov: GovernorateDeliveryReadiness): boolean {
+    return !!this.createdDeliveryOrders()[gov.governorateId];
+  }
+
+  /** error state = there are reasons and no successfully created order */
+  hasError(gov: GovernorateDeliveryReadiness): boolean {
+    return !this.hasOrder(gov) && this.getReasons(gov).length > 0;
+  }
+
+  openReasonsDialog(gov: GovernorateDeliveryReadiness): void {
+    this.reasonsDialogGovernorate.set(gov);
+    this.reasonsDialogVisible.set(true);
+  }
+
+  closeReasonsDialog(): void {
+    this.reasonsDialogVisible.set(false);
+    this.reasonsDialogGovernorate.set(null);
+  }
+
+  /**
+   * Handles every common error shape:
+   * string, {message}, {detail}, {errors: []}, ASP.NET {errors: {Field: []}}, {title}
+   */
+  private extractErrorMessages(error: any): string[] {
+    const body = error?.error;
+    const out: string[] = [];
+
+    const push = (v: unknown) => {
+      if (typeof v === 'string' && v.trim()) out.push(v.trim());
+    };
+
+    if (typeof body === 'string') push(body);
+
+    if (body && typeof body === 'object') {
+      push(body.message);
+      push(body.detail);
+      const errs = body.errors;
+      if (Array.isArray(errs)) {
+        errs.forEach((e: any) => push(typeof e === 'string' ? e : e?.message ?? e?.description));
+      } else if (errs && typeof errs === 'object') {
+        Object.values(errs).forEach((v: any) => (Array.isArray(v) ? v : [v]).forEach(push));
+      }
+      if (!out.length) push(body.title);
+    }
+
+    if (!out.length) {
+      if (error?.status === 0) push('تعذر الاتصال بالخادم، تحقق من الشبكة.');
+      else if (error?.status === 403) push('ليست لديك صلاحية إنشاء أمر التوزيع.');
+      else if (error?.status === 404) push('المحافظة أو البيانات المطلوبة غير موجودة.');
+      else if (error?.status >= 500) push('حدث خطأ في الخادم، حاول مرة أخرى لاحقًا.');
+      else push(error?.message || 'حدث خطأ أثناء إنشاء أمر التوزيع');
+    }
+    return [...new Set(out)];
+  }
+
+  // ---------- delivery pagination ----------
+  readonly deliveryPageSize = signal(6);
+  readonly deliveryCurrentPage = signal(1);
+  readonly deliveryShowAll = computed(() => this.deliveryPageSize() === 0);
 
   readonly totalGovernoratesCount = computed(() => this.deliveryGovernorates().length);
   readonly eligibleGovernoratesCount = computed(
@@ -349,6 +445,176 @@ export default class PlanningComponent implements OnInit {
     }
     return list;
   });
+
+  readonly deliveryTotalPages = computed(() =>
+    this.deliveryShowAll()
+      ? 1
+      : Math.max(1, Math.ceil(this.filteredDeliveryGovernorates().length / this.deliveryPageSize()))
+  );
+  readonly paginatedDeliveryGovernorates = computed(() => {
+    if (this.deliveryShowAll()) return this.filteredDeliveryGovernorates();
+    const page = Math.min(this.deliveryCurrentPage(), this.deliveryTotalPages());
+    const start = (page - 1) * this.deliveryPageSize();
+    return this.filteredDeliveryGovernorates().slice(start, start + this.deliveryPageSize());
+  });
+  readonly deliveryPaginationStart = computed(() =>
+    this.filteredDeliveryGovernorates().length === 0
+      ? 0
+      : this.deliveryShowAll() ? 1 : (this.deliveryCurrentPage() - 1) * this.deliveryPageSize() + 1
+  );
+  readonly deliveryPaginationEnd = computed(() =>
+    this.deliveryShowAll()
+      ? this.filteredDeliveryGovernorates().length
+      : Math.min(this.deliveryCurrentPage() * this.deliveryPageSize(), this.filteredDeliveryGovernorates().length)
+  );
+  readonly deliveryPaginationPages = computed<(number | 'dots')[]>(() => {
+    const total = this.deliveryTotalPages();
+    const current = Math.min(this.deliveryCurrentPage(), total);
+    const wanted = new Set<number>([1, total, current - 1, current, current + 1]);
+    const sorted = [...wanted].filter(page => page >= 1 && page <= total).sort((a, b) => a - b);
+    const pages: (number | 'dots')[] = [];
+    sorted.forEach((page, index) => {
+      if (index > 0 && page - sorted[index - 1] > 1) pages.push('dots');
+      pages.push(page);
+    });
+    return pages;
+  });
+
+  resetDeliveryPage(): void {
+    this.deliveryCurrentPage.set(1);
+  }
+
+  goToDeliveryPage(page: number): void {
+    if (page >= 1 && page <= this.deliveryTotalPages()) {
+      this.deliveryCurrentPage.set(page);
+    }
+  }
+
+  openDeliveryOrderDialog(governorate: GovernorateDeliveryReadiness): void {
+    if (!governorate.canCreate || this.creatingDeliveryFor() !== null) return;
+    this.pendingDeliveryGovernorate.set(governorate);
+    this.createDeliveryYear.set(null);
+    this.createDeliveryRoundId.set('all');
+    this.createDeliveryEducationalStageId.set('all');
+    this.deliveryDate.set(todayAsDateInput());
+    this.deliveryReadinessError.set('');
+    this.deliveryCreateValidationError.set('');
+    this.deliveryOrderDialogVisible.set(true);
+    this.loadDeliveryOrderReadiness(governorate.governorateId);
+  }
+
+  loadDeliveryOrderReadiness(governorateId: number): void {
+    this.deliveryReadinessLoading.set(true);
+    this.deliveryReadinessError.set('');
+
+    this.planningService.getDeliveryOrderReadiness(governorateId).subscribe({
+      next: response => {
+        const envelope = response as any;
+        const readiness = (envelope?.data?.data ?? envelope?.data) as DeliveryOrderReadiness | null;
+        this.deliveryReadinessLoading.set(false);
+
+        if (!readiness) {
+          this.deliveryReadinessError.set('لم تصل بيانات الجاهزية لهذه المحافظة. أعد المحاولة.');
+          return;
+        }
+
+        this.pendingDeliveryGovernorate.set(readiness);
+        this.createDeliveryYear.set(readiness.year ?? null);
+        this.createDeliveryRoundId.set(readiness.roundId ?? 'all');
+        this.createDeliveryEducationalStageId.set(readiness.educationalStageId ?? 'all');
+      },
+      error: error => {
+        this.deliveryReadinessLoading.set(false);
+        this.deliveryReadinessError.set(
+          this.extractErrorMessages(error)[0] || 'تعذر تحميل بيانات الجاهزية. أعد المحاولة.'
+        );
+      }
+    });
+  }
+
+  closeDeliveryOrderDialog(): void {
+    if (this.creatingDeliveryFor() !== null) return;
+    this.deliveryOrderDialogVisible.set(false);
+    this.pendingDeliveryGovernorate.set(null);
+  }
+
+  clearDeliveryCreateValidationError(): void {
+    this.deliveryCreateValidationError.set('');
+  }
+
+  createDeliveryOrder(): void {
+    const governorate = this.pendingDeliveryGovernorate();
+    const year = this.createDeliveryYear();
+    const roundId = Number(this.createDeliveryRoundId());
+    const educationalStageId = Number(this.createDeliveryEducationalStageId());
+
+    if (!governorate?.canCreate || this.creatingDeliveryFor() !== null) return;
+    if (!year || year <= 0 || !roundId || roundId <= 0 || !educationalStageId || educationalStageId <= 0 || !this.deliveryDate()) {
+      this.deliveryCreateValidationError.set('أكمل السنة والدور والمرحلة التعليمية وتاريخ التوريد قبل إنشاء الأمر.');
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'بيانات مطلوبة',
+        detail: this.deliveryCreateValidationError(),
+        life: 3500
+      });
+      return;
+    }
+
+    this.deliveryCreateValidationError.set('');
+
+    const governorateId = governorate.governorateId;
+    this.creatingDeliveryFor.set(governorateId);
+    this.planningService.createDeliveryOrder({
+      year,
+      roundId,
+      educationalStageId,
+      governorateId,
+      deliveryDate: this.deliveryDate()
+    }).subscribe({
+      next: response => {
+        this.creatingDeliveryFor.set(null);
+        this.deliveryOrderDialogVisible.set(false);
+        this.pendingDeliveryGovernorate.set(null);
+
+        // clear old errors for this governorate
+        this.deliveryErrors.update(errors => {
+          const { [governorateId]: _removed, ...rest } = errors;
+          return rest;
+        });
+
+        if (response?.success) {
+          this.createdDeliveryOrders.update(orders => ({
+            ...orders,
+            [governorateId]: true
+          }));
+        }
+        this.messageService.add({
+          severity: 'success',
+          summary: 'تم إنشاء أمر التوزيع',
+          detail: response?.message || 'تم إنشاء أمر التوزيع بنجاح',
+          life: 3500
+        });
+        this.loadDeliveryGovernorates();
+      },
+      error: error => {
+        this.creatingDeliveryFor.set(null);
+        const reasons = this.extractErrorMessages(error);
+        this.deliveryErrors.update(errors => ({ ...errors, [governorateId]: reasons }));
+        this.createdDeliveryOrders.update(orders => {
+          const { [governorateId]: _removed, ...rest } = orders;
+          return rest;
+        });
+        this.deliveryOrderDialogVisible.set(false);
+        this.pendingDeliveryGovernorate.set(null);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'تعذر إنشاء أمر التوزيع',
+          detail: reasons[0],
+          life: 4000
+        });
+      }
+    });
+  }
 
   // ==========================================
   // BATCH DETAILS DIALOG
@@ -510,12 +776,6 @@ export default class PlanningComponent implements OnInit {
           this.deliveryRoundId.set(firstRound.value);
         }
 
-        // Auto-select first real stage for delivery orders if not selected
-        const firstStage = stOpts.find(s => s.value !== 'all');
-        if (firstStage && (this.deliveryEducationalStageId() === 'all' || !this.deliveryEducationalStageId())) {
-          this.deliveryEducationalStageId.set(firstStage.value);
-        }
-
         this.lookupsLoading.set(false);
 
         // If delivery orders tab is open, load delivery governorates
@@ -584,19 +844,16 @@ export default class PlanningComponent implements OnInit {
     if (!validRoundId) {
       // No round chosen yet, do not trigger 400 error
       this.deliveryGovernorates.set([]);
+      this.resetDeliveryPage();
       return;
     }
 
     this.deliveryLoading.set(true);
 
-    const yearVal = this.deliveryYear();
-    const stageVal = this.deliveryEducationalStageId();
     const eligibleVal = this.deliveryEligibleFilter();
 
     const query: DeliveryOrdersGovernoratesQuery = {
-      year: yearVal != null && yearVal > 0 ? yearVal : undefined,
       roundId: validRoundId,
-      educationalStageId: stageVal !== 'all' && Number(stageVal) > 0 ? Number(stageVal) : undefined,
       onlyEligible: eligibleVal === 'true' ? true : eligibleVal === 'false' ? false : undefined
     };
 
@@ -604,6 +861,7 @@ export default class PlanningComponent implements OnInit {
       next: res => {
         const list = this.extractLookupArray(res);
         this.deliveryGovernorates.set(list);
+        this.resetDeliveryPage();
         this.deliveryLoading.set(false);
       },
       error: err => {
@@ -613,7 +871,7 @@ export default class PlanningComponent implements OnInit {
         this.messageService.add({
           severity: 'error',
           summary: 'خطأ',
-          detail: err.error?.message || 'فشل تحميل بيانات أوامر التوزيع بالمحافظات',
+          detail: this.extractErrorMessages(err)[0] || 'فشل تحميل بيانات أوامر التوزيع بالمحافظات',
           life: 3000
         });
       }

@@ -4,6 +4,8 @@
    planning.component.scss  (COMPLETE FILE - replace yours with this one)
    1. search section      2. active filters      3. cards
    4. pagination          5. rejection-reason dialog
+   6. view tabs           7. delivery orders / governorates
+   8. reasons button + dialog
 ========================================================= */
 
 :host { display: block; direction: rtl; }
@@ -417,7 +419,8 @@ $red:    #dc2626;
    written as ":host .x" so it wins over the shared styles
 ========================================================= */
 :host .printing-pagination {
-  display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap;
+  display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
   gap: 14px;
   margin-top: 18px; padding: 12px 16px;
   background: #fff;
@@ -428,6 +431,7 @@ $red:    #dc2626;
 
 :host .pagination-info {
   display: flex; align-items: center; gap: 10px;
+  grid-column: 1; justify-self: start; min-width: 0;
   color: #64748b; font-size: 13px;
   strong { color: #172033; font-weight: 800; }
 }
@@ -439,6 +443,7 @@ $red:    #dc2626;
 
 :host .pagination-size {
   display: flex; align-items: center; gap: 10px;
+  grid-column: 2; justify-self: center;
   color: #64748b; font-size: 13px;
 }
 
@@ -452,7 +457,10 @@ $red:    #dc2626;
   i { position: absolute; right: 13px; top: 50%; transform: translateY(-50%); color: #94a3b8; z-index: 1; }
   p-select { width: 100%; padding-right: 29px; min-height: 42px; border-radius: 10px; }
 }
-:host .pagination-controls { display: flex; align-items: center; gap: 6px; }
+:host .pagination-controls {
+  display: flex; align-items: center; gap: 6px;
+  grid-column: 3; justify-self: end;
+}
 
 :host .pagination-arrow,
 :host .pagination-page {
@@ -482,7 +490,10 @@ $red:    #dc2626;
 }
 
 @media (max-width: 760px) {
-  :host .printing-pagination { justify-content: center; }
+  :host .printing-pagination { grid-template-columns: minmax(0, 1fr); justify-items: center; }
+  :host .pagination-info,
+  :host .pagination-size,
+  :host .pagination-controls { grid-column: 1; justify-self: center; }
   :host .pagination-info { width: 100%; justify-content: center; }
 }
 
@@ -643,11 +654,6 @@ $red:    #dc2626;
     grid-template-columns: minmax(0, 1fr);
   }
 }
-/* =========================================================
-   APPEND THIS BLOCK TO THE END of your planning.component.scss.
-   It replaces the previous "planning-sources" block: if you already
-   appended that one, delete it first, then paste this one.
-========================================================= */
 
 /* ---------- filters: 5 fields that adapt to the width ---------- */
 .planning-search-content .fields-grid.cols-auto {
@@ -747,6 +753,62 @@ $red:    #dc2626;
   background: #f0fdf4 !important;
 }
 
+.delivery-search-card .planning-search-content { min-width: 0; }
+
+.delivery-filter-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 320px);
+  gap: 14px 12px;
+
+  > .field { min-width: 0; }
+
+  input,
+  .select-wrapper,
+  p-select { width: 100%; min-width: 0; }
+}
+
+:host ::ng-deep .delivery-filter-grid .p-select {
+  width: 100%;
+  min-width: 0;
+}
+
+@media (max-width: 1100px) {
+  .delivery-search-card .planning-image {
+    width: 150px;
+    min-width: 150px;
+  }
+
+}
+
+@media (max-width: 700px) {
+  .delivery-search-card { min-height: 0; }
+  .delivery-search-card .planning-image { display: none; }
+  .delivery-search-card .planning-search-content { padding: 1rem; }
+
+  .delivery-search-card .planning-search-title {
+    align-items: flex-start;
+    gap: 10px;
+
+    .planning-search-text { flex-basis: calc(100% - 52px); }
+
+    .action-btn-search {
+      width: 100%;
+      justify-content: center;
+    }
+  }
+
+  .delivery-filter-grid { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+
+  .delivery-filter-grid .field label {
+    display: block;
+    margin-bottom: 6px;
+    line-height: 1.5;
+  }
+
+  .delivery-filter-grid input,
+  :host ::ng-deep .delivery-filter-grid .p-select { min-height: 44px; }
+}
+
 .action-btn-search {
   display: inline-flex;
   align-items: center;
@@ -769,7 +831,22 @@ $red:    #dc2626;
     cursor: not-allowed;
   }
 }
-
+.action-btn-create{
+  flex: 1 1 100%;
+    width: 100%;
+    min-height: 44px;
+    border-radius: 12px;
+background: #1565c0;
+  color: #fff;
+      font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+    cursor: pointer;
+    transition: all .2s;
+    &:hover:not(:disabled) {
+    background: #0d47a1;
+  }
+}
 /* KPI Summary Strip */
 .kpi-strip {
   display: grid;
@@ -863,6 +940,201 @@ $red:    #dc2626;
     border-color: #fed7aa;
     &:hover { border-color: #fb923c; }
   }
+}
+
+/* create and reasons actions */
+.gov-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: auto;
+}
+
+/* "view reasons" button: only rendered when there are reasons */
+.gov-reasons-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 38px;
+  padding: 8px 14px;
+  border: 1px solid rgba(180, 35, 24, .3);
+  border-radius: 8px;
+  background: #fff;
+  color: #b42318;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background .15s;
+
+  &:hover { background: #fef3f2; }
+  &:focus-visible { outline: 2px solid #b42318; outline-offset: 2px; }
+}
+
+/* red alert preview on the card (error case) */
+.gov-error-alert {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 1px solid rgba(180, 35, 24, .22);
+  border-radius: 12px;
+  background: #fef3f2;
+  color: #b42318;
+
+  i { font-size: 16px; flex-shrink: 0; }
+
+  p {
+    margin: 0;
+    font-size: 13px;
+    line-height: 1.7;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+}
+
+/* full-width outlined button, like the rejection card */
+.gov-reasons-btn.full {
+  flex: 1 1 100%;
+  width: 100%;
+  min-height: 44px;
+  border-radius: 12px;
+  border-color: rgba(180, 35, 24, .25);
+  color: #b42318;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+/* reasons dialog */
+.reasons-dialog { display: grid; gap: 14px; padding-top: 6px; }
+
+.reasons-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+
+  li {
+    display: flex;
+    align-items: flex-start;
+    gap: 9px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 1px solid rgba(180, 35, 24, .18);
+    background: #fffafa;
+    color: #5b2a26;
+    font-size: 13px;
+    line-height: 1.7;
+
+    i { color: #b42318; margin-top: 4px; flex-shrink: 0; }
+
+    &.reasons-empty {
+      justify-content: center;
+      border-color: #e3e8f2;
+      background: #f8fafc;
+      color: #64748b;
+    }
+  }
+}
+
+.delivery-order-form {
+  display: grid;
+  gap: 18px;
+  padding-top: 6px;
+}
+
+.delivery-order-governorate {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 12px 14px;
+  border: 1px solid #d6e6fb;
+  border-radius: 8px;
+  background: #f5f9ff;
+  color: #0b2e4f;
+  font-weight: 700;
+
+  i { color: #1565c0; }
+}
+
+.delivery-readiness-state,
+.delivery-readiness-error {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+}
+
+.delivery-readiness-state {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.delivery-readiness-error {
+  justify-content: space-between;
+  flex-wrap: wrap;
+  background: #fff1f0;
+  color: #b42318;
+
+  button {
+    border: 0;
+    background: transparent;
+    color: #0b5cab;
+    font: inherit;
+    font-weight: 700;
+    text-decoration: underline;
+    cursor: pointer;
+  }
+}
+
+.delivery-create-validation-error {
+  justify-content: flex-start;
+  border: 1px solid #f3b4ad;
+
+  i { flex: 0 0 auto; }
+}
+
+.delivery-order-form .field { display: grid; gap: 7px; }
+.delivery-order-form .field label { color: #475569; font-size: 13px; font-weight: 700; }
+.delivery-order-form input { width: 100%; min-height: 44px; }
+
+.delivery-order-dialog-actions {
+  display: flex;
+  justify-content: flex-start;
+  gap: 10px;
+  flex-wrap: wrap;
+
+  .action-btn-search { justify-content: center; }
+}
+
+.delivery-order-cancel {
+  min-height: 40px;
+  padding: 8px 16px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #fff;
+  color: #475569;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+
+  &:disabled { opacity: .55; cursor: not-allowed; }
+}
+
+.delivery-pagination { width: 100%; }
+
+@media (max-width: 760px) {
+  .gov-actions { width: 100%; }
+  .gov-actions > button { flex: 1 1 100%; }
 }
 
 .gov-head {
@@ -975,7 +1247,7 @@ $red:    #dc2626;
   }
 }
 
-/* Blocking reasons */
+/* Blocking reasons (inside the create dialog) */
 .blocking-reasons-box {
   padding: 10px 12px;
   border-radius: 10px;

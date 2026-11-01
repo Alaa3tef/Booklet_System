@@ -78,7 +78,6 @@
             </div>
 
             <div class="fields-grid cols-3">
-              <!-- Governorate -->
               <div class="field">
                 <label for="governorate">المحافظة</label>
                 <div class="select-wrapper">
@@ -98,7 +97,6 @@
                 </div>
               </div>
 
-              <!-- Subject -->
               <div class="field">
                 <label for="subject">المادة</label>
                 <div class="select-wrapper">
@@ -118,7 +116,6 @@
                 </div>
               </div>
 
-              <!-- Search query in batch name / id -->
               <div class="field committee-search-field">
                 <label for="batchSearch">بحث سريع</label>
                 <div class="committee-input-wrapper">
@@ -160,7 +157,6 @@
                     </button>
                   </span>
                 }
-                <!-- <button type="button" class="af-reset" (click)="clearFilters()">مسح الكل</button> -->
               </div>
             }
           </div>
@@ -172,7 +168,6 @@
         <div class="table-header">
           <div class="header-right">
             <h4>الدفعات الجاهزة للاعتماد</h4>
-            <!-- Select All Checkbox moved from warehouses to materials -->
             <label class="select-all-materials">
               <input
                 type="checkbox"
@@ -185,22 +180,6 @@
             </label>
           </div>
 
-          <div class="header-tools">
-            <div class="page-size-box">
-              <span>عدد البطاقات</span>
-              <p-select
-                [options]="pageSizeOptions"
-                optionLabel="label"
-                optionValue="value"
-                [ngModel]="pageSize()"
-                (ngModelChange)="pageSize.set($event); onPageSizeChange()"
-                appendTo="body"
-                styleClass="pagination-size-select"
-              />
-            </div>
-
-            <span class="results-count">{{ filteredBatches().length }} دفعة</span>
-          </div>
         </div>
 
         @if (batchesLoading()) {
@@ -306,30 +285,44 @@
           </div>
 
           <!-- Pagination -->
-          @if (!showAll() && totalPages() > 1) {
-            <nav class="pagination" aria-label="تنقل الصفحات">
-              <span class="page-info">
-                عرض {{ paginationStart() }} - {{ paginationEnd() }} من {{ filteredBatches().length }}
-              </span>
+          @if (filteredBatches().length > 0) {
+            <nav class="printing-pagination" aria-label="تنقل الصفحات" dir="rtl">
+              <div class="pagination-info">
+                <i class="pi pi-list pagination-info-icon" aria-hidden="true"></i>
+                <span>عرض <strong>{{ paginationStart() }} - {{ paginationEnd() }}</strong> من <strong>{{ filteredBatches().length }}</strong> دفعة</span>
+              </div>
 
-              <div class="pages-wrapper">
+              <div class="pagination-size">
+                <span>عدد البطاقات</span>
+                <p-select
+                  [options]="pageSizeOptions"
+                  optionLabel="label"
+                  optionValue="value"
+                  [ngModel]="pageSize()"
+                  (ngModelChange)="pageSize.set($event); onPageSizeChange()"
+                  appendTo="body"
+                  styleClass="pagination-size-select"
+                />
+              </div>
+
+              @if (!showAll() && totalPages() > 1) {
+              <div class="pagination-controls">
                 <button
                   type="button"
-                  class="page-btn nav-btn"
+                  class="pagination-arrow"
                   [disabled]="currentPage() === 1"
                   (click)="previousPage()"
                   aria-label="الصفحة السابقة">
                   <i class="pi pi-chevron-right"></i>
-                  <span>السابق</span>
                 </button>
 
                 @for (p of paginationPages(); track $index) {
                   @if (p === 'dots') {
-                    <span class="dots" aria-hidden="true">...</span>
+                    <span class="pagination-dots" aria-hidden="true">...</span>
                   } @else {
                     <button
                       type="button"
-                      class="page-btn num-btn"
+                      class="pagination-page"
                       [class.active]="p === currentPage()"
                       [attr.aria-current]="p === currentPage() ? 'page' : null"
                       (click)="goToPage(p)">
@@ -340,20 +333,20 @@
 
                 <button
                   type="button"
-                  class="page-btn nav-btn"
+                  class="pagination-arrow"
                   [disabled]="currentPage() === totalPages()"
                   (click)="nextPage()"
                   aria-label="الصفحة التالية">
-                  <span>التالي</span>
                   <i class="pi pi-chevron-left"></i>
                 </button>
               </div>
+              }
             </nav>
           }
         }
       </div>
 
-      <!-- FLOATING SELECTION BAR FOR MATERIALS (MOVED FROM WAREHOUSES) -->
+      <!-- FLOATING SELECTION BAR FOR MATERIALS -->
       @if (selectedCount() > 0) {
         <div class="assign-bar" role="region" aria-live="polite">
           <div class="assign-bar-info">
@@ -369,7 +362,7 @@
               [disabled]="approvingBatches()"
               (click)="approveSelectedBatches()">
               <i class="pi" [class.pi-spin]="approvingBatches()" [class.pi-send]="!approvingBatches()" [class.pi-spinner]="approvingBatches()"></i>
-              <span>{{ approvingBatches() ? 'جارٍ الاعتماد...' : 'اعتماد وإرسال لما قبل الجودة' }}</span>
+              <span>{{ approvingBatches() ? 'جارٍ الاعتماد...' : 'اعتماد وإرسال لما قبل الطباعة' }}</span>
             </button>
 
             <button type="button" class="bar-btn ghost" (click)="toggleAll()">
@@ -393,8 +386,7 @@
       =========================================== -->
       <div class="delivery-orders-view">
 
-        <!-- SEARCH / FILTER CARD FOR DELIVERY ORDERS -->
-        <div class="planning-search-card delivery-search-card">
+        <!-- <div class="planning-search-card delivery-search-card">
           <div class="planning-image delivery-hero-img">
             <img src="assets/images/planning.png" alt="أوامر التوزيع" />
           </div>
@@ -417,69 +409,8 @@
               </button>
             </div>
 
-            <!-- Parameters Grid (Year, RoundId, EducationalStageId, OnlyEligible) -->
-            <div class="fields-grid cols-4">
+            <div class="fields-grid delivery-filter-grid">
 
-              <!-- Year -->
-              <div class="field">
-                <label for="deliveryYear">السنة (Year)</label>
-                <div class="select-wrapper">
-                  <i class="pi pi-calendar"></i>
-                  <input
-                    pInputText
-                    id="deliveryYear"
-                    [ngModel]="deliveryYear()"
-                    (ngModelChange)="deliveryYear.set($event)"
-                    (change)="loadDeliveryGovernorates()"
-                    type="number"
-                    min="1"
-                    step="1"
-                    class="w-full"
-                  />
-                </div>
-              </div>
-
-              <!-- RoundId -->
-              <div class="field">
-                <label for="deliveryRound">الدور (RoundId)</label>
-                <div class="select-wrapper">
-                  <i class="pi pi-clock"></i>
-                  <p-select
-                    inputId="deliveryRound"
-                    [options]="rounds()"
-                    [ngModel]="deliveryRoundId()"
-                    (ngModelChange)="deliveryRoundId.set($event); loadDeliveryGovernorates()"
-                    optionLabel="label"
-                    optionValue="value"
-                    styleClass="w-full"
-                    appendTo="body"
-                    [loading]="lookupsLoading()"
-                    placeholder="اختر الدور"
-                  />
-                </div>
-              </div>
-
-              <!-- EducationalStageId -->
-              <div class="field">
-                <label for="deliveryStage">المرحلة التعليمية (EducationalStageId)</label>
-                <div class="select-wrapper">
-                  <i class="pi pi-graduation-cap"></i>
-                  <p-select
-                    inputId="deliveryStage"
-                    [options]="educationalStages()"
-                    [ngModel]="deliveryEducationalStageId()"
-                    (ngModelChange)="deliveryEducationalStageId.set($event); loadDeliveryGovernorates()"
-                    optionLabel="label"
-                    optionValue="value"
-                    styleClass="w-full"
-                    appendTo="body"
-                    [loading]="lookupsLoading()"
-                    placeholder="اختر المرحلة"
-                  />
-                </div>
-              </div>
-
-              <!-- OnlyEligible -->
               <div class="field">
                 <label for="deliveryEligible">المؤهلة فقط (OnlyEligible)</label>
                 <div class="select-wrapper">
@@ -488,7 +419,7 @@
                     inputId="deliveryEligible"
                     [options]="eligibleOptions"
                     [ngModel]="deliveryEligibleFilter()"
-                    (ngModelChange)="deliveryEligibleFilter.set($event); loadDeliveryGovernorates()"
+                    (ngModelChange)="deliveryEligibleFilter.set($event); resetDeliveryPage(); loadDeliveryGovernorates()"
                     optionLabel="label"
                     optionValue="value"
                     styleClass="w-full"
@@ -499,7 +430,7 @@
 
             </div>
           </div>
-        </div>
+        </div> -->
 
         <!-- KPI METRICS STRIP -->
         <div class="kpi-strip">
@@ -558,7 +489,7 @@
             </div>
           } @else {
             <div class="gov-grid">
-              @for (gov of filteredDeliveryGovernorates(); track gov.governorateId) {
+              @for (gov of paginatedDeliveryGovernorates(); track gov.governorateId) {
                 <div class="gov-card" [class.eligible]="gov.canCreate" [class.blocked]="!gov.canCreate">
 
                   <!-- Header -->
@@ -625,20 +556,38 @@
                     </div>
                   </div>
 
-                  <!-- Blocking Reasons Alert (if any) -->
-                  @if (gov.blockingReasons && gov.blockingReasons.length > 0) {
-                    <div class="blocking-reasons-box">
-                      <div class="blocking-head">
-                        <i class="pi pi-exclamation-circle"></i>
-                        <span>موانع إنشاء أمر التوزيع:</span>
-                      </div>
-                      <ul>
-                        @for (reason of gov.blockingReasons; track $index) {
-                          <li>{{ reason }}</li>
-                        }
-                      </ul>
+                  <!-- ERROR CASE: red alert preview -->
+                  @if (hasError(gov)) {
+                    <div class="gov-error-alert" role="alert">
+                      <i class="pi pi-exclamation-circle" aria-hidden="true"></i>
+                      <p>{{ getReasons(gov)[0] }}</p>
                     </div>
                   }
+
+                  <footer class="gov-actions">
+                    <!-- create button (ready to create, or retry after a failed attempt) -->
+                    @if (gov.canCreate && !hasOrder(gov)) {
+                      <button
+                        type="button"
+                        class="action-btn-create"
+                        [disabled]="creatingDeliveryFor() !== null"
+                        (click)="openDeliveryOrderDialog(gov)">
+                        <i class="pi pi-plus"></i>
+                        <span>إنشاء أمر توزيع</span>
+                      </button>
+                    }
+
+                    <!-- ERROR CASE: full-width view reasons button -->
+                    @if (hasError(gov)) {
+                      <button
+                        type="button"
+                        class="gov-reasons-btn full"
+                        (click)="openReasonsDialog(gov)">
+                        <span>عرض الأسباب</span>
+                        <i class="pi pi-eye"></i>
+                      </button>
+                    }
+                  </footer>
 
                 </div>
               } @empty {
@@ -649,6 +598,51 @@
                 </div>
               }
             </div>
+
+            @if (filteredDeliveryGovernorates().length > 0) {
+              <nav class="printing-pagination delivery-pagination" aria-label="تنقل صفحات المحافظات" dir="rtl">
+                <div class="pagination-info">
+                  <i class="pi pi-list pagination-info-icon" aria-hidden="true"></i>
+                  <span>عرض <strong>{{ deliveryPaginationStart() }} - {{ deliveryPaginationEnd() }}</strong> من <strong>{{ filteredDeliveryGovernorates().length }}</strong> محافظة</span>
+                </div>
+
+                <div class="pagination-size">
+                  <span>عدد المحافظات</span>
+                  <p-select
+                    [options]="pageSizeOptions"
+                    optionLabel="label"
+                    optionValue="value"
+                    [ngModel]="deliveryPageSize()"
+                    (ngModelChange)="deliveryPageSize.set($event); resetDeliveryPage()"
+                    appendTo="body"
+                    styleClass="pagination-size-select"
+                  />
+                </div>
+
+                @if (!deliveryShowAll() && deliveryTotalPages() > 1) {
+                  <div class="pagination-controls">
+                    <button type="button" class="pagination-arrow" [disabled]="deliveryCurrentPage() === 1" (click)="goToDeliveryPage(deliveryCurrentPage() - 1)" aria-label="الصفحة السابقة">
+                      <i class="pi pi-chevron-right"></i>
+                    </button>
+                    @for (page of deliveryPaginationPages(); track $index) {
+                      @if (page === 'dots') {
+                        <span class="pagination-dots" aria-hidden="true">...</span>
+                      } @else {
+                        <button
+                          type="button"
+                          class="pagination-page"
+                          [class.active]="page === deliveryCurrentPage()"
+                          [attr.aria-current]="page === deliveryCurrentPage() ? 'page' : null"
+                          (click)="goToDeliveryPage(page)">{{ page }}</button>
+                      }
+                    }
+                    <button type="button" class="pagination-arrow" [disabled]="deliveryCurrentPage() === deliveryTotalPages()" (click)="goToDeliveryPage(deliveryCurrentPage() + 1)" aria-label="الصفحة التالية">
+                      <i class="pi pi-chevron-left"></i>
+                    </button>
+                  </div>
+                }
+              </nav>
+            }
           }
         </div>
 
@@ -668,7 +662,9 @@
   [modal]="true"
   [draggable]="false"
   [resizable]="false"
-  [style]="{ width: '90vw', maxWidth: '1000px' }"
+  appendTo="body"
+  [baseZIndex]="3000"
+  [style]="{ width: 'min(92vw, 1000px)', maxWidth: 'calc(100vw - 24px)' }"
   header="تفاصيل الدفعة واللجان"
   (onHide)="closeBatchDetails()">
 
@@ -770,6 +766,183 @@
 
   <ng-template pTemplate="footer">
     <button pButton type="button" label="إغلاق" class="p-button-secondary" (click)="closeBatchDetails()"></button>
+  </ng-template>
+
+</p-dialog>
+
+<!-- ==========================================
+     CREATE DELIVERY ORDER DIALOG
+=========================================== -->
+<p-dialog
+  [visible]="deliveryOrderDialogVisible()"
+  (visibleChange)="deliveryOrderDialogVisible.set($event)"
+  [modal]="true"
+  [draggable]="false"
+  [resizable]="false"
+  appendTo="body"
+  [baseZIndex]="3000"
+  [style]="{ width: 'min(92vw, 460px)' }"
+  header="إنشاء أمر توزيع"
+  (onHide)="closeDeliveryOrderDialog()">
+
+  @if (pendingDeliveryGovernorate(); as governorate) {
+    <div class="delivery-order-form" dir="rtl">
+      <div class="delivery-order-governorate">
+        <i class="pi pi-map-marker"></i>
+        <span>{{ governorate.governorateName || 'محافظة #' + governorate.governorateId }}</span>
+      </div>
+
+      @if (deliveryReadinessLoading()) {
+        <div class="delivery-readiness-state" role="status">
+          <i class="pi pi-spin pi-spinner"></i>
+          <span>جاري تحميل السنة والدور والمرحلة التعليمية...</span>
+        </div>
+      }
+
+      @if (deliveryReadinessError()) {
+        <div class="delivery-readiness-error" role="alert">
+          <span>{{ deliveryReadinessError() }}</span>
+          <button type="button" (click)="loadDeliveryOrderReadiness(governorate.governorateId)">إعادة المحاولة</button>
+        </div>
+      }
+
+      @if (deliveryCreateValidationError()) {
+        <div class="delivery-readiness-error delivery-create-validation-error" role="alert" aria-live="assertive">
+          <i class="pi pi-exclamation-triangle" aria-hidden="true"></i>
+          <span>{{ deliveryCreateValidationError() }}</span>
+        </div>
+      }
+
+      @if (!deliveryReadinessLoading() && !governorate.canCreate && governorate.blockingReasons?.length) {
+        <div class="blocking-reasons-box" role="alert">
+          <ul>
+            @for (reason of governorate.blockingReasons; track $index) {
+              <li>{{ reason }}</li>
+            }
+          </ul>
+        </div>
+      }
+
+      <div class="field">
+        <label for="createDeliveryYear">السنة (Year)</label>
+        <input
+          pInputText
+          id="createDeliveryYear"
+          type="number"
+          min="1"
+          step="1"
+          [ngModel]="createDeliveryYear()"
+          (ngModelChange)="createDeliveryYear.set($event); clearDeliveryCreateValidationError()"
+          class="w-full"
+          required
+        />
+      </div>
+
+      <div class="field">
+        <label for="createDeliveryRound">الدور (RoundId)</label>
+        <p-select
+          inputId="createDeliveryRound"
+          [options]="rounds()"
+          [ngModel]="createDeliveryRoundId()"
+          (ngModelChange)="createDeliveryRoundId.set($event); clearDeliveryCreateValidationError()"
+          optionLabel="label"
+          optionValue="value"
+          styleClass="w-full"
+          appendTo="body"
+          [loading]="lookupsLoading()"
+          [disabled]="deliveryReadinessLoading()"
+          placeholder="اختر الدور"
+          readonly="true"
+        />
+      </div>
+
+      <div class="field">
+        <label for="createDeliveryStage">المرحلة التعليمية (EducationalStageId)</label>
+        <p-select
+          inputId="createDeliveryStage"
+          [options]="educationalStages()"
+          [ngModel]="createDeliveryEducationalStageId()"
+          (ngModelChange)="createDeliveryEducationalStageId.set($event); clearDeliveryCreateValidationError()"
+          optionLabel="label"
+          optionValue="value"
+          styleClass="w-full"
+          appendTo="body"
+          [loading]="lookupsLoading()"
+          [disabled]="deliveryReadinessLoading()"
+          placeholder="اختر المرحلة التعليمية"
+          readonly="true"
+        />
+      </div>
+
+      <div class="field">
+        <label for="deliveryOrderDate">تاريخ التوريد</label>
+        <input
+          pInputText
+          id="deliveryOrderDate"
+          type="date"
+          [ngModel]="deliveryDate()"
+          (ngModelChange)="deliveryDate.set($event); clearDeliveryCreateValidationError()"
+          class="w-full"
+          required
+        />
+      </div>
+
+      <div class="delivery-order-dialog-actions">
+        <button
+          type="button"
+          class="delivery-order-cancel"
+          [disabled]="creatingDeliveryFor() !== null"
+          (click)="closeDeliveryOrderDialog()">إلغاء</button>
+        <button
+          type="button"
+          class="action-btn-search"
+          [disabled]="creatingDeliveryFor() !== null || deliveryReadinessLoading() || !governorate.canCreate"
+          (click)="createDeliveryOrder()">
+          <i class="pi" [ngClass]="creatingDeliveryFor() === governorate.governorateId ? 'pi-spin pi-spinner' : 'pi-check'"></i>
+          <span>{{ creatingDeliveryFor() === governorate.governorateId ? 'جارٍ الإنشاء...' : 'تأكيد إنشاء الأمر' }}</span>
+        </button>
+      </div>
+    </div>
+  }
+</p-dialog>
+
+<!-- ==========================================
+     REASONS DIALOG (blocking reasons + create errors)
+=========================================== -->
+<p-dialog
+  [visible]="reasonsDialogVisible()"
+  (visibleChange)="reasonsDialogVisible.set($event)"
+  [modal]="true"
+  [draggable]="false"
+  [resizable]="false"
+  appendTo="body"
+  [baseZIndex]="3000"
+  [style]="{ width: 'min(92vw, 480px)' }"
+  header="أسباب عدم إنشاء أمر التوزيع"
+  (onHide)="closeReasonsDialog()">
+
+  @if (reasonsDialogGovernorate(); as g) {
+    <div class="reasons-dialog" dir="rtl">
+      <div class="delivery-order-governorate">
+        <i class="pi pi-map-marker"></i>
+        <span>{{ g.governorateName || 'محافظة #' + g.governorateId }}</span>
+      </div>
+
+      <ul class="reasons-list">
+        @for (reason of reasonsDialogList(); track $index) {
+          <li>
+            <i class="pi pi-times-circle" aria-hidden="true"></i>
+            <span>{{ reason }}</span>
+          </li>
+        } @empty {
+          <li class="reasons-empty">لا توجد أسباب مسجلة لهذه المحافظة.</li>
+        }
+      </ul>
+    </div>
+  }
+
+  <ng-template pTemplate="footer">
+    <button pButton type="button" label="إغلاق" class="p-button-secondary" (click)="closeReasonsDialog()"></button>
   </ng-template>
 
 </p-dialog>
