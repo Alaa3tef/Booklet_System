@@ -8,6 +8,7 @@ import {
   OnInit
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { forkJoin } from 'rxjs';
 
 import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
@@ -17,8 +18,7 @@ import { TooltipModule } from 'primeng/tooltip';
 
 import { WorkflowStepLayoutComponent } from '../../../shared/workflow-step-layout/workflow-step-layout.component';
 import { PrintingCommittee, PrintingService, PrintingBatch } from './service/printing-service';
-// عدّلي المسار حسب مكان السيرفس عندك
-
+import { Lookups } from '../../../shared/services/lookups';
 
 interface Totals {
   committees: number;
@@ -29,6 +29,11 @@ interface Totals {
   bonusEnvelopes: number;
   envelopes: number;
   boxes: number;
+}
+
+interface SelectOption {
+  label: string;
+  value: string;
 }
 
 const EMPTY_TOTALS: Totals = {
@@ -62,6 +67,18 @@ function errorMessage(error: any, fallback: string): string {
   return error?.error?.message || error?.message || fallback;
 }
 
+/**
+ * يستخرج الـ array من أي شكل response:
+ * { data: { data: [...] } } | { data: [...] } | [...]
+ */
+function extractList(res: any): any[] {
+  if (Array.isArray(res)) return res;
+  if (Array.isArray(res?.data)) return res.data;
+  if (Array.isArray(res?.data?.data)) return res.data.data;
+  if (Array.isArray(res?.items)) return res.items;
+  return [];
+}
+
 @Component({
   selector: 'app-printing',
   standalone: true,
@@ -81,6 +98,7 @@ function errorMessage(error: any, fallback: string): string {
 })
 export default class PrintingComponent implements OnInit {
   private readonly printingService = inject(PrintingService);
+  private readonly lookups = inject(Lookups);
 
   // ==========================================
   // Page configuration
@@ -100,6 +118,7 @@ export default class PrintingComponent implements OnInit {
   ];
 
   ngOnInit(): void {
+    this.loadLookups();
     this.loadBatches();
   }
 
@@ -132,21 +151,69 @@ export default class PrintingComponent implements OnInit {
   }
 
   // ==========================================
+  // Lookups (Governorates / Subjects)
+  // ==========================================
+
+  private readonly lookupGovernorates = signal<SelectOption[]>([]);
+  private readonly lookupSubjects = signal<SelectOption[]>([]);
+  readonly lookupsLoading = signal(false);
+  readonly useBatchesAsFallback = signal(false);
+
+  readonly governorateOptions = computed<SelectOption[]>(() =>
+    this.useBatchesAsFallback()
+      ? this.distinct(this.batches().map(b => b.governorate))
+      : this.lookupGovernorates()
+  );
+
+  readonly subjectOptions = computed<SelectOption[]>(() =>
+    this.useBatchesAsFallback()
+      ? this.distinct(this.batches().map(b => b.subject))
+      : this.lookupSubjects()
+  );
+
+  private loadLookups(): void {
+    this.lookupsLoading.set(true);
+
+    forkJoin({
+      governorates: this.lookups.getLookupGovernorateData(),
+      subjects: this.lookups.getLookupSubjectData()
+    }).subscribe({
+      next: ({ governorates, subjects }) => {
+        this.lookupGovernorates.set(this.toOptions(governorates));
+        this.lookupSubjects.set(this.toOptions(subjects));
+        this.lookupsLoading.set(false);
+      },
+      error: (error: unknown) => {
+        console.error('Failed to load lookups:', error);
+        this.lookupsLoading.set(false);
+        // fallback: لو الـ lookup فشل نبني الخيارات من الباتشات
+        this.useBatchesAsFallback.set(true);
+      }
+    });
+  }
+
+  /** يحوّل response الـ lookup لـ { label, value } بدون تكرار */
+  private toOptions(res: any): SelectOption[] {
+    const names = extractList(res)
+      .filter(x => x?.isActive !== false)
+      .map(x => String(x?.name ?? x?.nameAr ?? x?.arabicName ?? '').trim());
+
+    return this.distinct(names);
+  }
+
+  private distinct(values: string[]): SelectOption[] {
+    return [...new Set(values.filter(Boolean))]
+      .sort((a, b) => a.localeCompare(b, 'ar'))
+      .map(v => ({ label: v, value: v }));
+  }
+
+  // ==========================================
   // Filters (client-side)
   // ==========================================
 
   readonly search = signal('');
   readonly selectedGovernorate = signal<string | null>(null);
   readonly selectedSubject = signal<string | null>(null);
-
-  readonly governorateOptions = computed(() => this.distinct(this.batches().map(b => b.governorate)));
-  readonly subjectOptions = computed(() => this.distinct(this.batches().map(b => b.subject)));
-
-  private distinct(values: string[]): { label: string; value: string }[] {
-    return [...new Set(values.filter(Boolean))]
-      .sort((a, b) => a.localeCompare(b, 'ar'))
-      .map(v => ({ label: v, value: v }));
-  }
 
   readonly hasActiveFilters = computed(
     () => !!(this.search().trim() || this.selectedGovernorate() || this.selectedSubject())
@@ -162,7 +229,7 @@ export default class PrintingComponent implements OnInit {
         (!gov || b.governorate === gov) &&
         (!sub || b.subject === sub) &&
         (!q ||
-          [b.label, b.subject, b.governorate, b.round].some(v => v.toLowerCase().includes(q)))
+          [b.label, b.subject, b.governorate, b.round].some(v => (v ?? '').toLowerCase().includes(q)))
     );
   });
 

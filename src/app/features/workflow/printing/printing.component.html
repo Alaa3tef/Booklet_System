@@ -43,7 +43,7 @@
 
     <!-- ========== Filters ========== -->
     <section class="pr-box pr-filters">
-      <div class="pr-field">
+      <!-- <div class="pr-field">
         <label for="printing-search">بحث</label>
         <span class="pr-search">
           <i class="pi pi-search"></i>
@@ -56,7 +56,7 @@
             (ngModelChange)="onSearch($event)"
           />
         </span>
-      </div>
+      </div> -->
 
       <div class="pr-field">
         <label for="printing-governorate">المحافظة</label>
@@ -237,7 +237,7 @@
       [resizable]="false"
       [dismissableMask]="!printSubmitting()"
       [closable]="!printSubmitting()"
-      [style]="{ width: '1120px', maxWidth: 'calc(100vw - 2rem)' }"
+      [style]="{ width: '1520px', maxWidth: 'calc(100vw - 2rem)' }"
       styleClass="pr-dlg pr-dlg-xl"
       (onHide)="closeCommittees()"
     >

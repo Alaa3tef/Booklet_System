@@ -1,7 +1,8 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { forkJoin } from 'rxjs';
+import { forkJoin, of } from 'rxjs';
+import { catchError, map, switchMap } from 'rxjs/operators';
 
 import { SelectModule } from 'primeng/select';
 import { InputTextModule } from 'primeng/inputtext';
@@ -14,18 +15,59 @@ import { ToastModule } from 'primeng/toast';
 import { MessageService } from 'primeng/api';
 
 import { WorkflowStepLayoutComponent } from '../../../shared/workflow-step-layout/workflow-step-layout.component';
-import { WorkflowStatusRow } from '../../../core/models/workflow.model';
 import { Lookups } from '../../../shared/services/lookups';
+import { PrintingApprovalService, PendingBatchSummary, PendingBatchDetails } from './service/printing-approval';
+
 
 interface ReviewUser { id: number; name: string; role: string; avatar?: string; }
 interface SelectOption { label: string; value: string | number; }
-interface PrintingWorkflowRow extends WorkflowStatusRow { educationalAdministration?: string; }
-type FilterKey = 'governorate' | 'administration' | 'subject' | 'committee';
+
+type FilterKey = 'governorate' | 'subject';
 type StepState = 'done' | 'current' | 'pending' | 'rejected';
+type StatusTone = 'warning' | 'success' | 'danger';
+
+/** كارد واحد = batch واحد (محافظة + مادة + دور) */
+interface ApprovalRow {
+  index: number;
+  batchId: number;
+  displayLabel: string;
+  year: number | null;
+  roundCode: string;
+  roundName: string;
+  governorateName: string;
+  subjectName: string;
+  committeeCount: number | null;
+  requiredBookletTotal: number | null;
+  reserveBookletTotal: number | null;
+  expectedBoxCount: number | null;
+  detailsFailed: boolean;
+  status: string;
+  statusTone: StatusTone;
+  rejectionReason?: string;
+}
 
 const ST_PENDING  = 'بانتظار الاعتماد';
 const ST_READY    = 'جاهز للطباعة';
 const ST_REJECTED = 'مرفوض';
+
+/** يستخرج الـ array من { data: { data: [...] } } | { data: [...] } | [...] */
+function extractList(res: any): any[] {
+  if (Array.isArray(res)) return res;
+  if (Array.isArray(res?.data)) return res.data;
+  if (Array.isArray(res?.data?.data)) return res.data.data;
+  return [];
+}
+
+/** توحيد الكتابة العربية عشان المقارنة ما تفشلش (ى/ي، أ/إ/آ/ا، ة/ه) */
+function norm(value: string | null | undefined): string {
+  return (value ?? '')
+    .trim()
+    .replace(/[أإآ]/g, 'ا')
+    .replace(/ى/g, 'ي')
+    .replace(/ة/g, 'ه')
+    .replace(/\s+/g, ' ')
+    .toLowerCase();
+}
 
 @Component({
   selector: 'app-printing-approved',
@@ -42,43 +84,21 @@ const ST_REJECTED = 'مرفوض';
 export default class PrintingApprovedComponent implements OnInit {
 
   private readonly lookupService = inject(Lookups);
+  private readonly approvalService = inject(PrintingApprovalService);
   private readonly messageService = inject(MessageService);
- readonly educationFilter = signal<string | null>(null);
+
   readonly essentials = ['البحث بالمحافظة', 'البحث بالمادة', 'اعتماد المادة للطباعة'];
- educationals: any[] = [
-    { label: 'كل الادارات التعليمية', value: 'all' },
-    { label: 'EDU-001', value: 'EDU-001' },
-    { label: 'EDU-002', value: 'EDU-002' },
-    { label: 'EDU-003', value: 'EDU-003' },
-    { label: 'EDU-004', value: 'EDU-004' },
-    { label: 'EDU-005', value: 'EDU-005' },
-    { label: 'EDU-006', value: 'EDU-006' },
-    { label: 'EDU-007', value: 'EDU-007' },
-    { label: 'EDU-008', value: 'EDU-008' },
-    { label: 'EDU-009', value: 'EDU-009' },
-    { label: 'EDU-010', value: 'EDU-010' },
-    { label: 'EDU-011', value: 'EDU-011' }
-  ];
+
+  ngOnInit(): void {
+    this.loadLookups();
+    this.loadBatches();
+  }
+
   // ==========================================
-  // FILTER OPTIONS
+  // LOOKUPS (filter options)
   // ==========================================
   readonly governorates = signal<SelectOption[]>([{ label: 'كل المحافظات', value: 'all' }]);
   readonly subjects     = signal<SelectOption[]>([{ label: 'كل المواد', value: 'all' }]);
-
-  /** قائمة الإدارات التعليمية المتاحة حسب المحافظة المختارة. */
-  readonly administrations = computed<SelectOption[]>(() => {
-    const selectedGovernorate = this.labelOf(this.governorates(), this.searchGovernorate());
-    const names = this.rows()
-      .filter(row => !selectedGovernorate || row.governorate === selectedGovernorate)
-      .map(row => row.educationalAdministration?.trim())
-      .filter((name): name is string => !!name);
-    return [
-      { label: 'كل الإدارات التعليمية', value: 'all' },
-      ...Array.from(new Set(names)).sort((a, b) => a.localeCompare(b, 'ar')).map(name => ({ label: name, value: name }))
-    ];
-  });
-
-  ngOnInit(): void { this.loadLookups(); }
 
   loadLookups(): void {
     forkJoin({
@@ -86,17 +106,25 @@ export default class PrintingApprovedComponent implements OnInit {
       subjects: this.lookupService.getLookupSubjectData()
     }).subscribe({
       next: (res: any) => {
-        const g = res.governorates?.data?.data ?? [];
-        const s = res.subjects?.data?.data ?? [];
+        const g = extractList(res.governorates);
+        const s = extractList(res.subjects);
 
-        this.governorates.set([
-          { label: 'كل المحافظات', value: 'all' },
-          ...g.map((i: any) => ({ label: i.nameAr ?? i.name, value: i.id }))
-        ]);
-        this.subjects.set([
-          { label: 'كل المواد', value: 'all' },
-          ...s.map((i: any) => ({ label: i.name, value: i.id }))
-        ]);
+        // شيل التكرار (زي "الأقصر" اللي متسجلة مرتين)
+        const uniq = (list: any[]): SelectOption[] => {
+          const seen = new Set<string>();
+          const out: SelectOption[] = [];
+          for (const i of list) {
+            const label = String(i.nameAr ?? i.name ?? '').trim();
+            const key = norm(label);
+            if (!label || seen.has(key)) continue;
+            seen.add(key);
+            out.push({ label, value: i.id });
+          }
+          return out.sort((a, b) => a.label.localeCompare(b.label, 'ar'));
+        };
+
+        this.governorates.set([{ label: 'كل المحافظات', value: 'all' }, ...uniq(g)]);
+        this.subjects.set([{ label: 'كل المواد', value: 'all' }, ...uniq(s)]);
       },
       error: err => {
         console.error('Error loading lookups:', err);
@@ -119,42 +147,79 @@ export default class PrintingApprovedComponent implements OnInit {
   ];
 
   // ==========================================
-  // DATA  (replace with your API)
+  // DATA  (GET api/PreQuality/pending + /pending/{batchId})
   // ==========================================
-  private static readonly REJECT_TEXT =
-    'يوجد بعض الأخطاء في محتوى المادة، كما أن بعض الأسئلة تحتاج إلى مراجعة قبل اعتماد الطباعة.';
+  readonly rows = signal<ApprovalRow[]>([]);
+  readonly loading = signal(false);
+  readonly loadError = signal('');
 
-  readonly rows = signal<PrintingWorkflowRow[]>([
-    { index: 1,  committeeNumber: 'COM-1001', subject: 'اللغة العربية', governorate: 'القاهرة',    educationalAdministration: 'شرق القاهرة', status: ST_PENDING,  statusTone: 'warning' },
-    { index: 2,  committeeNumber: 'COM-1002', subject: 'الرياضيات',     governorate: 'الجيزة',     educationalAdministration: 'الدقي', status: ST_READY,    statusTone: 'success' },
-    { index: 3,  committeeNumber: 'COM-1003', subject: 'العلوم',        governorate: 'الإسكندرية', educationalAdministration: 'شرق الإسكندرية', status: ST_REJECTED, statusTone: 'danger', rejectionReason: PrintingApprovedComponent.REJECT_TEXT },
-    { index: 4,  committeeNumber: 'COM-1004', subject: 'اللغة العربية', governorate: 'القاهرة',    educationalAdministration: 'غرب القاهرة', status: ST_PENDING,  statusTone: 'warning' },
-    { index: 5,  committeeNumber: 'COM-1005', subject: 'الرياضيات',     governorate: 'الجيزة',     educationalAdministration: 'الهرم', status: ST_PENDING,  statusTone: 'warning' },
-    { index: 6,  committeeNumber: 'COM-1006', subject: 'العلوم',        governorate: 'الإسكندرية', educationalAdministration: 'غرب الإسكندرية', status: ST_READY,    statusTone: 'success' },
-    { index: 7,  committeeNumber: 'COM-1007', subject: 'اللغة العربية', governorate: 'القاهرة',    educationalAdministration: 'شرق القاهرة', status: ST_PENDING,  statusTone: 'warning' },
-    { index: 8,  committeeNumber: 'COM-1008', subject: 'الرياضيات',     governorate: 'الجيزة',     educationalAdministration: 'الدقي', status: ST_PENDING,  statusTone: 'warning' },
-    { index: 9,  committeeNumber: 'COM-1009', subject: 'العلوم',        governorate: 'الإسكندرية', educationalAdministration: 'شرق الإسكندرية', status: ST_REJECTED, statusTone: 'danger', rejectionReason: PrintingApprovedComponent.REJECT_TEXT },
-    { index: 10, committeeNumber: 'COM-1010', subject: 'اللغة العربية', governorate: 'القاهرة',    educationalAdministration: 'غرب القاهرة', status: ST_PENDING,  statusTone: 'warning' },
-    { index: 11, committeeNumber: 'COM-1011', subject: 'الرياضيات',     governorate: 'الجيزة',     educationalAdministration: 'الهرم', status: ST_PENDING,  statusTone: 'warning' },
-    { index: 12, committeeNumber: 'COM-1012', subject: 'العلوم',        governorate: 'الإسكندرية', educationalAdministration: 'غرب الإسكندرية', status: ST_PENDING,  statusTone: 'warning' }
-  ]);
+  loadBatches(): void {
+    this.loading.set(true);
+    this.loadError.set('');
+
+    this.approvalService.getPendingBatches().pipe(
+      switchMap(list =>
+        list.length
+          ? forkJoin(
+              list.map(batch =>
+                this.approvalService.getPendingBatch(batch.batchId).pipe(
+                  map(details => this.toRow(batch, details)),
+                  // لو تفاصيل batch واحد فشلت منوقّعش الصفحة كلها
+                  catchError(() => of(this.toRow(batch, null)))
+                )
+              )
+            )
+          : of([] as ApprovalRow[])
+      )
+    ).subscribe({
+      next: rows => {
+        this.rows.set(rows.map((r, i) => ({ ...r, index: i + 1 })));
+        this.loading.set(false);
+      },
+      error: err => {
+        console.error('Failed to load pending batches:', err);
+        this.loadError.set(err?.error?.message || err?.message || 'تعذر تحميل قائمة المواد. حاول مرة أخرى.');
+        this.loading.set(false);
+      }
+    });
+  }
+
+  private toRow(summary: PendingBatchSummary, details: PendingBatchDetails | null): ApprovalRow {
+    // displayLabel بالشكل: "شمال سيناء + عربي" (fallback لو التفاصيل فشلت)
+    const [labelGov = '', labelSub = ''] = (summary.displayLabel ?? '').split('+').map(s => s.trim());
+
+    return {
+      index: 0,
+      batchId: summary.batchId,
+      displayLabel: summary.displayLabel,
+      year: details?.year ?? summary.year ?? null,
+      roundCode: details?.roundCode ?? summary.roundCode ?? '',
+      roundName: (details?.roundName ?? summary.roundName ?? '').trim(),
+      governorateName: (details?.governorateName ?? labelGov).trim(),
+      subjectName: (details?.subjectName ?? labelSub).trim(),
+      committeeCount: details?.committeeCount ?? null,
+      requiredBookletTotal: details?.requiredBookletTotal ?? null,
+      reserveBookletTotal: details?.reserveBookletTotal ?? null,
+      expectedBoxCount: details?.expectedBoxCount ?? null,
+      detailsFailed: !details,
+      status: ST_PENDING,
+      statusTone: 'warning'
+    };
+  }
+
+  /** عرض الأرقام (أو — لو مش موجودة) */
+  fmt(value: number | null | undefined): string {
+    return value === null || value === undefined ? '—' : value.toLocaleString('en');
+  }
 
   // ==========================================
   // FILTERS
   // ==========================================
   readonly searchGovernorate = signal<string | number>('all');
-  readonly searchAdministration = signal<string | number>('all');
   readonly searchSubject     = signal<string | number>('all');
-  readonly searchCommittee   = signal('');
 
-  setGovernorate(v: string | number): void {
-    this.searchGovernorate.set(v ?? 'all');
-    this.searchAdministration.set('all'); // تغيير المحافظة يعيد فلتر الإدارة للوضع الافتراضي
-    this.resetPage();
-  }
-  setAdministration(v: string | number): void { this.searchAdministration.set(v ?? 'all'); this.resetPage(); }
+  setGovernorate(v: string | number): void { this.searchGovernorate.set(v ?? 'all'); this.resetPage(); }
   setSubject(v: string | number): void     { this.searchSubject.set(v ?? 'all');     this.resetPage(); }
-  setCommittee(v: string): void            { this.searchCommittee.set(v ?? '');      this.resetPage(); }
 
   private labelOf(options: SelectOption[], value: string | number): string | null {
     if (value === 'all') return null;
@@ -162,33 +227,25 @@ export default class PrintingApprovedComponent implements OnInit {
   }
 
   readonly filteredRows = computed(() => {
-    const gov = this.labelOf(this.governorates(), this.searchGovernorate());
-    const administration = this.searchAdministration() === 'all' ? null : String(this.searchAdministration());
-    const sub = this.labelOf(this.subjects(), this.searchSubject());
-    const com = this.searchCommittee().trim().toLowerCase();
+    const gov = norm(this.labelOf(this.governorates(), this.searchGovernorate()));
+    const sub = norm(this.labelOf(this.subjects(), this.searchSubject()));
 
     return this.rows().filter(r =>
-      (!gov || r.governorate === gov) &&
-      (!administration || r.educationalAdministration === administration) &&
-      (!sub || r.subject === sub) &&
-      (!com || String(r.committeeNumber).toLowerCase().includes(com))
+      (!gov || norm(r.governorateName) === gov) &&
+      (!sub || norm(r.subjectName) === sub)
     );
   });
 
   readonly activeFilters = computed(() => {
     const list: { key: FilterKey; title: string; value: string }[] = [];
     const gov = this.labelOf(this.governorates(), this.searchGovernorate());
-    const administration = this.searchAdministration() === 'all' ? null : String(this.searchAdministration());
     const sub = this.labelOf(this.subjects(), this.searchSubject());
-    const com = this.searchCommittee().trim();
     if (gov) list.push({ key: 'governorate', title: 'المحافظة', value: gov });
-    if (administration) list.push({ key: 'administration', title: 'الإدارة التعليمية', value: administration });
     if (sub) list.push({ key: 'subject', title: 'المادة', value: sub });
-    if (com) list.push({ key: 'committee',   title: 'رقم اللجنة', value: com });
     return list;
   });
 
-  /** quick stats for the summary strip */
+  /** quick stats */
   readonly stats = computed(() => {
     const all = this.rows();
     return {
@@ -199,18 +256,14 @@ export default class PrintingApprovedComponent implements OnInit {
   });
 
   removeFilter(key: FilterKey): void {
-    if (key === 'governorate') { this.searchGovernorate.set('all'); this.searchAdministration.set('all'); }
-    if (key === 'administration') this.searchAdministration.set('all');
+    if (key === 'governorate') this.searchGovernorate.set('all');
     if (key === 'subject')     this.searchSubject.set('all');
-    if (key === 'committee')   this.searchCommittee.set('');
     this.resetPage();
   }
 
   clearFilters(): void {
     this.searchGovernorate.set('all');
-    this.searchAdministration.set('all');
     this.searchSubject.set('all');
-    this.searchCommittee.set('');
     this.resetPage();
   }
 
@@ -258,7 +311,9 @@ export default class PrintingApprovedComponent implements OnInit {
   // ==========================================
   // CARD HELPERS
   // ==========================================
-  trackerSteps(row: WorkflowStatusRow): { label: string; state: StepState }[] {
+  trackBatch = (_: number, row: ApprovalRow) => row.batchId;
+
+  trackerSteps(row: ApprovalRow): { label: string; state: StepState }[] {
     switch (row.status) {
       case ST_READY:
         return [{ label: ST_PENDING, state: 'done' }, { label: ST_READY, state: 'current' }];
@@ -271,58 +326,76 @@ export default class PrintingApprovedComponent implements OnInit {
 
   // ==========================================
   // APPROVE -> READY FOR PRINTING
-  // ==========================================
-  // ==========================================
-  // READY-FOR-PRINTING CONFIRMATION
+  // (POST api/PreQuality/pending/{batchId}/approve)
   // ==========================================
   readyDialogVisible = false;
+  readonly approveSubmitting = signal(false);
+  selectedRow: ApprovalRow | null = null;
 
-  markReady(row: WorkflowStatusRow): void {
+  markReady(row: ApprovalRow): void {
     if (row.status === ST_READY || row.status === ST_REJECTED) return;
     this.selectedRow = row;
     this.readyDialogVisible = true;
   }
 
   closeReadyDialog(): void {
+    if (this.approveSubmitting()) return;
     this.readyDialogVisible = false;
     this.selectedRow = null;
   }
 
   confirmMarkReady(): void {
     const row = this.selectedRow;
-    if (!row || row.status === ST_READY || row.status === ST_REJECTED) {
+
+    if (!row || row.status === ST_READY || row.status === ST_REJECTED || this.approveSubmitting()) {
       this.closeReadyDialog();
       return;
     }
 
-    // Replace this local update with the API call when its endpoint is available.
-    this.rows.update(rows => rows.map(item =>
-      item.index === row.index
-        ? { ...item, status: ST_READY, statusTone: 'success', rejectionReason: undefined }
-        : item
-    ));
+    this.approveSubmitting.set(true);
 
-    this.readyDialogVisible = false;
-    this.selectedRow = null;
-    this.messageService.add({
-      severity: 'success',
-      summary: 'تم الاعتماد بنجاح',
-      detail: 'تم تغيير حالة المادة إلى جاهز للطباعة',
-      life: 3500
+    this.approvalService.approveBatch(row.batchId).subscribe({
+      next: (res:any) => {
+        this.rows.update(rows => rows.map(item =>
+          item.batchId === row.batchId
+            ? { ...item, status: ST_READY, statusTone: 'success' as StatusTone, rejectionReason: undefined }
+            : item
+        ));
+
+        this.approveSubmitting.set(false);
+        this.readyDialogVisible = false;
+        this.selectedRow = null;
+ 
+        this.messageService.add({
+          severity: 'success',
+          summary: 'تم الاعتماد بنجاح',
+          detail: res.message,
+          life: 3500
+        });
+        this.loadBatches();
+      },
+      error: err => {
+        console.error('Failed to approve batch:', err);
+        this.approveSubmitting.set(false);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'تعذر الاعتماد',
+          detail: err?.error?.message || 'حدث خطأ أثناء اعتماد المادة. حاول مرة أخرى.',
+          life: 4000
+        });
+      }
     });
   }
 
   // ==========================================
-  // REJECT DIALOG
+  // REJECT DIALOG  (TODO: اربطيها بالـ endpoint لما يتحدد)
   // ==========================================
-  selectedRow: WorkflowStatusRow | null = null;
-
   rejectDialogVisible = false;
   rejectReason = '';
   selectedReviewers: ReviewUser[] = [];
   rejectSubmitting = false;
 
-  openRejectDialog(row: WorkflowStatusRow): void {
+  openRejectDialog(row: ApprovalRow): void {
     this.selectedRow = row;
     this.rejectReason = '';
     this.selectedReviewers = [];
@@ -347,23 +420,23 @@ export default class PrintingApprovedComponent implements OnInit {
     this.rejectSubmitting = true;
 
     const rejectionData = {
-      rowIndex: this.selectedRow.index,
-      subject: this.selectedRow.subject,
-      governorate: this.selectedRow.governorate,
+      batchId: this.selectedRow.batchId,
+      subject: this.selectedRow.subjectName,
+      governorate: this.selectedRow.governorateName,
       reason: this.rejectReason.trim(),
       reviewerIds: this.selectedReviewers.map(u => u.id)
     };
     console.log('Reject Request:', rejectionData);
 
-    // API CALL WILL BE HERE
+    // TODO: API CALL WILL BE HERE
     setTimeout(() => {
-      const rowIndex = this.selectedRow?.index;
-      if (!rowIndex) { this.rejectSubmitting = false; return; }
+      const batchId = this.selectedRow?.batchId;
+      if (batchId === undefined) { this.rejectSubmitting = false; return; }
 
       const reason = this.rejectReason.trim();
       this.rows.update(rows => rows.map(r =>
-        r.index === rowIndex
-          ? { ...r, status: ST_REJECTED, statusTone: 'danger', rejectionReason: reason }
+        r.batchId === batchId
+          ? { ...r, status: ST_REJECTED, statusTone: 'danger' as StatusTone, rejectionReason: reason }
           : r));
 
       this.rejectSubmitting = false;
@@ -371,7 +444,7 @@ export default class PrintingApprovedComponent implements OnInit {
       this.selectedRow = null;
       this.rejectReason = '';
       this.selectedReviewers = [];
-    console.log("jjgfjg")
+
       this.messageService.add({ severity: 'success', summary: 'تمت العملية', life: 3000, detail: 'تم رفض المادة بنجاح' });
     }, 800);
   }
@@ -382,7 +455,7 @@ export default class PrintingApprovedComponent implements OnInit {
   rejectionReasonDialogVisible = false;
   selectedRejectionReason = '';
 
-  openRejectionReasonDialog(row: WorkflowStatusRow): void {
+  openRejectionReasonDialog(row: ApprovalRow): void {
     if (row.status !== ST_REJECTED) return;
     this.selectedRow = row;
     this.selectedRejectionReason = row.rejectionReason?.trim() || 'لم يتم تسجيل سبب الرفض.';
