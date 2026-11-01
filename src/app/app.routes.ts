@@ -86,7 +86,7 @@ export const routes: Routes = [
         path: 'workflow/printing-approved',
         loadComponent: () =>
           import('./features/workflow/printing-approved/printing-approved.component'),
-        data: { breadcrumb: 'الطباعة' }
+        data: { breadcrumb: 'إعتماد الطباعة' }
       },
       {
         path: 'workflow/printing',
