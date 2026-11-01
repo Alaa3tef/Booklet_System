@@ -5,7 +5,7 @@
 .pr,
 .pr-dlg {
   --navy: var(--ebs-navy, #0b2e4f);
-  --blue: var(--ebs-green, #16a34a);  // لون صفحة الطباعة
+  --blue: var(--ebs-green, #16a34a); // لون صفحة الطباعة
   --surface: var(--ebs-surface, #fff);
   --border: var(--ebs-border, #e4e9ef);
   --text: var(--ebs-text, #172b4d);
@@ -49,6 +49,7 @@
 
   &.pr-ico-white  { background: var(--surface); }
   &.pr-ico-danger { background: rgba(220, 53, 69, .09); color: #dc3545; }
+  &.pr-ico-sm     { width: 34px; height: 34px; border-radius: 9px; }
 }
 
 .pr-mono { font-family: monospace; direction: ltr; text-align: end; }
@@ -113,10 +114,11 @@
 
   &.pr-btn-primary:hover:not(:disabled) { background: var(--blue) !important; border-color: var(--blue) !important; }
   &.pr-grow { flex: 1; min-width: 0; }
+  &.pr-btn-sm { height: 34px; padding-inline: .7rem; }
   &.pr-btn-soft-danger { border-color: rgba(220, 53, 69, .25) !important; background: rgba(220, 53, 69, .06) !important; color: #dc3545 !important; &:hover:not(:disabled) { background: rgba(220, 53, 69, .12) !important; } }
 }
 
-.pr-actions { display: flex; gap: .5rem; }
+.pr-actions { display: flex; flex-wrap: wrap; gap: .5rem; }
 
 .pr-loading { opacity: .55; pointer-events: none; transition: opacity .2s; }
 
@@ -150,6 +152,18 @@
   &.pr-note-success { background: rgba(25, 135, 84, .07); color: #198754; font-weight: 700; i { color: inherit; } }
 }
 
+.pr-link {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--blue);
+  font: inherit;
+  font-size: .68rem;
+  font-weight: 700;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
 // ---------- Page header ----------
 
 .pr-head {
@@ -163,6 +177,8 @@
   h2 { font-size: 1.25rem; font-weight: 800; }
   p { margin-top: .4rem; color: var(--muted); font-size: .78rem; }
 }
+
+.pr-counts { display: flex; flex-wrap: wrap; gap: .75rem; }
 
 .pr-count {
   display: flex;
@@ -183,7 +199,7 @@
 .pr-filters {
   display: grid;
   // 4 حقول متساوية + زرار إعادة التعيين
-  grid-template-columns: repeat(4, minmax(0, 1fr)) auto;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: end;
   gap: 1rem;
   margin-bottom: 1rem;
@@ -208,20 +224,12 @@
       box-shadow: 0 0 0 3px rgba(22, 163, 74, .12);
     }
 
-    .p-select-label {
-      display: flex;
-      align-items: center;
-      font-size: .75rem;
-    }
-
+    .p-select-label { display: flex; align-items: center; font-size: .75rem; }
     .p-select-label.p-placeholder { color: var(--muted); }
   }
 
   // زرار إعادة التعيين مربع بحجم الحقول
-  > .pr-btn {
-    width: 42px;
-    padding-inline: 0;
-  }
+  > .pr-btn { width: 42px; padding-inline: 0; }
 }
 
 .pr-search {
@@ -239,6 +247,8 @@
   }
 
   .pr-input { padding-inline-start: 2.3rem; }
+
+  &.pr-search-sm { width: 240px; max-width: 100%; .pr-input { height: 38px; } }
 }
 
 // ---------- Tabs ----------
@@ -270,7 +280,7 @@
   &.active { border-color: var(--tone); background: var(--tone); color: #fff; b { background: rgba(255, 255, 255, .22); color: #fff; } }
 }
 
-// ---------- Cards ----------
+// ---------- Subject cards ----------
 
 .pr-grid {
   display: grid;
@@ -289,12 +299,21 @@
   border-block-start: 3px solid var(--tone);
   border-radius: var(--r);
   background: var(--surface);
-  transition: box-shadow .2s, transform .2s;
+  transition: box-shadow .2s, transform .2s, border-color .2s;
 
   &:hover { box-shadow: 0 8px 22px rgba(11, 46, 79, .08); transform: translateY(-2px); }
 
   header { display: flex; align-items: center; flex-wrap: wrap; gap: .7rem; }
   footer { display: flex; gap: .5rem; margin-top: auto; }
+}
+
+.pr-subject {
+  cursor: pointer;
+  outline: none;
+
+  &:hover { border-color: var(--tone); }
+  &:focus-visible { box-shadow: 0 0 0 3px rgba(22, 163, 74, .25); }
+  &:hover .pr-open i { transform: translateX(-4px); }
 }
 
 .pr-card-title {
@@ -304,33 +323,47 @@
   strong { display: block; overflow: hidden; font-size: .88rem; text-overflow: ellipsis; white-space: nowrap; }
 }
 
-.pr-meta {
+.pr-progress {
+  .pr-progress-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: .4rem; b { font-size: .72rem; color: var(--tone); } }
+}
+
+.pr-bar {
+  height: 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--soft);
+
+  span { display: block; height: 100%; border-radius: inherit; background: #198754; transition: width .4s ease; }
+}
+
+.pr-stats {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(3, 1fr);
   gap: .6rem;
 
-  > div { min-width: 0; padding: .6rem .7rem; border-radius: 10px; background: var(--soft); }
-  .pr-wide { grid-column: 1 / -1; }
-  dt { display: flex; align-items: center; gap: .3rem; margin-bottom: .2rem; }
-  dd { color: var(--text); font-size: .78rem; font-weight: 700; overflow-wrap: anywhere; }
-  .pr-mono { color: var(--blue); font-size: .7rem; text-align: start; }
+  > div { min-width: 0; padding: .6rem .7rem; border-radius: 10px; background: color-mix(in srgb, var(--tone) 8%, transparent); }
+  dt { display: flex; align-items: center; gap: .3rem; margin-bottom: .2rem; white-space: nowrap; color: var(--tone); }
+  dd { color: var(--text); font-size: 1rem; font-weight: 800; }
 }
 
-.pr-result {
-  flex: 1;
-  display: flex;
+.pr-open {
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: .4rem;
-  height: 42px;
+  gap: .5rem;
+  width: 100%;
+  height: 40px;
   border-radius: 10px;
-  background: rgba(25, 135, 84, .08);
-  color: #198754;
+  background: var(--soft);
+  color: var(--blue);
   font-size: .72rem;
-  font-weight: 700;
+  font-weight: 800;
+  transition: background .2s;
 
-  &.pr-result-danger { background: rgba(220, 53, 69, .08); color: #dc3545; }
+  i { transition: transform .2s; }
 }
+
+.pr-subject:hover .pr-open { background: var(--blue); color: #fff; }
 
 .pr-empty {
   display: flex;
@@ -422,7 +455,114 @@
 
   small { display: block; margin-bottom: .15rem; }
   strong { font-size: .8rem; }
-  .pr-ico:first-child + div { margin-inline-end: auto; }
+}
+
+// ---------- Committees dialog ----------
+
+.pr-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: .75rem;
+  margin-bottom: .8rem;
+  padding: .6rem .85rem;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--soft);
+}
+
+.pr-check {
+  display: inline-flex;
+  align-items: center;
+  gap: .55rem;
+  margin: 0;
+  font-size: .72rem;
+  font-weight: 700;
+  cursor: pointer;
+
+  input[type='checkbox'] {
+    width: 18px;
+    height: 18px;
+    margin: 0;
+    accent-color: #16a34a;
+    cursor: pointer;
+
+    &:disabled { cursor: not-allowed; opacity: .45; }
+  }
+}
+
+.pr-list {
+  display: flex;
+  flex-direction: column;
+  gap: .5rem;
+  max-height: min(52vh, 460px);
+  padding: .15rem;
+  overflow-y: auto;
+}
+
+.pr-com {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  padding: .65rem .85rem;
+  border: 1px solid var(--border);
+  border-inline-start: 3px solid var(--tone);
+  border-radius: 12px;
+  background: var(--surface);
+  cursor: pointer;
+  transition: background .15s, border-color .15s, box-shadow .15s;
+
+  &:hover:not(.locked) { background: var(--soft); }
+
+  &.selected {
+    border-color: var(--blue);
+    background: var(--soft);
+    box-shadow: 0 0 0 2px rgba(22, 163, 74, .15);
+  }
+
+  &.locked { cursor: default; opacity: .9; }
+
+  .pr-ico-sm { background: color-mix(in srgb, var(--tone) 10%, transparent); color: var(--tone); }
+}
+
+.pr-com-info {
+  flex: 1;
+  min-width: 0;
+
+  strong { display: block; font-size: .8rem; }
+  small { display: flex; align-items: center; gap: .3rem; margin-top: .15rem; }
+}
+
+// ---------- Bulk action bar (dialog footer) ----------
+
+.pr-bulkbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: .75rem 1rem;
+  width: 100%;
+}
+
+.pr-selected {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  font-size: .72rem;
+  font-weight: 700;
+}
+
+.pr-selected-count {
+  display: inline-grid;
+  place-items: center;
+  min-width: 30px;
+  height: 30px;
+  padding-inline: .4rem;
+  border-radius: 999px;
+  background: var(--blue);
+  color: #fff;
+  font-weight: 800;
 }
 
 // ---------- Reject dialogs ----------
@@ -453,6 +593,9 @@
   gap: .4rem;
 
   span { padding: .3rem .6rem; border-radius: 20px; background: var(--soft); color: var(--blue); font-size: .65rem; font-weight: 700; }
+
+  &.pr-chips-center { justify-content: center; margin-top: .9rem; }
+  &.pr-chips-block { margin-bottom: 1rem; span { font-family: monospace; direction: ltr; } }
 }
 
 .pr-reason {
@@ -491,12 +634,7 @@
 
 @media (max-width: 1200px) {
   .pr-filters {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-
-    > .pr-btn {
-      grid-column: 1 / -1;
-      justify-self: end;
-    }
+    grid-template-columns: minmax(0, 1fr) auto;
   }
 }
 
@@ -504,12 +642,51 @@
   .pr-head,
   .pr-info { flex-direction: column; align-items: flex-start; gap: .8rem; }
 
-  .pr-filters { grid-template-columns: 1fr; }
   .pr-pager { justify-content: center; }
+
+  .pr-toolbar { flex-direction: column; align-items: stretch; .pr-search-sm { width: 100%; } }
+  .pr-bulkbar { flex-direction: column; align-items: stretch; .pr-actions { justify-content: stretch; .pr-btn { flex: 1; } } }
+  .pr-com { flex-wrap: wrap; }
 }
 
 @media (max-width: 480px) {
   .pr-card { padding: .9rem; }
-  .pr-meta { grid-template-columns: 1fr; }
+  .pr-stats { grid-template-columns: 1fr; }
   .pr-dlg-body { padding: .9rem; }
 }
+
+
+// ---------- API states (loading / error) ----------
+
+.pr-alert {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: .6rem .8rem;
+  margin-bottom: 1rem;
+  padding: .75rem 1rem;
+  border: 1px solid rgba(220, 53, 69, .25);
+  border-radius: 12px;
+  background: rgba(220, 53, 69, .06);
+  color: #b42318;
+  font-size: .74rem;
+  font-weight: 700;
+
+  span { flex: 1; min-width: 0; }
+}
+
+.pr-skeleton {
+  height: 190px;
+  border-radius: var(--r);
+  background: linear-gradient(90deg, #eef2f6 25%, #f7f9fb 37%, #eef2f6 63%);
+  background-size: 400% 100%;
+  animation: pr-shimmer 1.4s ease infinite;
+}
+
+@keyframes pr-shimmer {
+  0% { background-position: 100% 50%; }
+  100% { background-position: 0 50%; }
+}
+
+.pr-progress-dlg { margin-bottom: 1rem; }
+.pr-confirm .pr-alert { margin: .9rem 0 0; text-align: start; }

@@ -2,7 +2,7 @@
   stepNumber="02"
   englishLabel="Printing"
   arabicTitle="مستخدم الطباعة"
-  arabicSubtitle="اختيار المحافظة والمادة ورقم اللجنة وتحويلها إلى تم الانتهاء من الطباعة"
+  arabicSubtitle="اختيار المادة ثم تحديد اللجان وتحويلها إلى تم الانتهاء من الطباعة"
   theme="green"
   activeNavKey="printing"
   illustrationIcon="pi pi-print"
@@ -12,7 +12,7 @@
   panelTitle="الطباعة"
   functionLabel="مستخدم الطباعة"
   [essentials]="essentials"
-  resultText="يتم تحديث حالة المادة إلى تم الانتهاء من الطباعة"
+  resultText="يتم تحديث حالة اللجان المحددة إلى تم الانتهاء من الطباعة"
 >
   <div panel-content class="pr">
 
@@ -20,19 +20,28 @@
     <section class="pr-head">
       <div>
         <h2>قائمة الطباعة</h2>
-        <p>اختر المحافظة والمادة أو اكتب رقم اللجنة لعرض المواد المطلوب طباعتها.</p>
+        <p>اختر مادة لعرض اللجان التابعة لها، ثم حدّد اللجان وسجّل انتهاء الطباعة دفعة واحدة.</p>
       </div>
 
-      <div class="pr-count">
-        <i class="pi pi-print"></i>
-        <div>
-          <strong>{{ total() }}</strong>
-          <span>مادة</span>
+      <div class="pr-counts">
+        <div class="pr-count">
+          <i class="pi pi-book"></i>
+          <div>
+            <strong>{{ total() }}</strong>
+            <span>مادة</span>
+          </div>
+        </div>
+        <div class="pr-count">
+          <i class="pi pi-building"></i>
+          <div>
+            <strong>{{ totalCommittees() }}</strong>
+            <span>لجنة</span>
+          </div>
         </div>
       </div>
     </section>
 
-    <!-- ========== Filters (تتطبق فورًا) ========== -->
+    <!-- ========== Filters ========== -->
     <section class="pr-box pr-filters">
       <div class="pr-field">
         <label for="printing-governorate">المحافظة</label>
@@ -51,23 +60,25 @@
           styleClass="pr-input"
         />
       </div>
-<div class="pr-field">
-  <label for="printing-education">الإدارة التعليمية</label>
-  <p-select
-    inputId="printing-education"
-    [options]="educationals"
-    [(ngModel)]="selectedEducation"
-    (ngModelChange)="onFilterChange()"
-    optionLabel="label"
-    optionValue="value"
-    placeholder="كل الإدارات"
-    [filter]="true"
-    filterPlaceholder="ابحث عن إدارة..."
-    emptyMessage="لا توجد إدارات"
-    [showClear]="true"
-    styleClass="pr-input"
-  />
-</div>
+
+      <div class="pr-field">
+        <label for="printing-education">الإدارة التعليمية</label>
+        <p-select
+          inputId="printing-education"
+          [options]="educationals"
+          [(ngModel)]="selectedEducation"
+          (ngModelChange)="onFilterChange()"
+          optionLabel="label"
+          optionValue="value"
+          placeholder="كل الإدارات"
+          [filter]="true"
+          filterPlaceholder="ابحث عن إدارة..."
+          emptyMessage="لا توجد إدارات"
+          [showClear]="true"
+          styleClass="pr-input"
+        />
+      </div>
+
       <div class="pr-field">
         <label for="printing-subject">المادة</label>
         <p-select
@@ -109,6 +120,7 @@
         class="pr-btn pr-btn-ghost"
         pTooltip="إعادة تعيين"
         tooltipPosition="top"
+        aria-label="إعادة تعيين"
         [disabled]="!hasActiveFilters"
         (click)="resetFilters()"
       >
@@ -116,58 +128,65 @@
       </button>
     </section>
 
-    <!-- ========== Cards ========== -->
-    <section class="pr-grid" [class.pr-loading]="loading()" *ngIf="rows().length; else emptyState">
-      <article class="pr-card" *ngFor="let row of rows()" [attr.data-tone]="row.statusTone">
-
+    <!-- ========== Subject cards ========== -->
+    <section class="pr-grid" [class.pr-loading]="loading()" *ngIf="groups().length; else emptyState">
+      <article
+        class="pr-card pr-subject"
+        *ngFor="let g of groups(); trackBy: trackGroup"
+        [attr.data-tone]="g.tone"
+        role="button"
+        tabindex="0"
+        [attr.aria-label]="'عرض لجان مادة ' + g.subject"
+        (click)="openCommittees(g)"
+        (keydown.enter)="openCommittees(g)"
+      >
         <header>
           <span class="pr-ico"><i class="pi pi-book"></i></span>
 
           <div class="pr-card-title">
-            <strong>{{ row.subject }}</strong>
-            <small>مادة رقم {{ row.index }}</small>
+            <strong [pTooltip]="g.subject" tooltipPosition="top">{{ g.subject }}</strong>
+            <small>{{ g.total }} لجنة</small>
           </div>
 
-          <span class="pr-pill">
-            <i class="pi" [ngClass]="statusIcon(row)"></i>
-            {{ row.status }}
+          <span class="pr-pill" *ngIf="g.pending > 0">
+            <i class="pi pi-clock"></i>{{ g.pending }} متبقي
+          </span>
+          <span class="pr-pill" *ngIf="g.pending === 0 && g.rejected === 0">
+            <i class="pi pi-check-circle"></i>مكتملة
+          </span>
+          <span class="pr-pill" *ngIf="g.pending === 0 && g.rejected > 0">
+            <i class="pi pi-times-circle"></i>بها مرفوض
           </span>
         </header>
 
-        <dl class="pr-meta">
-          <div class="pr-wide">
-            <dt><i class="pi pi-map-marker"></i>المحافظة</dt>
-            <dd>{{ row.governorate }}</dd>
+        <div class="pr-progress">
+          <div class="pr-progress-head">
+            <small>نسبة الانتهاء من الطباعة</small>
+            <b>{{ g.progress }}%</b>
+          </div>
+          <div class="pr-bar"><span [style.width.%]="g.progress"></span></div>
+        </div>
+
+        <dl class="pr-stats">
+          <div data-tone="warning">
+            <dt><i class="pi pi-clock"></i>قيد الطباعة</dt>
+            <dd>{{ g.pending }}</dd>
+          </div>
+          <div data-tone="success">
+            <dt><i class="pi pi-check-circle"></i>تم الانتهاء</dt>
+            <dd>{{ g.done }}</dd>
+          </div>
+          <div data-tone="danger">
+            <dt><i class="pi pi-times-circle"></i>مرفوض</dt>
+            <dd>{{ g.rejected }}</dd>
           </div>
         </dl>
 
         <footer>
-          <ng-container *ngIf="isPending(row)">
-            <button pButton type="button" class="pr-btn pr-btn-primary pr-grow" (click)="openConfirmDialog(row)">
-              <i class="pi pi-check-circle"></i><span>تسجيل انتهاء الطباعة</span>
-            </button>
-            <button
-              pButton
-              type="button"
-              class="pr-btn pr-btn-soft-danger"
-              pTooltip="رفض المادة"
-              tooltipPosition="top"
-              aria-label="رفض المادة"
-              (click)="openRejectDialog(row)"
-            >
-              <i class="pi pi-times"></i>
-            </button>
-          </ng-container>
-
-          <span *ngIf="isDone(row)" class="pr-result">
-            <i class="pi pi-check-circle"></i> تم الانتهاء من الطباعة
+          <span class="pr-open">
+            عرض اللجان <i class="pi pi-arrow-left"></i>
           </span>
-
-          <button *ngIf="isRejected(row)" pButton type="button" class="pr-btn pr-btn-danger pr-grow" (click)="openRejectionReasonDialog(row)">
-            <i class="pi pi-eye"></i><span>عرض سبب الرفض</span>
-          </button>
         </footer>
-
       </article>
     </section>
 
@@ -221,17 +240,171 @@
     </div>
 
     <!-- ====================================================== -->
-    <!-- CONFIRM FINISH PRINTING -->
+    <!-- COMMITTEES DIALOG (يفتح عند الضغط على المادة)            -->
+    <!-- ====================================================== -->
+    <p-dialog
+      [(visible)]="committeesDialogVisible"
+      [modal]="true"
+      [draggable]="false"
+      [resizable]="false"
+      [dismissableMask]="true"
+      [style]="{ width: '860px', maxWidth: 'calc(100vw - 2rem)' }"
+      styleClass="pr-dlg"
+      (onHide)="closeCommittees()"
+    >
+      <ng-template pTemplate="header">
+        <div class="pr-dlg-title">
+          <span class="pr-ico"><i class="pi pi-book"></i></span>
+          <div>
+            <h3>{{ activeGroup()?.subject }}</h3>
+            <small>حدّد اللجان المطلوب تسجيل انتهاء طباعتها</small>
+          </div>
+        </div>
+      </ng-template>
+
+      <div class="pr-dlg-body">
+
+        <!-- Tabs -->
+        <div class="pr-tabs">
+          <button
+            type="button"
+            class="pr-tab"
+            *ngFor="let t of statusTabs"
+            [class.active]="dialogTab() === t.key"
+            [attr.data-tone]="t.key === 'done' ? 'success' : t.key === 'rejected' ? 'danger' : t.key === 'pending' ? 'warning' : 'info'"
+            (click)="setTab(t.key)"
+          >
+            {{ t.label }} <b>{{ dialogCounts()[t.key] }}</b>
+          </button>
+        </div>
+
+        <!-- Toolbar -->
+        <div class="pr-toolbar">
+          <label class="pr-check pr-check-all">
+            <input
+              type="checkbox"
+              [checked]="allSelected()"
+              [indeterminate]="someSelected()"
+              [disabled]="!dialogCounts().pending"
+              (change)="toggleAll()"
+            />
+            <span>تحديد كل اللجان قيد الطباعة</span>
+          </label>
+
+          <span class="pr-search pr-search-sm">
+            <i class="pi pi-search"></i>
+            <input
+              pInputText
+              class="pr-input"
+              inputmode="numeric"
+              maxlength="10"
+              placeholder="بحث برقم اللجنة"
+              [ngModel]="dialogSearch()"
+              (ngModelChange)="dialogSearch.set($event)"
+            />
+          </span>
+        </div>
+
+        <!-- Committees list -->
+        <div class="pr-list" *ngIf="dialogRows().length; else noCommittees">
+          <div
+            class="pr-com"
+            *ngFor="let row of dialogRows(); trackBy: trackRow"
+            [attr.data-tone]="row.statusTone"
+            [class.selected]="isSelected(row)"
+            [class.locked]="!isPending(row)"
+            (click)="toggleRow(row)"
+          >
+            <label class="pr-check" (click)="$event.stopPropagation()">
+              <input
+                type="checkbox"
+                [checked]="isSelected(row)"
+                [disabled]="!isPending(row)"
+                (change)="toggleRow(row)"
+                [attr.aria-label]="'تحديد اللجنة ' + row.committeeNumber"
+              />
+            </label>
+
+            <span class="pr-ico pr-ico-sm"><i class="pi pi-building"></i></span>
+
+            <div class="pr-com-info">
+              <strong>لجنة رقم <span class="pr-mono">{{ row.committeeNumber }}</span></strong>
+              <small><i class="pi pi-map-marker"></i> {{ row.governorate }}</small>
+            </div>
+
+            <span class="pr-pill">
+              <i class="pi" [ngClass]="statusIcon(row)"></i>{{ row.status }}
+            </span>
+
+            <button
+              *ngIf="isRejected(row)"
+              pButton
+              type="button"
+              class="pr-btn pr-btn-soft-danger pr-btn-sm"
+              pTooltip="عرض سبب الرفض"
+              tooltipPosition="top"
+              aria-label="عرض سبب الرفض"
+              (click)="$event.stopPropagation(); openRejectionReasonDialog(row)"
+            >
+              <i class="pi pi-eye"></i>
+            </button>
+          </div>
+        </div>
+
+        <ng-template #noCommittees>
+          <div class="pr-empty">
+            <i class="pi pi-search"></i>
+            <strong>لا توجد لجان مطابقة</strong>
+            <span>جرّب تغيير التبويب أو رقم اللجنة.</span>
+          </div>
+        </ng-template>
+      </div>
+
+      <ng-template pTemplate="footer">
+        <div class="pr-bulkbar">
+          <div class="pr-selected">
+            <span class="pr-selected-count">{{ selectedCount() }}</span>
+            <span>لجنة محددة</span>
+            <button type="button" class="pr-link" *ngIf="selectedCount()" (click)="clearSelection()">
+              مسح التحديد
+            </button>
+          </div>
+
+          <div class="pr-actions">
+            <button
+              pButton
+              type="button"
+              class="pr-btn pr-btn-soft-danger"
+              [disabled]="!selectedCount()"
+              (click)="openRejectDialog()"
+            >
+              <i class="pi pi-times"></i><span>رفض المحدد</span>
+            </button>
+            <button
+              pButton
+              type="button"
+              class="pr-btn pr-btn-primary"
+              [disabled]="!selectedCount()"
+              (click)="openConfirmDialog()"
+            >
+              <i class="pi pi-check-circle"></i><span>تسجيل انتهاء الطباعة ({{ selectedCount() }})</span>
+            </button>
+          </div>
+        </div>
+      </ng-template>
+    </p-dialog>
+
+    <!-- ====================================================== -->
+    <!-- CONFIRM FINISH PRINTING (bulk)                          -->
     <!-- ====================================================== -->
     <p-dialog
       [(visible)]="confirmDialogVisible"
       [modal]="true"
-      [baseZIndex]="10000"
       [draggable]="false"
       [resizable]="false"
       [closable]="!finishSubmitting"
       [dismissableMask]="!finishSubmitting"
-      [style]="{ width: '460px', maxWidth: 'calc(100vw - 2rem)' }"
+      [style]="{ width: '480px', maxWidth: 'calc(100vw - 2rem)' }"
       styleClass="pr-dlg"
       (onHide)="closeConfirmDialog()"
     >
@@ -240,7 +413,7 @@
           <span class="pr-ico"><i class="pi pi-print"></i></span>
           <div>
             <h3>تأكيد انتهاء الطباعة</h3>
-            <small>هذا الإجراء يغيّر حالة المادة</small>
+            <small>هذا الإجراء يغيّر حالة اللجان المحددة</small>
           </div>
         </div>
       </ng-template>
@@ -249,15 +422,20 @@
         <span class="pr-confirm-icon"><i class="pi pi-question-circle"></i></span>
 
         <p>
-          هل تأكدت من الانتهاء من طباعة مادة
-          <strong>{{ selectedRow?.subject }}</strong>
-          الخاصة بمحافظة
-          <strong>{{ selectedRow?.governorate }}</strong>؟
+          هل تأكدت من الانتهاء من طباعة
+          <strong>{{ selectedCount() }}</strong>
+          لجنة من مادة
+          <strong>{{ activeGroup()?.subject }}</strong>؟
         </p>
+
+        <div class="pr-chips pr-chips-center" *ngIf="selectedRows().length">
+          <span *ngFor="let r of selectedRows() | slice: 0 : 12">{{ r.committeeNumber }}</span>
+          <span *ngIf="selectedRows().length > 12">+{{ selectedRows().length - 12 }}</span>
+        </div>
 
         <div class="pr-note">
           <i class="pi pi-info-circle"></i>
-          سيتم تحويل الحالة إلى <strong>تم الانتهاء</strong> وتصبح المادة جاهزة للمرحلة التالية.
+          سيتم تحويل حالة اللجان المحددة إلى <strong>تم الانتهاء</strong> وتصبح جاهزة للمرحلة التالية.
         </div>
       </div>
 
@@ -273,12 +451,11 @@
     </p-dialog>
 
     <!-- ====================================================== -->
-    <!-- REJECT DIALOG -->
+    <!-- REJECT DIALOG (bulk)                                    -->
     <!-- ====================================================== -->
     <p-dialog
       [(visible)]="rejectDialogVisible"
       [modal]="true"
-      [baseZIndex]="10000"
       [draggable]="false"
       [resizable]="false"
       [closable]="!rejectSubmitting"
@@ -291,7 +468,7 @@
         <div class="pr-dlg-title">
           <span class="pr-ico pr-ico-danger"><i class="pi pi-times-circle"></i></span>
           <div>
-            <h3>رفض مادة {{ selectedRow?.subject }}</h3>
+            <h3>رفض {{ selectedCount() }} لجنة</h3>
             <small>وضّح سبب الرفض وحدد المستخدمين المسؤولين عن المراجعة</small>
           </div>
         </div>
@@ -300,9 +477,13 @@
       <div class="pr-dlg-body">
 
         <div class="pr-info">
-          <div><small>المادة</small><strong>{{ selectedRow?.subject }}</strong></div>
-          <div><small>المحافظة</small><strong>{{ selectedRow?.governorate }}</strong></div>
-          <div><small>الحالة الحالية</small><strong>{{ selectedRow?.status }}</strong></div>
+          <div><small>المادة</small><strong>{{ activeGroup()?.subject }}</strong></div>
+          <div><small>عدد اللجان</small><strong>{{ selectedCount() }}</strong></div>
+        </div>
+
+        <div class="pr-chips pr-chips-block" *ngIf="selectedRows().length">
+          <span *ngFor="let r of selectedRows() | slice: 0 : 15">{{ r.committeeNumber }}</span>
+          <span *ngIf="selectedRows().length > 15">+{{ selectedRows().length - 15 }}</span>
         </div>
 
         <div class="pr-field">
@@ -314,7 +495,7 @@
             class="pr-input"
             maxlength="500"
             rows="5"
-            placeholder="اكتب سبب رفض المادة بالتفصيل..."
+            placeholder="اكتب سبب رفض اللجان بالتفصيل..."
           ></textarea>
           <div class="pr-hint">
             <span [class.pr-error]="rejectReason.length > 0 && rejectReason.trim().length < 10">
@@ -353,7 +534,7 @@
 
         <div class="pr-note">
           <i class="pi pi-info-circle"></i>
-          سيتم تغيير حالة المادة إلى <strong>مرفوض</strong> وإرسالها للمستخدمين المحددين للمراجعة.
+          سيتم تغيير حالة اللجان المحددة إلى <strong>مرفوض</strong> وإرسالها للمستخدمين المحددين للمراجعة.
         </div>
       </div>
 
@@ -369,12 +550,11 @@
     </p-dialog>
 
     <!-- ====================================================== -->
-    <!-- VIEW REJECTION REASON -->
+    <!-- VIEW REJECTION REASON                                   -->
     <!-- ====================================================== -->
     <p-dialog
       [(visible)]="rejectionReasonDialogVisible"
       [modal]="true"
-      [baseZIndex]="10000"
       [draggable]="false"
       [resizable]="false"
       [dismissableMask]="true"
@@ -386,7 +566,7 @@
         <div class="pr-dlg-title">
           <span class="pr-ico pr-ico-danger"><i class="pi pi-info-circle"></i></span>
           <div>
-            <h3>سبب رفض المادة</h3>
+            <h3>سبب رفض اللجنة</h3>
             <small>تفاصيل سبب الرفض المسجل</small>
           </div>
         </div>
@@ -394,9 +574,9 @@
 
       <div class="pr-dlg-body">
         <div class="pr-info">
-          <div><small>المادة</small><strong>{{ selectedRow?.subject }}</strong></div>
-          <div><small>المحافظة</small><strong>{{ selectedRow?.governorate }}</strong></div>
-          <div><small>رقم المادة</small><strong>{{ selectedRow?.index }}</strong></div>
+          <div><small>المادة</small><strong>{{ selectedRejectedRow?.subject }}</strong></div>
+          <div><small>المحافظة</small><strong>{{ selectedRejectedRow?.governorate }}</strong></div>
+          <div><small>رقم اللجنة</small><strong>{{ selectedRejectedRow?.committeeNumber }}</strong></div>
         </div>
 
         <div class="pr-reason">
@@ -406,7 +586,7 @@
 
         <div class="pr-note">
           <i class="pi pi-info-circle"></i>
-          راجع سبب الرفض قبل إعادة المادة إلى مرحلة الإعداد وإجراء التعديلات المطلوبة.
+          راجع سبب الرفض قبل إعادة اللجنة إلى مرحلة الإعداد وإجراء التعديلات المطلوبة.
         </div>
       </div>
 
