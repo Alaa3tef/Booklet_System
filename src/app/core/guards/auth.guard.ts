@@ -18,20 +18,20 @@ const dashboardRoles = new Set([
 ]);
 
 const workflowRouteByRole: Record<string, string> = {
-  planning: '/workflow/planning',
-  plan: '/workflow/planning',
-  'project management': '/workflow/planning',
+  // planning: '/workflow/planning',
+  // plan: '/workflow/planning',
+  projectmgmt: '/workflow/planning',
   printing: '/workflow/printing',
-  print: '/workflow/printing',
+  // print: '/workflow/printing',
   quality: '/workflow/quality',
   packing: '/workflow/packing',
-  packaging: '/workflow/packing',
+  // packaging: '/workflow/packing',
   archive: '/workflow/archiving',
-  archiving: '/workflow/archiving',
+  // archiving: '/workflow/archiving',
   storage: '/workflow/archiving',
   warehouse: '/warehouses',
   // warehouses: '/warehouses',
-  'warehouse management': '/warehouses'
+  // 'warehouse management': '/warehouses'
 };
 
 function roleFromProfileResponse(response: any): string {
