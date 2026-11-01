@@ -12,7 +12,7 @@ const normalizeRole = (role: string | null | undefined): string =>
   (role ?? '').trim().toLowerCase().replace(/[\s_-]+/g, ' ');
 
 const dashboardRoles = new Set([
-  'superadmin', 'it', 
+  'superadmin', 'it',
   'مسؤول النظام it', 'مدير النظام it',
   'top', 'top management', 'topmanagment'
 ]);
@@ -42,7 +42,7 @@ function roleFromProfileResponse(response: any): string {
     ?? profile?.user?.roleName
     ?? profile?.user?.role
     ?? '';
-    
+
 }
 
 function roleHomeUrl(role: string, router: Router) {
@@ -105,7 +105,6 @@ export const dashboardRoleGuard: CanActivateFn = () => {
     map(role => dashboardRoles.has(role) ? true : roleHomeUrl(role, router))
   );
 };
-
 /**
  * Protects guest routes (e.g. /login, /forgot-password, /reset-password).
  * Redirects to /dashboard if user is already signed in.
