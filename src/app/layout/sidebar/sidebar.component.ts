@@ -102,7 +102,7 @@ export class SidebarComponent implements OnInit {
       label: 'اعتماد الطباعة',
       icon: 'pi pi-sliders-h',
       route: '/workflow/printing-approved',
-      roles: ['quality' , 'superadmin']
+      roles: ['pre-quality' , 'superadmin']
     },
 
     {
@@ -193,7 +193,7 @@ export class SidebarComponent implements OnInit {
 
 readonly visibleNavItems = computed(() => {
   const currentRole = this.normalizeRole(this.role());
-
+   console.log('kkd', currentRole)
   return this.navItems().filter(item => {
     // Dashboard is restricted to system administrators and top management.
     if (item.route === '/dashboard') {
@@ -259,6 +259,7 @@ private isITRole(role: string): boolean {
       'packaging',
       'archiving',
       'archive',
+      'pre-quality',
 
       'التخطيط',
       'الإعداد',

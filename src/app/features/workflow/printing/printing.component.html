@@ -42,71 +42,62 @@
     </section>
 
     <!-- ========== Filters ========== -->
-    <section class="pr-box pr-filters">
-      <!-- <div class="pr-field">
-        <label for="printing-search">بحث</label>
-        <span class="pr-search">
-          <i class="pi pi-search"></i>
-          <input
-            pInputText
-            id="printing-search"
-            class="pr-input"
-            placeholder="ابحث بالمادة أو المحافظة أو الدور"
-            [ngModel]="search()"
-            (ngModelChange)="onSearch($event)"
-          />
-        </span>
-      </div> -->
+<section class="pr-box pr-filters">
 
-      <div class="pr-field">
-        <label for="printing-governorate">المحافظة</label>
-        <p-select
-          inputId="printing-governorate"
-          [options]="governorateOptions()"
-          [ngModel]="selectedGovernorate()"
-          (ngModelChange)="onGovernorateChange($event)"
-          optionLabel="label"
-          optionValue="value"
-          placeholder="كل المحافظات"
-          [filter]="true"
-          filterPlaceholder="ابحث عن محافظة..."
-          emptyMessage="لا توجد محافظات"
-          [showClear]="true"
-          styleClass="pr-input"
-        />
-      </div>
+  <div class="pr-field">
+    <label for="printing-governorate">المحافظة</label>
 
-      <div class="pr-field">
-        <label for="printing-subject">المادة</label>
-        <p-select
-          inputId="printing-subject"
-          [options]="subjectOptions()"
-          [ngModel]="selectedSubject()"
-          (ngModelChange)="onSubjectChange($event)"
-          optionLabel="label"
-          optionValue="value"
-          placeholder="كل المواد"
-          [filter]="true"
-          filterPlaceholder="ابحث عن مادة..."
-          emptyMessage="لا توجد مواد"
-          [showClear]="true"
-          styleClass="pr-input"
-        />
-      </div>
+    <p-select
+      inputId="printing-governorate"
+      [options]="governorateOptions()"
+      [ngModel]="selectedGovernorate()"
+      (ngModelChange)="onGovernorateChange($event)"
+      optionLabel="label"
+      optionValue="value"
+      placeholder="كل المحافظات"
+      [filter]="true"
+      filterPlaceholder="ابحث عن محافظة..."
+      emptyMessage="لا توجد محافظات"
+      [showClear]="true"
+      [disabled]="lookupsLoading()"
+      styleClass="pr-input"
+    />
+  </div>
 
-      <button
-        pButton
-        type="button"
-        class="pr-btn pr-btn-ghost"
-        pTooltip="إعادة تعيين"
-        tooltipPosition="top"
-        aria-label="إعادة تعيين"
-        [disabled]="!hasActiveFilters()"
-        (click)="resetFilters()"
-      >
-        <i class="pi pi-filter-slash"></i>
-      </button>
-    </section>
+  <div class="pr-field">
+    <label for="printing-subject">المادة</label>
+
+    <p-select
+      inputId="printing-subject"
+      [options]="subjectOptions()"
+      [ngModel]="selectedSubject()"
+      (ngModelChange)="onSubjectChange($event)"
+      optionLabel="label"
+      optionValue="value"
+      placeholder="كل المواد"
+      [filter]="true"
+      filterPlaceholder="ابحث عن مادة..."
+      emptyMessage="لا توجد مواد"
+      [showClear]="true"
+      [disabled]="lookupsLoading()"
+      styleClass="pr-input"
+    />
+  </div>
+
+  <button
+    pButton
+    type="button"
+    class="pr-btn pr-btn-ghost"
+    pTooltip="إعادة تعيين"
+    tooltipPosition="top"
+    aria-label="إعادة تعيين"
+    [disabled]="!hasActiveFilters() || loading()"
+    (click)="resetFilters()"
+  >
+    <i class="pi pi-filter-slash"></i>
+  </button>
+
+</section>
 
     <!-- ========== Error ========== -->
     <div class="pr-alert" *ngIf="loadError()">

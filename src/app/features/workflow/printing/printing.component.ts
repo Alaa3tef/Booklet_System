@@ -1,3 +1,4 @@
+
 import { CommonModule } from '@angular/common';
 import {
   Component,
@@ -17,8 +18,18 @@ import { SelectModule } from 'primeng/select';
 import { TooltipModule } from 'primeng/tooltip';
 
 import { WorkflowStepLayoutComponent } from '../../../shared/workflow-step-layout/workflow-step-layout.component';
-import { PrintingCommittee, PrintingService, PrintingBatch } from './service/printing-service';
+import {
+  PrintingCommittee,
+  PrintingService,
+  PrintingBatch,
+  PrintingBatchFilters
+} from './service/printing-service';
+
 import { Lookups } from '../../../shared/services/lookups';
+
+// ==========================================
+// Interfaces
+// ==========================================
 
 interface Totals {
   committees: number;
@@ -33,7 +44,7 @@ interface Totals {
 
 interface SelectOption {
   label: string;
-  value: string;
+  value: number;
 }
 
 const EMPTY_TOTALS: Totals = {
@@ -46,6 +57,10 @@ const EMPTY_TOTALS: Totals = {
   envelopes: 0,
   boxes: 0
 };
+
+// ==========================================
+// Helpers
+// ==========================================
 
 function sum(list: PrintingCommittee[]): Totals {
   return list.reduce<Totals>(
@@ -68,16 +83,24 @@ function errorMessage(error: any, fallback: string): string {
 }
 
 /**
- * يستخرج الـ array من أي شكل response:
- * { data: { data: [...] } } | { data: [...] } | [...]
+ * Extract array from API response:
+ * { data: { data: [...] } }
+ * { data: [...] }
+ * { items: [...] }
+ * [...]
  */
 function extractList(res: any): any[] {
   if (Array.isArray(res)) return res;
   if (Array.isArray(res?.data)) return res.data;
   if (Array.isArray(res?.data?.data)) return res.data.data;
   if (Array.isArray(res?.items)) return res.items;
+  if (Array.isArray(res?.result)) return res.result;
   return [];
 }
+
+// ==========================================
+// Component
+// ==========================================
 
 @Component({
   selector: 'app-printing',
@@ -97,6 +120,7 @@ function extractList(res: any): any[] {
   encapsulation: ViewEncapsulation.None
 })
 export default class PrintingComponent implements OnInit {
+
   private readonly printingService = inject(PrintingService);
   private readonly lookups = inject(Lookups);
 
@@ -123,7 +147,8 @@ export default class PrintingComponent implements OnInit {
   }
 
   // ==========================================
-  // Batches (GET api/Printing/batches)
+  // Batches
+  // GET api/Printing/batches
   // ==========================================
 
   readonly batches = signal<PrintingBatch[]>([]);
@@ -131,160 +156,302 @@ export default class PrintingComponent implements OnInit {
   readonly loadError = signal('');
 
   loadBatches(silent = false): void {
+
     if (!silent) {
       this.loading.set(true);
     }
 
     this.loadError.set('');
 
-    this.printingService.getBatches().subscribe({
+    const filters: PrintingBatchFilters = {
+      governorateId: this.selectedGovernorate(),
+      subjectId: this.selectedSubject()
+    };
+
+    this.printingService.getBatches(filters).subscribe({
+
       next: batches => {
         this.batches.set(batches);
         this.loading.set(false);
+
+        // التأكد إن الصفحة الحالية موجودة بعد الفلترة
+        if (this.currentPage() > this.totalPages()) {
+          this.currentPage.set(1);
+        }
       },
+
       error: (error: unknown) => {
         console.error('Failed to load batches:', error);
-        this.loadError.set(errorMessage(error, 'تعذر تحميل قائمة المواد. حاول مرة أخرى.'));
+
+        this.loadError.set(
+          errorMessage(
+            error,
+            'تعذر تحميل قائمة المواد. حاول مرة أخرى.'
+          )
+        );
+
         this.loading.set(false);
       }
+
     });
   }
 
   // ==========================================
-  // Lookups (Governorates / Subjects)
+  // Lookups
+  // Governorates / Subjects
   // ==========================================
 
   private readonly lookupGovernorates = signal<SelectOption[]>([]);
   private readonly lookupSubjects = signal<SelectOption[]>([]);
-  readonly lookupsLoading = signal(false);
-  readonly useBatchesAsFallback = signal(false);
 
-  readonly governorateOptions = computed<SelectOption[]>(() =>
-    this.useBatchesAsFallback()
-      ? this.distinct(this.batches().map(b => b.governorate))
-      : this.lookupGovernorates()
+  readonly lookupsLoading = signal(false);
+
+  readonly governorateOptions = computed<SelectOption[]>(
+    () => this.lookupGovernorates()
   );
 
-  readonly subjectOptions = computed<SelectOption[]>(() =>
-    this.useBatchesAsFallback()
-      ? this.distinct(this.batches().map(b => b.subject))
-      : this.lookupSubjects()
+  readonly subjectOptions = computed<SelectOption[]>(
+    () => this.lookupSubjects()
   );
 
   private loadLookups(): void {
+
     this.lookupsLoading.set(true);
 
     forkJoin({
       governorates: this.lookups.getLookupGovernorateData(),
       subjects: this.lookups.getLookupSubjectData()
     }).subscribe({
+
       next: ({ governorates, subjects }) => {
-        this.lookupGovernorates.set(this.toOptions(governorates));
-        this.lookupSubjects.set(this.toOptions(subjects));
+
+        this.lookupGovernorates.set(
+          this.toOptions(governorates, 'governorate')
+        );
+
+        this.lookupSubjects.set(
+          this.toOptions(subjects, 'subject')
+        );
+
         this.lookupsLoading.set(false);
       },
+
       error: (error: unknown) => {
+
         console.error('Failed to load lookups:', error);
+
         this.lookupsLoading.set(false);
-        // fallback: لو الـ lookup فشل نبني الخيارات من الباتشات
-        this.useBatchesAsFallback.set(true);
       }
+
     });
   }
 
-  /** يحوّل response الـ lookup لـ { label, value } بدون تكرار */
-  private toOptions(res: any): SelectOption[] {
-    const names = extractList(res)
-      .filter(x => x?.isActive !== false)
-      .map(x => String(x?.name ?? x?.nameAr ?? x?.arabicName ?? '').trim());
+  /**
+   * تحويل بيانات الـ Lookup إلى:
+   * {
+   *   label: 'اسم المحافظة',
+   *   value: GovernorateId
+   * }
+   *
+   * مهم:
+   * الـ value هنا هو الـ ID وليس الاسم.
+   */
+  private toOptions(
+    response: any,
+    type: 'governorate' | 'subject'
+  ): SelectOption[] {
 
-    return this.distinct(names);
-  }
+    const list = extractList(response);
 
-  private distinct(values: string[]): SelectOption[] {
-    return [...new Set(values.filter(Boolean))]
-      .sort((a, b) => a.localeCompare(b, 'ar'))
-      .map(v => ({ label: v, value: v }));
+    const options = list
+      .filter(item => item?.isActive !== false)
+      .map(item => {
+
+        const id =
+          item?.id ??
+          item?.governorateId ??
+          item?.subjectId ??
+          item?.value;
+
+        const name =
+          item?.name ??
+          item?.nameAr ??
+          item?.arabicName ??
+          item?.subjectName ??
+          item?.governorateName ??
+          item?.label;
+
+        return {
+          label: String(name ?? '').trim(),
+          value: Number(id)
+        };
+
+      })
+      .filter(item =>
+        item.label.length > 0 &&
+        Number.isFinite(item.value) &&
+        item.value > 0
+      );
+
+    // منع تكرار الـ IDs
+    const unique = new Map<number, SelectOption>();
+
+    options.forEach(option => {
+      unique.set(option.value, option);
+    });
+
+    return [...unique.values()].sort(
+      (a, b) => a.label.localeCompare(b.label, 'ar')
+    );
   }
 
   // ==========================================
-  // Filters (client-side)
+  // Filters
+  // Server-side filtering
   // ==========================================
 
   readonly search = signal('');
-  readonly selectedGovernorate = signal<string | null>(null);
-  readonly selectedSubject = signal<string | null>(null);
+
+  readonly selectedGovernorate = signal<number | null>(null);
+
+  readonly selectedSubject = signal<number | null>(null);
 
   readonly hasActiveFilters = computed(
-    () => !!(this.search().trim() || this.selectedGovernorate() || this.selectedSubject())
+    () =>
+      this.selectedGovernorate() !== null ||
+      this.selectedSubject() !== null ||
+      !!this.search().trim()
   );
 
-  readonly filteredBatches = computed(() => {
-    const q = this.search().trim().toLowerCase();
-    const gov = this.selectedGovernorate();
-    const sub = this.selectedSubject();
+  /**
+   * البحث بالمحافظة
+   * إرسال GovernorateId إلى API
+   */
+  onGovernorateChange(value: number | null): void {
 
-    return this.batches().filter(
-      b =>
-        (!gov || b.governorate === gov) &&
-        (!sub || b.subject === sub) &&
-        (!q ||
-          [b.label, b.subject, b.governorate, b.round].some(v => (v ?? '').toLowerCase().includes(q)))
+    this.selectedGovernorate.set(value);
+
+    this.currentPage.set(1);
+
+    this.loadBatches();
+  }
+
+  /**
+   * البحث بالمادة
+   * إرسال SubjectId إلى API
+   */
+  onSubjectChange(value: number | null): void {
+
+    this.selectedSubject.set(value);
+
+    this.currentPage.set(1);
+
+    this.loadBatches();
+  }
+
+  /**
+   * البحث النصي - متاح لو تم تفعيل حقل البحث
+   */
+  onSearch(value: string): void {
+
+    this.search.set(value);
+
+    this.currentPage.set(1);
+  }
+
+  /**
+   * إعادة تعيين الفلاتر
+   */
+  resetFilters(): void {
+
+    this.search.set('');
+
+    this.selectedGovernorate.set(null);
+
+    this.selectedSubject.set(null);
+
+    this.currentPage.set(1);
+
+    this.loadBatches();
+  }
+
+  /**
+   * النتائج المعروضة.
+   * المحافظة والمادة تتم فلترتهما من السيرفر.
+   */
+  readonly filteredBatches = computed(() => {
+
+    const q = this.search().trim().toLowerCase();
+
+    if (!q) {
+      return this.batches();
+    }
+
+    return this.batches().filter(b =>
+      [
+        b.label,
+        b.subject,
+        b.governorate,
+        b.round
+      ].some(v =>
+        (v ?? '').toLowerCase().includes(q)
+      )
     );
   });
 
-  readonly total = computed(() => this.filteredBatches().length);
-
-  readonly totalPending = computed(() =>
-    this.filteredBatches().reduce((s, b) => s + b.pendingCommittees, 0)
+  readonly total = computed(
+    () => this.filteredBatches().length
   );
 
-  onSearch(value: string): void {
-    this.search.set(value);
-    this.currentPage.set(1);
-  }
-
-  onGovernorateChange(value: string | null): void {
-    this.selectedGovernorate.set(value);
-    this.currentPage.set(1);
-  }
-
-  onSubjectChange(value: string | null): void {
-    this.selectedSubject.set(value);
-    this.currentPage.set(1);
-  }
-
-  resetFilters(): void {
-    this.search.set('');
-    this.selectedGovernorate.set(null);
-    this.selectedSubject.set(null);
-    this.currentPage.set(1);
-  }
+  readonly totalPending = computed(
+    () =>
+      this.filteredBatches().reduce(
+        (total, batch) => total + batch.pendingCommittees,
+        0
+      )
+  );
 
   // ==========================================
-  // Pagination (client-side)
+  // Pagination
   // ==========================================
 
   readonly pageSize = signal(6);
+
   readonly currentPage = signal(1);
 
   readonly totalPages = computed(() =>
-    Math.max(1, Math.ceil(this.total() / this.pageSize()))
+    Math.max(
+      1,
+      Math.ceil(this.total() / this.pageSize())
+    )
   );
 
   readonly pageBatches = computed(() => {
-    const page = Math.min(this.currentPage(), this.totalPages());
+
+    const page = Math.min(
+      this.currentPage(),
+      this.totalPages()
+    );
+
     const start = (page - 1) * this.pageSize();
 
-    return this.filteredBatches().slice(start, start + this.pageSize());
+    return this.filteredBatches().slice(
+      start,
+      start + this.pageSize()
+    );
   });
 
   readonly paginationPages = computed<(number | 'dots')[]>(() => {
+
     const total = this.totalPages();
+
     const current = this.currentPage();
 
     if (total <= 4) {
-      return Array.from({ length: total }, (_, i) => i + 1);
+      return Array.from(
+        { length: total },
+        (_, i) => i + 1
+      );
     }
 
     if (current <= 2) {
@@ -292,22 +459,44 @@ export default class PrintingComponent implements OnInit {
     }
 
     if (current >= total - 1) {
-      return [1, 'dots', total - 2, total - 1, total];
+      return [
+        1,
+        'dots',
+        total - 2,
+        total - 1,
+        total
+      ];
     }
 
-    return [1, 'dots', current, 'dots', total];
+    return [
+      1,
+      'dots',
+      current,
+      'dots',
+      total
+    ];
   });
 
   readonly paginationStart = computed(() =>
-    this.total() === 0 ? 0 : (this.currentPage() - 1) * this.pageSize() + 1
+    this.total() === 0
+      ? 0
+      : (this.currentPage() - 1) * this.pageSize() + 1
   );
 
   readonly paginationEnd = computed(() =>
-    Math.min(this.currentPage() * this.pageSize(), this.total())
+    Math.min(
+      this.currentPage() * this.pageSize(),
+      this.total()
+    )
   );
 
   goToPage(page: number): void {
-    if (page < 1 || page > this.totalPages() || page === this.currentPage()) {
+
+    if (
+      page < 1 ||
+      page > this.totalPages() ||
+      page === this.currentPage()
+    ) {
       return;
     }
 
@@ -315,7 +504,9 @@ export default class PrintingComponent implements OnInit {
   }
 
   onPageSizeChange(size: number): void {
+
     this.pageSize.set(size);
+
     this.currentPage.set(1);
   }
 
@@ -324,67 +515,94 @@ export default class PrintingComponent implements OnInit {
   // ==========================================
 
   statusLabel(status: string): string {
+
     switch (status) {
+
       case 'InProgress':
         return 'قيد الطباعة';
+
       case 'Completed':
       case 'Done':
         return 'مكتملة';
+
       case 'Pending':
       case 'NotStarted':
         return 'لم تبدأ';
+
       default:
         return status || '—';
     }
   }
 
-  tone(batch: PrintingBatch): 'success' | 'warning' | 'info' {
+  tone(
+    batch: PrintingBatch
+  ): 'success' | 'warning' | 'info' {
+
     if (batch.pendingCommittees === 0) {
       return 'success';
     }
 
-    return batch.status === 'InProgress' ? 'warning' : 'info';
+    return batch.status === 'InProgress'
+      ? 'warning'
+      : 'info';
   }
 
   trackBatch = (_: number, b: PrintingBatch) => b.id;
+
   trackCommittee = (_: number, c: PrintingCommittee) => c.id;
 
   // ==========================================
-  // Committees dialog (GET api/Printing/batches/{batchId}/committees)
+  // Committees Dialog
   // ==========================================
 
   committeesDialogVisible = false;
 
   readonly activeBatch = signal<PrintingBatch | null>(null);
+
   readonly committees = signal<PrintingCommittee[]>([]);
+
   readonly committeesLoading = signal(false);
+
   readonly committeesError = signal('');
+
   readonly dialogSearch = signal('');
 
-  /** إجماليات كل اللجان المعروضة */
-  readonly totals = computed(() => sum(this.committees()));
+  readonly totals = computed(
+    () => sum(this.committees())
+  );
 
   readonly dialogRows = computed(() => {
+
     const q = this.dialogSearch().trim();
 
     return q
-      ? this.committees().filter(c => c.committeeNumber.includes(q))
+      ? this.committees().filter(c =>
+          c.committeeNumber.includes(q)
+        )
       : this.committees();
   });
 
   openCommittees(batch: PrintingBatch): void {
+
     this.activeBatch.set(batch);
+
     this.committees.set([]);
+
     this.dialogSearch.set('');
+
     this.selectedIds.set(new Set());
+
     this.printError.set('');
+
     this.finishedAll.set(false);
+
     this.committeesDialogVisible = true;
 
     this.loadCommittees();
   }
 
   loadCommittees(silent = false): void {
+
     const batch = this.activeBatch();
 
     if (!batch) {
@@ -398,52 +616,94 @@ export default class PrintingComponent implements OnInit {
     this.committeesError.set('');
 
     this.printingService.getCommittees(batch.id).subscribe({
+
       next: list => {
+
         this.committees.set(list);
+
         this.committeesLoading.set(false);
 
-        // شيل أي تحديد لم يعد موجود
-        const ids = new Set(list.map(c => c.id));
-        this.selectedIds.update(set => new Set([...set].filter(id => ids.has(id))));
+        const ids = new Set(
+          list.map(c => c.id)
+        );
+
+        this.selectedIds.update(set =>
+          new Set(
+            [...set].filter(id => ids.has(id))
+          )
+        );
       },
+
       error: (error: unknown) => {
+
         console.error('Failed to load committees:', error);
-        this.committeesError.set(errorMessage(error, 'تعذر تحميل اللجان. حاول مرة أخرى.'));
+
+        this.committeesError.set(
+          errorMessage(
+            error,
+            'تعذر تحميل اللجان. حاول مرة أخرى.'
+          )
+        );
+
         this.committeesLoading.set(false);
       }
+
     });
   }
 
   closeCommittees(): void {
+
     this.committeesDialogVisible = false;
+
     this.activeBatch.set(null);
+
     this.committees.set([]);
+
     this.selectedIds.set(new Set());
+
     this.committeesError.set('');
+
     this.printError.set('');
+
     this.finishedAll.set(false);
   }
 
-  // ---------- Multi selection ----------
+  // ==========================================
+  // Multi Selection
+  // ==========================================
 
   readonly selectedIds = signal<Set<number>>(new Set());
 
   readonly selectedCommittees = computed(() =>
-    this.committees().filter(c => this.selectedIds().has(c.id))
+    this.committees().filter(
+      c => this.selectedIds().has(c.id)
+    )
   );
 
-  readonly selectedCount = computed(() => this.selectedIds().size);
+  readonly selectedCount = computed(
+    () => this.selectedIds().size
+  );
 
-  /** إجماليات اللجان المحددة */
-  readonly selectedTotals = computed(() => sum(this.selectedCommittees()));
+  readonly selectedTotals = computed(
+    () => sum(this.selectedCommittees())
+  );
 
   readonly allSelected = computed(() => {
+
     const list = this.dialogRows();
-    return list.length > 0 && list.every(c => this.selectedIds().has(c.id));
+
+    return (
+      list.length > 0 &&
+      list.every(c =>
+        this.selectedIds().has(c.id)
+      )
+    );
   });
 
   readonly someSelected = computed(
-    () => this.selectedCount() > 0 && !this.allSelected()
+    () =>
+      this.selectedCount() > 0 &&
+      !this.allSelected()
   );
 
   isSelected(c: PrintingCommittee): boolean {
@@ -451,27 +711,39 @@ export default class PrintingComponent implements OnInit {
   }
 
   toggleRow(c: PrintingCommittee): void {
+
     if (this.printSubmitting()) {
       return;
     }
 
     this.selectedIds.update(set => {
+
       const next = new Set(set);
-      next.has(c.id) ? next.delete(c.id) : next.add(c.id);
+
+      next.has(c.id)
+        ? next.delete(c.id)
+        : next.add(c.id);
+
       return next;
     });
   }
 
   toggleAll(): void {
+
     const list = this.dialogRows();
 
     this.selectedIds.update(set => {
+
       const next = new Set(set);
 
       if (this.allSelected()) {
+
         list.forEach(c => next.delete(c.id));
+
       } else {
+
         list.forEach(c => next.add(c.id));
+
       }
 
       return next;
@@ -491,25 +763,30 @@ export default class PrintingComponent implements OnInit {
   }
 
   // ==========================================
-  // Finish printing (PUT api/Printing/batches/{batchId}/print)
+  // Finish Printing
   // ==========================================
 
   confirmDialogVisible = false;
+
   readonly printSubmitting = signal(false);
+
   readonly printError = signal('');
-  /** بعد ما كل لجان المادة تتسجل */
+
   readonly finishedAll = signal(false);
 
   openConfirmDialog(): void {
+
     if (!this.selectedCount()) {
       return;
     }
 
     this.printError.set('');
+
     this.confirmDialogVisible = true;
   }
 
   closeConfirmDialog(): void {
+
     if (this.printSubmitting()) {
       return;
     }
@@ -518,38 +795,77 @@ export default class PrintingComponent implements OnInit {
   }
 
   confirmFinish(): void {
-    const batch = this.activeBatch();
-    const committeeIds = [...this.selectedIds()];
 
-    if (!batch || !committeeIds.length || this.printSubmitting()) {
+    const batch = this.activeBatch();
+
+    const committeeIds = [
+      ...this.selectedIds()
+    ];
+
+    if (
+      !batch ||
+      !committeeIds.length ||
+      this.printSubmitting()
+    ) {
       return;
     }
 
     this.printSubmitting.set(true);
+
     this.printError.set('');
 
-    this.printingService.printCommittees(batch.id, committeeIds).subscribe({
-      next: () => {
-        this.printSubmitting.set(false);
-        this.confirmDialogVisible = false;
-        this.clearSelection();
+    this.printingService
+      .printCommittees(batch.id, committeeIds)
+      .subscribe({
 
-        // اللجان المطبوعة بتختفي من القائمة: نحدّث من السيرفر
-        this.printingService.getCommittees(batch.id).subscribe({
-          next: list => {
-            this.committees.set(list);
-            this.finishedAll.set(list.length === 0);
-          },
-          error: () => this.loadCommittees(true)
-        });
+        next: () => {
 
-        this.loadBatches(true);
-      },
-      error: (error: unknown) => {
-        console.error('Failed to register printing:', error);
-        this.printSubmitting.set(false);
-        this.printError.set(errorMessage(error, 'تعذر تسجيل انتهاء الطباعة. حاول مرة أخرى.'));
-      }
-    });
+          this.printSubmitting.set(false);
+
+          this.confirmDialogVisible = false;
+
+          this.clearSelection();
+
+          this.printingService
+            .getCommittees(batch.id)
+            .subscribe({
+
+              next: list => {
+
+                this.committees.set(list);
+
+                this.finishedAll.set(
+                  list.length === 0
+                );
+              },
+
+              error: () => {
+                this.loadCommittees(true);
+              }
+
+            });
+
+          // تحديث البطاقات مع الاحتفاظ بالفلاتر
+          this.loadBatches(true);
+        },
+
+        error: (error: unknown) => {
+
+          console.error(
+            'Failed to register printing:',
+            error
+          );
+
+          this.printSubmitting.set(false);
+
+          this.printError.set(
+            errorMessage(
+              error,
+              'تعذر تسجيل انتهاء الطباعة. حاول مرة أخرى.'
+            )
+          );
+        }
+
+      });
   }
 }

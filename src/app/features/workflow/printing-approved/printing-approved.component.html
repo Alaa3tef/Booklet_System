@@ -41,41 +41,54 @@
           <div class="fields-grid">
 
             <div class="filter-field">
-              <label for="pa-governorate">المحافظة</label>
-              <div class="select-wrapper">
-                <i class="pi pi-map-marker"></i>
-                <p-select
-                  inputId="pa-governorate"
-                  [options]="governorates()"
-                  optionLabel="label"
-                  optionValue="value"
-                  [ngModel]="searchGovernorate()"
-                  (ngModelChange)="setGovernorate($event)"
-                  placeholder="كل المحافظات"
-                  appendTo="body"
-                  [showClear]="false"
-                />
-              </div>
-            </div>
+  <label for="pa-governorate">المحافظة</label>
 
-            <div class="filter-field">
-              <label for="pa-subject">المادة</label>
-              <div class="select-wrapper">
-                <i class="pi pi-book"></i>
-                <p-select
-                  inputId="pa-subject"
-                  [options]="subjects()"
-                  optionLabel="label"
-                  optionValue="value"
-                  [ngModel]="searchSubject()"
-                  (ngModelChange)="setSubject($event)"
-                  placeholder="كل المواد"
-                  appendTo="body"
-                  [showClear]="false"
-                  styleClass="pa-filter-select"
-                />
-              </div>
-            </div>
+  <div class="select-wrapper">
+    <i class="pi pi-map-marker"></i>
+
+    <p-select
+  inputId="pa-governorate"
+  [options]="governorates()"
+  optionLabel="label"
+  optionValue="value"
+  [ngModel]="searchGovernorate()"
+  (ngModelChange)="setGovernorate($event)"
+  placeholder="كل المحافظات"
+  appendTo="body"
+  [showClear]="false"
+  [filter]="true"
+  filterBy="label"
+  filterPlaceholder="ابحث باسم المحافظة"
+  emptyFilterMessage="لا توجد محافظة بهذا الاسم"
+  styleClass="pa-filter-select"
+/>
+  </div>
+</div>
+
+          <div class="filter-field">
+  <label for="pa-subject">المادة</label>
+
+  <div class="select-wrapper">
+    <i class="pi pi-book"></i>
+
+    <p-select
+  inputId="pa-subject"
+  [options]="subjects()"
+  optionLabel="label"
+  optionValue="value"
+  [ngModel]="searchSubject()"
+  (ngModelChange)="setSubject($event)"
+  placeholder="كل المواد"
+  appendTo="body"
+  [showClear]="false"
+  [filter]="true"
+  filterBy="label"
+  filterPlaceholder="ابحث باسم المادة"
+  emptyFilterMessage="لا توجد مادة بهذا الاسم"
+  styleClass="pa-filter-select"
+/>
+  </div>
+</div>
 
           </div>
 
