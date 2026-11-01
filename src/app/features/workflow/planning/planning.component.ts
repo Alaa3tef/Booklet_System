@@ -16,10 +16,26 @@ import { WorkflowStepLayoutComponent } from '../../../shared/workflow-step-layou
 import { WorkflowStatusRow } from '../../../core/models/workflow.model';
 import { Lookups } from '../../../shared/services/lookups';
 
+import { BatchCommittee, BatchDetails, PlanningBatch, PlanningService } from './service/planning-batch';
+
 interface ReviewUser { id: number; name: string; role: string; avatar?: string; }
 interface SelectOption { label: string; value: string | number; }
-type FilterKey = 'governorate' | 'subject' | 'education' | 'committee';
+type FilterKey = 'governorate' | 'subject' | 'batch';
 type StepState = 'done' | 'current' | 'pending' | 'rejected';
+
+const READY = 'جاهز لاعتماد الطباعة';
+const PREPARING = 'قيد الإعداد';
+const REJECTED = 'مرفوض';
+
+/** a card = one planning batch (من api/Planning/batches/for-approve) */
+interface PlanningRow extends WorkflowStatusRow {
+  batchId: number;
+  batchName: string;
+  year: number;
+  roundName: string;
+  totalCommittees: number;
+  nextStatusNameAr: string;
+}
 
 @Component({
   selector: 'app-planning',
@@ -36,33 +52,24 @@ type StepState = 'done' | 'current' | 'pending' | 'rejected';
 export default class PlanningComponent implements OnInit {
 
   private readonly lookupService = inject(Lookups);
+  private readonly planningService = inject(PlanningService);
   private readonly messageService = inject(MessageService);
 
   // ==========================================
   // ESSENTIALS
   // ==========================================
-  readonly essentials = ['البحث بالمحافظة', 'البحث بالمادة', 'تغيير حالة المادة'];
+  readonly essentials = ['البحث بالمحافظة', 'البحث بالمادة', 'عرض تفاصيل الدفعة', 'تغيير حالة المادة'];
 
   // ==========================================
-  // FILTER OPTIONS (signals, so filters react when lookups arrive)
+  // FILTER OPTIONS
   // ==========================================
   readonly governorates = signal<SelectOption[]>([{ label: 'كل المحافظات', value: 'all' }]);
   readonly subjects     = signal<SelectOption[]>([{ label: 'كل المواد', value: 'all' }]);
-  educationals: SelectOption[] = [
-    { label: 'كل الادارات التعليمية', value: 'all' },
-    { label: 'EDU-001', value: 'EDU-001' },
-    { label: 'EDU-002', value: 'EDU-002' },
-    { label: 'EDU-003', value: 'EDU-003' },
-    { label: 'EDU-004', value: 'EDU-004' },
-    { label: 'EDU-005', value: 'EDU-005' },
-    { label: 'EDU-006', value: 'EDU-006' },
-    { label: 'EDU-007', value: 'EDU-007' },
-    { label: 'EDU-008', value: 'EDU-008' },
-    { label: 'EDU-009', value: 'EDU-009' },
-    { label: 'EDU-010', value: 'EDU-010' },
-    { label: 'EDU-011', value: 'EDU-011' }
-  ];
-  ngOnInit(): void { this.loadLookups(); }
+
+  ngOnInit(): void {
+    this.loadLookups();
+    this.loadBatches();
+  }
 
   loadLookups(): void {
     forkJoin({
@@ -103,69 +110,86 @@ export default class PlanningComponent implements OnInit {
   ];
 
   // ==========================================
-  // TABLE DATA  (replace with your API)
+  // CARDS DATA  — GET api/Planning/batches/for-approve
   // ==========================================
-  readonly rows = signal<WorkflowStatusRow[]>([
-    { index: 1, committeeNumber: 'COM-1001', subject: 'اللغة العربية', educationNumber: 'EDU-001', governorate: 'القاهرة',    status: 'جاهز لاعتماد الطباعة', statusTone: 'success' },
-    { index: 2, committeeNumber: 'COM-1002', subject: 'الرياضيات',     educationNumber: 'EDU-002', governorate: 'الجيزة',     status: 'قيد الإعداد',  statusTone: 'warning' },
-    { index: 3, committeeNumber: 'COM-1003', subject: 'العلوم',        educationNumber: 'EDU-003', governorate: 'الإسكندرية', status: 'مرفوض',        statusTone: 'danger',
-      rejectionReason: 'يوجد بعض الأخطاء في محتوى المادة، كما أن بعض الأسئلة تحتاج إلى مراجعة قبل اعتماد الخطة.' },
-    { index: 4, committeeNumber: 'COM-1004', subject: 'اللغة العربية', educationNumber: 'EDU-004', governorate: 'القاهرة',    status: 'جاهز لاعتماد الطباعة', statusTone: 'success' },
-    { index: 5, committeeNumber: 'COM-1005', subject: 'الرياضيات',     educationNumber: 'EDU-005', governorate: 'الجيزة',     status: 'قيد الإعداد',  statusTone: 'warning' },
-    { index: 6, committeeNumber: 'COM-1006', subject: 'العلوم',        educationNumber: 'EDU-006', governorate: 'الإسكندرية', status: 'مرفوض',        statusTone: 'danger',
-      rejectionReason: 'يوجد بعض الأخطاء في محتوى المادة، كما أن بعض الأسئلة تحتاج إلى مراجعة قبل اعتماد الخطة.' },
-    { index: 7, committeeNumber: 'COM-1007', subject: 'اللغة العربية', governorate: 'القاهرة',    status: 'جاهز لاعتماد الطباعة', statusTone: 'success' },
-    { index: 8, committeeNumber: 'COM-1008', subject: 'الرياضيات',     governorate: 'الجيزة',     status: 'قيد الإعداد',  statusTone: 'warning' },
-    { index: 9, committeeNumber: 'COM-1009', subject: 'العلوم',        governorate: 'الإسكندرية', status: 'مرفوض',        statusTone: 'danger',
-      rejectionReason: 'يوجد بعض الأخطاء في محتوى المادة، كما أن بعض الأسئلة تحتاج إلى مراجعة قبل اعتماد الخطة.' },
-      { index: 1, committeeNumber: 'COM-1001', subject: 'اللغة العربية', governorate: 'القاهرة',    status: 'جاهز لاعتماد الطباعة', statusTone: 'success' },
-    { index: 2, committeeNumber: 'COM-1002', subject: 'الرياضيات',     governorate: 'الجيزة',     status: 'قيد الإعداد',  statusTone: 'warning' },
-    { index: 3, committeeNumber: 'COM-1003', subject: 'العلوم',        governorate: 'الإسكندرية', status: 'مرفوض',        statusTone: 'danger',
-      rejectionReason: 'يوجد بعض الأخطاء في محتوى المادة، كما أن بعض الأسئلة تحتاج إلى مراجعة قبل اعتماد الخطة.' },
-    { index: 4, committeeNumber: 'COM-1004', subject: 'اللغة العربية', governorate: 'القاهرة',    status: 'جاهز لاعتماد الطباعة', statusTone: 'success' },
-    { index: 5, committeeNumber: 'COM-1005', subject: 'الرياضيات',     governorate: 'الجيزة',     status: 'قيد الإعداد',  statusTone: 'warning' },
-    { index: 6, committeeNumber: 'COM-1006', subject: 'العلوم',        governorate: 'الإسكندرية', status: 'مرفوض',        statusTone: 'danger',
-      rejectionReason: 'يوجد بعض الأخطاء في محتوى المادة، كما أن بعض الأسئلة تحتاج إلى مراجعة قبل اعتماد الخطة.' },
-      { index: 1, committeeNumber: 'COM-1001', subject: 'اللغة العربية', governorate: 'القاهرة',    status: 'جاهز لاعتماد الطباعة', statusTone: 'success' },
-    { index: 2, committeeNumber: 'COM-1002', subject: 'الرياضيات',     governorate: 'الجيزة',     status: 'قيد الإعداد',  statusTone: 'warning' },
-    { index: 3, committeeNumber: 'COM-1003', subject: 'العلوم',        governorate: 'الإسكندرية', status: 'مرفوض',        statusTone: 'danger',
-      rejectionReason: 'يوجد بعض الأخطاء في محتوى المادة، كما أن بعض الأسئلة تحتاج إلى مراجعة قبل اعتماد الخطة.' },
-    { index: 4, committeeNumber: 'COM-1004', subject: 'اللغة العربية', governorate: 'القاهرة',    status: 'جاهز لاعتماد الطباعة', statusTone: 'success' },
-    { index: 5, committeeNumber: 'COM-1005', subject: 'الرياضيات',     governorate: 'الجيزة',     status: 'قيد الإعداد',  statusTone: 'warning' },
-    { index: 6, committeeNumber: 'COM-1006', subject: 'العلوم',        governorate: 'الإسكندرية', status: 'مرفوض',        statusTone: 'danger',
-      rejectionReason: 'يوجد بعض الأخطاء في محتوى المادة، كما أن بعض الأسئلة تحتاج إلى مراجعة قبل اعتماد الخطة.' }
-  ])
+  readonly rows = signal<PlanningRow[]>([]);
+  readonly loading = signal(false);
+  readonly loadError = signal(false);
+
+  loadBatches(): void {
+    this.loading.set(true);
+    this.loadError.set(false);
+
+    this.planningService.getBatchesForApprove().subscribe({
+      next: res => {
+        this.rows.set((res.data ?? []).map((b, i) => this.toRow(b, i)));
+        this.loading.set(false);
+        this.currentPage.set(1);
+      },
+      error: err => {
+        console.error('Error loading batches:', err);
+        this.loading.set(false);
+        this.loadError.set(true);
+        this.messageService.add({
+          severity: 'error', summary: 'خطأ', life: 3000,
+          detail: err.error?.message || 'فشل تحميل دفعات التخطيط'
+        });
+      }
+    });
+  }
+
+  /** "قنا/عربي" -> governorate = قنا , subject = عربي */
+  private toRow(b: PlanningBatch, i: number): PlanningRow {
+    const [governorate, ...rest] = (b.batchName ?? '').split('/').map(s => s.trim());
+
+    return {
+      index: i + 1,
+      committeeNumber: String(b.batchId),
+      subject: rest.join('/') || b.batchName,
+      governorate: governorate || '-',
+      status: PREPARING,
+      statusTone: 'warning',
+      batchId: b.batchId,
+      batchName: b.batchName,
+      year: b.year,
+      roundName: (b.roundName ?? '').trim(),
+      totalCommittees: b.totalCommittees,
+      nextStatusNameAr: b.nextStatusNameAr
+    } as PlanningRow;
+  }
 
   // ==========================================
-  // FILTERS  (applied immediately, no search button needed)
+  // FILTERS  (applied immediately)
   // ==========================================
   readonly searchGovernorate = signal<string | number>('all');
   readonly searchSubject     = signal<string | number>('all');
-  readonly searchEducation     = signal<string | number>('all');
-  readonly searchCommittee   = signal('');
+  readonly searchBatch       = signal('');
 
   setGovernorate(v: string | number): void { this.searchGovernorate.set(v ?? 'all'); this.resetPage(); }
   setSubject(v: string | number): void     { this.searchSubject.set(v ?? 'all');     this.resetPage(); }
-  setCommittee(v: string): void            { this.searchCommittee.set(v ?? '');      this.resetPage(); }
-  setEducation(v: string | number): void   { this.searchEducation.set(v ?? 'all');   this.resetPage(); }
+  setBatch(v: string): void                { this.searchBatch.set(v ?? '');          this.resetPage(); }
 
   private labelOf(options: SelectOption[], value: string | number): string | null {
     if (value === 'all') return null;
     return options.find(o => o.value === value)?.label ?? null;
   }
 
-  // rows carry the NAME of the governorate / subject, so we compare by label
+  /** "عربي" must match "اللغة العربية" and vice versa */
+  private same(a: string | undefined, b: string): boolean {
+    const x = (a ?? '').trim();
+    const y = (b ?? '').trim();
+    return !!x && !!y && (x.includes(y) || y.includes(x));
+  }
+
   readonly filteredRows = computed(() => {
     const gov = this.labelOf(this.governorates(), this.searchGovernorate());
     const sub = this.labelOf(this.subjects(), this.searchSubject());
-    const edu = this.searchEducation();
-    const com = this.searchCommittee().trim().toLowerCase();
+    const q = this.searchBatch().trim().toLowerCase();
 
     return this.rows().filter(r =>
-      (!gov || r.governorate === gov) &&
-      (!sub || r.subject === sub) &&
-      (edu === 'all' || String(r.educationNumber ?? '') === String(edu)) &&
-      (!com || String(r.committeeNumber).toLowerCase().includes(com))
+      (!gov || this.same(r.governorate, gov)) &&
+      (!sub || this.same(r.subject, sub)) &&
+      (!q || r.batchName.toLowerCase().includes(q) || String(r.batchId).includes(q))
     );
   });
 
@@ -174,31 +198,25 @@ export default class PlanningComponent implements OnInit {
     const list: { key: FilterKey; title: string; value: string }[] = [];
     const gov = this.labelOf(this.governorates(), this.searchGovernorate());
     const sub = this.labelOf(this.subjects(), this.searchSubject());
-    const edu = this.searchEducation();
-    const com = this.searchCommittee().trim();
-    if (gov) list.push({ key: 'governorate', title: 'المحافظة',   value: gov });
-    if (sub) list.push({ key: 'subject',     title: 'المادة',      value: sub });
-    if (edu !== 'all') {
-      const education = this.educationals.find(option => String(option.value) === String(edu));
-      list.push({ key: 'education', title: 'الادارة التعليمية', value: education?.label ?? String(edu) });
-    }
-    if (com) list.push({ key: 'committee',   title: 'رقم اللجنة', value: com });
+    const q = this.searchBatch().trim();
+
+    if (gov) list.push({ key: 'governorate', title: 'المحافظة', value: gov });
+    if (sub) list.push({ key: 'subject', title: 'المادة', value: sub });
+    if (q)   list.push({ key: 'batch', title: 'الدفعة', value: q });
     return list;
   });
 
   removeFilter(key: FilterKey): void {
     if (key === 'governorate') this.searchGovernorate.set('all');
     if (key === 'subject')     this.searchSubject.set('all');
-    if (key === 'education')   this.searchEducation.set('all');
-    if (key === 'committee')   this.searchCommittee.set('');
+    if (key === 'batch')       this.searchBatch.set('');
     this.resetPage();
   }
 
   clearFilters(): void {
     this.searchGovernorate.set('all');
     this.searchSubject.set('all');
-    this.searchEducation.set('all');
-    this.searchCommittee.set('');
+    this.searchBatch.set('');
     this.resetPage();
   }
 
@@ -223,23 +241,16 @@ export default class PlanningComponent implements OnInit {
   readonly paginationEnd = computed(() =>
     Math.min(this.currentPage() * this.pageSize(), this.filteredRows().length));
 
-  /**
-   * Page numbers with dots (dots appear as soon as there are more than 3 pages
-   * and at least one page is hidden):
-   *   5 pages -> 1 2 ... 5  |  1 2 3 ... 5  |  1 2 3 4 5  |  1 ... 3 4 5  |  1 ... 4 5
-   *   9 pages -> 1 2 ... 9  |  1 2 3 ... 9  |  1 ... 4 5 6 ... 9  |  1 ... 7 8 9
-   */
   readonly paginationPages = computed<(number | 'dots')[]>(() => {
     const total = this.totalPages();
     const cur = Math.min(this.currentPage(), total);
 
-    // first page + last page + the page before/after the current one
     const wanted = new Set<number>([1, total, cur - 1, cur, cur + 1]);
     const sorted = [...wanted].filter(p => p >= 1 && p <= total).sort((a, b) => a - b);
 
     const pages: (number | 'dots')[] = [];
     sorted.forEach((p, i) => {
-      if (i > 0 && p - sorted[i - 1] > 1) pages.push('dots');   // hidden pages in between
+      if (i > 0 && p - sorted[i - 1] > 1) pages.push('dots');
       pages.push(p);
     });
     return pages;
@@ -254,26 +265,106 @@ export default class PlanningComponent implements OnInit {
   // ==========================================
   // CARD HELPERS
   // ==========================================
-  /** 2-step tracker: in preparation -> ready for printing (or rejected) */
-  trackerSteps(row: WorkflowStatusRow): { label: string; state: StepState }[] {
+  trackerSteps(row: PlanningRow): { label: string; state: StepState }[] {
+    const next = row.nextStatusNameAr || READY;
+
     switch (row.status) {
-      case 'جاهز لاعتماد الطباعة':
-        return [{ label: 'قيد الإعداد', state: 'done' }, { label: 'جاهز لاعتماد الطباعة', state: 'current' }];
-      case 'مرفوض':
-        return [{ label: 'قيد الإعداد', state: 'done' }, { label: 'مرفوض', state: 'rejected' }];
+      case READY:
+        return [{ label: PREPARING, state: 'done' }, { label: READY, state: 'current' }];
+      case REJECTED:
+        return [{ label: PREPARING, state: 'done' }, { label: REJECTED, state: 'rejected' }];
       default:
-        return [{ label: 'قيد الإعداد', state: 'current' }, { label: 'جاهز لاعتماد الطباعة', state: 'pending' }];
+        return [{ label: PREPARING, state: 'current' }, { label: next, state: 'pending' }];
     }
   }
 
   // ==========================================
+  // BATCH DETAILS  — GET api/Planning/batches/{id}
+  // ==========================================
+  detailsVisible = false;
+
+  readonly detailsRow = signal<PlanningRow | null>(null);
+  readonly details = signal<BatchDetails | null>(null);
+  readonly detailsLoading = signal(false);
+  readonly detailsError = signal(false);
+  readonly detailsSearch = signal('');
+
+  openDetails(row: PlanningRow): void {
+    this.detailsRow.set(row);
+    this.detailsSearch.set('');
+    this.detailsVisible = true;
+    this.loadDetails();
+  }
+
+  loadDetails(): void {
+    const row = this.detailsRow();
+    if (!row) return;
+
+    this.detailsLoading.set(true);
+    this.detailsError.set(false);
+    this.details.set(null);
+
+    this.planningService.getBatchDetails(row.batchId).subscribe({
+      next: res => {
+        this.details.set(res.data ?? null);
+        this.detailsLoading.set(false);
+      },
+      error: err => {
+        console.error('Error loading batch details:', err);
+        this.detailsLoading.set(false);
+        this.detailsError.set(true);
+        this.messageService.add({
+          severity: 'error', summary: 'خطأ', life: 3000,
+          detail: err.error?.message || 'فشل تحميل تفاصيل الدفعة'
+        });
+      }
+    });
+  }
+
+  closeDetails(): void {
+    this.detailsVisible = false;
+    this.detailsRow.set(null);
+    this.details.set(null);
+    this.detailsError.set(false);
+    this.detailsSearch.set('');
+  }
+
+  /** the 6 summary tiles at the top of the dialog */
+  readonly detailsStats = computed(() => {
+    const d = this.details();
+    if (!d) return [];
+
+    return [
+      { label: 'عدد اللجان',          value: d.totalCommittees,       icon: 'pi-building' },
+      { label: 'الكراسات المطلوبة',   value: d.totalRequiredBooklets, icon: 'pi-book' },
+      { label: 'الكراسات الإضافية',   value: d.totalBonusBooklets,    icon: 'pi-plus-circle' },
+      { label: 'الأظرف المطلوبة',     value: d.totalRequiredEnvelopes, icon: 'pi-envelope' },
+      { label: 'الأظرف الإضافية',     value: d.totalBonusEnvelopes,   icon: 'pi-plus' },
+      { label: 'عدد الصناديق',        value: d.totalBoxes,            icon: 'pi-box' }
+    ];
+  });
+
+  /** committees table, filtered by the search box (committee number / school / administration) */
+  readonly detailsCommittees = computed(() => {
+    const list = this.details()?.committees ?? [];
+    const q = this.detailsSearch().trim().toLowerCase();
+    if (!q) return list;
+
+    return list.filter((c: BatchCommittee) =>
+      String(c.committeeNumber).toLowerCase().includes(q) ||
+      (c.schoolName ?? '').toLowerCase().includes(q) ||
+      (c.educationalAdministration ?? '').toLowerCase().includes(q)
+    );
+  });
+
+  // ==========================================
   // CHANGE STATUS -> READY
   // ==========================================
-  markReady(row: WorkflowStatusRow): void {
+  markReady(row: PlanningRow): void {
     // API CALL WILL BE HERE, then reload the rows
     this.rows.update(rows => rows.map(r =>
-      r.index === row.index
-        ? { ...r, status: 'جاهز لاعتماد الطباعة', statusTone: 'success', rejectionReason: undefined }
+      r.batchId === row.batchId
+        ? { ...r, status: READY, statusTone: 'success', rejectionReason: undefined }
         : r));
 
     this.messageService.add({
@@ -285,14 +376,14 @@ export default class PlanningComponent implements OnInit {
   // ==========================================
   // REJECT DIALOG
   // ==========================================
-  selectedRow: WorkflowStatusRow | null = null;
+  selectedRow: PlanningRow | null = null;
 
   rejectDialogVisible = false;
   rejectReason = '';
   selectedReviewers: ReviewUser[] = [];
   rejectSubmitting = false;
 
-  openRejectDialog(row: WorkflowStatusRow): void {
+  openRejectDialog(row: PlanningRow): void {
     this.selectedRow = row;
     this.rejectReason = '';
     this.selectedReviewers = [];
@@ -317,7 +408,7 @@ export default class PlanningComponent implements OnInit {
     this.rejectSubmitting = true;
 
     const rejectionData = {
-      rowIndex: this.selectedRow.index,
+      batchId: this.selectedRow.batchId,
       subject: this.selectedRow.subject,
       governorate: this.selectedRow.governorate,
       reason: this.rejectReason.trim(),
@@ -327,13 +418,13 @@ export default class PlanningComponent implements OnInit {
 
     // API CALL WILL BE HERE
     setTimeout(() => {
-      const rowIndex = this.selectedRow?.index;
-      if (!rowIndex) { this.rejectSubmitting = false; return; }
+      const batchId = this.selectedRow?.batchId;
+      if (!batchId) { this.rejectSubmitting = false; return; }
 
       const reason = this.rejectReason.trim();
       this.rows.update(rows => rows.map(r =>
-        r.index === rowIndex
-          ? { ...r, status: 'مرفوض', statusTone: 'danger', rejectionReason: reason }
+        r.batchId === batchId
+          ? { ...r, status: REJECTED, statusTone: 'danger', rejectionReason: reason }
           : r));
 
       this.rejectSubmitting = false;
@@ -352,8 +443,8 @@ export default class PlanningComponent implements OnInit {
   rejectionReasonDialogVisible = false;
   selectedRejectionReason = '';
 
-  openRejectionReasonDialog(row: WorkflowStatusRow): void {
-    if (row.status !== 'مرفوض') return;
+  openRejectionReasonDialog(row: PlanningRow): void {
+    if (row.status !== REJECTED) return;
     this.selectedRow = row;
     this.selectedRejectionReason = row.rejectionReason?.trim() || 'لم يتم تسجيل سبب الرفض.';
     this.rejectionReasonDialogVisible = true;
