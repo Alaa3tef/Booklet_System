@@ -19,7 +19,8 @@ import { Lookups } from '../../../shared/services/lookups';
 
 interface ReviewUser { id: number; name: string; role: string; avatar?: string; }
 interface SelectOption { label: string; value: string | number; }
-type FilterKey = 'governorate' | 'subject' | 'committee';
+interface PrintingWorkflowRow extends WorkflowStatusRow { educationalAdministration?: string; }
+type FilterKey = 'governorate' | 'administration' | 'subject' | 'committee';
 type StepState = 'done' | 'current' | 'pending' | 'rejected';
 
 const ST_PENDING  = 'بانتظار الاعتماد';
@@ -42,14 +43,40 @@ export default class PrintingApprovedComponent implements OnInit {
 
   private readonly lookupService = inject(Lookups);
   private readonly messageService = inject(MessageService);
-
+ readonly educationFilter = signal<string | null>(null);
   readonly essentials = ['البحث بالمحافظة', 'البحث بالمادة', 'اعتماد المادة للطباعة'];
-
+ educationals: any[] = [
+    { label: 'كل الادارات التعليمية', value: 'all' },
+    { label: 'EDU-001', value: 'EDU-001' },
+    { label: 'EDU-002', value: 'EDU-002' },
+    { label: 'EDU-003', value: 'EDU-003' },
+    { label: 'EDU-004', value: 'EDU-004' },
+    { label: 'EDU-005', value: 'EDU-005' },
+    { label: 'EDU-006', value: 'EDU-006' },
+    { label: 'EDU-007', value: 'EDU-007' },
+    { label: 'EDU-008', value: 'EDU-008' },
+    { label: 'EDU-009', value: 'EDU-009' },
+    { label: 'EDU-010', value: 'EDU-010' },
+    { label: 'EDU-011', value: 'EDU-011' }
+  ];
   // ==========================================
   // FILTER OPTIONS
   // ==========================================
   readonly governorates = signal<SelectOption[]>([{ label: 'كل المحافظات', value: 'all' }]);
   readonly subjects     = signal<SelectOption[]>([{ label: 'كل المواد', value: 'all' }]);
+
+  /** قائمة الإدارات التعليمية المتاحة حسب المحافظة المختارة. */
+  readonly administrations = computed<SelectOption[]>(() => {
+    const selectedGovernorate = this.labelOf(this.governorates(), this.searchGovernorate());
+    const names = this.rows()
+      .filter(row => !selectedGovernorate || row.governorate === selectedGovernorate)
+      .map(row => row.educationalAdministration?.trim())
+      .filter((name): name is string => !!name);
+    return [
+      { label: 'كل الإدارات التعليمية', value: 'all' },
+      ...Array.from(new Set(names)).sort((a, b) => a.localeCompare(b, 'ar')).map(name => ({ label: name, value: name }))
+    ];
+  });
 
   ngOnInit(): void { this.loadLookups(); }
 
@@ -97,29 +124,35 @@ export default class PrintingApprovedComponent implements OnInit {
   private static readonly REJECT_TEXT =
     'يوجد بعض الأخطاء في محتوى المادة، كما أن بعض الأسئلة تحتاج إلى مراجعة قبل اعتماد الطباعة.';
 
-  readonly rows = signal<WorkflowStatusRow[]>([
-    { index: 1,  committeeNumber: 'COM-1001', subject: 'اللغة العربية', governorate: 'القاهرة',    status: ST_PENDING,  statusTone: 'warning' },
-    { index: 2,  committeeNumber: 'COM-1002', subject: 'الرياضيات',     governorate: 'الجيزة',     status: ST_READY,    statusTone: 'success' },
-    { index: 3,  committeeNumber: 'COM-1003', subject: 'العلوم',        governorate: 'الإسكندرية', status: ST_REJECTED, statusTone: 'danger', rejectionReason: PrintingApprovedComponent.REJECT_TEXT },
-    { index: 4,  committeeNumber: 'COM-1004', subject: 'اللغة العربية', governorate: 'القاهرة',    status: ST_PENDING,  statusTone: 'warning' },
-    { index: 5,  committeeNumber: 'COM-1005', subject: 'الرياضيات',     governorate: 'الجيزة',     status: ST_PENDING,  statusTone: 'warning' },
-    { index: 6,  committeeNumber: 'COM-1006', subject: 'العلوم',        governorate: 'الإسكندرية', status: ST_READY,    statusTone: 'success' },
-    { index: 7,  committeeNumber: 'COM-1007', subject: 'اللغة العربية', governorate: 'القاهرة',    status: ST_PENDING,  statusTone: 'warning' },
-    { index: 8,  committeeNumber: 'COM-1008', subject: 'الرياضيات',     governorate: 'الجيزة',     status: ST_PENDING,  statusTone: 'warning' },
-    { index: 9,  committeeNumber: 'COM-1009', subject: 'العلوم',        governorate: 'الإسكندرية', status: ST_REJECTED, statusTone: 'danger', rejectionReason: PrintingApprovedComponent.REJECT_TEXT },
-    { index: 10, committeeNumber: 'COM-1010', subject: 'اللغة العربية', governorate: 'القاهرة',    status: ST_PENDING,  statusTone: 'warning' },
-    { index: 11, committeeNumber: 'COM-1011', subject: 'الرياضيات',     governorate: 'الجيزة',     status: ST_PENDING,  statusTone: 'warning' },
-    { index: 12, committeeNumber: 'COM-1012', subject: 'العلوم',        governorate: 'الإسكندرية', status: ST_PENDING,  statusTone: 'warning' }
+  readonly rows = signal<PrintingWorkflowRow[]>([
+    { index: 1,  committeeNumber: 'COM-1001', subject: 'اللغة العربية', governorate: 'القاهرة',    educationalAdministration: 'شرق القاهرة', status: ST_PENDING,  statusTone: 'warning' },
+    { index: 2,  committeeNumber: 'COM-1002', subject: 'الرياضيات',     governorate: 'الجيزة',     educationalAdministration: 'الدقي', status: ST_READY,    statusTone: 'success' },
+    { index: 3,  committeeNumber: 'COM-1003', subject: 'العلوم',        governorate: 'الإسكندرية', educationalAdministration: 'شرق الإسكندرية', status: ST_REJECTED, statusTone: 'danger', rejectionReason: PrintingApprovedComponent.REJECT_TEXT },
+    { index: 4,  committeeNumber: 'COM-1004', subject: 'اللغة العربية', governorate: 'القاهرة',    educationalAdministration: 'غرب القاهرة', status: ST_PENDING,  statusTone: 'warning' },
+    { index: 5,  committeeNumber: 'COM-1005', subject: 'الرياضيات',     governorate: 'الجيزة',     educationalAdministration: 'الهرم', status: ST_PENDING,  statusTone: 'warning' },
+    { index: 6,  committeeNumber: 'COM-1006', subject: 'العلوم',        governorate: 'الإسكندرية', educationalAdministration: 'غرب الإسكندرية', status: ST_READY,    statusTone: 'success' },
+    { index: 7,  committeeNumber: 'COM-1007', subject: 'اللغة العربية', governorate: 'القاهرة',    educationalAdministration: 'شرق القاهرة', status: ST_PENDING,  statusTone: 'warning' },
+    { index: 8,  committeeNumber: 'COM-1008', subject: 'الرياضيات',     governorate: 'الجيزة',     educationalAdministration: 'الدقي', status: ST_PENDING,  statusTone: 'warning' },
+    { index: 9,  committeeNumber: 'COM-1009', subject: 'العلوم',        governorate: 'الإسكندرية', educationalAdministration: 'شرق الإسكندرية', status: ST_REJECTED, statusTone: 'danger', rejectionReason: PrintingApprovedComponent.REJECT_TEXT },
+    { index: 10, committeeNumber: 'COM-1010', subject: 'اللغة العربية', governorate: 'القاهرة',    educationalAdministration: 'غرب القاهرة', status: ST_PENDING,  statusTone: 'warning' },
+    { index: 11, committeeNumber: 'COM-1011', subject: 'الرياضيات',     governorate: 'الجيزة',     educationalAdministration: 'الهرم', status: ST_PENDING,  statusTone: 'warning' },
+    { index: 12, committeeNumber: 'COM-1012', subject: 'العلوم',        governorate: 'الإسكندرية', educationalAdministration: 'غرب الإسكندرية', status: ST_PENDING,  statusTone: 'warning' }
   ]);
 
   // ==========================================
   // FILTERS
   // ==========================================
   readonly searchGovernorate = signal<string | number>('all');
+  readonly searchAdministration = signal<string | number>('all');
   readonly searchSubject     = signal<string | number>('all');
   readonly searchCommittee   = signal('');
 
-  setGovernorate(v: string | number): void { this.searchGovernorate.set(v ?? 'all'); this.resetPage(); }
+  setGovernorate(v: string | number): void {
+    this.searchGovernorate.set(v ?? 'all');
+    this.searchAdministration.set('all'); // تغيير المحافظة يعيد فلتر الإدارة للوضع الافتراضي
+    this.resetPage();
+  }
+  setAdministration(v: string | number): void { this.searchAdministration.set(v ?? 'all'); this.resetPage(); }
   setSubject(v: string | number): void     { this.searchSubject.set(v ?? 'all');     this.resetPage(); }
   setCommittee(v: string): void            { this.searchCommittee.set(v ?? '');      this.resetPage(); }
 
@@ -130,11 +163,13 @@ export default class PrintingApprovedComponent implements OnInit {
 
   readonly filteredRows = computed(() => {
     const gov = this.labelOf(this.governorates(), this.searchGovernorate());
+    const administration = this.searchAdministration() === 'all' ? null : String(this.searchAdministration());
     const sub = this.labelOf(this.subjects(), this.searchSubject());
     const com = this.searchCommittee().trim().toLowerCase();
 
     return this.rows().filter(r =>
       (!gov || r.governorate === gov) &&
+      (!administration || r.educationalAdministration === administration) &&
       (!sub || r.subject === sub) &&
       (!com || String(r.committeeNumber).toLowerCase().includes(com))
     );
@@ -143,10 +178,12 @@ export default class PrintingApprovedComponent implements OnInit {
   readonly activeFilters = computed(() => {
     const list: { key: FilterKey; title: string; value: string }[] = [];
     const gov = this.labelOf(this.governorates(), this.searchGovernorate());
+    const administration = this.searchAdministration() === 'all' ? null : String(this.searchAdministration());
     const sub = this.labelOf(this.subjects(), this.searchSubject());
     const com = this.searchCommittee().trim();
-    if (gov) list.push({ key: 'governorate', title: 'المحافظة',   value: gov });
-    if (sub) list.push({ key: 'subject',     title: 'المادة',      value: sub });
+    if (gov) list.push({ key: 'governorate', title: 'المحافظة', value: gov });
+    if (administration) list.push({ key: 'administration', title: 'الإدارة التعليمية', value: administration });
+    if (sub) list.push({ key: 'subject', title: 'المادة', value: sub });
     if (com) list.push({ key: 'committee',   title: 'رقم اللجنة', value: com });
     return list;
   });
@@ -162,7 +199,8 @@ export default class PrintingApprovedComponent implements OnInit {
   });
 
   removeFilter(key: FilterKey): void {
-    if (key === 'governorate') this.searchGovernorate.set('all');
+    if (key === 'governorate') { this.searchGovernorate.set('all'); this.searchAdministration.set('all'); }
+    if (key === 'administration') this.searchAdministration.set('all');
     if (key === 'subject')     this.searchSubject.set('all');
     if (key === 'committee')   this.searchCommittee.set('');
     this.resetPage();
@@ -170,6 +208,7 @@ export default class PrintingApprovedComponent implements OnInit {
 
   clearFilters(): void {
     this.searchGovernorate.set('all');
+    this.searchAdministration.set('all');
     this.searchSubject.set('all');
     this.searchCommittee.set('');
     this.resetPage();

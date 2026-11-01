@@ -62,44 +62,23 @@
 
               <div class="field">
                 <label for="governorate">المحافظة <span class="required">*</span></label>
-                <p-select
-                  inputId="governorate"
-                  [options]="governorates()"
-                  [(ngModel)]="selectedGovernorate"
-                  optionLabel="label"
-                  optionValue="value"
-                  placeholder="اختر المحافظة"
-                  [loading]="lookupsLoading()"
-                  [filter]="true"
-                  appendTo="body"
-                  styleClass="w-full" />
+                <p-select inputId="governorate" [options]="governorates()" [(ngModel)]="selectedGovernorate"
+                  optionLabel="label" optionValue="value" placeholder="اختر المحافظة" [loading]="lookupsLoading()"
+                  [filter]="true" appendTo="body" styleClass="w-full" />
               </div>
 
               <div class="field">
                 <label for="educationalStage">المرحلة التعليمية <span class="required">*</span></label>
-                <p-select
-                  inputId="educationalStage"
-                  [options]="educationalStages()"
-                  [(ngModel)]="selectedEducationalStage"
-                  optionLabel="label"
-                  optionValue="value"
-                  placeholder="اختر المرحلة التعليمية"
-                  [loading]="lookupsLoading()"
-                  appendTo="body"
+                <p-select inputId="educationalStage" [options]="educationalStages()"
+                  [(ngModel)]="selectedEducationalStage" optionLabel="label" optionValue="value"
+                  placeholder="اختر المرحلة التعليمية" [loading]="lookupsLoading()" appendTo="body"
                   styleClass="w-full" />
               </div>
 
               <div class="field">
                 <label for="round">الدور <span class="required">*</span></label>
-                <p-select
-                  inputId="round"
-                  [options]="rounds()"
-                  [(ngModel)]="selectedRound"
-                  optionLabel="label"
-                  optionValue="value"
-                  placeholder="اختر الدور"
-                  [loading]="lookupsLoading()"
-                  appendTo="body"
+                <p-select inputId="round" [options]="rounds()" [(ngModel)]="selectedRound" optionLabel="label"
+                  optionValue="value" placeholder="اختر الدور" [loading]="lookupsLoading()" appendTo="body"
                   styleClass="w-full" />
               </div>
 
@@ -107,16 +86,8 @@
                 <label for="examYear">السنة الدراسية <span class="required">*</span></label>
                 <div class="year-input-wrapper">
                   <i class="pi pi-calendar"></i>
-                  <input
-                    id="examYear"
-                    type="number"
-                    pInputText
-                    [(ngModel)]="selectedYear"
-                    min="1"
-                    max="99"
-                    step="1"
-                    class="year-input"
-                    placeholder="أدخل رقم السنة">
+                  <input id="examYear" type="number" pInputText [(ngModel)]="selectedYear" min="1" max="99" step="1"
+                    class="year-input" placeholder="أدخل رقم السنة">
                 </div>
               </div>
 
@@ -124,13 +95,8 @@
 
             <!-- FILE UPLOAD -->
             <div class="upload-column">
-              <section
-                class="upload-panel"
-                [class.is-dragging]="isDragOver()"
-                [class.has-file]="!!uploadedFile()"
-                [class.is-disabled]="saving()"
-                (dragover)="onDragOver($event)"
-                (dragleave)="onDragLeave($event)"
+              <section class="upload-panel" [class.is-dragging]="isDragOver()" [class.has-file]="!!uploadedFile()"
+                [class.is-disabled]="saving()" (dragover)="onDragOver($event)" (dragleave)="onDragLeave($event)"
                 (drop)="onFileDrop($event)">
 
                 <div class="upload-panel-header">
@@ -143,94 +109,78 @@
                   </div>
                 </div>
 
-                <input
-                  #excelInput
-                  id="committeeExcelFile"
-                  class="native-file-input"
-                  type="file"
-                  accept=".xlsx,.xls"
-                  [disabled]="saving()"
-                  (change)="onFileSelected($event)" />
+                <input #excelInput id="committeeExcelFile" class="native-file-input" type="file" accept=".xlsx,.xls"
+                  [disabled]="saving()" (change)="onFileSelected($event)" />
 
                 @if (!uploadedFile()) {
-                  <label
-                    for="committeeExcelFile"
-                    class="upload-dropzone"
-                    [class.dropzone-disabled]="saving()">
+                <label for="committeeExcelFile" class="upload-dropzone" [class.dropzone-disabled]="saving()">
 
-                    <span class="dropzone-illustration">
-                      <i class="pi pi-file-excel"></i>
-                      <span class="upload-arrow"><i class="pi pi-arrow-up"></i></span>
-                    </span>
+                  <span class="dropzone-illustration">
+                    <i class="pi pi-file-excel"></i>
+                    <span class="upload-arrow"><i class="pi pi-arrow-up"></i></span>
+                  </span>
 
-                    <span class="dropzone-title">اسحب ملف Excel</span>
-                    <span class="dropzone-description">أو اختار الملف من جهازك لبدء رفع البيانات</span>
+                  <span class="dropzone-title">اسحب ملف Excel</span>
+                  <span class="dropzone-description">أو اختار الملف من جهازك لبدء رفع البيانات</span>
 
-                    <span class="browse-file-btn">
-                      <i class="pi pi-folder-open"></i>
-                      تصفح الملفات
-                    </span>
+                  <span class="browse-file-btn">
+                    <i class="pi pi-folder-open"></i>
+                    تصفح الملفات
+                  </span>
 
-                    <span class="file-format-info">
-                      <span class="format-chip">XLS</span>
-                      <span class="format-chip">XLSX</span>
-                      <span class="format-separator"></span>
-                      الحد الأقصى للحجم حسب إعدادات الخادم
-                    </span>
-                  </label>
+                  <span class="file-format-info">
+                    <span class="format-chip">XLS</span>
+                    <span class="format-chip">XLSX</span>
+                    <span class="format-separator"></span>
+                    الحد الأقصى للحجم حسب إعدادات الخادم
+                  </span>
+                </label>
                 }
 
                 @if (uploadedFile(); as file) {
-                  <div class="selected-file-card">
-                    <div class="selected-file-icon"><i class="pi pi-file-excel"></i></div>
+                <div class="selected-file-card">
+                  <div class="selected-file-icon"><i class="pi pi-file-excel"></i></div>
 
-                    <div class="selected-file-details">
-                      <span class="file-status">
-                        <i class="pi pi-check-circle"></i>
-                        الملف جاهز للإرسال
+                  <div class="selected-file-details">
+                    <span class="file-status">
+                      <i class="pi pi-check-circle"></i>
+                      الملف جاهز للإرسال
+                    </span>
+
+                    <strong class="selected-file-name" [title]="file.name">{{ file.name }}</strong>
+
+                    <div class="selected-file-meta">
+                      <span><i class="pi pi-database"></i> {{ file.sizeKb }} KB</span>
+                      <span class="file-meta-divider"></span>
+                      <span class="file-extension">
+                        {{ file.name.toLowerCase().endsWith('.xlsx') ? 'XLSX' : 'XLS' }}
                       </span>
-
-                      <strong class="selected-file-name" [title]="file.name">{{ file.name }}</strong>
-
-                      <div class="selected-file-meta">
-                        <span><i class="pi pi-database"></i> {{ file.sizeKb }} KB</span>
-                        <span class="file-meta-divider"></span>
-                        <span class="file-extension">
-                          {{ file.name.toLowerCase().endsWith('.xlsx') ? 'XLSX' : 'XLS' }}
-                        </span>
-                      </div>
-                    </div>
-
-                    <div class="selected-file-actions">
-                      <label
-                        for="committeeExcelFile"
-                        class="change-file-btn"
-                        [class.action-disabled]="saving()"
-                        [attr.aria-disabled]="saving()"
-                        [attr.tabindex]="saving() ? -1 : 0"
-                        (keydown.enter)="!saving() && excelInput.click()"
-                        (keydown.space)="!saving() && $event.preventDefault(); !saving() && excelInput.click()">
-                        <i class="pi pi-sync"></i>
-                        تغيير الملف
-                      </label>
-
-                      <button
-                        type="button"
-                        class="remove-file-btn"
-                        [disabled]="saving()"
-                        (click)="removeSelectedFile(); excelInput.value = ''">
-                        <i class="pi pi-trash"></i>
-                        إزالة
-                      </button>
                     </div>
                   </div>
+
+                  <div class="selected-file-actions">
+                    <label for="committeeExcelFile" class="change-file-btn" [class.action-disabled]="saving()"
+                      [attr.aria-disabled]="saving()" [attr.tabindex]="saving() ? -1 : 0"
+                      (keydown.enter)="!saving() && excelInput.click()"
+                      (keydown.space)="!saving() && $event.preventDefault(); !saving() && excelInput.click()">
+                      <i class="pi pi-sync"></i>
+                      تغيير الملف
+                    </label>
+
+                    <button type="button" class="remove-file-btn" [disabled]="saving()"
+                      (click)="removeSelectedFile(); excelInput.value = ''">
+                      <i class="pi pi-trash"></i>
+                      إزالة
+                    </button>
+                  </div>
+                </div>
                 }
 
                 @if (saveError()) {
-                  <div class="upload-inline-error" role="alert">
-                    <i class="pi pi-exclamation-circle"></i>
-                    <span>{{ saveError() }}</span>
-                  </div>
+                <div class="upload-inline-error" role="alert">
+                  <i class="pi pi-exclamation-circle"></i>
+                  <span>{{ saveError() }}</span>
+                </div>
                 }
               </section>
             </div>
@@ -238,16 +188,10 @@
           </div>
 
           <div class="setup-form-footer">
-            <button
-              type="button"
-              class="btn btn-primary"
-              [disabled]="!uploadedFile() || saving()"
+            <button type="button" class="btn btn-primary" [disabled]="!uploadedFile() || saving()"
               (click)="createFiles()">
 
-              <i
-                class="pi"
-                [class.pi-spin]="saving()"
-                [class.pi-spinner]="saving()"
+              <i class="pi" [class.pi-spin]="saving()" [class.pi-spinner]="saving()"
                 [class.pi-folder-open]="!saving()"></i>
 
               <span>{{ saving() ? 'جارٍ معالجة الملف...' : 'رفع الملف وإنشاء الملفات' }}</span>
@@ -255,13 +199,13 @@
           </div>
 
           @if (filesGenerated()) {
-            <div class="result-banner" role="status">
-              <span class="result-banner-icon"><i class="pi pi-check"></i></span>
-              <div class="result-banner-text">
-                <b>تم تنفيذ العملية بنجاح</b>
-                <small>تم استلام استجابة نجاح من الخدمة.</small>
-              </div>
+          <div class="result-banner" role="status">
+            <span class="result-banner-icon"><i class="pi pi-check"></i></span>
+            <div class="result-banner-text">
+              <b>تم تنفيذ العملية بنجاح</b>
+              <small>تم استلام استجابة نجاح من الخدمة.</small>
             </div>
+          </div>
           }
 
         </section>
@@ -284,14 +228,8 @@
             <div class="table-filters-grid">
               <div class="field">
                 <label for="tableSearch">بحث</label>
-                <input
-                  id="tableSearch"
-                  type="text"
-                  pInputText
-                  class="w-full"
-                  placeholder="بحث ..."
-                  [ngModel]="searchTerm()"
-                  (ngModelChange)="setSearchTerm($event)" />
+                <input id="tableSearch" type="text" pInputText class="w-full" placeholder="بحث ..."
+                  [ngModel]="searchTerm()" (ngModelChange)="setSearchTerm($event)" />
               </div>
             </div>
           </div>
@@ -299,18 +237,14 @@
           <!-- DATA TABLE -->
           <div class="table-wrapper">
 
-            <p-table
-              [value]="visibleRows()"
-              dataKey="committeeNumber"
-              styleClass="committee-table"
-              responsiveLayout="scroll"
-              [paginator]="false">
+            <p-table [value]="visibleRows()" dataKey="committeeNumber" styleClass="committee-table"
+              responsiveLayout="scroll" [paginator]="false">
 
               <ng-template pTemplate="header">
                 <tr>
                   <th>م</th>
-                  <th>رقم اللجنة</th>
-                  <th>اسم اللجنة / المدرسة</th>
+                  <!-- <th>رقم اللجنة</th> -->
+                  <th>اسم المادة</th>
                   <th>المحافظة</th>
                   <th>الدور</th>
                   <th>المرحلة التعليمية</th>
@@ -323,55 +257,43 @@
               <ng-template pTemplate="body" let-row let-rowIndex="rowIndex">
                 <tr>
                   <td>{{ first() + rowIndex + 1 }}</td>
-                  <td>{{ row.committeeNumber }}</td>
-                  <td class="school-name-cell">{{ row.schoolName }}</td>
+                  <!-- <td>{{ row.roundName }}</td> -->
+                  <td class="school-name-cell">{{ row.subjectName }}</td>
                   <td>{{ getGovernorateLabel(row.governorate) }}</td>
                   <td>{{ getRoundLabel(row.round) }}</td>
                   <td>{{ getEduccationalStageLabel(row.educationalStage) }}</td>
                   <td>{{ row.bookletCount | number }}</td>
                   <td>
-                    <span
-                      class="status-pill"
-                      [class.success]="row.status === 'valid'"
+                    <span class="status-pill" [class.success]="row.status === 'valid'"
                       [class.danger]="row.status === 'invalid'">
-                      <i
-                        class="pi"
-                        [class.pi-check]="row.status === 'valid'"
+                      <i class="pi" [class.pi-check]="row.status === 'valid'"
                         [class.pi-times]="row.status === 'invalid'"></i>
                       {{ row.status === 'valid' ? 'صحيح' : 'خطأ' }}
                     </span>
                   </td>
                   <td>
                     @if (row.status === 'invalid') {
-                      @if (row.errors.length > 0) {
-                        <button
-                          type="button"
-                          class="view-errors-btn"
-                          (click)="openErrors(row)"
-                          pTooltip="عرض تفاصيل الأخطاء"
-                          tooltipPosition="top">
-                          <i class="pi pi-exclamation-circle"></i>
-                          <span>عرض الأخطاء</span>
-                          <span class="errors-count">{{ row.errors.length }}</span>
-                        </button>
-                      } @else {
-                        <span class="no-errors">—</span>
-                      }
-                    } @else if (row.transferred) {
-                      <span class="transferred-label">
-                        <i class="pi pi-check-circle"></i>
-                        تم التحويل
-                      </span>
+                    @if (row.errors.length > 0) {
+                    <button type="button" class="view-errors-btn" (click)="openErrors(row)"
+                      pTooltip="عرض تفاصيل الأخطاء" tooltipPosition="top">
+                      <i class="pi pi-exclamation-circle"></i>
+                      <span>عرض الأخطاء</span>
+                      <span class="errors-count">{{ row.errors.length }}</span>
+                    </button>
                     } @else {
-                      <button
-                        type="button"
-                        class="transfer-btn"
-                        (click)="openTransfer(row)"
-                        pTooltip="تحويل اللجنة إلى مستخدم Planning"
-                        tooltipPosition="top">
-                        <i class="pi pi-send"></i>
-                        <span>تحويل للـ Planning</span>
-                      </button>
+                    <span class="no-errors">—</span>
+                    }
+                    } @else if (row.transferred) {
+                    <span class="transferred-label">
+                      <i class="pi pi-check-circle"></i>
+                      تم التحويل
+                    </span>
+                    } @else {
+                    <button type="button" class="transfer-btn" (click)="openTransfer(row)"
+                      pTooltip="تحويل اللجنة إلى مستخدم Planning" tooltipPosition="top">
+                      <i class="pi pi-send"></i>
+                      <span>تحويل للـ Planning</span>
+                    </button>
                     }
                   </td>
                 </tr>
@@ -389,65 +311,48 @@
             </p-table>
 
             @if (totalRecords() > 0) {
-              <div class="custom-paginator" dir="rtl">
+            <div class="custom-paginator" dir="rtl">
 
-                <div class="paginator-size">
-                  <span>عدد الصفوف</span>
+              <div class="paginator-size">
+                <span>عدد الصفوف</span>
 
-                  <p-select
-                    [options]="[
+                <p-select [options]="[
                       { label: '5', value: 5 },
                       { label: '10', value: 10 },
                       { label: '20', value: 20 },
                       { label: '50', value: 50 }
-                    ]"
-                    [ngModel]="pageSize()"
-                    (ngModelChange)="changePageSize($event)"
-                    optionLabel="label"
-                    optionValue="value"
-                    appendTo="body" />
-                </div>
-
-                <div class="paginator-pages">
-                  <button
-                    type="button"
-                    class="page-nav"
-                    [disabled]="currentPage() === 1"
-                    (click)="goToPage(currentPage() - 1)"
-                    aria-label="الصفحة السابقة">
-                    <i class="pi pi-chevron-right"></i>
-                  </button>
-
-                  @for (page of visiblePages(); track $index) {
-                    @if (page === 'dots') {
-                      <span class="page-dots">...</span>
-                    } @else {
-                      <button
-                        type="button"
-                        class="page-number"
-                        [class.active]="currentPage() === page"
-                        [attr.aria-current]="currentPage() === page ? 'page' : null"
-                        (click)="goToPage(page)">
-                        {{ page }}
-                      </button>
-                    }
-                  }
-
-                  <button
-                    type="button"
-                    class="page-nav"
-                    [disabled]="currentPage() === totalPages()"
-                    (click)="goToPage(currentPage() + 1)"
-                    aria-label="الصفحة التالية">
-                    <i class="pi pi-chevron-left"></i>
-                  </button>
-                </div>
-
-                <span class="paginator-info">
-                  صفحة {{ currentPage() }} من {{ totalPages() }}
-                </span>
-
+                    ]" [ngModel]="pageSize()" (ngModelChange)="changePageSize($event)" optionLabel="label"
+                  optionValue="value" appendTo="body" />
               </div>
+
+              <div class="paginator-pages">
+                <button type="button" class="page-nav" [disabled]="currentPage() === 1"
+                  (click)="goToPage(currentPage() - 1)" aria-label="الصفحة السابقة">
+                  <i class="pi pi-chevron-right"></i>
+                </button>
+
+                @for (page of visiblePages(); track $index) {
+                @if (page === 'dots') {
+                <span class="page-dots">...</span>
+                } @else {
+                <button type="button" class="page-number" [class.active]="currentPage() === page"
+                  [attr.aria-current]="currentPage() === page ? 'page' : null" (click)="goToPage(page)">
+                  {{ page }}
+                </button>
+                }
+                }
+
+                <button type="button" class="page-nav" [disabled]="currentPage() === totalPages()"
+                  (click)="goToPage(currentPage() + 1)" aria-label="الصفحة التالية">
+                  <i class="pi pi-chevron-left"></i>
+                </button>
+              </div>
+
+              <span class="paginator-info">
+                صفحة {{ currentPage() }} من {{ totalPages() }}
+              </span>
+
+            </div>
             }
 
           </div>
@@ -512,19 +417,9 @@
 </div>
 
 <!-- ERRORS DIALOG (import errors + row errors) -->
-<p-dialog
-  [visible]="importErrorsDialogVisible()"
-  (visibleChange)="!$event && closeImportErrors()"
-  [modal]="true"
-  [draggable]="false"
-  [resizable]="false"
-  [dismissableMask]="true"
-  appendTo="body"
-  [baseZIndex]="11000"
-  [style]="{ width: '850px', maxWidth: '95vw' }"
-  [breakpoints]="{ '640px': '96vw' }"
-  styleClass="app-dialog"
-  dir="rtl">
+<p-dialog [visible]="importErrorsDialogVisible()" (visibleChange)="!$event && closeImportErrors()" [modal]="true"
+  [draggable]="false" [resizable]="false" [dismissableMask]="true" appendTo="body" [baseZIndex]="11000"
+  [style]="{ width: '850px', maxWidth: '95vw' }" [breakpoints]="{ '640px': '96vw' }" styleClass="app-dialog" dir="rtl">
 
   <ng-template pTemplate="header">
     <div class="dlg-header">
@@ -556,11 +451,11 @@
 
     <div class="dlg-list">
       @for (error of importErrors(); track $index) {
-        <div class="dlg-row">
-          <span class="dlg-row-num">{{ $index + 1 }}</span>
-          <p>{{ error }}</p>
-          <i class="pi pi-exclamation-circle"></i>
-        </div>
+      <div class="dlg-row">
+        <span class="dlg-row-num">{{ $index + 1 }}</span>
+        <p>{{ error }}</p>
+        <i class="pi pi-exclamation-circle"></i>
+      </div>
       }
     </div>
 
@@ -580,21 +475,10 @@
 </p-dialog>
 
 <!-- TRANSFER TO PLANNING DIALOG -->
-<p-dialog
-  [visible]="transferDialogVisible()"
-  (visibleChange)="!$event && closeTransfer()"
-  [modal]="true"
-  [draggable]="false"
-  [resizable]="false"
-  [closable]="!transferring()"
-  [dismissableMask]="!transferring()"
-  [closeOnEscape]="!transferring()"
-  appendTo="body"
-  [baseZIndex]="11000"
-  [style]="{ width: '560px', maxWidth: '95vw' }"
-  [breakpoints]="{ '640px': '96vw' }"
-  styleClass="app-dialog"
-  dir="rtl">
+<p-dialog [visible]="transferDialogVisible()" (visibleChange)="!$event && closeTransfer()" [modal]="true"
+  [draggable]="false" [resizable]="false" [closable]="!transferring()" [dismissableMask]="!transferring()"
+  [closeOnEscape]="!transferring()" appendTo="body" [baseZIndex]="11000" [style]="{ width: '560px', maxWidth: '95vw' }"
+  [breakpoints]="{ '640px': '96vw' }" styleClass="app-dialog" dir="rtl">
 
   <ng-template pTemplate="header">
     <div class="dlg-header">
@@ -607,58 +491,51 @@
   </ng-template>
 
   @if (transferRow(); as row) {
-    <div class="dlg-body">
+  <div class="dlg-body">
 
-      <div class="transfer-info">
-        <div>
-          <span>رقم اللجنة</span>
-          <strong>{{ row.committeeNumber }}</strong>
-        </div>
-        <div>
-          <span>اسم اللجنة / المدرسة</span>
-          <strong>{{ row.schoolName || '—' }}</strong>
-        </div>
-        <div>
-          <span>المحافظة</span>
-          <strong>{{ getGovernorateLabel(row.governorate) || '—' }}</strong>
-        </div>
-        <div>
-          <span>الدور</span>
-          <strong>{{ getRoundLabel(row.round) || '—' }}</strong>
-        </div>
-        <div>
-          <span>المرحلة التعليمية</span>
-          <strong>{{ getEduccationalStageLabel(row.educationalStage) || '—' }}</strong>
-        </div>
-        <div>
-          <span>عدد البوكليتات</span>
-          <strong>{{ row.bookletCount | number }}</strong>
-        </div>
+    <div class="transfer-info">
+      <div>
+        <span>رقم اللجنة</span>
+        <strong>{{ row.committeeNumber }}</strong>
       </div>
-
-      <div class="dlg-hint">
-        <i class="pi pi-info-circle"></i>
-        <span>بعد التأكيد ستظهر اللجنة لدى مستخدم Planning لاستكمال الإجراءات. هل تريدين المتابعة؟</span>
+      <div>
+        <span>اسم اللجنة / المدرسة</span>
+        <strong>{{ row.schoolName || '—' }}</strong>
       </div>
-
+      <div>
+        <span>المحافظة</span>
+        <strong>{{ getGovernorateLabel(row.governorate) || '—' }}</strong>
+      </div>
+      <div>
+        <span>الدور</span>
+        <strong>{{ getRoundLabel(row.round) || '—' }}</strong>
+      </div>
+      <div>
+        <span>المرحلة التعليمية</span>
+        <strong>{{ getEduccationalStageLabel(row.educationalStage) || '—' }}</strong>
+      </div>
+      <div>
+        <span>عدد البوكليتات</span>
+        <strong>{{ row.bookletCount | number }}</strong>
+      </div>
     </div>
+
+    <div class="dlg-hint">
+      <i class="pi pi-info-circle"></i>
+      <span>بعد التأكيد ستظهر اللجنة لدى مستخدم Planning لاستكمال الإجراءات. هل تريدين المتابعة؟</span>
+    </div>
+
+  </div>
   }
 
   <ng-template pTemplate="footer">
-    <button
-      type="button"
-      class="dlg-btn ghost"
-      [disabled]="transferring()"
-      (click)="closeTransfer()">
+    <button type="button" class="dlg-btn ghost" [disabled]="transferring()" (click)="closeTransfer()">
       إلغاء
     </button>
 
-    <button
-      type="button"
-      class="dlg-btn primary"
-      [disabled]="transferring()"
-      (click)="confirmTransfer()">
-      <i class="pi" [class.pi-spin]="transferring()" [class.pi-spinner]="transferring()" [class.pi-send]="!transferring()"></i>
+    <button type="button" class="dlg-btn primary" [disabled]="transferring()" (click)="confirmTransfer()">
+      <i class="pi" [class.pi-spin]="transferring()" [class.pi-spinner]="transferring()"
+        [class.pi-send]="!transferring()"></i>
       {{ transferring() ? 'جارٍ التحويل...' : 'تأكيد التحويل' }}
     </button>
   </ng-template>

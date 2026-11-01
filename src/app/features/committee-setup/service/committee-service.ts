@@ -64,6 +64,13 @@ export class CommitteeService {
       params = params.set('Ascending', query.ascending);
     }
 
-    return this.http.get<unknown>(`${this.baseUrl}/ImportExcel/history`, { params });
+    return this.http.get<unknown>(`${this.baseUrl}/ProductionBatches/generated`, { params });
+  }
+  transferToPlanning(id: number): Observable<unknown> {
+    return this.http.post(
+      `${this.baseUrl}/ProductionBatches/${id}/send-to-planning`,
+      null,
+      { responseType: 'text' }
+    );
   }
 }

@@ -198,6 +198,7 @@ export default class CommitteeSetupComponent implements OnInit, OnDestroy {
 
         this.totalRecords.set(total);
         this.tableLoading.set(false);
+
       },
       error: err => {
         console.error('History error:', err);
@@ -217,76 +218,118 @@ export default class CommitteeSetupComponent implements OnInit, OnDestroy {
   }
 
   // Supports: response.data.data / response.data.totalCount
+  // private parseHistory(response: unknown): { items: any[]; total: number } {
+  //   const raw = response as any;
+  //   const body = raw?.data ?? raw;
+
+  //   const items: any[] = [body, body?.data, body?.items, body?.records, body?.result]
+  //     .find(Array.isArray) ?? [];
+
+  //   const total = Number(
+  //     body?.totalCount ??
+  //     body?.totalRecords ??
+  //     body?.total ??
+  //     items.length
+  //   );
+
+  //   return { items, total };
+  // }
   private parseHistory(response: unknown): { items: any[]; total: number } {
     const raw = response as any;
-    const body = raw?.data ?? raw;
 
-    const items: any[] = [body, body?.data, body?.items, body?.records, body?.result]
-      .find(Array.isArray) ?? [];
+    // API response: response.data.data
+    const body = raw?.data;
 
-    const total = Number(
-      body?.totalCount ??
-      body?.totalRecords ??
-      body?.total ??
-      items.length
-    );
+    const items = Array.isArray(body?.data)
+      ? body.data
+      : [];
+
+    const total = Number(body?.totalCount ?? items.length);
 
     return { items, total };
   }
 
-  private mapHistoryRow(item: any, index: number): any {
-    const errors = this.normalizeErrors(item?.errors);
-    const status = String(item?.status ?? '').toLowerCase();
+  // private mapHistoryRow(item: any, index: number): any {
+  //   const errors = this.normalizeErrors(item?.errors);
+  //   const status = String(item?.status ?? '').toLowerCase();
 
-    const invalid =
-      ['rejected', 'invalid', 'failed'].includes(status) ||
-      item?.isValid === false ||
-      item?.success === false ||
-      errors.length > 0;
+  //   const invalid =
+  //     ['rejected', 'invalid', 'failed'].includes(status) ||
+  //     item?.isValid === false ||
+  //     item?.success === false ||
+  //     errors.length > 0;
 
-    return {
-      id: String(item?.auditLogId ?? item?.id ?? item?.committeeId ?? ''),
-      index: this.first() + index + 1,
+  //   return {
+  //     id: String(item?.auditLogId ?? item?.id ?? item?.committeeId ?? ''),
+  //     index: this.first() + index + 1,
 
-      committeeNumber: String(
-        item?.committeeNumber ??
-        item?.committeeCode ??
-        item?.auditLogId ??
-        item?.id ??
-        ''
-      ),
+  //     committeeNumber: String(
+  //       item?.committeeNumber ??
+  //       item?.committeeCode ??
+  //       item?.auditLogId ??
+  //       item?.id ??
+  //       ''
+  //     ),
 
-      schoolName: String(
-        item?.schoolName ?? item?.committeeName ?? item?.fileName ?? ''
-      ),
+  //     schoolName: String(
+  //       item?.schoolName ?? item?.committeeName ?? item?.fileName ?? ''
+  //     ),
 
-      educationalAdministration: String(
-        item?.educationalAdministration ?? item?.administrationName ?? ''
-      ),
+  //     educationalAdministration: String(
+  //       item?.educationalAdministration ?? item?.administrationName ?? ''
+  //     ),
 
-      bookletCount: Number(
-        item?.bookletCount ?? item?.booklets ?? item?.rowsCount ?? 0
-      ),
+  //     bookletCount: Number(
+  //       item?.bookletCount ?? item?.booklets ?? item?.rowsCount ?? 0
+  //     ),
 
-      status: invalid ? 'invalid' : 'valid',
-      transferred: item?.isTransferred === true || item?.transferred === true,
+  //     status: invalid ? 'invalid' : 'valid',
+  //     transferred: item?.isTransferred === true || item?.transferred === true,
 
-      governorate: String(item?.governorateCode ?? item?.governorate ?? ''),
-      subject: String(item?.subjectCode ?? item?.subject ?? ''),
-      round: String(item?.roundCode ?? item?.round ?? ''),
-      educationalStage: String(
-        item?.educationalStageCode ?? item?.educationalStage ?? ''
-      ),
+  //     governorate: String(item?.governorateCode ?? item?.governorate ?? ''),
+  //     subject: String(item?.subjectCode ?? item?.subject ?? ''),
+  //     round: String(item?.roundCode ?? item?.round ?? ''),
+  //     educationalStage: String(
+  //       item?.educationalStageCode ?? item?.educationalStage ?? ''
+  //     ),
 
-      fileName: String(item?.fileName ?? ''),
-      errors
-    } as any;
-  }
+  //     fileName: String(item?.fileName ?? ''),
+  //     errors
+  //   } as any;
+  // }
 
   // =========================================================
   // PAGINATION AND FILTERS
   // =========================================================
+  private mapHistoryRow(item: any, index: number): any {
+    const errors = this.normalizeErrors(item?.errors);
 
+    return {
+      id: Number(item?.id),
+
+      index: this.first() + index + 1,
+      committeeNumber: String(item?.id ?? ''),
+      subjectName: String(item?.subjectName ?? ''),
+      educationalAdministration: '',
+      bookletCount: Number(item?.numberOfBooklets ?? 0),
+
+      status:
+        String(item?.status ?? '').toLowerCase() === 'generated'
+          ? 'valid'
+          : 'invalid',
+
+      transferred: false,
+
+      governorate: String(item?.governorateName ?? ''),
+      subject: '',
+      round: String(item?.roundName ?? ''),
+      educationalStage: String(item?.educationalStageName ?? ''),
+
+      fileName: String(item?.sourceFileName ?? ''),
+      statusName: String(item?.statusName ?? ''),
+      errors: this.normalizeErrors(item?.errors)
+    };
+  }
   goToPage(page: number): void {
     if (page < 1 || page > this.totalPages()) {
       return;
@@ -334,7 +377,7 @@ export default class CommitteeSetupComponent implements OnInit, OnDestroy {
 
   openErrors(row: any): void {
     this.importErrors.set(row.errors);
-    this.errorsFileName.set(row.fileName || row.schoolName);
+    this.errorsFileName.set(row.fileName || row.subjectName);
     this.importErrorsDialogVisible.set(true);
   }
 
@@ -389,34 +432,47 @@ export default class CommitteeSetupComponent implements OnInit, OnDestroy {
       return;
     }
 
+    const batchId = Number(row.id);
+
+    if (!Number.isInteger(batchId) || batchId <= 0) {
+      this.toast.add({
+        severity: 'error',
+        summary: 'رقم دفعة غير صالح',
+        detail: 'تعذّر تحديد رقم دفعة الإنتاج المراد تحويلها.',
+        life: 5000
+      });
+      return;
+    }
+
     this.transferring.set(true);
 
-    // this.committeeService.transferToPlanning(row.id).subscribe({
-    //   next: () => {
-    //     this.transferring.set(false);
-    //     this.closeTransfer();
+    this.committeeService.transferToPlanning(batchId).subscribe({
+      next: () => {
+        this.transferring.set(false);
+        this.closeTransfer();
 
-    //     this.toast.add({
-    //       severity: 'success',
-    //       summary: 'تم التحويل',
-    //       detail: `تم تحويل اللجنة رقم ${row.committeeNumber} إلى مستخدم Planning بنجاح.`,
-    //       life: 3500
-    //     });
+        this.toast.add({
+          severity: 'success',
+          summary: 'تم التحويل',
+          detail: `تم إرسال دفعة الإنتاج رقم ${batchId} إلى Planning بنجاح.`,
+          life: 3500
+        });
 
-    //     this.loadHistory();
-    //   },
-    //   error: err => {
-    //     console.error('Transfer error:', err);
-    //     this.transferring.set(false);
+        this.loadHistory();
+      },
 
-    //     this.toast.add({
-    //       severity: 'error',
-    //       summary: 'تعذّر تحويل اللجنة',
-    //       detail: this.extractErrorMessage(err),
-    //       life: 5000
-    //     });
-    //   }
-    // });
+      error: err => {
+        console.error('Transfer to Planning error:', err);
+        this.transferring.set(false);
+
+        this.toast.add({
+          severity: 'error',
+          summary: 'تعذّر تحويل الدفعة',
+          detail: this.extractErrorMessage(err),
+          life: 5000
+        });
+      }
+    });
   }
 
   // =========================================================
@@ -738,7 +794,7 @@ export default class CommitteeSetupComponent implements OnInit, OnDestroy {
       ...data.map((row, index) => [
         index + 1,
         row.committeeNumber,
-        row.schoolName,
+        row.subjectName,
         this.getGovernorateLabel(row.governorate),
         this.getSubjectLabel(row.subject),
         row.educationalAdministration,

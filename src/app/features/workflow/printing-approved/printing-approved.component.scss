@@ -41,7 +41,14 @@
   content: ''; position: absolute; inset: 0; pointer-events: none;
   background: linear-gradient(145deg, rgba(7, 92, 105, .08), rgba(7, 65, 78, .42));
 }
-.pa-search-content { min-width: 0; padding: 1.5rem; }
+
+/* container query: الحقول بتتجاوب مع عرض هذا العنصر نفسه */
+.pa-search-content {
+  min-width: 0;
+  padding: 1.5rem;
+  container-type: inline-size;
+  container-name: pa-search;
+}
 .pa-search-title { display: flex; align-items: center; gap: .9rem; margin-bottom: 1.2rem; }
 .pa-search-icon {
   display: grid; place-items: center; width: 48px; height: 48px; flex: 0 0 48px;
@@ -51,7 +58,24 @@
 .pa-search-title h3 { margin: 0 0 .3rem; color: var(--pa-ink); font-size: 1.08rem; font-weight: 850; }
 .pa-search-title p { margin: 0; color: var(--pa-muted); font-size: .82rem; line-height: 1.7; }
 
-.fields-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .9rem; align-items: end; }
+.fields-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: .9rem;
+  align-items: end;
+}
+
+/* عمودين (2×2) لما المساحة تضيق */
+@container pa-search (max-width: 760px) {
+  .fields-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+/* عمود واحد على المساحات الصغيرة */
+@container pa-search (max-width: 440px) {
+  .fields-grid { grid-template-columns: 1fr; }
+  .pa-search-title p { font-size: .78rem; }
+}
+
 .filter-field { display: grid; gap: .45rem; min-width: 0; }
 .filter-field label { color: #344b60; font-size: .8rem; font-weight: 800; }
 
@@ -63,7 +87,7 @@
 }
 
 :host ::ng-deep .select-wrapper {
-  p-select { display: block; width: 100%;}
+  p-select { display: block; width: 100%; }
 
   .p-select {
     width: 100%;
@@ -491,8 +515,6 @@
 ========================================================= */
 @media (max-width: 1050px) {
   .pa-search-card { grid-template-columns: 170px minmax(0, 1fr); }
-  .fields-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .committee-search-field { grid-column: 1 / -1; }
   .approval-grid { grid-template-columns: 1fr; }
 }
 
@@ -502,8 +524,21 @@
   .pa-image img { min-height: 130px; max-height: 130px; object-position: center 38%; }
   .pa-search-content { padding: 1rem; }
   .pa-search-title { align-items: flex-start; }
-  .fields-grid, .approval-details { grid-template-columns: 1fr; }
-  .committee-search-field { grid-column: auto; }
+
+  /* منع زوم iOS عند الضغط على الحقل + مساحة لمس مريحة */
+  .committee-input-wrapper input { font-size: 16px; min-height: 48px; }
+  :host ::ng-deep .select-wrapper .p-select { min-height: 48px; }
+  :host ::ng-deep .select-wrapper .p-select-label { font-size: 16px; }
+
+  /* الفلاتر النشطة */
+  .active-filters { gap: .45rem; }
+  .af-label { width: 100%; }
+  .af-chip { max-width: 100%; }
+  .af-chip b { overflow-wrap: anywhere; }
+  .empty-clear { width: 100%; justify-content: center; }
+
+  /* الكروت */
+  .approval-details { grid-template-columns: 1fr; }
   .approval-card { padding: .9rem; }
   .approval-card-head { grid-template-columns: 36px minmax(0, 1fr); }
   .approval-number { width: 36px; height: 36px; }

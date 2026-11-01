@@ -65,7 +65,7 @@
 
 .pr-req { color: #dc3545; }
 
-.pr-hint { display: flex; justify-content: space-between; }
+.pr-hint { display: flex; justify-content: space-between; gap: .5rem; }
 .pr-error { color: #dc3545; }
 
 // inputs (pInputText / p-select / p-multiselect / textarea)
@@ -112,7 +112,7 @@
   }
 
   &.pr-btn-primary:hover:not(:disabled) { background: var(--blue) !important; border-color: var(--blue) !important; }
-  &.pr-grow { flex: 1; }
+  &.pr-grow { flex: 1; min-width: 0; }
   &.pr-btn-soft-danger { border-color: rgba(220, 53, 69, .25) !important; background: rgba(220, 53, 69, .06) !important; color: #dc3545 !important; &:hover:not(:disabled) { background: rgba(220, 53, 69, .12) !important; } }
 }
 
@@ -156,7 +156,8 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 1.5rem;
+  flex-wrap: wrap;
+  gap: 1rem 1.5rem;
   margin-bottom: 1.25rem;
 
   h2 { font-size: 1.25rem; font-weight: 800; }
@@ -177,10 +178,11 @@
   span { color: var(--muted); font-size: .68rem; }
 }
 
-// ---------- Filters + tabs ----------
+// ---------- Filters ----------
 
 .pr-filters {
   display: grid;
+  // 4 حقول متساوية + زرار إعادة التعيين
   grid-template-columns: repeat(4, minmax(0, 1fr)) auto;
   align-items: end;
   gap: 1rem;
@@ -203,7 +205,7 @@
     &.p-focus,
     &:focus {
       border-color: var(--blue);
-      box-shadow: 0 0 0 3px rgba(22, 163, 74, .12); // أخضر بدل الأزرق
+      box-shadow: 0 0 0 3px rgba(22, 163, 74, .12);
     }
 
     .p-select-label {
@@ -236,26 +238,11 @@
     z-index: 1;
   }
 
-  .pr-input {
-    padding-inline-start: 2.3rem;
-  }
+  .pr-input { padding-inline-start: 2.3rem; }
 }
 
-@media (max-width: 1200px) {
-  .pr-filters {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+// ---------- Tabs ----------
 
-    > .pr-btn {
-      grid-column: 1 / -1;
-      justify-self: end;
-      width: 42px;
-    }
-  }
-}
-
-@media (max-width: 600px) {
-  .pr-filters { grid-template-columns: 1fr; }
-}
 .pr-tabs {
   display: flex;
   flex-wrap: wrap;
@@ -283,11 +270,12 @@
   &.active { border-color: var(--tone); background: var(--tone); color: #fff; b { background: rgba(255, 255, 255, .22); color: #fff; } }
 }
 
-// ---------- Committee cards ----------
+// ---------- Cards ----------
 
 .pr-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(450px, 1fr));
+  // min() بيمنع الكارد إنه يبقى أعرض من الحاوية
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 380px), 1fr));
   gap: 1rem;
 }
 
@@ -295,6 +283,7 @@
   display: flex;
   flex-direction: column;
   gap: 1rem;
+  min-width: 0;
   padding: 1.1rem;
   border: 1px solid var(--border);
   border-block-start: 3px solid var(--tone);
@@ -304,7 +293,7 @@
 
   &:hover { box-shadow: 0 8px 22px rgba(11, 46, 79, .08); transform: translateY(-2px); }
 
-  header { display: flex; align-items: center; gap: .7rem; }
+  header { display: flex; align-items: center; flex-wrap: wrap; gap: .7rem; }
   footer { display: flex; gap: .5rem; margin-top: auto; }
 }
 
@@ -320,10 +309,10 @@
   grid-template-columns: 1fr 1fr;
   gap: .6rem;
 
-  > div { padding: .6rem .7rem; border-radius: 10px; background: var(--soft); }
+  > div { min-width: 0; padding: .6rem .7rem; border-radius: 10px; background: var(--soft); }
   .pr-wide { grid-column: 1 / -1; }
   dt { display: flex; align-items: center; gap: .3rem; margin-bottom: .2rem; }
-  dd { color: var(--text); font-size: .78rem; font-weight: 700; }
+  dd { color: var(--text); font-size: .78rem; font-weight: 700; overflow-wrap: anywhere; }
   .pr-mono { color: var(--blue); font-size: .7rem; text-align: start; }
 }
 
@@ -377,6 +366,7 @@
 .pr-pager-nav {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: .3rem;
 
   button {
@@ -422,7 +412,8 @@
 .pr-info {
   display: flex;
   align-items: center;
-  gap: 2rem;
+  flex-wrap: wrap;
+  gap: 1rem 2rem;
   margin-bottom: 1rem;
   padding: .85rem 1rem;
   border: 1px solid var(--border);
@@ -494,15 +485,31 @@
   font-size: 1.5rem;
 }
 
-// ---------- Responsive ----------
+// ======================================================
+// Responsive (كل الـ media queries مجمّعة هنا في الآخر)
+// ======================================================
 
-@media (max-width: 1000px) {
-  .pr-filters { grid-template-columns: repeat(2, minmax(0, 1fr)); .pr-actions { grid-column: 1 / -1; justify-content: flex-end; } }
+@media (max-width: 1200px) {
+  .pr-filters {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+
+    > .pr-btn {
+      grid-column: 1 / -1;
+      justify-self: end;
+    }
+  }
 }
 
 @media (max-width: 600px) {
-  .pr-head, .pr-info { flex-direction: column; align-items: flex-start; gap: .8rem; }
+  .pr-head,
+  .pr-info { flex-direction: column; align-items: flex-start; gap: .8rem; }
+
   .pr-filters { grid-template-columns: 1fr; }
-  .pr-actions .pr-btn { flex: 1; }
   .pr-pager { justify-content: center; }
+}
+
+@media (max-width: 480px) {
+  .pr-card { padding: .9rem; }
+  .pr-meta { grid-template-columns: 1fr; }
+  .pr-dlg-body { padding: .9rem; }
 }
