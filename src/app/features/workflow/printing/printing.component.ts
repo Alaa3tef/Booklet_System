@@ -794,78 +794,97 @@ export default class PrintingComponent implements OnInit {
     this.confirmDialogVisible = false;
   }
 
-  confirmFinish(): void {
+ confirmFinish(): void {
 
-    const batch = this.activeBatch();
+  const batch = this.activeBatch();
 
-    const committeeIds = [
-      ...this.selectedIds()
-    ];
+  const committeeIds = [
+    ...this.selectedIds()
+  ];
 
-    if (
-      !batch ||
-      !committeeIds.length ||
-      this.printSubmitting()
-    ) {
-      return;
-    }
+  if (
+    !batch ||
+    !committeeIds.length ||
+    this.printSubmitting()
+  ) {
+    return;
+  }
 
-    this.printSubmitting.set(true);
+  this.printSubmitting.set(true);
+  this.printError.set('');
 
-    this.printError.set('');
+  this.printingService
+    .printCommittees(batch.id, committeeIds)
+    .subscribe({
 
-    this.printingService
-      .printCommittees(batch.id, committeeIds)
-      .subscribe({
+      next: () => {
 
-        next: () => {
+        this.confirmDialogVisible = false;
+        this.clearSelection();
 
-          this.printSubmitting.set(false);
+        // إعادة تحميل اللجان بعد تسجيل انتهاء الطباعة
+        this.printingService
+          .getCommittees(batch.id)
+          .subscribe({
 
-          this.confirmDialogVisible = false;
+            next: list => {
 
-          this.clearSelection();
+              this.committees.set(list);
 
-          this.printingService
-            .getCommittees(batch.id)
-            .subscribe({
+              this.committeesLoading.set(false);
+              this.printSubmitting.set(false);
 
-              next: list => {
+              // لو مفيش أي لجان متبقية، نقفل الدايلوج
+              if (list.length === 0) {
 
-                this.committees.set(list);
+                this.closeCommittees();
 
-                this.finishedAll.set(
-                  list.length === 0
-                );
-              },
+              } else {
 
-              error: () => {
-                this.loadCommittees(true);
+                // لسه فيه لجان قيد الطباعة
+                this.finishedAll.set(false);
+
               }
 
-            });
+              // تحديث البطاقات الرئيسية
+              this.loadBatches(true);
+            },
 
-          // تحديث البطاقات مع الاحتفاظ بالفلاتر
-          this.loadBatches(true);
-        },
+            error: (error: unknown) => {
 
-        error: (error: unknown) => {
+              console.error(
+                'Failed to reload committees:',
+                error
+              );
 
-          console.error(
-            'Failed to register printing:',
-            error
-          );
+              this.printSubmitting.set(false);
 
-          this.printSubmitting.set(false);
+              this.loadCommittees(true);
 
-          this.printError.set(
-            errorMessage(
-              error,
-              'تعذر تسجيل انتهاء الطباعة. حاول مرة أخرى.'
-            )
-          );
-        }
+              this.loadBatches(true);
+            }
 
-      });
-  }
+          });
+
+      },
+
+      error: (error: unknown) => {
+
+        console.error(
+          'Failed to register printing:',
+          error
+        );
+
+        this.printSubmitting.set(false);
+
+        this.printError.set(
+          errorMessage(
+            error,
+            'تعذر تسجيل انتهاء الطباعة. حاول مرة أخرى.'
+          )
+        );
+      }
+
+    });
+}
 }
