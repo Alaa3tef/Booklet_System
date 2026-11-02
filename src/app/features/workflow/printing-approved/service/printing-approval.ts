@@ -1,12 +1,10 @@
-
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
-import { map } from 'rxjs/operators';
 
 import { AppConfigService } from '../../../../shared/services/app-config.service';
 
-interface ApiResponse<T> {
+export interface ApiResponse<T> {
   success: boolean;
   message: string | null;
   data: T;
@@ -18,30 +16,44 @@ interface ApiResponse<T> {
 export interface PendingBatchFilters {
   governorateId?: number | string | null;
   subjectId?: number | string | null;
+  pageNumber?: number;
+  pageSize?: number;
 }
 
-/** GET api/PreQuality/pending */
-export interface PendingBatchSummary {
+export interface PendingCommittee {
+  committeeId: number;
+  committeeNumber: string;
+  schoolName: string;
+  educationalAdministration: string;
+  committeeType: string;
+  educationalStageCommitteeTypeId: number;
+  requiredBookletCount: number;
+  bonusBookletCount: number;
+  requiredEnvelopeCount: number;
+  bonusEnvelopeCount: number;
+  boxCount: number;
+}
+
+export interface PendingBatch {
   batchId: number;
   displayLabel: string;
   year: number | null;
   roundCode: string;
   roundName: string;
+  committees: PendingCommittee[];
 }
 
-/** GET api/PreQuality/pending/{batchId} */
-export interface PendingBatchDetails {
-  batchId: number;
-  year: number | null;
-  roundCode: string;
-  roundName: string;
-  governorateName: string;
-  subjectName: string;
-  committeeCount: number;
-  requiredBookletTotal: number;
-  reserveBookletTotal: number;
-  expectedBoxCount: number;
-  [key: string]: unknown;
+export interface PendingBatchesData {
+  currentPage: number;
+  totalPages: number;
+  totalCount: number;
+  meta: unknown;
+  pageSize: number;
+  hasPreviousPage: boolean;
+  hasNextPage: boolean;
+  messages: unknown[];
+  succeeded: boolean;
+  data: PendingBatch[];
 }
 
 @Injectable({
@@ -57,16 +69,31 @@ export class PrintingApprovalService {
   /**
    * GET api/PreQuality/pending
    *
-   * Optional query parameters:
+   * Query Parameters:
+   * PageNumber
+   * PageSize
    * GovernorateId
    * SubjectId
    */
   getPendingBatches(
     filters?: PendingBatchFilters
-  ): Observable<PendingBatchSummary[]> {
+  ): Observable<ApiResponse<PendingBatchesData>> {
 
     let params = new HttpParams();
 
+    // رقم الصفحة
+    params = params.set(
+      'PageNumber',
+      String(filters?.pageNumber ?? 1)
+    );
+
+    // عدد العناصر في الصفحة
+    params = params.set(
+      'PageSize',
+      String(filters?.pageSize ?? 6)
+    );
+
+    // المحافظة
     if (
       filters?.governorateId !== null &&
       filters?.governorateId !== undefined &&
@@ -79,6 +106,7 @@ export class PrintingApprovalService {
       );
     }
 
+    // المادة
     if (
       filters?.subjectId !== null &&
       filters?.subjectId !== undefined &&
@@ -91,30 +119,10 @@ export class PrintingApprovalService {
       );
     }
 
-    return this.http
-      .get<ApiResponse<PendingBatchSummary[]>>(
-        `${this.baseUrl}/pending`,
-        { params }
-      )
-      .pipe(
-        map(res => res?.data ?? [])
-      );
-  }
-
-  /**
-   * GET api/PreQuality/pending/{batchId}
-   */
-  getPendingBatch(
-    batchId: number
-  ): Observable<PendingBatchDetails> {
-
-    return this.http
-      .get<ApiResponse<PendingBatchDetails>>(
-        `${this.baseUrl}/pending/${batchId}`
-      )
-      .pipe(
-        map(res => res.data)
-      );
+    return this.http.get<ApiResponse<PendingBatchesData>>(
+      `${this.baseUrl}/pending`,
+      { params }
+    );
   }
 
   /**

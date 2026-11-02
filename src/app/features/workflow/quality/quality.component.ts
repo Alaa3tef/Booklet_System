@@ -9,7 +9,9 @@ import {
   inject,
   signal
 } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
+import { Subject, Subscription, debounceTime } from 'rxjs';
 
 import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
@@ -19,13 +21,12 @@ import { TooltipModule } from 'primeng/tooltip';
 
 import { WorkflowStepLayoutComponent } from '../../../shared/workflow-step-layout/workflow-step-layout.component';
 import { Lookups } from '../../../shared/services/lookups';
-import { QualityService, QualityCommittee } from './service/quality';
+import { QualityService, QualityBatch, QualityCommittee } from './service/quality';
 
 // ==========================================
 // Types
 // ==========================================
 
-type StatusTab = 'all' | 'pending' | 'done';
 type EnvelopeTab = 'all' | 'pending' | 'scanned';
 type EnvelopeType = 'required' | 'bonus';
 type FeedbackKind = 'success' | 'error' | 'warning';
@@ -56,6 +57,16 @@ interface ScanFeedback {
   code: string;
 }
 
+interface PagerVm {
+  current: number;
+  totalPages: number;
+  totalCount: number;
+  size: number;
+  start: number;
+  end: number;
+  pages: (number | 'dots')[];
+}
+
 function errorMessage(error: any, fallback: string): string {
   return error?.error?.message || error?.message || fallback;
 }
@@ -66,6 +77,34 @@ function nowTime(): string {
     minute: '2-digit',
     second: '2-digit'
   });
+}
+
+function buildPages(current: number, total: number): (number | 'dots')[] {
+  if (total <= 4) {
+    return Array.from({ length: total }, (_, i) => i + 1);
+  }
+
+  if (current <= 2) {
+    return [1, 2, 3, 'dots', total];
+  }
+
+  if (current >= total - 1) {
+    return [1, 'dots', total - 2, total - 1, total];
+  }
+
+  return [1, 'dots', current, 'dots', total];
+}
+
+function buildPager(current: number, size: number, total: number, totalPages: number): PagerVm {
+  return {
+    current,
+    totalPages,
+    totalCount: total,
+    size,
+    start: total ? (current - 1) * size + 1 : 0,
+    end: Math.min(current * size, total),
+    pages: buildPages(current, totalPages)
+  };
 }
 
 /** محيط دائرة الـ progress ring (2 × π × 42) - لازم يطابق stroke-dasharray في الـ SCSS */
@@ -109,7 +148,7 @@ export default class QualityComponent implements OnInit, OnDestroy {
   // ==========================================
 
   readonly essentials = [
-    'اختيار المحافظة والمادة',
+    'اختيار الدفعة (Batch)',
     'فتح اللجنة وبدء جلسة المسح',
     'توجيه الماسح على QR كل ظرف',
     'إتمام مراجعة اللجنة'
@@ -121,24 +160,49 @@ export default class QualityComponent implements OnInit, OnDestroy {
     { label: '24', value: 24 }
   ];
 
+  readonly committeePageSizes = [
+    { label: '5', value: 5 },
+    { label: '10', value: 10 },
+    { label: '20', value: 20 }
+  ];
+
   readonly envelopeTabs: { key: EnvelopeTab; label: string }[] = [
     { key: 'all', label: 'الكل' },
     { key: 'pending', label: 'المتبقي' },
     { key: 'scanned', label: 'تم مسحه' }
   ];
 
+  constructor() {
+    this.batchSearch$
+      .pipe(debounceTime(400), takeUntilDestroyed())
+      .subscribe(() => {
+        this.batchPage.set(1);
+        this.loadBatches();
+      });
+
+    this.committeeSearch$
+      .pipe(debounceTime(400), takeUntilDestroyed())
+      .subscribe(() => {
+        this.committeePage.set(1);
+        this.loadCommittees();
+      });
+  }
+
   ngOnInit(): void {
     this.loadGovernorates();
     this.loadSubjects();
-    this.loadCommittees();
+    this.loadBatches();
   }
 
   ngOnDestroy(): void {
     this.clearIdleTimer();
+    this.batchesSub?.unsubscribe();
+    this.committeesSub?.unsubscribe();
+    this.envelopesSub?.unsubscribe();
   }
 
   // ==========================================
-  // Lookups (المحافظات والمواد - value = الكود)
+  // Lookups (المحافظات والمواد - اختياري)
   // ==========================================
 
   readonly governorates = signal<LookupOption[]>([]);
@@ -190,10 +254,6 @@ export default class QualityComponent implements OnInit, OnDestroy {
     });
   }
 
-  /**
-   * label = الاسم، value = الكود (الـ API بياخد GovernorateCode / SubjectCode).
-   * لو اسم حقل الكود عندك مختلف ضيفيه في codeKeys.
-   */
   private normalizeLookupOptions(
     response: any,
     nameKeys: string[],
@@ -264,200 +324,257 @@ export default class QualityComponent implements OnInit, OnDestroy {
   }
 
   // ==========================================
-  // Committees (GET api/Quality/committees)
+  // Batches (GET api/Quality/all-batches) - server pagination
   // ==========================================
 
-  readonly committees = signal<QualityCommittee[]>([]);
-  readonly loading = signal(false);
-  readonly loadError = signal('');
+  readonly batches = signal<QualityBatch[]>([]);
+  readonly batchesLoading = signal(false);
+  readonly batchesError = signal('');
 
+  readonly batchSearch = signal('');
   readonly governorateFilter = signal<string | null>(null);
   readonly subjectFilter = signal<string | null>(null);
-  readonly committeeFilter = signal('');
-  readonly statusFilter = signal<StatusTab>('all');
 
-  /** اللجان اللي اتم إتمامها (complete) في هذه الجلسة */
-  readonly completedIds = signal<Set<number>>(new Set());
+  readonly batchPage = signal(1);
+  readonly batchPageSize = signal(6);
+  readonly batchTotalPages = signal(1);
+  readonly batchTotalCount = signal(0);
 
-  /** المحافظة والمادة بيروحوا للـ API */
-  applyFilters(): void {
-    this.currentPage.set(1);
-    this.loadCommittees();
-  }
+  readonly batchPager = computed(() =>
+    buildPager(this.batchPage(), this.batchPageSize(), this.batchTotalCount(), this.batchTotalPages())
+  );
 
-  loadCommittees(silent = false): void {
-    if (!silent) {
-      this.loading.set(true);
-    }
+  readonly hasActiveBatchFilters = computed(
+    () => !!(this.batchSearch().trim() || this.governorateFilter() || this.subjectFilter())
+  );
 
-    this.loadError.set('');
+  private readonly batchSearch$ = new Subject<string>();
+  private batchesSub?: Subscription;
 
-    this.qualityService
-      .getCommittees({
+  loadBatches(): void {
+    this.batchesSub?.unsubscribe();
+    this.batchesLoading.set(true);
+    this.batchesError.set('');
+
+    this.batchesSub = this.qualityService
+      .getBatches({
+        pageNumber: this.batchPage(),
+        pageSize: this.batchPageSize(),
+        searchTerm: this.batchSearch(),
         governorateCode: this.governorateFilter(),
         subjectCode: this.subjectFilter()
       })
       .subscribe({
-        next: list => {
-          this.committees.set(list);
-          this.loading.set(false);
+        next: result => {
+          this.batches.set(result.items);
+          this.batchTotalPages.set(result.totalPages);
+          this.batchTotalCount.set(result.totalCount);
+          this.batchesLoading.set(false);
         },
         error: (error: unknown) => {
-          console.error('Failed to load committees:', error);
-          this.loadError.set(errorMessage(error, 'تعذر تحميل اللجان. حاول مرة أخرى.'));
-          this.loading.set(false);
+          console.error('Failed to load batches:', error);
+          this.batchesError.set(errorMessage(error, 'تعذر تحميل الدفعات. حاول مرة أخرى.'));
+          this.batchesLoading.set(false);
         }
       });
   }
 
-  resetFilters(): void {
+  onBatchSearch(value: string): void {
+    this.batchSearch.set(value);
+    this.batchSearch$.next(value);
+  }
+
+  applyBatchFilters(): void {
+    this.batchPage.set(1);
+    this.loadBatches();
+  }
+
+  resetBatchFilters(): void {
+    this.batchSearch.set('');
     this.governorateFilter.set(null);
     this.subjectFilter.set(null);
-    this.committeeFilter.set('');
-    this.statusFilter.set('all');
-    this.applyFilters();
+    this.applyBatchFilters();
   }
 
-  readonly hasActiveFilters = computed(
-    () =>
-      !!(
-        this.governorateFilter() ||
-        this.subjectFilter() ||
-        this.committeeFilter().trim() ||
-        this.statusFilter() !== 'all'
-      )
+  goBatchPage = (page: number): void => {
+    if (page < 1 || page > this.batchTotalPages() || page === this.batchPage()) {
+      return;
+    }
+
+    this.batchPage.set(page);
+    this.loadBatches();
+  };
+
+  onBatchPageSize = (size: number): void => {
+    this.batchPageSize.set(size);
+    this.batchPage.set(1);
+    this.loadBatches();
+  };
+
+  trackBatch = (_: number, b: QualityBatch) => b.id;
+
+  // ==========================================
+  // Batch dialog + Committees
+  // (GET api/Quality/batches/{id}/printing-completed-committees)
+  // ==========================================
+
+  /** الدايلوج الكبيرة (دفعة → لجان → أظرف) */
+  dialogVisible = false;
+
+  readonly selectedBatch = signal<QualityBatch | null>(null);
+  readonly committees = signal<QualityCommittee[]>([]);
+  readonly committeesLoading = signal(false);
+  readonly committeesError = signal('');
+
+  readonly committeeSearch = signal('');
+  readonly committeePage = signal(1);
+  readonly committeePageSize = signal(10);
+  readonly committeeTotalPages = signal(1);
+  readonly committeeTotalCount = signal(0);
+
+  readonly committeePager = computed(() =>
+    buildPager(
+      this.committeePage(),
+      this.committeePageSize(),
+      this.committeeTotalCount(),
+      this.committeeTotalPages()
+    )
   );
 
-  onCommitteeSearch(value: string): void {
-    this.committeeFilter.set(value);
-    this.currentPage.set(1);
+  /** اللجان اللي اتم إتمامها (complete) في هذه الجلسة */
+  readonly completedIds = signal<Set<number>>(new Set());
+
+  private readonly committeeSearch$ = new Subject<string>();
+  private committeesSub?: Subscription;
+
+  openBatch(batch: QualityBatch): void {
+    this.selectedBatch.set(batch);
+    this.committees.set([]);
+    this.committeeSearch.set('');
+    this.committeePage.set(1);
+    this.committeeTotalPages.set(1);
+    this.committeeTotalCount.set(0);
+    this.resetWorkspace();
+    this.dialogVisible = true;
+    this.loadCommittees();
   }
 
-  setStatus(tab: StatusTab): void {
-    this.statusFilter.set(tab);
-    this.currentPage.set(1);
+  /**
+   * بيتنادى من زرار الإغلاق ومن Escape ومن onHide.
+   * التقدم محفوظ في sessions فمبيضيعش.
+   */
+  closeDialog(): void {
+    if (this.completing()) {
+      return;
+    }
+
+    this.dialogVisible = false;
+    this.committeesSub?.unsubscribe();
+    this.committeesLoading.set(false);
+    this.selectedBatch.set(null);
+    this.committees.set([]);
+    this.resetWorkspace();
   }
+
+  loadCommittees(silent = false): void {
+    const batch = this.selectedBatch();
+
+    if (!batch) {
+      return;
+    }
+
+    this.committeesSub?.unsubscribe();
+
+    if (!silent) {
+      this.committeesLoading.set(true);
+    }
+
+    this.committeesError.set('');
+
+    this.committeesSub = this.qualityService
+      .getBatchCommittees(batch.id, {
+        pageNumber: this.committeePage(),
+        pageSize: this.committeePageSize(),
+        searchTerm: this.committeeSearch()
+      })
+      .subscribe({
+        next: result => {
+          this.committees.set(result.items);
+          this.committeeTotalPages.set(result.totalPages);
+          this.committeeTotalCount.set(result.totalCount);
+          this.committeesLoading.set(false);
+        },
+        error: (error: unknown) => {
+          console.error('Failed to load committees:', error);
+          this.committeesError.set(errorMessage(error, 'تعذر تحميل اللجان. حاول مرة أخرى.'));
+          this.committeesLoading.set(false);
+        }
+      });
+  }
+
+  onCommitteeSearch(value: string): void {
+    this.committeeSearch.set(value);
+    this.committeeSearch$.next(value);
+  }
+
+  goCommitteePage = (page: number): void => {
+    if (page < 1 || page > this.committeeTotalPages() || page === this.committeePage()) {
+      return;
+    }
+
+    this.committeePage.set(page);
+    this.loadCommittees();
+  };
+
+  onCommitteePageSize = (size: number): void => {
+    this.committeePageSize.set(size);
+    this.committeePage.set(1);
+    this.loadCommittees();
+  };
 
   isDone(c: QualityCommittee): boolean {
     return this.completedIds().has(c.id);
   }
 
-  /** بحث محلي برقم اللجنة أو اسم المدرسة */
-  private readonly searchedRows = computed(() => {
-    const q = this.committeeFilter().trim().toLowerCase();
-
-    return q
-      ? this.committees().filter(
-          c =>
-            c.committeeNumber.toLowerCase().includes(q) ||
-            c.schoolName.toLowerCase().includes(q)
-        )
-      : this.committees();
-  });
-
-  readonly filteredRows = computed(() => {
-    const tab = this.statusFilter();
-    const rows = this.searchedRows();
-
-    return tab === 'all'
-      ? rows
-      : rows.filter(c => (tab === 'done') === this.isDone(c));
-  });
-
-  readonly statusTabs = computed(() => {
-    const rows = this.searchedRows();
-    const done = rows.filter(c => this.isDone(c)).length;
-
-    return [
-      { key: 'all' as StatusTab, label: 'الكل', icon: 'pi-th-large', tone: 'neutral', count: rows.length },
-      { key: 'pending' as StatusTab, label: 'قيد المراجعة', icon: 'pi-clock', tone: 'info', count: rows.length - done },
-      { key: 'done' as StatusTab, label: 'تمت المراجعة', icon: 'pi-check-circle', tone: 'success', count: done }
-    ];
-  });
-
-  // ==========================================
-  // Pagination (client-side)
-  // ==========================================
-
-  readonly pageSize = signal(6);
-  readonly currentPage = signal(1);
-
-  readonly totalPages = computed(() =>
-    Math.max(1, Math.ceil(this.filteredRows().length / this.pageSize()))
-  );
-
-  readonly paginatedRows = computed(() => {
-    const page = Math.min(this.currentPage(), this.totalPages());
-    const start = (page - 1) * this.pageSize();
-
-    return this.filteredRows().slice(start, start + this.pageSize());
-  });
-
-  readonly paginationPages = computed<(number | 'dots')[]>(() => {
-    const total = this.totalPages();
-    const current = this.currentPage();
-
-    if (total <= 4) {
-      return Array.from({ length: total }, (_, i) => i + 1);
-    }
-
-    if (current <= 2) {
-      return [1, 2, 3, 'dots', total];
-    }
-
-    if (current >= total - 1) {
-      return [1, 'dots', total - 2, total - 1, total];
-    }
-
-    return [1, 'dots', current, 'dots', total];
-  });
-
-  readonly paginationStart = computed(() =>
-    this.filteredRows().length ? (this.currentPage() - 1) * this.pageSize() + 1 : 0
-  );
-
-  readonly paginationEnd = computed(() =>
-    Math.min(this.currentPage() * this.pageSize(), this.filteredRows().length)
-  );
-
-  goToPage(page: number): void {
-    if (page < 1 || page > this.totalPages() || page === this.currentPage()) {
-      return;
-    }
-
-    this.currentPage.set(page);
-  }
-
-  onPageSizeChange(size: number): void {
-    this.pageSize.set(size);
-    this.currentPage.set(1);
-  }
-
-  // ==========================================
-  // Card helpers
-  // ==========================================
-
   trackCommittee = (_: number, c: QualityCommittee) => c.id;
   trackEnvelope = (_: number, e: { code: string }) => e.code;
 
+  // ==========================================
+  // Committee list helpers
+  // ==========================================
+
   totalEnvelopes(c: QualityCommittee): number {
-    return this.expectedCodes(c).length;
+    return c.requiredEnvelopeCount + (this.requireBonusEnvelopes ? c.bonusEnvelopeCount : 0);
   }
 
-  /** عدد الأظرف اللي اتمسحت في جلسة اللجنة (حتى لو الدايلوج اتقفل) */
+  /** عدد الأظرف اللي اتمسحت في جلسة اللجنة (حتى لو اتنقل لجنة تانية) */
   scannedOf(c: QualityCommittee): number {
     return Object.keys(this.sessions()[c.id] ?? {}).length;
   }
 
   progressOf(c: QualityCommittee): number {
     const total = this.totalEnvelopes(c);
-    return total ? Math.round((this.scannedOf(c) / total) * 100) : 0;
+    return total ? Math.min(100, Math.round((this.scannedOf(c) / total) * 100)) : 0;
   }
 
-  private expectedCodes(c: QualityCommittee): string[] {
-    return this.requireBonusEnvelopes
-      ? [...c.requiredEnvelopes, ...c.bonusEnvelopes]
-      : [...c.requiredEnvelopes];
+  statusLabel(c: QualityCommittee): string {
+    if (this.isDone(c)) {
+      return 'تمت المراجعة';
+    }
+
+    if (this.activeCommittee()?.id === c.id) {
+      return 'قيد الفحص';
+    }
+
+    return this.scannedOf(c) > 0 ? 'جارية' : 'بانتظار الفحص';
+  }
+
+  statusIcon(c: QualityCommittee): string {
+    if (this.isDone(c)) {
+      return 'pi-check-circle';
+    }
+
+    return this.activeCommittee()?.id === c.id ? 'pi-qrcode' : 'pi-clock';
   }
 
   /** آخر جزء من الكود (رقم الظرف) بخط كبير: ENV-27-A-29-01-777-001 → 001 */
@@ -479,10 +596,10 @@ export default class QualityComponent implements OnInit, OnDestroy {
   /** تقدم كل لجنة: { committeeId: { envelopeCode: scannedAt } } */
   private readonly sessions = signal<Record<number, Record<string, string>>>({});
 
-  scanDialogVisible = false;
-
   readonly activeCommittee = signal<QualityCommittee | null>(null);
   readonly envelopes = signal<EnvelopeItem[]>([]);
+  readonly envelopesLoading = signal(false);
+  readonly envelopesError = signal('');
   readonly attempts = signal<ScanAttempt[]>([]);
   readonly feedback = signal<ScanFeedback | null>(null);
   readonly lastScannedCode = signal<string | null>(null);
@@ -500,9 +617,7 @@ export default class QualityComponent implements OnInit, OnDestroy {
   );
 
   /** إزاحة الدائرة للـ progress ring */
-  readonly ringOffset = computed(
-    () => RING_CIRCUMFERENCE * (1 - this.progress() / 100)
-  );
+  readonly ringOffset = computed(() => RING_CIRCUMFERENCE * (1 - this.progress() / 100));
 
   readonly allScanned = computed(
     () => this.totalCount() > 0 && this.scannedCount() === this.totalCount()
@@ -517,9 +632,7 @@ export default class QualityComponent implements OnInit, OnDestroy {
   readonly bonusScanned = computed(
     () => this.envelopes().filter(e => e.type === 'bonus' && e.scanned).length
   );
-  readonly bonusTotal = computed(
-    () => this.envelopes().filter(e => e.type === 'bonus').length
-  );
+  readonly bonusTotal = computed(() => this.envelopes().filter(e => e.type === 'bonus').length);
 
   /** أول ظرف متبقي */
   readonly nextPending = computed(() => this.envelopes().find(e => !e.scanned) ?? null);
@@ -528,60 +641,83 @@ export default class QualityComponent implements OnInit, OnDestroy {
     const tab = this.envelopeTab();
     const list = this.envelopes().map((e, i) => ({ ...e, no: i + 1 }));
 
-    return tab === 'all'
-      ? list
-      : list.filter(e => (tab === 'scanned' ? e.scanned : !e.scanned));
+    return tab === 'all' ? list : list.filter(e => (tab === 'scanned' ? e.scanned : !e.scanned));
   });
 
-  openScanDialog(committee: QualityCommittee): void {
-    if (this.isDone(committee)) {
-      return;
-    }
-
-    const saved = this.sessions()[committee.id] ?? {};
-
-    const items: EnvelopeItem[] = [
-      ...committee.requiredEnvelopes.map(code => ({ code, type: 'required' as const })),
-      ...(this.requireBonusEnvelopes
-        ? committee.bonusEnvelopes.map(code => ({ code, type: 'bonus' as const }))
-        : [])
-    ].map(e => ({
-      ...e,
-      scanned: !!saved[e.code],
-      scannedAt: saved[e.code] ?? null
-    }));
-
+  /** يفرّغ مساحة العمل (اللجنة المفتوحة وأظرفها) بدون ما يمس التقدم المحفوظ */
+  private resetWorkspace(): void {
+    this.envelopesSub?.unsubscribe();
     this.resetBuffer();
-    this.activeCommittee.set(committee);
-    this.envelopes.set(items);
+    this.activeCommittee.set(null);
+    this.envelopes.set([]);
+    this.envelopesLoading.set(false);
+    this.envelopesError.set('');
     this.attempts.set([]);
     this.feedback.set(null);
     this.lastScannedCode.set(null);
     this.envelopeTab.set('all');
     this.completeError.set('');
-    this.scanDialogVisible = true;
   }
 
-  /** بعد فتح الدايلوج: شيل الفوكس من أي زرار عشان Enter/Space من الماسح ميضغطوش عليه */
-  prepareSession(): void {
-    (document.activeElement as HTMLElement | null)?.blur?.();
-  }
-
-  /**
-   * بيتنادى من زرار الإغلاق، ومن الضغط بره الدايلوج (dismissableMask)،
-   * ومن Escape، ومن onHide. التقدم محفوظ في sessions فمبيضيعش.
-   */
-  closeScanDialog(): void {
-    if (this.completing()) {
+  /** اختيار لجنة من القائمة → تحميل أظرفها من الـ endpoint وفتح جلسة المسح */
+  selectCommittee(committee: QualityCommittee): void {
+    if (this.completing() || this.isDone(committee) || this.activeCommittee()?.id === committee.id) {
       return;
     }
 
-    this.scanDialogVisible = false;
-    this.activeCommittee.set(null);
-    this.envelopes.set([]);
-    this.attempts.set([]);
-    this.feedback.set(null);
-    this.resetBuffer();
+    this.resetWorkspace();
+    this.activeCommittee.set(committee);
+    this.loadEnvelopes();
+    this.prepareSession();
+  }
+
+  // ==========================================
+  // Envelopes (GET api/Committees/{id}/envelopes)
+  // ==========================================
+
+  private envelopesSub?: Subscription;
+
+  loadEnvelopes(): void {
+    const committee = this.activeCommittee();
+
+    if (!committee) {
+      return;
+    }
+
+    this.envelopesSub?.unsubscribe();
+    this.envelopesLoading.set(true);
+    this.envelopesError.set('');
+
+    this.envelopesSub = this.qualityService.getCommitteeEnvelopes(committee.id).subscribe({
+      next: data => {
+        const saved = this.sessions()[committee.id] ?? {};
+
+        const items: EnvelopeItem[] = [
+          ...data.requiredEnvelopes.map(code => ({ code, type: 'required' as const })),
+          ...(this.requireBonusEnvelopes
+            ? data.bonusEnvelopes.map(code => ({ code, type: 'bonus' as const }))
+            : [])
+        ].map(e => ({
+          ...e,
+          scanned: !!saved[e.code],
+          scannedAt: saved[e.code] ?? null
+        }));
+
+        this.envelopes.set(items);
+        this.envelopesLoading.set(false);
+      },
+      error: (error: unknown) => {
+        console.error('Failed to load envelopes:', error);
+        this.envelopes.set([]);
+        this.envelopesError.set(errorMessage(error, 'تعذر تحميل أظرف اللجنة. حاول مرة أخرى.'));
+        this.envelopesLoading.set(false);
+      }
+    });
+  }
+
+  /** شيل الفوكس من أي زرار عشان Enter/Space من الماسح ميضغطوش عليه */
+  prepareSession(): void {
+    (document.activeElement as HTMLElement | null)?.blur?.();
   }
 
   setEnvelopeTab(tab: EnvelopeTab): void {
@@ -600,16 +736,34 @@ export default class QualityComponent implements OnInit, OnDestroy {
 
   /**
    * الماسح بيتصرف كأنه كيبورد: بيكتب الكود بسرعة وبعدين Enter.
-   * بنسمعه على مستوى الصفحة كلها طالما جلسة المسح مفتوحة،
-   * فاليوزر مش محتاج يكتب أو يدوس أي زرار.
+   * بنسمعه على مستوى الصفحة طالما فيه لجنة مفتوحة وأظرفها اتحملت،
+   * ومبنتدخلش لو اليوزر بيكتب في مربع بحث أو فلتر.
    */
   @HostListener('document:keydown', ['$event'])
   onDocumentKeydown(event: KeyboardEvent): void {
-    if (!this.scanDialogVisible || !this.activeCommittee() || this.completing()) {
+    if (
+      !this.dialogVisible ||
+      !this.activeCommittee() ||
+      this.envelopesLoading() ||
+      this.completing()
+    ) {
       return;
     }
 
     if (event.ctrlKey || event.metaKey || event.altKey) {
+      return;
+    }
+
+    // اليوزر بيكتب في حقل (بحث / فلتر) → الماسح مش بياخد الكتابة
+    const target = event.target as HTMLElement | null;
+
+    if (
+      target &&
+      (target.tagName === 'INPUT' ||
+        target.tagName === 'TEXTAREA' ||
+        target.tagName === 'SELECT' ||
+        target.isContentEditable)
+    ) {
       return;
     }
 
@@ -706,7 +860,7 @@ export default class QualityComponent implements OnInit, OnDestroy {
 
   /**
    * مقارنة الكود المقروء بالأظرف المتوقعة للجنة:
-   * - مطابق ولسه ماتمسحش → يعدّيه ويروح للي بعده
+   * - مطابق ولسه ماتمسحش → يعدّيه
    * - اتمسح قبل كده → تنبيه
    * - مش تابع للجنة (أو في غير دوره) → خطأ ويتعاد المسح
    */
@@ -714,7 +868,7 @@ export default class QualityComponent implements OnInit, OnDestroy {
     const committee = this.activeCommittee();
     const raw = rawCode.trim();
 
-    if (!committee || !raw || this.completing()) {
+    if (!committee || !raw || this.completing() || this.envelopesLoading()) {
       return;
     }
 
@@ -724,7 +878,12 @@ export default class QualityComponent implements OnInit, OnDestroy {
 
     // 1) غير مطابق
     if (index < 0) {
-      this.reject(raw, 'الظرف غير تابع لهذه اللجنة', 'الظرف غير مطابق', 'هذا الظرف لا يتبع هذه اللجنة. أعد مسح الظرف الصحيح.');
+      this.reject(
+        raw,
+        'الظرف غير تابع لهذه اللجنة',
+        'الظرف غير مطابق',
+        'هذا الظرف لا يتبع هذه اللجنة. أعد مسح الظرف الصحيح.'
+      );
       return;
     }
 
@@ -819,7 +978,7 @@ export default class QualityComponent implements OnInit, OnDestroy {
   }
 
   // ==========================================
-  // Complete (PUT api/Quality/committees/{id}/complete)
+  // Complete (PUT api/Quality/committees/{id}/complete-quality)
   // ==========================================
 
   readonly completing = signal(false);
@@ -839,7 +998,16 @@ export default class QualityComponent implements OnInit, OnDestroy {
       next: () => {
         this.completing.set(false);
         this.completedIds.update(set => new Set(set).add(committee.id));
-        this.closeScanDialog();
+
+        // الجلسة تفضل مفتوحة: ننتقل تلقائياً لأول لجنة لسه ماتراجعتش في الصفحة الحالية
+        const next = this.committees().find(c => c.id !== committee.id && !this.isDone(c)) ?? null;
+
+        this.resetWorkspace();
+
+        if (next) {
+          this.selectCommittee(next);
+        }
+
         this.loadCommittees(true);
       },
       error: (error: unknown) => {

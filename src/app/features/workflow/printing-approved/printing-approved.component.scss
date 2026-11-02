@@ -184,7 +184,7 @@
   background: var(--pa-teal-soft); color: var(--pa-teal-dark); font-size: .76rem; font-weight: 800;
 }
 
-.approval-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
+.approval-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; }
 .approval-card {
   position: relative; display: flex; flex-direction: column; min-width: 0; padding: 1.1rem; overflow: hidden;
   border: 1px solid var(--pa-line); border-radius: 17px; background: #fff;

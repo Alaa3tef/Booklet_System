@@ -1,4 +1,3 @@
-
 import {
   Component,
   OnInit,
@@ -10,8 +9,7 @@ import {
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 
-import { forkJoin, of } from 'rxjs';
-import { catchError, map, switchMap } from 'rxjs/operators';
+import { forkJoin } from 'rxjs';
 
 import { SelectModule } from 'primeng/select';
 import { InputTextModule } from 'primeng/inputtext';
@@ -29,8 +27,8 @@ import { Lookups } from '../../../shared/services/lookups';
 
 import {
   PrintingApprovalService,
-  PendingBatchSummary,
-  PendingBatchDetails
+  PendingBatch,
+  PendingCommittee
 } from './service/printing-approval';
 
 
@@ -60,32 +58,44 @@ type StatusTone =
   | 'danger';
 
 
-/** كارد واحد = batch واحد (محافظة + مادة + دور) */
 interface ApprovalRow {
   index: number;
+
   batchId: number;
   displayLabel: string;
+
   year: number | null;
   roundCode: string;
   roundName: string;
+
   governorateName: string;
   subjectName: string;
-  committeeCount: number | null;
-  requiredBookletTotal: number | null;
-  reserveBookletTotal: number | null;
-  expectedBoxCount: number | null;
+
+  committeeCount: number;
+  requiredBookletTotal: number;
+  reserveBookletTotal: number;
+  expectedBoxCount: number;
+
+  requiredEnvelopeTotal: number;
+  reserveEnvelopeTotal: number;
+
+  committees: PendingCommittee[];
+
   detailsFailed: boolean;
+
   status: string;
   statusTone: StatusTone;
+
   rejectionReason?: string;
 }
+
 
 const ST_PENDING = 'بانتظار الاعتماد';
 const ST_READY = 'جاهز للطباعة';
 const ST_REJECTED = 'مرفوض';
 
 
-/** استخراج الـ array من استجابات الـ API المختلفة */
+/** استخراج الـ Array من استجابات الـ Lookups */
 function extractList(res: any): any[] {
 
   if (Array.isArray(res)) {
@@ -142,7 +152,7 @@ function norm(value: string | null | undefined): string {
   styleUrl: './printing-approved.component.scss'
 })
 export default class PrintingApprovedComponent implements OnInit {
-
+  readonly paginatedRows = computed(() => this.rows());
   private readonly lookupService = inject(Lookups);
 
   private readonly approvalService =
@@ -168,6 +178,7 @@ export default class PrintingApprovedComponent implements OnInit {
     this.loadLookups();
 
     this.loadBatches();
+
   }
 
 
@@ -204,7 +215,6 @@ export default class PrintingApprovedComponent implements OnInit {
           extractList(res.subjects);
 
 
-        /** إزالة التكرار من القوائم */
         const uniqueOptions = (
           list: any[]
         ): SelectOption[] => {
@@ -231,11 +241,13 @@ export default class PrintingApprovedComponent implements OnInit {
               label,
               value: item.id
             });
+
           }
 
           return result.sort(
             (a, b) => a.label.localeCompare(b.label, 'ar')
           );
+
         };
 
 
@@ -260,7 +272,7 @@ export default class PrintingApprovedComponent implements OnInit {
           summary: 'خطأ',
           life: 3000,
           detail:
-            err.error?.message ||
+            err?.error?.message ||
             'فشل تحميل بيانات القوائم'
         });
 
@@ -306,8 +318,7 @@ export default class PrintingApprovedComponent implements OnInit {
 
   // ==========================================
   // DATA
-  // GET api/PreQuality/pending
-  // GET api/PreQuality/pending/{batchId}
+  // SERVER SIDE PAGINATION
   // ==========================================
 
   readonly rows = signal<ApprovalRow[]>([]);
@@ -317,6 +328,34 @@ export default class PrintingApprovedComponent implements OnInit {
   readonly loadError = signal('');
 
 
+  // ==========================================
+  // PAGINATION STATE
+  // ==========================================
+
+  /** عدد العناصر المطلوب تحميلها في كل صفحة */
+  readonly pageSize = signal(6);
+
+  /** الصفحة الحالية */
+  readonly currentPage = signal(1);
+
+  /** إجمالي عدد العناصر في السيرفر */
+  readonly totalCount = signal(0);
+
+  /** إجمالي عدد الصفحات من السيرفر */
+  readonly totalPages = signal(0);
+
+  /** هل توجد صفحة سابقة؟ */
+  readonly hasPreviousPage = signal(false);
+
+  /** هل توجد صفحة تالية؟ */
+  readonly hasNextPage = signal(false);
+
+
+  /**
+   * تحميل البيانات من السيرفر حسب الصفحة والفلاتر.
+   *
+   * لا يوجد استدعاء pending/{batchId}.
+   */
   loadBatches(): void {
 
     this.loading.set(true);
@@ -325,66 +364,56 @@ export default class PrintingApprovedComponent implements OnInit {
 
     const filters = {
       governorateId: this.searchGovernorate(),
-      subjectId: this.searchSubject()
+      subjectId: this.searchSubject(),
+      pageNumber: this.currentPage(),
+      pageSize: this.pageSize()
     };
 
 
-    this.approvalService.getPendingBatches(filters)
-
-      .pipe(
-
-        switchMap(list => {
-
-          if (!list.length) {
-            return of([] as ApprovalRow[]);
-          }
-
-          return forkJoin(
-
-            list.map(batch =>
-
-              this.approvalService
-                .getPendingBatch(batch.batchId)
-
-                .pipe(
-
-                  map(details =>
-                    this.toRow(batch, details)
-                  ),
-
-                  catchError(err => {
-
-                    console.error(
-                      `Failed to load batch ${batch.batchId}:`,
-                      err
-                    );
-
-                    return of(
-                      this.toRow(batch, null)
-                    );
-
-                  })
-
-                )
-
-            )
-
-          );
-
-        })
-
-      )
+    this.approvalService
+      .getPendingBatches(filters)
 
       .subscribe({
 
-        next: result => {
+        next: response => {
 
-          this.rows.set(
-            result.map((row, index) => ({
-              ...row,
-              index: index + 1
-            }))
+          const paginationData = response?.data;
+
+          const batches = paginationData?.data ?? [];
+
+          // تحويل بيانات الـ batches إلى كروت
+          const mappedRows = batches.map(
+            (batch, index) => this.toRow(batch, index + 1)
           );
+
+          this.rows.set(mappedRows);
+
+
+          // تحديث بيانات الـ Pagination من السيرفر
+          this.currentPage.set(
+            paginationData?.currentPage ?? 1
+          );
+
+          this.totalPages.set(
+            paginationData?.totalPages ?? 0
+          );
+
+          this.totalCount.set(
+            paginationData?.totalCount ?? 0
+          );
+
+          this.hasPreviousPage.set(
+            paginationData?.hasPreviousPage ?? false
+          );
+
+          this.hasNextPage.set(
+            paginationData?.hasNextPage ?? false
+          );
+
+          // الاحتفاظ بحجم الصفحة الفعلي الراجع من السيرفر
+          if (paginationData?.pageSize) {
+            this.pageSize.set(paginationData.pageSize);
+          }
 
           this.loading.set(false);
 
@@ -399,6 +428,14 @@ export default class PrintingApprovedComponent implements OnInit {
 
           this.rows.set([]);
 
+          this.totalCount.set(0);
+
+          this.totalPages.set(0);
+
+          this.hasPreviousPage.set(false);
+
+          this.hasNextPage.set(false);
+
           this.loadError.set(
             err?.error?.message ||
             err?.message ||
@@ -407,6 +444,18 @@ export default class PrintingApprovedComponent implements OnInit {
 
           this.loading.set(false);
 
+          this.messageService.add({
+
+            severity: 'error',
+
+            summary: 'خطأ',
+
+            detail: this.loadError(),
+
+            life: 4000
+
+          });
+
         }
 
       });
@@ -414,66 +463,93 @@ export default class PrintingApprovedComponent implements OnInit {
   }
 
 
+  /**
+   * تحويل بيانات الـ Batch إلى بيانات الكارد.
+   */
   private toRow(
-    summary: PendingBatchSummary,
-    details: PendingBatchDetails | null
+    batch: PendingBatch,
+    index: number
   ): ApprovalRow {
 
+    const committees = batch.committees ?? [];
+
+
     const [
-      labelGov = '',
-      labelSub = ''
-    ] = (summary.displayLabel ?? '')
+      governorateName = '',
+      subjectName = ''
+    ] = (batch.displayLabel ?? '')
       .split('+')
-      .map(s => s.trim());
+      .map(value => value.trim());
+
+
+    const requiredBookletTotal = committees.reduce(
+      (total, committee) =>
+        total + (Number(committee.requiredBookletCount) || 0),
+      0
+    );
+
+
+    const reserveBookletTotal = committees.reduce(
+      (total, committee) =>
+        total + (Number(committee.bonusBookletCount) || 0),
+      0
+    );
+
+
+    const expectedBoxCount = committees.reduce(
+      (total, committee) =>
+        total + (Number(committee.boxCount) || 0),
+      0
+    );
+
+
+    const requiredEnvelopeTotal = committees.reduce(
+      (total, committee) =>
+        total + (Number(committee.requiredEnvelopeCount) || 0),
+      0
+    );
+
+
+    const reserveEnvelopeTotal = committees.reduce(
+      (total, committee) =>
+        total + (Number(committee.bonusEnvelopeCount) || 0),
+      0
+    );
 
 
     return {
 
-      index: 0,
+      index,
 
-      batchId: summary.batchId,
+      batchId: batch.batchId,
 
-      displayLabel: summary.displayLabel,
+      displayLabel: batch.displayLabel,
 
-      year:
-        details?.year ??
-        summary.year ??
-        null,
+      year: batch.year ?? null,
 
-      roundCode:
-        details?.roundCode ??
-        summary.roundCode ??
-        '',
+      roundCode: batch.roundCode ?? '',
 
-      roundName: (
-        details?.roundName ??
-        summary.roundName ??
-        ''
-      ).trim(),
+      roundName: (batch.roundName ?? '').trim(),
 
-      governorateName: (
-        details?.governorateName ??
-        labelGov
-      ).trim(),
+      governorateName,
 
-      subjectName: (
-        details?.subjectName ??
-        labelSub
-      ).trim(),
+      subjectName,
 
-      committeeCount:
-        details?.committeeCount ?? null,
+      committeeCount: committees.length,
 
-      requiredBookletTotal:
-        details?.requiredBookletTotal ?? null,
+      requiredBookletTotal,
 
-      reserveBookletTotal:
-        details?.reserveBookletTotal ?? null,
+      reserveBookletTotal,
 
-      expectedBoxCount:
-        details?.expectedBoxCount ?? null,
+      expectedBoxCount,
 
-      detailsFailed: !details,
+      requiredEnvelopeTotal,
+
+      reserveEnvelopeTotal,
+
+      committees,
+
+      detailsFailed: false,
 
       status: ST_PENDING,
 
@@ -484,7 +560,6 @@ export default class PrintingApprovedComponent implements OnInit {
   }
 
 
-  /** عرض الأرقام */
   fmt(value: number | null | undefined): string {
 
     return value === null || value === undefined
@@ -505,12 +580,6 @@ export default class PrintingApprovedComponent implements OnInit {
     signal<string | number>('all');
 
 
-  /**
-   * عند تغيير المحافظة:
-   * 1- تحديث القيمة المختارة
-   * 2- الرجوع لأول صفحة
-   * 3- إرسال GovernorateId للـ API
-   */
   setGovernorate(
     value: string | number
   ): void {
@@ -530,12 +599,6 @@ export default class PrintingApprovedComponent implements OnInit {
   }
 
 
-  /**
-   * عند تغيير المادة:
-   * 1- تحديث القيمة المختارة
-   * 2- الرجوع لأول صفحة
-   * 3- إرسال SubjectId للـ API
-   */
   setSubject(
     value: string | number
   ): void {
@@ -571,15 +634,8 @@ export default class PrintingApprovedComponent implements OnInit {
   }
 
 
-  /**
-   * البيانات أصبحت مفلترة من الـ API
-   * لذلك لا نحتاج فلترة محلية مرة أخرى.
-   */
-  readonly filteredRows = computed(() => {
-
-    return this.rows();
-
-  });
+  /** البيانات الحالية هي بيانات الصفحة الحالية من السيرفر */
+  readonly filteredRows = computed(() => this.rows());
 
 
   // ==========================================
@@ -691,77 +747,46 @@ export default class PrintingApprovedComponent implements OnInit {
 
 
   // ==========================================
-  // PAGINATION
+  // SERVER SIDE PAGINATION
   // ==========================================
 
-  readonly pageSize = signal(6);
+  /** بداية العناصر المعروضة */
+  readonly paginationStart = computed(() => {
 
-  readonly currentPage = signal(1);
+    if (this.totalCount() === 0) {
+      return 0;
+    }
 
+    return (
+      (this.currentPage() - 1) * this.pageSize()
+    ) + 1;
 
-  readonly totalPages = computed(() =>
-
-    Math.max(
-      1,
-      Math.ceil(
-        this.filteredRows().length /
-        this.pageSize()
-      )
-    )
-
-  );
+  });
 
 
-  readonly paginatedRows = computed(() => {
+  /** نهاية العناصر المعروضة */
+  readonly paginationEnd = computed(() => {
 
-    const page = Math.min(
-      this.currentPage(),
-      this.totalPages()
-    );
-
-    const start =
-      (page - 1) * this.pageSize();
-
-    return this.filteredRows().slice(
-      start,
-      start + this.pageSize()
+    return Math.min(
+      this.currentPage() * this.pageSize(),
+      this.totalCount()
     );
 
   });
 
 
-  readonly paginationStart = computed(() =>
-
-    this.filteredRows().length === 0
-      ? 0
-      : (
-          (this.currentPage() - 1) *
-          this.pageSize()
-        ) + 1
-
-  );
-
-
-  readonly paginationEnd = computed(() =>
-
-    Math.min(
-      this.currentPage() * this.pageSize(),
-      this.filteredRows().length
-    )
-
-  );
-
-
+  /** أرقام الصفحات */
   readonly paginationPages = computed<
     (number | 'dots')[]
   >(() => {
 
     const total = this.totalPages();
 
-    const current = Math.min(
-      this.currentPage(),
-      total
-    );
+    const current = this.currentPage();
+
+    if (total <= 0) {
+      return [];
+    }
 
     const wanted = new Set<number>([
       1,
@@ -793,7 +818,6 @@ export default class PrintingApprovedComponent implements OnInit {
 
     });
 
-
     return pages;
 
   });
@@ -806,39 +830,64 @@ export default class PrintingApprovedComponent implements OnInit {
   }
 
 
+  /**
+   * عند تغيير عدد العناصر في الصفحة:
+   * نرجع لأول صفحة ونطلب البيانات من السيرفر.
+   */
   onPageSizeChange(): void {
 
     this.resetPage();
 
+    this.loadBatches();
+
   }
 
 
+  /**
+   * الانتقال لصفحة محددة.
+   */
   goToPage(page: number): void {
 
     if (
-      page >= 1 &&
-      page <= this.totalPages()
+      page < 1 ||
+      page > this.totalPages() ||
+      page === this.currentPage() ||
+      this.loading()
     ) {
-      this.currentPage.set(page);
+      return;
     }
+
+    this.currentPage.set(page);
+
+    this.loadBatches();
 
   }
 
 
   previousPage(): void {
 
-    this.goToPage(
-      this.currentPage() - 1
-    );
+    if (
+      !this.hasPreviousPage() ||
+      this.loading()
+    ) {
+      return;
+    }
+
+    this.goToPage(this.currentPage() - 1);
 
   }
 
 
   nextPage(): void {
 
-    this.goToPage(
-      this.currentPage() + 1
-    );
+    if (
+      !this.hasNextPage() ||
+      this.loading()
+    ) {
+      return;
+    }
+
+    this.goToPage(this.currentPage() + 1);
 
   }
 
@@ -1013,8 +1062,7 @@ export default class PrintingApprovedComponent implements OnInit {
 
           });
 
-
-          this.loadBatches();
+          this.loadBatches()
 
         },
 

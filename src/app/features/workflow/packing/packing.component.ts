@@ -2,70 +2,116 @@ import { CommonModule } from '@angular/common';
 import {
   Component,
   DestroyRef,
+  ElementRef,
   OnInit,
   ViewEncapsulation,
   WritableSignal,
   computed,
   inject,
-  signal
+  signal,
+  viewChild
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
-import { catchError, finalize, Observable, of } from 'rxjs';
+import { Observable, Subscription, catchError, finalize, of } from 'rxjs';
 
 import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
-import { InputTextModule } from 'primeng/inputtext';
-import { MultiSelectModule } from 'primeng/multiselect';
 import { SelectModule } from 'primeng/select';
-import { TextareaModule } from 'primeng/textarea';
 import { TooltipModule } from 'primeng/tooltip';
 
-import { WorkflowStatusRow } from '../../../core/models/workflow.model';
 import { Lookups } from '../../../shared/services/lookups';
 import { WorkflowStepLayoutComponent } from '../../../shared/workflow-step-layout/workflow-step-layout.component';
+import { PackingBatch, PackingCommittee, ClaimedCommittee, PackResult, PackProblem, ClaimedBox, PackRequest } from './model/packing.model';
+import { PackingService } from './service/packing';
 
-const PENDING = 'قيد التغليف';
-const DONE = 'تم التغليف';
-const REJECTED = 'مرفوض';
+// =====================================================
+// Types
+// =====================================================
 
-interface PackingEnvelope {
-  id: number;
-  qrCode: string;
-  scanned: boolean;
-  scannedAt: string | null;
-}
-
-interface PackingRow extends WorkflowStatusRow {
-  governorate: string;
-  qrCode: string;
-  envelopes: PackingEnvelope[];
-}
-
-interface PackingScanResult {
-  qrCode: string;
-  subject: string;
-  committeeNumber: string | number;
-  governorate: string;
-  scanType: string;
-  scannedAt: string;
-}
-
-interface ScanStep {
-  id: number;
-  kind: 'envelope' | 'outer';
-  title: string;
-  subtitle: string;
-  qrCode: string;
-  scanned: boolean;
-  scannedAt: string | null;
-  data: any | null;
-}
+type View = 'batches' | 'committees' | 'packing';
+type PagerKind = 'batch' | 'committee';
+type Tone = 'success' | 'warning' | 'danger';
 
 interface Option {
   label: string;
   value: string;
 }
+
+interface EnvelopeVm {
+  serial: string;
+  kind: 'main' | 'reserve';
+  scanned: boolean;
+  scannedAt: string | null;
+}
+
+interface BoxVm {
+  boxId: number;
+  sequenceNo: number;
+  qrCode: string;
+  expectedEnvelopeCount: number;
+  qrScanned: boolean;
+  envelopes: EnvelopeVm[];
+}
+
+interface BoxView extends BoxVm {
+  mainTotal: number;
+  mainScanned: number;
+  reserveTotal: number;
+  reserveScanned: number;
+  complete: boolean;
+  progress: number;
+}
+
+interface ScanFeedback {
+  tone: Tone;
+  code: string;
+  text: string;
+}
+
+interface ScanLog extends ScanFeedback {
+  id: number;
+  time: string;
+}
+
+// =====================================================
+// Pager factory (مستخدم للمواد واللجان)
+// =====================================================
+
+function buildPages(current: number, total: number): (number | 'dots')[] {
+  if (total <= 4) {
+    return Array.from({ length: total }, (_, index) => index + 1);
+  }
+
+  if (current <= 2) {
+    return [1, 2, 3, 'dots', total];
+  }
+
+  if (current >= total - 1) {
+    return [1, 'dots', total - 2, total - 1, total];
+  }
+
+  return [1, 'dots', current, 'dots', total];
+}
+
+function createPager(initialSize = 6) {
+  const page = signal(1);
+  const size = signal(initialSize);
+  const total = signal(0);
+
+  const totalPages = computed(() => Math.max(1, Math.ceil(total() / size())));
+  const pages = computed(() => buildPages(page(), totalPages()));
+  const start = computed(() => (total() ? (page() - 1) * size() + 1 : 0));
+  const end = computed(() => Math.min(page() * size(), total()));
+
+  return { page, size, total, totalPages, pages, start, end };
+}
+
+type Pager = ReturnType<typeof createPager>;
+
+// =====================================================
+// Component
+// =====================================================
 
 @Component({
   selector: 'app-packing',
@@ -75,10 +121,7 @@ interface Option {
     FormsModule,
     ButtonModule,
     DialogModule,
-    InputTextModule,
-    MultiSelectModule,
     SelectModule,
-    TextareaModule,
     TooltipModule,
     WorkflowStepLayoutComponent
   ],
@@ -87,28 +130,14 @@ interface Option {
   encapsulation: ViewEncapsulation.None
 })
 export default class PackingComponent implements OnInit {
+  private readonly api = inject(PackingService);
   private readonly lookups = inject(Lookups);
   private readonly destroyRef = inject(DestroyRef);
 
-  readonly PENDING = PENDING;
-  readonly DONE = DONE;
-  readonly REJECTED = REJECTED;
-
-  // نفس مصدر الـ options اللي في صفحة الجودة
-educationals = [ /* نفس الـ options */ ];
-
-educationFilter = signal<string | number | null>(null);
   readonly essentials = [
-    'تغليف الأظرف الصغيرة للجنة في ظرف كبير',
-    'عمل Scan للـ QR الخارجي للجنة بالكامل',
-    'تسجيل حالة التغليف'
-  ];
-
-  readonly reviewUsers = [
-    { id: 1, name: 'أحمد محمد', role: 'مراجع أول' },
-    { id: 2, name: 'محمد علي', role: 'مراجع جودة' },
-    { id: 3, name: 'سارة أحمد', role: 'مراجع محتوى' },
-    { id: 4, name: 'محمود حسن', role: 'مراجع نهائي' }
+    'اختيار المادة ثم اللجنة المطلوب تغليفها',
+    'مسح QR الصناديق وسيريال الأظرف بجهاز القراءة',
+    'تأكيد التغليف بعد اكتمال المسح'
   ];
 
   readonly pageSizes = [
@@ -117,42 +146,21 @@ educationFilter = signal<string | number | null>(null);
     { label: '24', value: 24 }
   ];
 
+  readonly view = signal<View>('batches');
+
   // =====================================================
-  // Lookup data
+  // Lookups (المحافظة + المادة)
   // =====================================================
 
   readonly subjectOptions = signal<Option[]>([]);
   readonly governorateOptions = signal<Option[]>([]);
-
   readonly subjectsLoading = signal(false);
   readonly governoratesLoading = signal(false);
-
-  readonly subjectsError = signal(false);
-  readonly governoratesError = signal(false);
-
-  // =====================================================
-  // Committee data
-  // =====================================================
-
-  readonly rows = signal<PackingRow[]>([]);
-
-  private readonly fallbackSubjects = [
-    'اللغة العربية',
-    'الرياضيات',
-    'العلوم',
-    'اللغة الإنجليزية'
-  ];
-
-  private readonly fallbackGovernorates = [
-    'القاهرة',
-    'الجيزة',
-    'المنوفية',
-    'الإسكندرية'
-  ];
 
   ngOnInit(): void {
     this.loadSubjects();
     this.loadGovernorates();
+    this.loadBatches();
   }
 
   loadSubjects(): void {
@@ -161,8 +169,7 @@ educationFilter = signal<string | number | null>(null);
       ['name', 'subjectName', 'subject', 'subjectTitle', 'title', 'arabicName'],
       ['id', 'subjectId', 'subjectID', 'value'],
       this.subjectOptions,
-      this.subjectsLoading,
-      this.subjectsError
+      this.subjectsLoading
     );
   }
 
@@ -172,8 +179,7 @@ educationFilter = signal<string | number | null>(null);
       ['name', 'governorateName', 'governorate', 'title', 'arabicName'],
       ['id', 'governorateId', 'governorateID', 'value'],
       this.governorateOptions,
-      this.governoratesLoading,
-      this.governoratesError
+      this.governoratesLoading
     );
   }
 
@@ -182,25 +188,19 @@ educationFilter = signal<string | number | null>(null);
     nameKeys: string[],
     idKeys: string[],
     target: WritableSignal<Option[]>,
-    loading: WritableSignal<boolean>,
-    hasError: WritableSignal<boolean>
+    loading: WritableSignal<boolean>
   ): void {
     loading.set(true);
-    hasError.set(false);
 
     request$
       .pipe(
         takeUntilDestroyed(this.destroyRef),
         catchError(error => {
           console.error('Error loading packing lookup:', error);
-          hasError.set(true);
           target.set([]);
           return of(null);
         }),
-        finalize(() => {
-          loading.set(false);
-          this.rebuildRowsFromLookups();
-        })
+        finalize(() => loading.set(false))
       )
       .subscribe(response => {
         if (response === null) {
@@ -218,44 +218,30 @@ educationFilter = signal<string | number | null>(null);
               return null;
             }
 
-            const rawName = nameKeys
-              .map(key => item[key])
-              .find(value => value !== null && value !== undefined && String(value).trim() !== '');
+            const pick = (keys: string[]) =>
+              keys
+                .map(key => item[key])
+                .find(v => v !== null && v !== undefined && String(v).trim() !== '');
+
+            const rawName = pick(nameKeys);
 
             if (rawName === undefined) {
               return null;
             }
 
             const label = String(rawName).trim();
+            const rawId = pick(idKeys);
 
-            const rawId = idKeys
-              .map(key => item[key])
-              .find(value => value !== null && value !== undefined && String(value).trim() !== '');
-
-            // نخلي القيمة string لتوافق Option.value
-            const value = rawId !== undefined ? String(rawId) : label;
-
-            return label ? { label, value } : null;
+            return label ? { label, value: rawId !== undefined ? String(rawId) : label } : null;
           })
           .filter((option): option is Option => option !== null);
 
-        // منع تكرار نفس الاختيار
-        const uniqueOptions = Array.from(
-          new Map(options.map(option => [option.value, option])).values()
+        target.set(
+          Array.from(new Map(options.map(option => [option.value, option])).values())
         );
-
-        target.set(uniqueOptions);
       });
   }
 
-  /**
-   * يدعم الاستجابات الشائعة مثل:
-   * [...]
-   * { data: [...] }
-   * { data: { data: [...] } }
-   * { result: [...] }
-   * { items: [...] }
-   */
   private extractItems(response: any): any[] {
     if (Array.isArray(response)) {
       return response;
@@ -277,583 +263,613 @@ educationFilter = signal<string | number | null>(null);
     return possibleArrays.find(Array.isArray) ?? [];
   }
 
-  /**
-   * بيانات اللجان هنا تجريبية.
-   * أسماء المواد والمحافظات تُؤخذ من الـ API بعد تحميل القوائم.
-   * عند توفر API اللجان، يمكن استبدال هذه الدالة ببيانات الباك إند.
-   */
-  private createEnvelopes(committeeNumber: string, count: number): PackingEnvelope[] {
-    return Array.from({ length: count }, (_, index) => ({
-      id: index + 1,
-      qrCode: `QR-${committeeNumber}-ENV-${String(index + 1).padStart(2, '0')}`,
-      scanned: false,
-      scannedAt: null
-    }));
-  }
-
-  private rebuildRowsFromLookups(): void {
-    if (this.subjectsLoading() || this.governoratesLoading()) {
-      return;
-    }
-
-    const subjects = this.subjectOptions().map(option => option.label);
-    const governorates = this.governorateOptions().map(option => option.label);
-
-    const availableSubjects = subjects.length ? subjects : this.fallbackSubjects;
-    const availableGovernorates = governorates.length
-      ? governorates
-      : this.fallbackGovernorates;
-
-    const mockRows: PackingRow[] = [
-      {
-        index: 1,
-        subject: availableSubjects[0],
-        committeeNumber: '101',
-        governorate: availableGovernorates[0],
-        qrCode: 'QR-PACK-101',
-        envelopes: this.createEnvelopes('101', 12),
-        status: DONE,
-        statusTone: 'success'
-      },
-      {
-        index: 2,
-        subject: availableSubjects[0],
-        committeeNumber: '102',
-        governorate: availableGovernorates[1 % availableGovernorates.length],
-        qrCode: 'QR-PACK-102',
-        envelopes: this.createEnvelopes('102', 12),
-        status: PENDING,
-        statusTone: 'warning'
-      },
-      {
-        index: 3,
-        subject: availableSubjects[1 % availableSubjects.length],
-        committeeNumber: '103',
-        governorate: availableGovernorates[0],
-        qrCode: 'QR-PACK-103',
-        envelopes: this.createEnvelopes('103', 12),
-        status: PENDING,
-        statusTone: 'warning'
-      },
-      {
-        index: 4,
-        subject: availableSubjects[1 % availableSubjects.length],
-        committeeNumber: '104',
-        governorate: availableGovernorates[2 % availableGovernorates.length],
-        qrCode: 'QR-PACK-104',
-        envelopes: this.createEnvelopes('104', 12),
-        status: PENDING,
-        statusTone: 'warning'
-      }
-    ];
-
-    this.rows.set(mockRows);
-    this.currentPage.set(1);
-    this.applyFilters();
-  }
-
   // =====================================================
-  // Filters
+  // Filters (المحافظة + المادة فقط)
   // =====================================================
 
   readonly subjectFilter = signal<string | null>(null);
   readonly governorateFilter = signal<string | null>(null);
-  readonly committeeFilter = signal('');
-  readonly statusFilter = signal<string | null>(null);
 
   private readonly appliedFilters = signal({
     subject: null as string | null,
-    governorate: null as string | null,
-    committee: ''
-  });
-
-  private readonly searchedRows = computed(() => {
-    const { subject, governorate, committee } = this.appliedFilters();
-    const term = committee.trim();
-
-    return this.rows().filter(row =>
-      (!subject || row.subject === this.getOptionLabel(this.subjectOptions(), subject)) &&
-      (
-        !governorate ||
-        row.governorate === this.getOptionLabel(this.governorateOptions(), governorate)
-      ) &&
-      (!term || String(row.committeeNumber ?? '').includes(term))
-    );
-  });
-
-  readonly filteredRows = computed(() => {
-    const status = this.statusFilter();
-
-    return status
-      ? this.searchedRows().filter(row => row.status === status)
-      : this.searchedRows();
-  });
-
-  readonly statusTabs = computed(() => {
-    const filtered = this.searchedRows();
-    const count = (status: string) =>
-      filtered.filter(row => row.status === status).length;
-
-    return [
-      {
-        key: null as string | null,
-        label: 'الكل',
-        icon: 'pi-th-large',
-        tone: 'neutral',
-        count: filtered.length
-      },
-      {
-        key: PENDING,
-        label: PENDING,
-        icon: 'pi-clock',
-        tone: 'warning',
-        count: count(PENDING)
-      },
-      {
-        key: DONE,
-        label: DONE,
-        icon: 'pi-check-circle',
-        tone: 'success',
-        count: count(DONE)
-      },
-      {
-        key: REJECTED,
-        label: 'مرفوضة',
-        icon: 'pi-times-circle',
-        tone: 'danger',
-        count: count(REJECTED)
-      }
-    ];
+    governorate: null as string | null
   });
 
   readonly hasActiveFilters = computed(() => {
-    const filters = this.appliedFilters();
-
-    return !!(
-      filters.subject || this.educationFilter() ||
-      filters.governorate ||
-      filters.committee.trim()
-    );
+    const { subject, governorate } = this.appliedFilters();
+    return !!(subject || governorate);
   });
-
-  private getOptionLabel(options: Option[], value: string): string {
-    return options.find(option => option.value === value)?.label ?? value;
-  }
 
   applyFilters(): void {
     this.appliedFilters.set({
       subject: this.subjectFilter(),
-      governorate: this.governorateFilter(),
-      committee: this.committeeFilter().trim()
+      governorate: this.governorateFilter()
     });
 
-    this.currentPage.set(1);
+    this.batchPager.page.set(1);
+    this.loadBatches();
   }
 
   resetFilters(): void {
     this.subjectFilter.set(null);
-    this.educationFilter.set(null);
     this.governorateFilter.set(null);
-    this.committeeFilter.set('');
-    this.statusFilter.set(null);
     this.applyFilters();
   }
 
-  setStatus(status: string | null): void {
-    this.statusFilter.set(status);
-    this.currentPage.set(1);
+  private toId(value: string | null): number | null {
+    if (value === null || value === '') {
+      return null;
+    }
+
+    const id = Number(value);
+    return Number.isFinite(id) ? id : null;
   }
 
   // =====================================================
-  // Pagination
+  // Batches (المواد)
   // =====================================================
 
-  readonly pageSize = signal(6);
-  readonly currentPage = signal(1);
+  readonly batches = signal<PackingBatch[]>([]);
+  readonly batchesLoading = signal(false);
+  readonly batchesError = signal<string | null>(null);
+  readonly batchPager = createPager(6);
+  readonly selectedBatch = signal<PackingBatch | null>(null);
 
-  readonly totalPages = computed(() =>
-    Math.max(1, Math.ceil(this.filteredRows().length / this.pageSize()))
-  );
+  private batchesSub?: Subscription;
 
-  readonly paginatedRows = computed(() => {
-    const start = (this.currentPage() - 1) * this.pageSize();
+  loadBatches(): void {
+    this.batchesSub?.unsubscribe();
+    this.batchesLoading.set(true);
+    this.batchesError.set(null);
 
-    return this.filteredRows().slice(start, start + this.pageSize());
-  });
+    const { subject, governorate } = this.appliedFilters();
 
-  readonly paginationPages = computed<(number | 'dots')[]>(() => {
-    const total = this.totalPages();
-    const current = this.currentPage();
+    this.batchesSub = this.api
+      .getBatches(
+        { subjectId: this.toId(subject), governorateId: this.toId(governorate) },
+        { pageNumber: this.batchPager.page(), pageSize: this.batchPager.size() }
+      )
+      .pipe(
+        takeUntilDestroyed(this.destroyRef),
+        finalize(() => this.batchesLoading.set(false))
+      )
+      .subscribe({
+        next: result => {
+          this.batches.set(result.items);
+          this.batchPager.total.set(result.total);
+        },
+        error: error => {
+          this.batches.set([]);
+          this.batchPager.total.set(0);
+          this.batchesError.set(this.errorMessage(error, 'تعذر تحميل المواد'));
+        }
+      });
+  }
 
-    if (total <= 4) {
-      return Array.from({ length: total }, (_, index) => index + 1);
-    }
+  selectBatch(batch: PackingBatch): void {
+    this.selectedBatch.set(batch);
+    this.committees.set([]);
+    this.committeePager.page.set(1);
+    this.committeePager.total.set(0);
+    this.claimError.set(null);
+    this.view.set('committees');
+    this.loadCommittees();
+  }
 
-    if (current <= 2) {
-      return [1, 2, 3, 'dots', total];
-    }
+  batchTone(batch: PackingBatch): Tone {
+    return batch.pendingCommitteeCount > 0 ? 'warning' : 'success';
+  }
 
-    if (current >= total - 1) {
-      return [1, 'dots', total - 2, total - 1, total];
-    }
+  // =====================================================
+  // Committees (اللجان)
+  // =====================================================
 
-    return [1, 'dots', current, 'dots', total];
-  });
+  readonly committees = signal<PackingCommittee[]>([]);
+  readonly committeesLoading = signal(false);
+  readonly committeesError = signal<string | null>(null);
+  readonly committeePager = createPager(6);
 
-  readonly paginationStart = computed(() =>
-    this.filteredRows().length
-      ? (this.currentPage() - 1) * this.pageSize() + 1
-      : 0
-  );
+  readonly claimingId = signal<number | null>(null);
+  readonly claimError = signal<string | null>(null);
 
-  readonly paginationEnd = computed(() =>
-    Math.min(
-      this.currentPage() * this.pageSize(),
-      this.filteredRows().length
-    )
-  );
+  private committeesSub?: Subscription;
 
-  goToPage(page: number): void {
-    if (
-      page < 1 ||
-      page > this.totalPages() ||
-      page === this.currentPage()
-    ) {
+  loadCommittees(): void {
+    const batch = this.selectedBatch();
+
+    if (!batch) {
       return;
     }
 
-    this.currentPage.set(page);
+    this.committeesSub?.unsubscribe();
+    this.committeesLoading.set(true);
+    this.committeesError.set(null);
+
+    this.committeesSub = this.api
+      .getCommittees(batch.batchId, {
+        pageNumber: this.committeePager.page(),
+        pageSize: this.committeePager.size()
+      })
+      .pipe(
+        takeUntilDestroyed(this.destroyRef),
+        finalize(() => this.committeesLoading.set(false))
+      )
+      .subscribe({
+        next: result => {
+          this.committees.set(result.items);
+          this.committeePager.total.set(result.total);
+        },
+        error: error => {
+          this.committees.set([]);
+          this.committeePager.total.set(0);
+          this.committeesError.set(this.errorMessage(error, 'تعذر تحميل اللجان'));
+        }
+      });
   }
 
-  onPageSizeChange(size: number): void {
-    this.pageSize.set(Number(size));
-    this.currentPage.set(1);
-  }
+  claimCommittee(committee: PackingCommittee): void {
+    const batch = this.selectedBatch();
 
-  // =====================================================
-  // Card helpers
-  // =====================================================
-
-  statusIcon(row: PackingRow): string {
-    if (row.status === DONE) {
-      return 'pi-check-circle';
-    }
-
-    if (row.status === REJECTED) {
-      return 'pi-times-circle';
-    }
-
-    return 'pi-clock';
-  }
-
-  isPending(row: PackingRow): boolean {
-    return row.status === PENDING;
-  }
-
-  isDone(row: PackingRow): boolean {
-    return row.status === DONE;
-  }
-
-  isRejected(row: PackingRow): boolean {
-    return row.status === REJECTED;
-  }
-
-  // =====================================================
-  // Scan dialog (envelopes + outer cover, one scanner)
-  // =====================================================
-
-  scanDialogVisible = false;
-  selectedRow: PackingRow | null = null;
-
-  scanSteps: ScanStep[] = [];
-  currentScanIndex = 0;
-  scanMessage = '';
-  isScanning = false;
-
-  private scanTimers: ReturnType<typeof setTimeout>[] = [];
-
-  openScanDialog(row: PackingRow): void {
-    if (!this.isPending(row)) {
+    if (!batch || this.claimingId() !== null) {
       return;
     }
 
-    this.clearScanTimers();
+    this.claimingId.set(committee.committeeId);
+    this.claimError.set(null);
 
-    this.selectedRow = row;
-    this.currentScanIndex = 0;
-    this.scanMessage = '';
-    this.isScanning = false;
-    this.scanSteps = this.createScanSteps(row);
-    this.scanDialogVisible = true;
+    this.api
+      .claimCommittee(batch.batchId, committee.committeeId)
+      .pipe(
+        takeUntilDestroyed(this.destroyRef),
+        finalize(() => this.claimingId.set(null))
+      )
+      .subscribe({
+        next: claimed => this.startSession(claimed),
+        error: error =>
+          this.claimError.set(this.errorMessage(error, 'تعذر حجز اللجنة للتغليف'))
+      });
   }
 
-  private createScanSteps(row: PackingRow): ScanStep[] {
-    const envelopeSteps: ScanStep[] = row.envelopes.map(envelope => ({
-      id: envelope.id,
-      kind: 'envelope' as const,
-      title: `الظرف رقم ${envelope.id}`,
-      subtitle: envelope.qrCode,
-      qrCode: envelope.qrCode,
+  // =====================================================
+  // Pagination (مشترك)
+  // =====================================================
+
+  pagerOf(kind: PagerKind): Pager {
+    return kind === 'batch' ? this.batchPager : this.committeePager;
+  }
+
+  goToPage(kind: PagerKind, page: number): void {
+    const pager = this.pagerOf(kind);
+
+    if (page < 1 || page > pager.totalPages() || page === pager.page()) {
+      return;
+    }
+
+    pager.page.set(page);
+    this.reload(kind);
+  }
+
+  onPageSizeChange(kind: PagerKind, size: number): void {
+    const pager = this.pagerOf(kind);
+
+    pager.size.set(Number(size));
+    pager.page.set(1);
+    this.reload(kind);
+  }
+
+  private reload(kind: PagerKind): void {
+    if (kind === 'batch') {
+      this.loadBatches();
+    } else {
+      this.loadCommittees();
+    }
+  }
+
+  // =====================================================
+  // Packing session
+  // =====================================================
+
+  readonly scanInput = viewChild<ElementRef<HTMLInputElement>>('scanInput');
+
+  readonly claimed = signal<ClaimedCommittee | null>(null);
+  readonly boxes = signal<BoxVm[]>([]);
+  readonly activeBoxId = signal<number | null>(null);
+
+  readonly feedback = signal<ScanFeedback | null>(null);
+  readonly scanLog = signal<ScanLog[]>([]);
+
+  readonly packing = signal(false);
+  readonly packResult = signal<PackResult | null>(null);
+  readonly packError = signal<string | null>(null);
+  readonly problems = signal<PackProblem[]>([]);
+
+  readonly leaveDialogVisible = signal(false);
+  readonly releasing = signal(false);
+  private leaveTarget: 'batches' | 'committees' = 'committees';
+
+  private serialIndex = new Map<string, number>();
+  private logCounter = 0;
+
+  readonly packDone = computed(() => this.packResult() !== null);
+
+  readonly problemSerials = computed(
+    () => new Set(this.problems().map(problem => problem.serial))
+  );
+
+  readonly problemBoxIds = computed(
+    () => new Set(this.problems().map(problem => problem.boxId))
+  );
+
+  readonly boxViews = computed<BoxView[]>(() =>
+    this.boxes().map(box => {
+      const main = box.envelopes.filter(e => e.kind === 'main');
+      const reserve = box.envelopes.filter(e => e.kind === 'reserve');
+      const mainScanned = main.filter(e => e.scanned).length;
+      const reserveScanned = reserve.filter(e => e.scanned).length;
+      const complete = box.qrScanned && mainScanned === main.length;
+      const steps = main.length + 1;
+
+      return {
+        ...box,
+        mainTotal: main.length,
+        mainScanned,
+        reserveTotal: reserve.length,
+        reserveScanned,
+        complete,
+        progress: Math.round(((mainScanned + (box.qrScanned ? 1 : 0)) / steps) * 100)
+      };
+    })
+  );
+
+  readonly totals = computed(() => {
+    const views = this.boxViews();
+    const boxTotal = views.length;
+    const boxesConfirmed = views.filter(v => v.qrScanned).length;
+    const mainTotal = views.reduce((sum, v) => sum + v.mainTotal, 0);
+    const mainScanned = views.reduce((sum, v) => sum + v.mainScanned, 0);
+    const reserveScanned = views.reduce((sum, v) => sum + v.reserveScanned, 0);
+    const all = boxTotal + mainTotal;
+    const done = boxesConfirmed + mainScanned;
+
+    return {
+      boxTotal,
+      boxesConfirmed,
+      mainTotal,
+      mainScanned,
+      reserveScanned,
+      progress: all ? Math.round((done / all) * 100) : 0
+    };
+  });
+
+  readonly canPack = computed(() => {
+    const t = this.totals();
+
+    return (
+      t.boxTotal > 0 &&
+      t.boxesConfirmed === t.boxTotal &&
+      t.mainScanned === t.mainTotal &&
+      !this.packing() &&
+      !this.packDone()
+    );
+  });
+
+  private startSession(data: ClaimedCommittee): void {
+    const boxes: BoxVm[] = [...data.boxes]
+      .sort((a, b) => a.sequenceNo - b.sequenceNo)
+      .map(box => this.toBoxVm(box));
+
+    this.serialIndex = new Map(
+      boxes.flatMap(box => box.envelopes.map(env => [env.serial, box.boxId] as const))
+    );
+
+    this.claimed.set(data);
+    this.boxes.set(boxes);
+    this.activeBoxId.set(boxes[0]?.boxId ?? null);
+    this.feedback.set(null);
+    this.scanLog.set([]);
+    this.problems.set([]);
+    this.packResult.set(null);
+    this.packError.set(null);
+    this.view.set('packing');
+
+    this.focusScanner(80);
+  }
+
+  private toBoxVm(box: ClaimedBox): BoxVm {
+    const toEnvelope = (serial: string, kind: 'main' | 'reserve'): EnvelopeVm => ({
+      serial,
+      kind,
       scanned: false,
-      scannedAt: null,
-      data: null
+      scannedAt: null
+    });
+
+    return {
+      boxId: box.boxId,
+      sequenceNo: box.sequenceNo,
+      qrCode: box.qrCode,
+      expectedEnvelopeCount: box.expectedEnvelopeCount,
+      qrScanned: false,
+      envelopes: [
+        ...(box.mainEnvelopes ?? []).map(serial => toEnvelope(serial, 'main')),
+        ...(box.reserveEnvelopes ?? []).map(serial => toEnvelope(serial, 'reserve'))
+      ]
+    };
+  }
+
+  // ---------- Scanner (الجلسة مفتوحة دائماً) ----------
+
+  onScan(input: HTMLInputElement): void {
+    const code = input.value.trim();
+    input.value = '';
+
+    if (!code || this.packing() || this.packDone()) {
+      return;
+    }
+
+    this.processScan(code);
+  }
+
+  keepFocus(): void {
+    if (
+      this.view() === 'packing' &&
+      !this.packing() &&
+      !this.packDone() &&
+      !this.leaveDialogVisible()
+    ) {
+      this.focusScanner();
+    }
+  }
+
+  focusScanner(delay = 0): void {
+    setTimeout(() => this.scanInput()?.nativeElement.focus(), delay);
+  }
+
+  private processScan(code: string): void {
+    const boxes = this.boxes();
+
+    // 1) QR الصندوق
+    const boxByQr = boxes.find(box => box.qrCode === code);
+
+    if (boxByQr) {
+      if (boxByQr.qrScanned) {
+        this.notify('warning', code, `QR صندوق ${boxByQr.sequenceNo} تم مسحه من قبل`);
+        return;
+      }
+
+      this.patchBox(boxByQr.boxId, box => ({ ...box, qrScanned: true }));
+      this.highlightBox(boxByQr.boxId);
+      this.notify('success', code, `تم تأكيد صندوق رقم ${boxByQr.sequenceNo}`);
+      return;
+    }
+
+    // 2) سيريال ظرف
+    const boxId = this.serialIndex.get(code);
+
+    if (boxId === undefined) {
+      this.notify('danger', code, 'هذا الكود غير تابع لهذه اللجنة');
+      return;
+    }
+
+    const box = boxes.find(item => item.boxId === boxId);
+    const envelope = box?.envelopes.find(item => item.serial === code);
+
+    if (!box || !envelope) {
+      this.notify('danger', code, 'تعذر العثور على الظرف');
+      return;
+    }
+
+    if (envelope.scanned) {
+      this.notify('warning', code, `الظرف ${code} تم مسحه من قبل`);
+      return;
+    }
+
+    const time = this.now();
+
+    this.patchBox(boxId, item => ({
+      ...item,
+      envelopes: item.envelopes.map(env =>
+        env.serial === code ? { ...env, scanned: true, scannedAt: time } : env
+      )
     }));
 
-    const outerStep: ScanStep = {
-      id: envelopeSteps.length + 1,
-      kind: 'outer',
-      title: 'الغلاف الخارجي',
-      subtitle: `${row.qrCode}-OUTER`,
-      qrCode: `${row.qrCode}-OUTER`,
-      scanned: false,
-      scannedAt: null,
-      data: null
-    };
-
-    return [...envelopeSteps, outerStep];
-  }
-
-  get currentStep(): ScanStep | null {
-    return this.scanSteps[this.currentScanIndex] ?? null;
-  }
-
-  get completedScans(): number {
-    return this.scanSteps.filter(step => step.scanned).length;
-  }
-
-  get scanProgress(): number {
-    return this.scanSteps.length
-      ? Math.round((this.completedScans / this.scanSteps.length) * 100)
-      : 0;
-  }
-
-  get scannedEnvelopeCount(): number {
-    return this.scanSteps.filter(step => step.kind === 'envelope' && step.scanned).length;
-  }
-
-  get envelopeTotal(): number {
-    return this.scanSteps.filter(step => step.kind === 'envelope').length;
-  }
-
-  get allScansCompleted(): boolean {
-    return this.scanSteps.length > 0 && this.scanSteps.every(step => step.scanned);
-  }
-
-  get canConfirmPacking(): boolean {
-    return this.allScansCompleted && !this.isScanning;
-  }
-
-  isStepLocked(index: number): boolean {
-    return !this.scanSteps.slice(0, index).every(step => step.scanned);
-  }
-
-  selectScanStep(index: number): void {
-    if (
-      this.isScanning ||
-      index < 0 ||
-      index >= this.scanSteps.length ||
-      this.isStepLocked(index)
-    ) {
-      return;
-    }
-
-    this.currentScanIndex = index;
-    this.scanMessage = '';
-  }
-
-  startScan(): void {
-    const step = this.currentStep;
-    const row = this.selectedRow;
-
-    if (this.isScanning || !step || !row || step.scanned) {
-      return;
-    }
-
-    this.isScanning = true;
-    this.scanMessage = `جاري قراءة QR ${step.title}...`;
-
-    // محاكاة مؤقتة لعملية المسح، إلى حين ربط جهاز القراءة أو الـ API.
-    this.scanTimers.push(
-      setTimeout(() => {
-        if (!this.scanDialogVisible || this.selectedRow !== row) {
-          this.isScanning = false;
-          return;
-        }
-
-        const scannedAt = new Date().toLocaleTimeString('ar-EG', {
-          hour: '2-digit',
-          minute: '2-digit'
-        });
-
-        step.data = {
-          qrCode: step.qrCode,
-          subject: row.subject,
-          committeeNumber: row.committeeNumber,
-          governorate: row.governorate,
-          scanType: step.kind === 'outer' ? 'الغلاف الخارجي للجنة' : step.title,
-          scannedAt
-        };
-
-        step.scanned = true;
-        step.scannedAt = scannedAt;
-
-        this.isScanning = false;
-        this.scanMessage = `تم قراءة ${step.title} بنجاح`;
-
-        // الانتقال تلقائياً للخطوة التالية بعد نجاح القراءة
-        const nextIndex = this.scanSteps.findIndex(
-          (item, i) => i > this.currentScanIndex && !item.scanned
-        );
-
-        if (nextIndex !== -1) {
-          this.scanTimers.push(
-            setTimeout(() => {
-              if (this.scanDialogVisible && this.selectedRow === row) {
-                this.currentScanIndex = nextIndex;
-                this.scanMessage = '';
-              }
-            }, 600)
-          );
-        }
-      }, 1200)
+    this.highlightBox(boxId);
+    this.notify(
+      'success',
+      code,
+      `تم مسح ظرف ${envelope.kind === 'main' ? 'أساسي' : 'احتياطي'} - صندوق ${box.sequenceNo}`
     );
   }
+
+  resetBox(boxId: number): void {
+    if (this.packing() || this.packDone()) {
+      return;
+    }
+
+    this.patchBox(boxId, box => ({
+      ...box,
+      qrScanned: false,
+      envelopes: box.envelopes.map(env => ({ ...env, scanned: false, scannedAt: null }))
+    }));
+
+    this.problems.update(list => list.filter(problem => problem.boxId !== boxId));
+    this.notify('warning', '', 'تمت إعادة تعيين مسح الصندوق');
+    this.focusScanner();
+  }
+
+  private patchBox(boxId: number, fn: (box: BoxVm) => BoxVm): void {
+    this.boxes.update(list => list.map(box => (box.boxId === boxId ? fn(box) : box)));
+  }
+
+  private highlightBox(boxId: number): void {
+    this.activeBoxId.set(boxId);
+
+    setTimeout(
+      () =>
+        document
+          .getElementById(`pk-box-${boxId}`)
+          ?.scrollIntoView({ block: 'nearest', behavior: 'smooth' }),
+      0
+    );
+  }
+
+  private notify(tone: Tone, code: string, text: string): void {
+    const entry: ScanFeedback = { tone, code, text };
+
+    this.feedback.set(entry);
+    this.scanLog.update(list =>
+      [{ ...entry, id: ++this.logCounter, time: this.now() }, ...list].slice(0, 8)
+    );
+  }
+
+  private now(): string {
+    return new Date().toLocaleTimeString('ar-EG', {
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit'
+    });
+  }
+
+  toneIcon(tone: Tone): string {
+    return tone === 'success'
+      ? 'pi-check-circle'
+      : tone === 'warning'
+        ? 'pi-exclamation-triangle'
+        : 'pi-times-circle';
+  }
+
+  // ---------- Confirm packing ----------
 
   confirmPacking(): void {
-    if (!this.selectedRow || !this.canConfirmPacking) {
+    const committee = this.claimed();
+
+    if (!committee || !this.canPack()) {
       return;
     }
 
-    const row = this.selectedRow;
-
-    // استبدلي الجزء ده باستدعاء API تأكيد التغليف عند توفره.
-    console.info('Confirm Packing', {
-      committeeNumber: row.committeeNumber,
-      subject: row.subject,
-      scans: this.scanSteps.map(step => ({
-        scanType: step.title,
-        qrCode: step.qrCode,
-        scannedAt: step.scannedAt
+    const body: PackRequest = {
+      boxes: this.boxes().map(box => ({
+        boxId: box.boxId,
+        qrCode: box.qrCode,
+        envelopeSerials: box.envelopes.filter(env => env.scanned).map(env => env.serial)
       }))
-    });
+    };
 
-    this.updateStatus(row.index, DONE, 'success');
-    this.scanDialogVisible = false;
-    this.resetScanState();
-  }
+    this.packing.set(true);
+    this.packError.set(null);
+    this.problems.set([]);
 
-  closeScanDialog(): void {
-    if (this.isScanning) {
-      return;
-    }
-
-    this.scanDialogVisible = false;
-    this.resetScanState();
-  }
-
-  private resetScanState(): void {
-    this.clearScanTimers();
-
-    this.selectedRow = null;
-    this.scanSteps = [];
-    this.currentScanIndex = 0;
-    this.scanMessage = '';
-    this.isScanning = false;
-  }
-
-  private clearScanTimers(): void {
-    this.scanTimers.forEach(timer => clearTimeout(timer));
-    this.scanTimers = [];
-  }
-
-  private updateStatus(
-    index: number,
-    status: string,
-    statusTone: PackingRow['statusTone']
-  ): void {
-    this.rows.update(rows =>
-      rows.map(row =>
-        row.index === index
-          ? { ...row, status, statusTone }
-          : row
+    this.api
+      .packCommittee(committee.committeeId, body)
+      .pipe(
+        takeUntilDestroyed(this.destroyRef),
+        finalize(() => this.packing.set(false))
       )
-    );
+      .subscribe({
+        next: outcome => {
+          const problems = outcome.data?.problems ?? [];
+
+          this.problems.set(problems);
+
+          if (outcome.success && !problems.length && outcome.data) {
+            this.packResult.set(outcome.data);
+            this.notify('success', '', 'تم تأكيد التغليف بنجاح');
+            return;
+          }
+
+          this.packError.set(outcome.message || 'يوجد مشاكل في التغليف، راجع التفاصيل أدناه');
+          this.focusScanner();
+        },
+        error: error => {
+          this.packError.set(this.errorMessage(error, 'تعذر تأكيد التغليف'));
+          this.focusScanner();
+        }
+      });
   }
 
-  // =====================================================
-  // Reject dialog
-  // =====================================================
+  // ---------- Leave / release ----------
 
-  rejectDialogVisible = false;
-  rejectReason = '';
-  selectedReviewers: Array<{ id: number; name: string; role: string }> = [];
-  rejectSubmitting = false;
-
-  openRejectDialog(): void {
-    if (!this.selectedRow || !this.canConfirmPacking) {
+  goBack(target: 'batches' | 'committees'): void {
+    if (this.view() === 'packing' && !this.packDone()) {
+      this.leaveTarget = target;
+      this.leaveDialogVisible.set(true);
       return;
     }
 
-    this.rejectReason = '';
-    this.selectedReviewers = [];
-    this.rejectDialogVisible = true;
+    this.navigate(target);
   }
 
-  get isRejectFormValid(): boolean {
+  confirmRelease(): void {
+    const committee = this.claimed();
+
+    if (!committee || this.releasing()) {
+      return;
+    }
+
+    this.releasing.set(true);
+
+    this.api
+      .releaseCommittee(committee.committeeId)
+      .pipe(
+        takeUntilDestroyed(this.destroyRef),
+        finalize(() => this.releasing.set(false))
+      )
+      .subscribe({
+        next: () => {
+          this.leaveDialogVisible.set(false);
+          this.navigate(this.leaveTarget);
+        },
+        error: error => {
+          this.leaveDialogVisible.set(false);
+          this.packError.set(this.errorMessage(error, 'تعذر تحرير اللجنة'));
+        }
+      });
+  }
+
+  cancelLeave(): void {
+    if (this.releasing()) {
+      return;
+    }
+
+    this.leaveDialogVisible.set(false);
+    this.focusScanner();
+  }
+
+  private navigate(target: 'batches' | 'committees'): void {
+    this.resetSession();
+
+    if (target === 'batches') {
+      this.selectedBatch.set(null);
+      this.view.set('batches');
+      this.loadBatches();
+      return;
+    }
+
+    this.view.set('committees');
+    this.loadCommittees();
+  }
+
+  private resetSession(): void {
+    this.claimed.set(null);
+    this.boxes.set([]);
+    this.activeBoxId.set(null);
+    this.feedback.set(null);
+    this.scanLog.set([]);
+    this.problems.set([]);
+    this.packResult.set(null);
+    this.packError.set(null);
+    this.serialIndex = new Map();
+  }
+
+  // =====================================================
+  // Utils
+  // =====================================================
+
+  private errorMessage(error: any, fallback: string): string {
     return (
-      this.rejectReason.trim().length >= 10 &&
-      this.selectedReviewers.length > 0
+      error?.error?.errors?.[0] ||
+      error?.error?.message ||
+      (error instanceof Error ? error.message : '') ||
+      fallback
     );
-  }
-
-  submitRejection(): void {
-    if (
-      !this.selectedRow ||
-      !this.isRejectFormValid ||
-      this.rejectSubmitting
-    ) {
-      return;
-    }
-
-    this.rejectSubmitting = true;
-
-    const row = this.selectedRow;
-
-    console.info('Packing Rejection', {
-      rowIndex: row.index,
-      subject: row.subject,
-      committeeNumber: row.committeeNumber,
-      governorate: row.governorate,
-      scans: this.scanSteps.map(step => ({
-        scanType: step.title,
-        qrCode: step.qrCode
-      })),
-      reason: this.rejectReason.trim(),
-      reviewerIds: this.selectedReviewers.map(user => user.id)
-    });
-
-    // محاكاة مؤقتة للحفظ إلى حين ربط الـ API.
-    setTimeout(() => {
-      this.updateStatus(row.index, REJECTED, 'danger');
-
-      this.rejectSubmitting = false;
-      this.rejectDialogVisible = false;
-      this.scanDialogVisible = false;
-
-      this.rejectReason = '';
-      this.selectedReviewers = [];
-
-      this.resetScanState();
-    }, 800);
-  }
-
-  closeRejectDialog(): void {
-    if (this.rejectSubmitting) {
-      return;
-    }
-
-    this.rejectDialogVisible = false;
-    this.rejectReason = '';
-    this.selectedReviewers = [];
   }
 }

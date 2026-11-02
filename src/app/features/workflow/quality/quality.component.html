@@ -2,7 +2,7 @@
   stepNumber="03"
   englishLabel="Quality"
   arabicTitle="مستخدم الجودة"
-  arabicSubtitle="فتح اللجنة ومسح كل ظرف ومطابقته ثم إتمام المراجعة"
+  arabicSubtitle="اختيار الدفعة وفتح اللجنة ومسح كل ظرف ومطابقته ثم إتمام المراجعة"
   theme="navy"
   activeNavKey="quality"
   illustrationIcon="pi pi-verified"
@@ -16,31 +16,95 @@
 >
   <div panel-content class="qc">
 
-    <!-- ========== Header ========== -->
+    <!-- ====================================================== -->
+    <!-- Reusable pager                                          -->
+    <!-- ====================================================== -->
+    <ng-template #pager let-p let-go="go" let-sizeChange="size" let-sizes="sizes" let-compact="compact">
+      <div class="qc-pager" [class.qc-pager-compact]="compact" *ngIf="p.totalCount">
+        <span class="qc-pager-info">
+          عرض <b>{{ p.start }}</b> - <b>{{ p.end }}</b> من <b>{{ p.totalCount }}</b>
+        </span>
+
+        <div class="qc-pager-size">
+          <span>{{ compact ? 'لكل صفحة' : 'عدد البطاقات' }}</span>
+          <p-select
+            [options]="sizes"
+            optionLabel="label"
+            optionValue="value"
+            [ngModel]="p.size"
+            (ngModelChange)="sizeChange($event)"
+            appendTo="body"
+            styleClass="qc-input qc-size"
+          />
+        </div>
+
+        <div class="qc-pager-nav">
+          <button type="button" [disabled]="p.current === 1" (click)="go(p.current - 1)" aria-label="السابق">
+            <i class="pi pi-chevron-right"></i>
+          </button>
+
+          <ng-container *ngFor="let page of p.pages">
+            <span *ngIf="page === 'dots'" class="qc-dots">...</span>
+            <button
+              *ngIf="page !== 'dots'"
+              type="button"
+              [class.active]="page === p.current"
+              (click)="go(page)"
+            >
+              {{ page }}
+            </button>
+          </ng-container>
+
+          <button type="button" [disabled]="p.current === p.totalPages" (click)="go(p.current + 1)" aria-label="التالي">
+            <i class="pi pi-chevron-left"></i>
+          </button>
+        </div>
+      </div>
+    </ng-template>
+
+    <!-- ====================================================== -->
+    <!-- BATCHES                                                 -->
+    <!-- ====================================================== -->
     <section class="qc-head">
       <div>
-        <h2>فحص ومراجعة اللجان</h2>
-        <p>افتح اللجنة ووجّه الماسح على QR كل ظرف، وستتم المطابقة تلقائياً ثم أتمم المراجعة.</p>
+        <h2>الدفعات (Batches)</h2>
+        <p>اختر الدفعة لعرض اللجان الجاهزة للمراجعة وبدء جلسة الفحص.</p>
       </div>
 
       <div class="qc-count">
-        <i class="pi pi-building"></i>
+        <i class="pi pi-objects-column"></i>
         <div>
-          <strong>{{ committees().length }}</strong>
-          <span>لجنة للمراجعة</span>
+          <strong>{{ batchTotalCount() }}</strong>
+          <span>دفعة</span>
         </div>
       </div>
     </section>
 
-    <!-- ========== Filters ========== -->
+    <!-- Filters (كلها اختيارية) -->
     <section class="qc-box qc-filters">
+      <!-- <div class="qc-field">
+        <label for="qc-batch-search">بحث</label>
+        <span class="qc-search">
+          <i class="pi pi-search"></i>
+          <input
+            id="qc-batch-search"
+            pInputText
+            type="text"
+            class="qc-input"
+            placeholder="ابحث في الدفعات..."
+            [ngModel]="batchSearch()"
+            (ngModelChange)="onBatchSearch($event)"
+          />
+        </span>
+      </div> -->
+
       <div class="qc-field">
         <label for="qc-governorate">المحافظة</label>
         <p-select
           inputId="qc-governorate"
           [options]="governorates()"
           [ngModel]="governorateFilter()"
-          (ngModelChange)="governorateFilter.set($event)"
+          (ngModelChange)="governorateFilter.set($event); applyBatchFilters()"
           optionLabel="label"
           optionValue="value"
           placeholder="كل المحافظات"
@@ -59,7 +123,7 @@
           inputId="qc-subject"
           [options]="subjects()"
           [ngModel]="subjectFilter()"
-          (ngModelChange)="subjectFilter.set($event)"
+          (ngModelChange)="subjectFilter.set($event); applyBatchFilters()"
           optionLabel="label"
           optionValue="value"
           placeholder="كل المواد"
@@ -73,9 +137,6 @@
       </div>
 
       <div class="qc-actions">
-        <button pButton type="button" class="qc-btn qc-btn-primary" [disabled]="loading()" (click)="applyFilters()">
-          <i class="pi" [ngClass]="loading() ? 'pi-spin pi-spinner' : 'pi-search'"></i><span>بحث</span>
-        </button>
         <button
           pButton
           type="button"
@@ -83,402 +144,473 @@
           pTooltip="إعادة تعيين"
           tooltipPosition="top"
           aria-label="إعادة تعيين"
-          [disabled]="!hasActiveFilters()"
-          (click)="resetFilters()"
+          [disabled]="!hasActiveBatchFilters()"
+          (click)="resetBatchFilters()"
         >
           <i class="pi pi-filter-slash"></i>
         </button>
       </div>
     </section>
 
-    <!-- ========== Error ========== -->
-    <div class="qc-alert" *ngIf="loadError()">
+    <div class="qc-alert" *ngIf="batchesError()">
       <i class="pi pi-exclamation-triangle"></i>
-      <span>{{ loadError() }}</span>
-      <button pButton type="button" class="qc-btn qc-btn-sm qc-btn-ghost" (click)="loadCommittees()">
+      <span>{{ batchesError() }}</span>
+      <button pButton type="button" class="qc-btn qc-btn-sm qc-btn-ghost" (click)="loadBatches()">
         <i class="pi pi-refresh"></i><span>إعادة المحاولة</span>
       </button>
     </div>
 
-    <!-- ========== Loading skeleton ========== -->
-    <section class="qc-grid" *ngIf="loading() && !committees().length">
+    <section class="qc-grid" *ngIf="batchesLoading() && !batches().length">
       <div class="qc-skeleton" *ngFor="let s of [1, 2, 3, 4, 5, 6]"></div>
     </section>
 
-    <!-- ========== Committee cards ========== -->
     <section
       class="qc-grid"
-      [class.qc-loading]="loading()"
-      *ngIf="!(loading() && !committees().length) && paginatedRows().length; else emptyState"
+      [class.qc-loading]="batchesLoading()"
+      *ngIf="!(batchesLoading() && !batches().length) && batches().length; else noBatches"
     >
-      <article
-        class="qc-card"
-        *ngFor="let c of paginatedRows(); trackBy: trackCommittee"
-        [attr.data-tone]="isDone(c) ? 'success' : 'info'"
-      >
+      <article class="qc-card" *ngFor="let b of batches(); trackBy: trackBatch" data-tone="info" >
         <header>
-          <span class="qc-ico"><i class="pi pi-building"></i></span>
+          <span class="qc-ico"><i class="pi pi-objects-column"></i></span>
 
           <div class="qc-card-title">
-            <small>لجنة رقم</small>
-            <strong class="qc-mono-lg">{{ c.committeeNumber }}</strong>
+            <small>دفعة رقم</small>
+            <strong class="qc-mono-lg">#{{ b.id }}</strong>
           </div>
 
-          <span class="qc-pill">
-            <i class="pi" [ngClass]="isDone(c) ? 'pi-check-circle' : 'pi-clock'"></i>
-            {{ isDone(c) ? 'تمت المراجعة' : 'قيد المراجعة' }}
+          <span class="qc-pill" *ngIf="b.status">
+            <i class="pi pi-flag"></i>{{ b.status }}
           </span>
         </header>
 
         <dl class="qc-meta">
-          <div class="qc-wide">
-            <dt><i class="pi pi-building-columns"></i>المدرسة</dt>
-            <dd>{{ c.schoolName || '—' }}</dd>
+          <div>
+            <dt><i class="pi pi-book"></i>المادة</dt>
+            <dd>{{ b.subject || '—' }}</dd>
           </div>
           <div>
             <dt><i class="pi pi-map-marker"></i>المحافظة</dt>
-            <dd>{{ c.governorate }}</dd>
+            <dd>{{ b.governorate || '—' }}</dd>
           </div>
           <div>
-            <dt><i class="pi pi-book"></i>المادة</dt>
-            <dd>{{ c.subject }}</dd>
-          </div>
-          <div class="qc-wide">
             <dt><i class="pi pi-calendar"></i>الدور</dt>
-            <dd>{{ c.round }}<ng-container *ngIf="c.year !== null"> · سنة {{ c.year }}</ng-container></dd>
+            <dd>{{ b.round || '—' }}<ng-container *ngIf="b.year !== null"> · {{ b.year }}</ng-container></dd>
+          </div>
+          <div>
+            <dt><i class="pi pi-graduation-cap"></i>المرحلة</dt>
+            <dd>{{ b.stage || '—' }}</dd>
           </div>
         </dl>
 
         <div class="qc-chips-row">
-          <span><i class="pi pi-envelope"></i>{{ totalEnvelopes(c) }} ظرف</span>
-          <span><i class="pi pi-book"></i>{{ c.requiredBooklets + c.bonusBooklets | number }} كراسة</span>
-          <span><i class="pi pi-box"></i>{{ c.boxCount }} كرتونة</span>
-        </div>
-
-        <div class="qc-progress qc-progress-card" *ngIf="!isDone(c) && scannedOf(c) > 0">
-          <div class="qc-progress-head">
-            <span>تم مسح <b>{{ scannedOf(c) }}</b> من <b>{{ totalEnvelopes(c) }}</b> ظرف</span>
-            <b>{{ progressOf(c) }}%</b>
-          </div>
-          <div class="qc-track"><div [style.width.%]="progressOf(c)"></div></div>
+          <span><i class="pi pi-building"></i>{{ b.totalCommittees | number }} لجنة</span>
+          <span><i class="pi pi-book"></i>{{ b.booklets | number }} كراسة</span>
         </div>
 
         <footer>
-          <button *ngIf="!isDone(c)" pButton type="button" class="qc-btn qc-btn-primary qc-block" (click)="openScanDialog(c)">
-            <i class="pi pi-qrcode"></i>
-            <span>{{ scannedOf(c) > 0 ? 'متابعة الفحص' : 'بدء الفحص' }}</span>
+          <button pButton type="button" class="qc-btn qc-btn-primary qc-block" (click)="openBatch(b)">
+            <i class="pi pi-folder-open"></i>
+            <span>عرض اللجان</span>
           </button>
-
-          <span *ngIf="isDone(c)" class="qc-result">
-            <i class="pi pi-check-circle"></i> تمت مراجعة اللجنة بنجاح
-          </span>
         </footer>
       </article>
     </section>
 
-    <ng-template #emptyState>
-      <div class="qc-box qc-empty" *ngIf="!(loading() && !committees().length)">
+    <ng-template #noBatches>
+      <div class="qc-box qc-empty" *ngIf="!(batchesLoading() && !batches().length)">
         <i class="pi pi-inbox"></i>
-        <strong>لا توجد لجان مطابقة</strong>
-        <span>ستظهر اللجان هنا بمجرد وصولها لمرحلة الجودة، أو جرّب تغيير البحث.</span>
+        <strong>لا توجد دفعات</strong>
+        <span>جرّب تغيير البحث أو الفلاتر.</span>
       </div>
     </ng-template>
 
-    <!-- ========== Pagination ========== -->
-    <div class="qc-pager" *ngIf="filteredRows().length">
-      <span class="qc-pager-info">
-        عرض <b>{{ paginationStart() }}</b> - <b>{{ paginationEnd() }}</b> من <b>{{ filteredRows().length }}</b> لجنة
-      </span>
-
-      <div class="qc-pager-size">
-        <span>عدد البطاقات</span>
-        <p-select
-          [options]="pageSizes"
-          optionLabel="label"
-          optionValue="value"
-          [ngModel]="pageSize()"
-          (ngModelChange)="onPageSizeChange($event)"
-          styleClass="qc-input qc-size"
-        />
-      </div>
-
-      <div class="qc-pager-nav">
-        <button type="button" [disabled]="currentPage() === 1" (click)="goToPage(currentPage() - 1)" aria-label="السابق">
-          <i class="pi pi-chevron-right"></i>
-        </button>
-
-        <ng-container *ngFor="let page of paginationPages()">
-          <span *ngIf="page === 'dots'" class="qc-dots">...</span>
-          <button
-            *ngIf="page !== 'dots'"
-            type="button"
-            [class.active]="page === currentPage()"
-            (click)="goToPage(+page)"
-          >
-            {{ page }}
-          </button>
-        </ng-container>
-
-        <button type="button" [disabled]="currentPage() === totalPages()" (click)="goToPage(currentPage() + 1)" aria-label="التالي">
-          <i class="pi pi-chevron-left"></i>
-        </button>
-      </div>
-    </div>
+    <ng-container
+      *ngTemplateOutlet="pager; context: { $implicit: batchPager(), go: goBatchPage, size: onBatchPageSize, sizes: pageSizes, compact: false }"
+    ></ng-container>
 
     <!-- ====================================================== -->
-    <!-- SCAN SESSION DIALOG                                     -->
-    <!-- الجلسة مفتوحة طول ما الدايلوج ظاهر، والضغط بره يقفله   -->
+    <!-- BATCH DIALOG: committees (side) + scan workspace (main) -->
     <!-- ====================================================== -->
     <p-dialog
-      [(visible)]="scanDialogVisible"
+      [(visible)]="dialogVisible"
       [modal]="true"
       [draggable]="false"
       [resizable]="false"
       [baseZIndex]="10000"
       [closable]="!completing()"
       [closeOnEscape]="!completing()"
-      [dismissableMask]="!completing()"
+      [dismissableMask]="false"
       [focusOnShow]="false"
-      [style]="{ width: '1240px', maxWidth: '96vw' }"
+      [style]="{ width: '1880px', maxWidth: '97vw', height: '92vh', maxHeight: '92vh' }"
       styleClass="qc-dlg"
       (onShow)="prepareSession()"
-      (onHide)="closeScanDialog()"
+      (onHide)="closeDialog()"
     >
+      <!-- Header -->
       <ng-template pTemplate="header">
         <div class="qc-dlg-title">
-          <span class="qc-dlg-ico"><i class="pi pi-qrcode"></i></span>
+          <span class="qc-dlg-ico"><i class="pi pi-objects-column"></i></span>
+
           <div class="qc-dlg-title-text">
-            <h3>جلسة فحص اللجنة <span class="qc-mono">{{ activeCommittee()?.committeeNumber }}</span></h3>
-            <small>وجّه الماسح على QR كل ظرف وستتم المطابقة تلقائياً</small>
+            <h3>دفعة <span class="qc-mono">#{{ selectedBatch()?.id }}</span></h3>
+            <small>
+              {{ selectedBatch()?.subject || '—' }}
+              <ng-container *ngIf="selectedBatch()?.governorate"> · {{ selectedBatch()?.governorate }}</ng-container>
+              <ng-container *ngIf="selectedBatch()?.round"> · {{ selectedBatch()?.round }}</ng-container>
+              <ng-container *ngIf="selectedBatch()?.year !== null"> · {{ selectedBatch()?.year }}</ng-container>
+            </small>
           </div>
+
+          <span class="qc-hd-pill" [class.on]="!!activeCommittee() && !completing()">
+            <span class="qc-dot"></span>
+            {{
+              completing()
+                ? 'جاري الحفظ...'
+                : activeCommittee()
+                  ? 'الجلسة مفتوحة - الماسح جاهز'
+                  : 'اختر لجنة لبدء الجلسة'
+            }}
+          </span>
         </div>
       </ng-template>
 
-      <div class="qc-dlg-body" *ngIf="activeCommittee() as committee">
+      <!-- Body -->
+      <div class="qc-split" *ngIf="selectedBatch()">
 
-        <!-- Committee info -->
-        <div class="qc-info">
-          <div class="qc-info-item">
-            <i class="pi pi-hashtag"></i>
-            <div><small>اللجنة</small><strong class="qc-mono">{{ committee.committeeNumber }}</strong></div>
+        <!-- ============ Committees (side) ============ -->
+        <aside class="qc-side">
+          <div class="qc-side-head">
+            <div class="qc-side-title">
+              <strong><i class="pi pi-building"></i> اللجان</strong>
+              <span class="qc-pill" data-tone="info">{{ committeeTotalCount() }} لجنة</span>
+            </div>
+
+            <span class="qc-search">
+              <i class="pi pi-search"></i>
+              <input
+                id="qc-committee-search"
+                pInputText
+                type="text"
+                class="qc-input"
+                placeholder="رقم اللجنة أو اسم المدرسة..."
+                [ngModel]="committeeSearch()"
+                (ngModelChange)="onCommitteeSearch($event)"
+              />
+            </span>
           </div>
-          <div class="qc-info-item qc-info-grow">
-            <i class="pi pi-building-columns"></i>
-            <div><small>المدرسة</small><strong>{{ committee.schoolName || '—' }}</strong></div>
-          </div>
-          <div class="qc-info-item">
-            <i class="pi pi-map-marker"></i>
-            <div><small>المحافظة</small><strong>{{ committee.governorate }}</strong></div>
-          </div>
-          <div class="qc-info-item">
-            <i class="pi pi-book"></i>
-            <div><small>المادة</small><strong>{{ committee.subject }}</strong></div>
-          </div>
-          <div class="qc-info-item">
-            <i class="pi pi-calendar"></i>
-            <div><small>الدور</small><strong>{{ committee.round }}</strong></div>
-          </div>
-        </div>
 
-        <div class="qc-work">
-
-          <!-- ============ Scanner station ============ -->
-          <aside class="qc-station">
-
-            <div class="qc-session" [class.on]="!completing()">
-              <span class="qc-dot"></span>
-              <strong>{{ completing() ? 'جاري الحفظ...' : 'الجلسة مفتوحة - الماسح جاهز' }}</strong>
-            </div>
-
-            <!-- Radar -->
-            <div class="qc-radar" [attr.data-state]="feedback()?.kind || 'idle'">
-              <i class="qc-corner tl"></i><i class="qc-corner tr"></i>
-              <i class="qc-corner bl"></i><i class="qc-corner br"></i>
-              <i class="pi qc-radar-ico"
-                 [ngClass]="allScanned() ? 'pi-check-circle' : 'pi-qrcode'"></i>
-              <span class="qc-laser" *ngIf="!allScanned()"></span>
-            </div>
-
-            <p class="qc-station-hint">
-              <ng-container *ngIf="!allScanned(); else doneHint">
-                ضع الماسح على QR الظرف. لا حاجة للكتابة أو الضغط على أي زر.
-              </ng-container>
-              <ng-template #doneHint>تمت مطابقة جميع الأظرف بنجاح.</ng-template>
-            </p>
-
-            <div class="qc-live" *ngIf="liveBuffer()">
-              <i class="pi pi-spin pi-spinner"></i>
-              <span>جاري القراءة...</span>
-              <code>{{ liveBuffer() }}</code>
-            </div>
-
-            <!-- Feedback -->
-            <div class="qc-feedback" *ngIf="feedback() as fb" [attr.data-kind]="fb.kind">
-              <span class="qc-feedback-ico">
-                <i
-                  class="pi"
-                  [ngClass]="fb.kind === 'success' ? 'pi-check' : fb.kind === 'warning' ? 'pi-exclamation-triangle' : 'pi-times'"
-                ></i>
-              </span>
-              <div>
-                <strong>{{ fb.title }}</strong>
-                <span>{{ fb.message }}</span>
-                <code>{{ fb.code }}</code>
-              </div>
-            </div>
-
-            <div class="qc-feedback qc-feedback-idle" *ngIf="!feedback()">
-              <span class="qc-feedback-ico"><i class="pi pi-info-circle"></i></span>
-              <div>
-                <strong>في انتظار المسح</strong>
-                <span>{{ orderEnforced ? 'امسح الأظرف بالترتيب.' : 'امسح أي ظرف، الترتيب غير مهم.' }}</span>
-              </div>
-            </div>
-
-            <!-- Failed attempts -->
-            <div class="qc-attempts" *ngIf="attempts().length">
-              <div class="qc-attempts-head">
-                <i class="pi pi-exclamation-triangle"></i>
-                محاولات غير مطابقة <b>{{ attempts().length }}</b>
-              </div>
-              <ul>
-                <li *ngFor="let a of attempts() | slice: 0 : 5">
-                  <code>{{ a.code }}</code>
-                  <small>{{ a.at }}</small>
-                </li>
-              </ul>
-            </div>
-          </aside>
-
-          <!-- ============ Envelopes (cards) ============ -->
-          <section class="qc-envelopes">
-
-            <!-- Progress -->
-            <div class="qc-prog-box">
-              <div class="qc-ring" [attr.data-done]="allScanned()">
-                <svg viewBox="0 0 100 100" aria-hidden="true">
-                  <circle class="qc-ring-bg" cx="50" cy="50" r="42" />
-                  <circle class="qc-ring-fg" cx="50" cy="50" r="42" [style.stroke-dashoffset]="ringOffset()" />
-                </svg>
-                <div class="qc-ring-text">
-                  <strong>{{ progress() }}%</strong>
-                  <small>{{ scannedCount() }} / {{ totalCount() }}</small>
-                </div>
-              </div>
-
-              <div class="qc-kpis">
-                <div data-tone="success">
-                  <i class="pi pi-check-circle"></i>
-                  <div><small>تمت المطابقة</small><strong>{{ scannedCount() }}</strong></div>
-                </div>
-                <div data-tone="info">
-                  <i class="pi pi-clock"></i>
-                  <div><small>المتبقي</small><strong>{{ remainingCount() }}</strong></div>
-                </div>
-                <div data-tone="neutral">
-                  <i class="pi pi-envelope"></i>
-                  <div><small>أساسي</small><strong>{{ requiredScanned() }}/{{ requiredTotal() }}</strong></div>
-                </div>
-                <div data-tone="warning" *ngIf="bonusTotal()">
-                  <i class="pi pi-plus-circle"></i>
-                  <div><small>إضافي</small><strong>{{ bonusScanned() }}/{{ bonusTotal() }}</strong></div>
-                </div>
-                <div data-tone="danger">
-                  <i class="pi pi-times-circle"></i>
-                  <div><small>غير مطابق</small><strong>{{ attempts().length }}</strong></div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Tabs -->
-            <div class="qc-tabs qc-tabs-sm">
-              <button
-                type="button"
-                class="qc-tab"
-                *ngFor="let t of envelopeTabs"
-                [class.active]="envelopeTab() === t.key"
-                (click)="setEnvelopeTab(t.key)"
-              >
-                {{ t.label }}
-                <b>{{ t.key === 'all' ? totalCount() : t.key === 'scanned' ? scannedCount() : remainingCount() }}</b>
+          <div class="qc-side-list" [class.qc-loading]="committeesLoading() && committees().length > 0">
+            <div class="qc-alert" *ngIf="committeesError()">
+              <i class="pi pi-exclamation-triangle"></i>
+              <span>{{ committeesError() }}</span>
+              <button pButton type="button" class="qc-btn qc-btn-sm qc-btn-ghost" (click)="loadCommittees()">
+                <i class="pi pi-refresh"></i><span>إعادة المحاولة</span>
               </button>
             </div>
 
-            <!-- Cards -->
-            <div class="qc-env-wrap">
-              <div class="qc-env-grid" *ngIf="visibleEnvelopes().length; else noEnvelopes">
-                <article
-                  class="qc-env"
-                  *ngFor="let e of visibleEnvelopes(); trackBy: trackEnvelope"
-                  [id]="'qc-env-' + e.no"
-                  [attr.data-tone]="e.scanned ? 'success' : 'info'"
-                  [attr.data-type]="e.type"
-                  [class.is-scanned]="e.scanned"
-                  [class.is-flash]="lastScannedCode() === e.code"
-                  [class.is-next]="orderEnforced && nextPending()?.code === e.code"
-                >
-                  <header>
-                    <span class="qc-env-no">{{ e.no }}</span>
-                    <span class="qc-type" [attr.data-type]="e.type">
-                      {{ e.type === 'required' ? 'أساسي' : 'إضافي' }}
-                    </span>
-                  </header>
+            <ng-container *ngIf="committeesLoading() && !committees().length">
+              <div class="qc-skeleton qc-skeleton-row" *ngFor="let s of [1, 2, 3, 4, 5]"></div>
+            </ng-container>
 
-                  <div class="qc-env-body">
-                    <span class="qc-env-ico">
-                      <i class="pi" [ngClass]="e.scanned ? 'pi-check' : 'pi-envelope'"></i>
-                    </span>
-                    <div class="qc-env-code">
-                      <strong class="qc-env-seq">{{ envSeq(e.code) }}</strong>
-                      <code class="qc-env-prefix">{{ envPrefix(e.code) }}</code>
-                    </div>
-                  </div>
+            <ng-container *ngIf="committees().length; else noCommittees">
+              <button
+                type="button"
+                class="qc-cm"
+                *ngFor="let c of committees(); trackBy: trackCommittee"
+                [attr.data-tone]="isDone(c) ? 'success' : 'info'"
+                [class.is-active]="activeCommittee()?.id === c.id"
+                [class.is-done]="isDone(c)"
+                [disabled]="isDone(c) || completing()"
+                (click)="selectCommittee(c)"
+              >
+                <span class="qc-cm-top">
+                  <span class="qc-cm-no">{{ c.committeeNumber }}</span>
 
-                  <footer>
-                    <span class="qc-state">
-                      <i class="pi" [ngClass]="e.scanned ? 'pi-check-circle' : (orderEnforced && nextPending()?.code === e.code ? 'pi-arrow-left' : 'pi-clock')"></i>
-                      {{ e.scanned ? 'تمت المطابقة' : (orderEnforced && nextPending()?.code === e.code ? 'الظرف التالي' : 'في انتظار المسح') }}
-                    </span>
-                    <small *ngIf="e.scannedAt">{{ e.scannedAt }}</small>
-                  </footer>
-                </article>
+                  <span class="qc-cm-name">
+                    <small>المدرسة</small>
+                    <strong>{{ c.schoolName || '—' }}</strong>
+                  </span>
+
+                  <span class="qc-pill">
+                    <i class="pi" [ngClass]="statusIcon(c)"></i>{{ statusLabel(c) }}
+                  </span>
+                </span>
+
+                <span class="qc-cm-meta">
+                  <span><i class="pi pi-envelope"></i>{{ totalEnvelopes(c) }} ظرف</span>
+                  <span><i class="pi pi-book"></i>{{ c.requiredBooklets + c.bonusBooklets | number }} كراسة</span>
+                  <span><i class="pi pi-box"></i>{{ c.boxCount }} كرتونة</span>
+                </span>
+
+                <span class="qc-cm-progress" *ngIf="!isDone(c) && scannedOf(c) > 0">
+                  <span class="qc-cm-progress-text">
+                    <span>تم مسح <b>{{ scannedOf(c) }}</b> من <b>{{ totalEnvelopes(c) }}</b></span>
+                    <b>{{ progressOf(c) }}%</b>
+                  </span>
+                  <span class="qc-track"><span [style.width.%]="progressOf(c)"></span></span>
+                </span>
+              </button>
+            </ng-container>
+
+            <ng-template #noCommittees>
+              <div class="qc-empty qc-empty-sm" *ngIf="!(committeesLoading() && !committees().length)">
+                <i class="pi pi-inbox"></i>
+                <strong>لا توجد لجان مطابقة</strong>
+                <span>ستظهر اللجان هنا بعد اكتمال الطباعة، أو جرّب تغيير البحث.</span>
+              </div>
+            </ng-template>
+          </div>
+
+          <ng-container
+            *ngTemplateOutlet="pager; context: { $implicit: committeePager(), go: goCommitteePage, size: onCommitteePageSize, sizes: committeePageSizes, compact: true }"
+          ></ng-container>
+        </aside>
+
+        <!-- ============ Scan workspace (main) ============ -->
+        <section class="qc-main">
+
+          <ng-container *ngIf="activeCommittee() as committee; else pickCommittee">
+
+            <!-- Committee header -->
+            <div class="qc-cm-head">
+              <span class="qc-ico"><i class="pi pi-building"></i></span>
+
+              <div class="qc-cm-head-title">
+                <small>جلسة فحص اللجنة</small>
+                <strong>
+                  <span class="qc-mono">{{ committee.committeeNumber }}</span>
+                  <span class="qc-cm-head-school"> · {{ committee.schoolName || '—' }}</span>
+                </strong>
               </div>
 
-              <ng-template #noEnvelopes>
-                <div class="qc-empty qc-empty-sm">
-                  <i class="pi pi-inbox"></i>
-                  <strong>لا توجد أظرف في هذا التبويب</strong>
-                </div>
-              </ng-template>
+              <div class="qc-chips-row">
+                <span><i class="pi pi-map-marker"></i>{{ committee.governorate || '—' }}</span>
+                <span><i class="pi pi-book"></i>{{ committee.subject || '—' }}</span>
+                <span><i class="pi pi-calendar"></i>{{ committee.round || '—' }}</span>
+              </div>
             </div>
 
-            <div class="qc-note qc-note-success" *ngIf="allScanned()">
-              <i class="pi pi-check-circle"></i>
-              تمت مطابقة جميع الأظرف. يمكنك الآن إتمام مراجعة اللجنة.
+            <!-- Scanner strip -->
+            <div class="qc-scanner">
+              <div class="qc-radar" [attr.data-state]="feedback()?.kind || 'idle'">
+                <i class="qc-corner tl"></i><i class="qc-corner tr"></i>
+                <i class="qc-corner bl"></i><i class="qc-corner br"></i>
+                <i class="pi qc-radar-ico" [ngClass]="allScanned() ? 'pi-check-circle' : 'pi-qrcode'"></i>
+                <span class="qc-laser" *ngIf="!allScanned() && !envelopesLoading()"></span>
+              </div>
+
+              <div class="qc-scanner-body">
+                <p class="qc-station-hint">
+                  <ng-container *ngIf="!allScanned(); else doneHint">
+                    وجّه الماسح على QR الظرف، لا حاجة للكتابة أو الضغط على أي زر.
+                  </ng-container>
+                  <ng-template #doneHint>تمت مطابقة جميع الأظرف بنجاح.</ng-template>
+                </p>
+
+                <div class="qc-live" *ngIf="liveBuffer()">
+                  <i class="pi pi-spin pi-spinner"></i>
+                  <span>جاري القراءة...</span>
+                  <code>{{ liveBuffer() }}</code>
+                </div>
+
+                <div class="qc-feedback" *ngIf="feedback() as fb" [attr.data-kind]="fb.kind">
+                  <span class="qc-feedback-ico">
+                    <i
+                      class="pi"
+                      [ngClass]="fb.kind === 'success' ? 'pi-check' : fb.kind === 'warning' ? 'pi-exclamation-triangle' : 'pi-times'"
+                    ></i>
+                  </span>
+                  <div>
+                    <strong>{{ fb.title }}</strong>
+                    <span>{{ fb.message }}</span>
+                    <code>{{ fb.code }}</code>
+                  </div>
+                </div>
+
+                <div class="qc-feedback qc-feedback-idle" *ngIf="!feedback()">
+                  <span class="qc-feedback-ico"><i class="pi pi-info-circle"></i></span>
+                  <div>
+                    <strong>في انتظار المسح</strong>
+                    <span>{{ orderEnforced ? 'امسح الأظرف بالترتيب.' : 'امسح أي ظرف، الترتيب غير مهم.' }}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="qc-attempts" *ngIf="attempts().length">
+                <div class="qc-attempts-head">
+                  <i class="pi pi-exclamation-triangle"></i>
+                  محاولات غير مطابقة <b>{{ attempts().length }}</b>
+                </div>
+                <ul>
+                  <li *ngFor="let a of attempts() | slice: 0 : 4">
+                    <code>{{ a.code }}</code>
+                    <small>{{ a.at }}</small>
+                  </li>
+                </ul>
+              </div>
             </div>
+
+            <!-- Envelopes: loading / error / content -->
+            <div class="qc-env-wrap" *ngIf="envelopesLoading()">
+              <div class="qc-env-grid">
+                <div class="qc-skeleton qc-skeleton-env" *ngFor="let s of [1, 2, 3, 4, 5, 6, 7, 8]"></div>
+              </div>
+            </div>
+
+            <div class="qc-alert" *ngIf="envelopesError() && !envelopesLoading()">
+              <i class="pi pi-exclamation-triangle"></i>
+              <span>{{ envelopesError() }}</span>
+              <button pButton type="button" class="qc-btn qc-btn-sm qc-btn-ghost" (click)="loadEnvelopes()">
+                <i class="pi pi-refresh"></i><span>إعادة المحاولة</span>
+              </button>
+            </div>
+
+            <ng-container *ngIf="!envelopesLoading() && !envelopesError()">
+
+              <!-- Progress -->
+              <div class="qc-prog-box">
+                <div class="qc-ring" [attr.data-done]="allScanned()">
+                  <svg viewBox="0 0 100 100" aria-hidden="true">
+                    <circle class="qc-ring-bg" cx="50" cy="50" r="42" />
+                    <circle class="qc-ring-fg" cx="50" cy="50" r="42" [style.stroke-dashoffset]="ringOffset()" />
+                  </svg>
+                  <div class="qc-ring-text">
+                    <strong>{{ progress() }}%</strong>
+                    <small>{{ scannedCount() }} / {{ totalCount() }}</small>
+                  </div>
+                </div>
+
+                <div class="qc-kpis">
+                  <div data-tone="success">
+                    <i class="pi pi-check-circle"></i>
+                    <div><small>تمت المطابقة</small><strong>{{ scannedCount() }}</strong></div>
+                  </div>
+                  <div data-tone="info">
+                    <i class="pi pi-clock"></i>
+                    <div><small>المتبقي</small><strong>{{ remainingCount() }}</strong></div>
+                  </div>
+                  <div data-tone="neutral">
+                    <i class="pi pi-envelope"></i>
+                    <div><small>أساسي</small><strong>{{ requiredScanned() }}/{{ requiredTotal() }}</strong></div>
+                  </div>
+                  <div data-tone="warning" *ngIf="bonusTotal()">
+                    <i class="pi pi-plus-circle"></i>
+                    <div><small>إضافي</small><strong>{{ bonusScanned() }}/{{ bonusTotal() }}</strong></div>
+                  </div>
+                  <div data-tone="danger">
+                    <i class="pi pi-times-circle"></i>
+                    <div><small>غير مطابق</small><strong>{{ attempts().length }}</strong></div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Tabs -->
+              <div class="qc-tabs qc-tabs-sm">
+                <button
+                  type="button"
+                  class="qc-tab"
+                  *ngFor="let t of envelopeTabs"
+                  [class.active]="envelopeTab() === t.key"
+                  (click)="setEnvelopeTab(t.key)"
+                >
+                  {{ t.label }}
+                  <b>{{ t.key === 'all' ? totalCount() : t.key === 'scanned' ? scannedCount() : remainingCount() }}</b>
+                </button>
+              </div>
+
+              <!-- Cards -->
+              <div class="qc-env-wrap">
+                <div class="qc-env-grid" *ngIf="visibleEnvelopes().length; else noEnvelopes">
+                  <article
+                    class="qc-env"
+                    *ngFor="let e of visibleEnvelopes(); trackBy: trackEnvelope"
+                    [id]="'qc-env-' + e.no"
+                    [attr.data-tone]="e.scanned ? 'success' : 'info'"
+                    [attr.data-type]="e.type"
+                    [class.is-scanned]="e.scanned"
+                    [class.is-flash]="lastScannedCode() === e.code"
+                    [class.is-next]="orderEnforced && nextPending()?.code === e.code"
+                  >
+                    <header>
+                      <span class="qc-env-no">{{ e.no }}</span>
+                      <span class="qc-type" [attr.data-type]="e.type">
+                        {{ e.type === 'required' ? 'أساسي' : 'إضافي' }}
+                      </span>
+                    </header>
+
+                    <div class="qc-env-body">
+                      <span class="qc-env-ico">
+                        <i class="pi" [ngClass]="e.scanned ? 'pi-check' : 'pi-envelope'"></i>
+                      </span>
+                      <div class="qc-env-code">
+                        <small>رقم الظرف</small>
+                        <strong class="qc-env-seq">{{ envSeq(e.code) }}</strong>
+                      </div>
+                    </div>
+
+                    <code class="qc-env-prefix">{{ envPrefix(e.code) }}</code>
+
+                    <footer>
+                      <span class="qc-state">
+                        <i class="pi" [ngClass]="e.scanned ? 'pi-check-circle' : (orderEnforced && nextPending()?.code === e.code ? 'pi-arrow-left' : 'pi-clock')"></i>
+                        {{ e.scanned ? 'تمت المطابقة' : (orderEnforced && nextPending()?.code === e.code ? 'الظرف التالي' : 'في انتظار المسح') }}
+                      </span>
+                      <small *ngIf="e.scannedAt">{{ e.scannedAt }}</small>
+                    </footer>
+                  </article>
+                </div>
+
+                <ng-template #noEnvelopes>
+                  <div class="qc-empty qc-empty-sm">
+                    <i class="pi pi-inbox"></i>
+                    <strong>{{ totalCount() ? 'لا توجد أظرف في هذا التبويب' : 'لا توجد أظرف لهذه اللجنة' }}</strong>
+                  </div>
+                </ng-template>
+              </div>
+
+              <div class="qc-note qc-note-success" *ngIf="allScanned()">
+                <i class="pi pi-check-circle"></i>
+                تمت مطابقة جميع الأظرف. يمكنك الآن إتمام مراجعة اللجنة.
+              </div>
+            </ng-container>
 
             <div class="qc-alert qc-alert-top" *ngIf="completeError()">
               <i class="pi pi-exclamation-triangle"></i>
               <span>{{ completeError() }}</span>
             </div>
-          </section>
-        </div>
+          </ng-container>
+
+          <ng-template #pickCommittee>
+            <div class="qc-pick">
+              <span class="qc-pick-ico"><i class="pi pi-qrcode"></i></span>
+              <h3>اختر لجنة لبدء الفحص</h3>
+              <p>
+                اضغط على أي لجنة من القائمة لعرض أظرفها، ثم وجّه الماسح على QR كل ظرف.
+                الجلسة تظل مفتوحة ويمكنك الانتقال بين اللجان دون فقدان التقدم.
+              </p>
+            </div>
+          </ng-template>
+        </section>
       </div>
 
+      <!-- Footer -->
       <ng-template pTemplate="footer">
         <div class="qc-footer">
           <span class="qc-footer-hint">
             <i class="pi pi-info-circle"></i>
-            <ng-container *ngIf="!allScanned(); else readyHint">
-              يظهر زر الإتمام بعد مطابقة جميع الأظرف (متبقي {{ remainingCount() }}) · التقدم محفوظ عند الإغلاق
+            <ng-container *ngIf="activeCommittee(); else noActiveHint">
+              <ng-container *ngIf="!allScanned(); else readyHint">
+                يظهر زر الإتمام بعد مطابقة جميع الأظرف (متبقي {{ remainingCount() }}) · التقدم محفوظ عند التنقل أو الإغلاق
+              </ng-container>
+              <ng-template #readyHint>جميع الأظرف مطابقة، يمكنك إتمام المراجعة.</ng-template>
             </ng-container>
-            <ng-template #readyHint>جميع الأظرف مطابقة، يمكنك إتمام المراجعة.</ng-template>
+            <ng-template #noActiveHint>اختر لجنة من القائمة لعرض أظرفها وبدء المسح.</ng-template>
           </span>
 
           <div class="qc-actions">
-            <button pButton type="button" class="qc-btn qc-btn-ghost" label="إغلاق" [disabled]="completing()" (click)="closeScanDialog()"></button>
+            <button pButton type="button" class="qc-btn qc-btn-ghost" label="إغلاق" [disabled]="completing()" (click)="closeDialog()"></button>
             <button
-              *ngIf="allScanned()"
+              *ngIf="activeCommittee() && allScanned()"
               pButton
               type="button"
               class="qc-btn qc-btn-success"
