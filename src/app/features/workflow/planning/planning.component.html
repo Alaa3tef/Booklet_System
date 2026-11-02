@@ -15,7 +15,7 @@
   resultText="متابعة جاهزية الدفعات وتوزيع المحافظات بسهولة ودقة"
 >
 
-  <div panel-content>
+  <div panel-content [class.has-selection-bar]="selectedCount() > 0 && activeTab() === 'materials'">
 
     <!-- ==========================================
          VIEW SWITCH (tabs)
