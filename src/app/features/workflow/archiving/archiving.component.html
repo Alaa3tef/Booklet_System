@@ -1,601 +1,972 @@
 <app-workflow-step-layout
   stepNumber="05"
-  englishLabel="Archiving"
+  englishLabel="Archiving & Storage"
   arabicTitle="مستخدم التخزين"
-  arabicSubtitle="تخزين المادة وتحديد مكان التخزين في المخزن"
+  arabicSubtitle="إدارة وتسكين الصناديق في المخازن وتأكيد لجان المواد"
   theme="teal"
   activeNavKey="archiving"
-  illustrationIcon="pi pi-database"
-  illustrationTaglineTop="حفظ آمن"
-  illustrationTaglineBottom="لمستقبل التعليم"
-  panelIcon="pi pi-database"
-  panelTitle="التخزين والتسليم"
+  illustrationIcon="pi pi-warehouse"
+  illustrationTaglineTop="تخزين دقيق وآمن"
+  illustrationTaglineBottom="لضبط حركة وتوزيع الكنترول"
+  panelIcon="pi pi-box"
+  panelTitle="إدارة وتسكين الصناديق بالمخازن"
   functionLabel="مستخدم التخزين"
   [essentials]="essentials"
-  resultText="يتم تسجيل التخزين والتسليم إلكترونيًا"
+  resultText="تسكين ومتابعة مواقع الصناديق وسجلات التخزين بسهولة ودقة"
 >
 
   <div panel-content>
 
-    <!-- =====================================================
-         SEARCH  (same filters as before)
-    ====================================================== -->
-    <section class="search-card">
+    <!-- ==========================================
+         VIEW SWITCH (tabs)
+    =========================================== -->
+    <div class="view-tabs" role="tablist" aria-label="عرض الصفحة">
 
-      <div class="search-header">
-        <div>
-          <h3>البحث في سجل المواد</h3>
-          <p>ابحث بالمحافظة أو رقم اللجنة أو المادة</p>
-        </div>
+      <button
+        type="button"
+        role="tab"
+        class="view-tab"
+        [class.active]="activeTab() === 'batches'"
+        [attr.aria-selected]="activeTab() === 'batches'"
+        (click)="setTab('batches')">
+        <i class="pi pi-box"></i>
+        <span>سجل دفعات وتخزين الصناديق</span>
+        <span class="tab-count">{{ filteredBatches().length }}</span>
+      </button>
 
-        <button type="button" class="clear-search-btn" (click)="clearFilters()">
-          <i class="pi pi-filter-slash"></i>
-          مسح البحث
-        </button>
-      </div>
+      <button
+        type="button"
+        role="tab"
+        class="view-tab"
+        [class.active]="activeTab() === 'scanner'"
+        [attr.aria-selected]="activeTab() === 'scanner'"
+        (click)="setTab('scanner')">
+        <i class="pi pi-qrcode"></i>
+        <span>المسح والتسكين المباشر</span>
+      </button>
 
-      <div class="search-grid">
+    </div>
 
-        <div class="field">
-          <label>المحافظة</label>
-          <div class="select-wrapper">
-            <i class="pi pi-map-marker"></i>
-          <p-select
-            [options]="governorates"
-            [ngModel]="searchGovernorate()"
-            (ngModelChange)="setGovernorate($event)"
-            optionLabel="label"
-            optionValue="value"
-            placeholder="اختر المحافظة"
-            styleClass="archive-select"
-          />
+    <!-- ==========================================
+         TAB 1 : BATCHES & STORAGE LIST
+    =========================================== -->
+    @if (activeTab() === 'batches') {
+
+      <!-- SEARCH SECTION -->
+      <div class="search-section">
+        <div class="planning-search-card">
+          <div class="planning-image">
+            <img src="assets/images/planning.png" alt="التخزين" />
           </div>
-        </div>
 
-        <div class="field">
-          <label>المادة</label>
-            <div class="select-wrapper">
-            <i class="pi pi-book"></i>
-          <p-select
-            [options]="subjects"
-            [ngModel]="searchSubject()"
-            (ngModelChange)="setSubject($event)"
-            optionLabel="label"
-            optionValue="value"
-            placeholder="اختر المادة"
-            styleClass="archive-select"
-          />
-            </div>
-        </div>
+          <div class="planning-search-content">
+            <div class="planning-search-title">
+              <div class="planning-search-icon"><i class="pi pi-search"></i></div>
+              <div class="planning-search-text">
+                <h3>البحث في دفعات التخزين وصناديق المواد</h3>
+                <p>اختر المحافظة والمادة لمتابعة الصناديق ومواقعها في المخزن</p>
+              </div>
 
-        <div class="field">
-          <label>الادارة التعليمية</label>
-            <div class="select-wrapper">
-            <i class="pi pi-book"></i>
-          <p-select
-            [options]="educationals"
-            [ngModel]="searchEducation()"
-            (ngModelChange)="setEducation($event)"
-            optionLabel="label"
-            optionValue="value"
-            placeholder="اختر الادارة التعليمية"
-            styleClass="archive-select"
-          />
-            </div>
-        </div>
-
-            <div class="field">
-          <label>رقم اللجنة</label>
-          <div class="input-wrapper">
-            <i class="pi pi-hashtag"></i>
-            <input
-              pInputText
-              type="text"
-              inputmode="numeric"
-              [ngModel]="searchCommittee()"
-              (ngModelChange)="setCommittee($event)"
-              placeholder="رقم اللجنة"
-            />
-          </div>
-        </div>
-      </div>
-
-      <!-- ===== what is being filtered ===== -->
-      @if (activeFilters().length) {
-        <div class="active-filters" role="status" aria-live="polite">
-
-          <span class="af-label">
-            <i class="pi pi-filter"></i>
-            الفلاتر المطبّقة
-          </span>
-
-          @for (f of activeFilters(); track f.key) {
-            <span class="af-chip">
-              <small>{{ f.title }}:</small>
-              <b>{{ f.value }}</b>
-              <button
-                type="button"
-                [attr.aria-label]="'إزالة فلتر ' + f.title"
-                (click)="removeFilter(f.key)">
-                <i class="pi pi-times"></i>
+              <button type="button" class="clear-all-btn" (click)="clearFilters()">
+                <i class="pi pi-filter-slash"></i>
+                مسح البحث
               </button>
-            </span>
-          }
+            </div>
 
-          <span class="af-count">
-            النتائج <b>{{ filteredRows().length }}</b> من <b>{{ rows().length }}</b> مادة
-          </span>
-
-        </div>
-      }
-
-    </section>
-
-
-    <!-- =====================================================
-         RECORDS (cards)
-    ====================================================== -->
-    <section class="table-card">
-
-      <div class="list-header">
-        <div class="list-title">
-          <span class="list-title-icon"><i class="pi pi-database"></i></span>
-          <div>
-            <h3>سجل التخزين والتسليم</h3>
-            <small>تابع كل لجنة من التخزين حتى التسليم</small>
-          </div>
-        </div>
-
-        <span class="results-chip"><b>{{ filteredRows().length }}</b> نتيجة</span>
-      </div>
-
-      <div class="record-grid">
-
-        @for (row of paginatedRows(); track row.index) {
-
-          <article class="record" [ngClass]="statusClass(row.status)">
-
-            <header class="record-top">
-              <span class="record-no">{{ row.index }}</span>
-
-              <div class="record-title">
-                <strong>{{ row.subject }}</strong>
-                <span class="record-meta">
-                  <span><i class="pi pi-map-marker"></i>{{ row.governorate }}</span>
-                  <span class="dot"></span>
-                  <!-- <span>لجنة <b class="committee">{{ row.committeeNumber }}</b></span> -->
-                  <span>إدارة  <b class="committee">{{ row.educationNumber }}</b></span>
-                    <span class="dot"></span>
-
-                  <span>لجنة <b class="committee">{{ row.committeeNumber }}</b></span>
-
-
-                </span>
-              </div>
-
-              <span class="part-pill" [ngClass]="partClass(row.scanPart)">{{ row.scanPart }}</span>
-            </header>
-
-            <ol class="tracker" [attr.aria-label]="'الحالة: ' + row.status">
-              @for (label of stages; track label; let i = $index) {
-                <li [class.done]="i < stepIndex(row.status)"
-                    [class.current]="i === stepIndex(row.status)">
-                  <span class="tracker-dot">
-                    @if (i <= stepIndex(row.status)) { <i class="pi pi-check"></i> }
-                  </span>
-                  <span class="tracker-label">{{ label }}</span>
-                </li>
-              }
-            </ol>
-
-            @if (row.storage) {
-              <div class="location">
-                <div class="loc-tile">
-                  <small>الرف</small>
-                  <strong dir="ltr"><i class="pi pi-th-large"></i>{{ row.storage.shelf }}</strong>
-                </div>
-                <i class="pi pi-arrow-left loc-arrow"></i>
-                <div class="loc-tile">
-                  <small>الصندوق</small>
-                  <strong dir="ltr"><i class="pi pi-box"></i>{{ row.storage.box }}</strong>
+            <div class="fields-grid cols-3">
+              <div class="field">
+                <label for="governorate">المحافظة</label>
+                <div class="select-wrapper">
+                  <i class="pi pi-map-marker"></i>
+                  <p-select
+                    inputId="governorate"
+                    [options]="governorates()"
+                    [ngModel]="searchGovernorate()"
+                    (ngModelChange)="setGovernorate($event)"
+                    optionLabel="label"
+                    optionValue="value"
+                    styleClass="w-full"
+                    appendTo="body"
+                    [loading]="lookupsLoading()"
+                    placeholder="اختر المحافظة"
+                  />
                 </div>
               </div>
-            } @else {
-              <div class="location-empty">
-                <i class="pi pi-inbox"></i>
-                لم يتم تحديد مكان التخزين بعد
-              </div>
-            }
 
-            <footer class="record-action">
-              @if (row.status === 'جاهز للتخزين') {
-                <button type="button" class="action-btn storage" (click)="openStorageDialog(row)">
-                  <i class="pi pi-database"></i>
-                  <span>ابدأ التخزين</span>
-                </button>
-              }
-              @if (row.status === 'تم التخزين') {
-                <button type="button" class="action-btn delivery" (click)="openDeliveryDialog(row)">
-                  <i class="pi pi-send"></i>
-                  <span>ابدأ التسليم</span>
-                </button>
-              }
-              @if (row.status === 'تم التسليم') {
-                <div class="completed-action">
-                  <i class="pi pi-check-circle"></i>
-                  اكتملت العملية
+              <div class="field">
+                <label for="subject">المادة</label>
+                <div class="select-wrapper">
+                  <i class="pi pi-book"></i>
+                  <p-select
+                    inputId="subject"
+                    [options]="subjects()"
+                    [ngModel]="searchSubject()"
+                    (ngModelChange)="setSubject($event)"
+                    optionLabel="label"
+                    optionValue="value"
+                    styleClass="w-full"
+                    appendTo="body"
+                    [loading]="lookupsLoading()"
+                    placeholder="اختر المادة"
+                  />
                 </div>
-              }
-            </footer>
+              </div>
 
-          </article>
+              <div class="field committee-search-field">
+                <label for="batchSearch">بحث سريع</label>
+                <div class="committee-input-wrapper">
+                  <i class="pi pi-hashtag"></i>
+                  <input
+                    id="batchSearch"
+                    type="text"
+                    pInputText
+                    [ngModel]="searchBatchQuery()"
+                    (ngModelChange)="setBatchQuery($event)"
+                    placeholder="رقم الدفعة، اللجنة، باركود الصندوق أو الرف..."
+                    autocomplete="off"
+                  />
+                  @if (searchBatchQuery()) {
+                    <button
+                      type="button"
+                      class="clear-search-btn"
+                      aria-label="مسح البحث السريع"
+                      pTooltip="مسح"
+                      tooltipPosition="top"
+                      (click)="setBatchQuery('')">
+                      <i class="pi pi-times"></i>
+                    </button>
+                  }
+                </div>
+              </div>
+            </div>
 
-        } @empty {
-
-          <div class="empty-state">
-            <span class="empty-icon"><i class="pi pi-search"></i></span>
-            <strong>لا توجد نتائج</strong>
-            <span>
-              @if (activeFilters().length) {
-                لا توجد مواد مطابقة للفلاتر المحددة
-              } @else {
-                لا توجد مواد في السجل حاليًا
-              }
-            </span>
+            <!-- Active filters chips -->
             @if (activeFilters().length) {
-              <button type="button" class="empty-clear" (click)="clearFilters()">
-                <i class="pi pi-filter-slash"></i> مسح الفلاتر
-              </button>
+              <div class="active-filters" role="status" aria-live="polite">
+                <span class="af-label"><i class="pi pi-filter"></i> الفلاتر المطبّقة:</span>
+                @for (f of activeFilters(); track f.key) {
+                  <span class="af-chip">
+                    <small>{{ f.title }}:</small>
+                    <b>{{ f.value }}</b>
+                    <button type="button" [attr.aria-label]="'إزالة فلتر ' + f.title" (click)="removeFilter(f.key)">
+                      <i class="pi pi-times"></i>
+                    </button>
+                  </span>
+                }
+              </div>
             }
           </div>
-
-        }
-
-      </div>
-
-
-      <!-- ==========================================
-           PAGINATION
-      =========================================== -->
-      @if (filteredRows().length > 0) {
-        <div class="printing-pagination">
-
-          <div class="pagination-info">
-            <span class="pagination-info-icon"><i class="pi pi-list"></i></span>
-            <span>
-              عرض
-              <strong>{{ paginationStart() }}</strong>
-              -
-              <strong>{{ paginationEnd() }}</strong>
-              من
-              <strong>{{ filteredRows().length }}</strong>
-              مادة
-            </span>
-          </div>
-
-          <div class="pagination-size">
-            <span>عدد البطاقات</span>
-            <p-select
-              [options]="[
-                { label: '6',  value: 6 },
-                { label: '12', value: 12 },
-                { label: '24', value: 24 }
-              ]"
-              optionLabel="label"
-              optionValue="value"
-              [ngModel]="pageSize()"
-              (ngModelChange)="pageSize.set($event); onPageSizeChange()"
-              styleClass="pagination-size-select"
-            />
-          </div>
-
-          <div class="pagination-controls">
-              <button type="button" class="pagination-arrow"
-                [disabled]="currentPage() === 1"
-                (click)="previousPage()"
-                pTooltip="الصفحة السابقة" tooltipPosition="top">
-                <i class="pi pi-chevron-right"></i>
-              </button>
-
-              @for (page of paginationPages(); track $index) {
-                @if (page === 'dots') {
-                  <span class="pagination-dots">...</span>
-                } @else {
-                  <button type="button" class="pagination-page"
-                    [class.active]="page === currentPage()"
-                    [attr.aria-current]="page === currentPage() ? 'page' : null"
-                    (click)="goToPage(page)">
-                    {{ page }}
-                  </button>
-                }
-              }
-
-              <button type="button" class="pagination-arrow"
-                [disabled]="currentPage() === totalPages()"
-                (click)="nextPage()"
-                pTooltip="الصفحة التالية" tooltipPosition="top">
-                <i class="pi pi-chevron-left"></i>
-              </button>
-          </div>
-        </div>
-      }
-
-    </section>
-
-  </div>
-
-
-  <!-- =====================================================
-       SCAN DIALOG
-  ====================================================== -->
-  <p-dialog
-    [(visible)]="dialogVisible"
-    [modal]="true"
-    [draggable]="false"
-    [resizable]="false"
-    [closable]="!isScanning()"
-    [dismissableMask]="!isScanning()"
-    [closeOnEscape]="!isScanning()"
-    [baseZIndex]="10000"
-    appendTo="body"
-    [style]="{ width: '1100px', maxWidth: '95vw' }"
-    styleClass="archive-scan-dialog"
-    (onHide)="onDialogHide()"
-  >
-
-    <ng-template pTemplate="header">
-      <div class="scan-dialog-header">
-        <div class="dialog-title-icon"><i class="pi pi-qrcode"></i></div>
-        <div>
-          <span>{{ isStorage() ? 'ARCHIVING SCAN' : 'DELIVERY SCAN' }}</span>
-          <h3>{{ isStorage() ? 'فحص التخزين' : 'فحص التسليم' }}</h3>
         </div>
       </div>
-    </ng-template>
 
-    @if (selectedRow(); as row) {
-      @if (currentStep(); as step) {
+      <!-- KPI METRICS STRIP -->
+      <div class="kpi-strip">
+        <div class="kpi-card total-govs">
+          <div class="kpi-icon"><i class="pi pi-box"></i></div>
+          <div class="kpi-content">
+            <small>إجمالي الدفعات</small>
+            <strong>{{ totalBatchesCount() }}</strong>
+          </div>
+        </div>
 
-        <div class="scan-dialog-content">
+        <div class="kpi-card total-boxes">
+          <div class="kpi-icon"><i class="pi pi-inbox"></i></div>
+          <div class="kpi-content">
+            <small>إجمالي الصناديق</small>
+            <strong>{{ totalBoxesCount() }}</strong>
+          </div>
+        </div>
 
-          <div class="material-info-card">
-            <div class="material-main">
-              <div class="material-icon"><i class="pi pi-book"></i></div>
-              <div>
-                <span>المادة</span>
-                <strong>{{ row.subject }}</strong>
-              </div>
-            </div>
+        <div class="kpi-card stored-batches">
+          <div class="kpi-icon"><i class="pi pi-check-circle"></i></div>
+          <div class="kpi-content">
+            <small>الصناديق المخزنة</small>
+            <strong class="text-primary">{{ storedBoxesCount() }}</strong>
+          </div>
+        </div>
 
-            <div class="material-meta">
-              <div><span>رقم اللجنة</span><strong>{{ row.committeeNumber }}</strong></div>
-              <div><span>المحافظة</span><strong>{{ row.governorate }}</strong></div>
-              <div><span>الجزء</span><strong>{{ row.scanPart }}</strong></div>
-            </div>
+        <div class="kpi-card eligible-govs">
+          <div class="kpi-icon"><i class="pi pi-clock"></i></div>
+          <div class="kpi-content">
+            <small>في انتظار التسكين</small>
+            <strong class="text-warning">{{ pendingBoxesCount() }}</strong>
+          </div>
+        </div>
+
+        <div class="kpi-card ready-delivery">
+          <div class="kpi-icon"><i class="pi pi-truck"></i></div>
+          <div class="kpi-content">
+            <small>جاهزة للتسليم</small>
+            <strong class="text-success">{{ readyForDeliveryCount() }}</strong>
+          </div>
+        </div>
+      </div>
+
+      <!-- BATCHES CARDS SECTION -->
+      <div class="table-section">
+        <div class="table-header">
+          <div class="header-right">
+            <h4>دفعات التخزين ومواقع الأرفف</h4>
+            <span class="batch-count-pill">{{ filteredBatches().length }} دفعة</span>
           </div>
 
-          <div class="scan-progress-section">
-            <div class="progress-info">
-              <div>
-                <span>{{ isStorage() ? 'تقدم التخزين' : 'تقدم التسليم' }}</span>
-                <strong>{{ completedScans() }} / {{ steps().length }}</strong>
-              </div>
-              <span>{{ scanProgress() }}%</span>
-            </div>
-            <div class="progress-track">
-              <div class="progress-value" [style.width.%]="scanProgress()"></div>
-            </div>
+          <div class="header-actions">
+            <button
+              type="button"
+              class="action-btn-search"
+              [disabled]="batchesLoading()"
+              (click)="loadBatches()">
+              <i class="pi" [ngClass]="batchesLoading() ? 'pi-spin pi-spinner' : 'pi-sync'"></i>
+              <span>تحديث البيانات</span>
+            </button>
           </div>
+        </div>
 
-          <div class="scan-workspace">
+        @if (batchesLoading()) {
+          <div class="loading-state">
+            <i class="pi pi-spin pi-spinner"></i>
+            <span>جاري تحميل بيانات التخزين والصناديق...</span>
+          </div>
+        } @else {
+          <div class="plan-grid">
+            @for (batch of paginatedBatches(); track batch.batchId) {
+              <article class="plan teal-plan">
 
-            <aside class="scan-steps-panel">
-              <div class="steps-title">
-                <span>{{ isStorage() ? 'مراحل التخزين' : 'مراحل التسليم' }}</span>
-                <small>{{ steps().length }} عمليات</small>
-              </div>
-
-              <div class="scan-steps">
-                @for (s of steps(); track s.type; let i = $index) {
-                  <button
-                    type="button"
-                    class="scan-step"
-                    [class.active]="i === currentIndex()"
-                    [class.completed]="s.scanned"
-                    [class.locked]="isLocked(i)"
-                    (click)="selectScanStep(i)"
-                  >
-                    <div class="step-number">
-                      @if (s.scanned) { <i class="pi pi-check"></i> } @else { <span>{{ i + 1 }}</span> }
-                    </div>
-
-                    <div class="step-info">
-                      <strong>{{ s.title }}</strong>
-                      <small>{{ s.subtitle }}</small>
-                    </div>
-
-                    <i class="pi cover-icon" [ngClass]="stepIcon(s.type)"></i>
-                  </button>
-                }
-              </div>
-            </aside>
-
-            <section class="scanner-area">
-              <div class="scanner-and-data">
-
-                <div class="scanner-card">
-                  <div class="scanner-label">
-                    <i class="pi pi-qrcode"></i>
-                    <span>{{ step.title }}</span>
+                <!-- Card Header -->
+                <header class="plan-top">
+                  <div class="top-select">
+                    <span class="plan-no">#{{ batch.batchId }}</span>
                   </div>
 
-                  @if (step.type === 'zone') {
-                    <div class="zone-selection">
-                      <div class="zone-selection-icon"><i class="pi pi-map-marker"></i></div>
-                      <strong>تحديد منطقة التخزين</strong>
-                      <span>اختاري المنطقة التي سيتم تخزين الصندوق بها</span>
+                  <div class="plan-title">
+                    <strong>{{ batch.subjectName }}</strong>
+                    <span class="plan-subtitle">{{ batch.governorateName }}</span>
+                  </div>
 
-                      <p-select
-                        [options]="zones"
-                        [(ngModel)]="selectedZone"
-                        [disabled]="step.scanned"
-                        optionLabel="label"
-                        optionValue="value"
-                        appendTo="body"
-                        styleClass="zone-select"
-                      />
-                    </div>
+                  @if (batch.isReadyForDelivery) {
+                    <span class="status-pill success"><i class="pi pi-check"></i> جاهز للتسليم</span>
                   } @else {
-                    <div class="scanner-visual">
-                      <div class="scanner-corners">
-                        <span class="corner top-right"></span>
-                        <span class="corner top-left"></span>
-                        <span class="corner bottom-right"></span>
-                        <span class="corner bottom-left"></span>
-                      </div>
+                    <span class="status-pill info">{{ batch.statusName || 'قيد التخزين' }}</span>
+                  }
+                </header>
 
-                      <div class="fake-qr">
-                        <div class="qr-pattern">
-                          @for (n of [1,2,3,4,5,6,7,8,9]; track n) { <span></span> }
+                <!-- Batch Details Section -->
+                <section class="source source-it">
+                  <div class="source-head">
+                    <span class="source-icon"><i class="pi pi-warehouse"></i></span>
+                    <span class="source-title">بيانات الدفعة والتسكين</span>
+                    <span class="source-tag">{{ batch.roundName || 'الدور الأول' }} - {{ batch.year }}</span>
+                  </div>
+
+                  <div class="source-grid">
+                    <div class="info-tile">
+                      <small>المحافظة</small>
+                      <strong><i class="pi pi-map-marker"></i>{{ batch.governorateName }}</strong>
+                    </div>
+
+                    <div class="info-tile">
+                      <small>المادة</small>
+                      <strong><i class="pi pi-book"></i>{{ batch.subjectName }}</strong>
+                    </div>
+
+                    <div class="info-tile">
+                      <small>عدد الأرفف / المواقع</small>
+                      <strong><i class="pi pi-th-large"></i>{{ batch.racks.length }} مواقع</strong>
+                    </div>
+
+                    <div class="info-tile">
+                      <small>إجمالي الصناديق</small>
+                      <strong><i class="pi pi-box"></i>{{ getBatchTotalBoxes(batch) }} صندوق</strong>
+                    </div>
+
+                    <!-- Storage Progress Bar -->
+                    <div class="info-tile span-2 storage-progress-tile">
+                      <div class="progress-labels">
+                        <small>نسبة التسكين في الأرفف</small>
+                        <strong class="progress-percent">{{ getBatchStoredPercentage(batch) }}%</strong>
+                      </div>
+                      <div class="progress-bar-container">
+                        <div
+                          class="progress-bar-fill"
+                          [style.width.%]="getBatchStoredPercentage(batch)"
+                          [class.full]="getBatchStoredPercentage(batch) === 100">
                         </div>
                       </div>
-
-                      @if (isScanning()) {
-                        <div class="scanner-line"></div>
-                        <div class="scanner-loading">
-                          <i class="pi pi-spin pi-spinner"></i>
-                          <span>جاري المسح...</span>
-                        </div>
-                      }
-                    </div>
-                  }
-
-                  <button
-                    pButton
-                    type="button"
-                    class="start-scan-button"
-                    [disabled]="isScanning() || step.scanned"
-                    (click)="startScan()"
-                  >
-                    <i class="pi"
-                       [class.pi-qrcode]="!isScanning()"
-                       [class.pi-spin]="isScanning()"
-                       [class.pi-spinner]="isScanning()"></i>
-                    <span>
-                      {{
-                        isScanning() ? 'جاري المسح...'
-                        : step.scanned ? 'تم التنفيذ'
-                        : step.type === 'zone' ? 'تأكيد المنطقة'
-                        : 'بدء Scan'
-                      }}
-                    </span>
-                  </button>
-
-                  @if (step.scanned) {
-                    <div class="scan-success-message">
-                      <i class="pi pi-check-circle"></i>
-                      تم تنفيذ الخطوة بنجاح
-                    </div>
-                  }
-                </div>
-
-                <div class="scan-result-card">
-                  <div class="result-card-header">
-                    <div>
-                      <span>بيانات الـ Scan</span>
-                      <strong>نتيجة القراءة</strong>
-                    </div>
-                    @if (step.scanned) {
-                      <span class="result-status"><i class="pi pi-check"></i> ناجح</span>
-                    }
-                  </div>
-
-                  @if (!step.scanned) {
-                    <div class="result-empty">
-                      <div class="result-empty-icon"><i class="pi pi-database"></i></div>
-                      <strong>في انتظار الـ Scan</strong>
-                      <span>بمجرد تنفيذ الخطوة ستظهر البيانات هنا.</span>
-                    </div>
-                  } @else {
-                    <div class="result-data">
-                      <div class="data-row"><span>نوع العملية</span><strong>{{ step.data?.scanType }}</strong></div>
-                      <div class="data-row"><span>QR Code</span><strong class="data-qr">{{ step.data?.qrCode }}</strong></div>
-                      <div class="data-row"><span>البيانات</span><strong>{{ step.data?.name }}</strong></div>
-                      <div class="data-row"><span>التفاصيل</span><strong>{{ step.data?.extra }}</strong></div>
-                    </div>
-                  }
-                </div>
-              </div>
-
-              @if (scanMessage()) {
-                <div class="scan-message">
-                  <i class="pi pi-info-circle"></i>
-                  <span>{{ scanMessage() }}</span>
-                </div>
-              }
-
-              @if (!allScansCompleted()) {
-                <div class="scan-navigation">
-                  <button pButton type="button" class="secondary-nav-button"
-                    [disabled]="currentIndex() === 0 || isScanning()" (click)="previousScan()">
-                    <i class="pi pi-arrow-right"></i>
-                    السابق
-                  </button>
-
-                  <div class="navigation-info">
-                    <span>المرحلة</span>
-                    <strong>{{ currentIndex() + 1 }} / {{ steps().length }}</strong>
-                  </div>
-
-                  <button pButton type="button" class="secondary-nav-button"
-                    [disabled]="!step.scanned || isScanning()" (click)="nextScan()">
-                    التالي
-                    <i class="pi pi-arrow-left"></i>
-                  </button>
-                </div>
-              } @else {
-                <div class="final-decision">
-                  <div class="decision-info">
-                    <div class="decision-icon"><i class="pi pi-check-circle"></i></div>
-                    <div>
-                      <strong>{{ isStorage() ? 'اكتمل فحص التخزين' : 'اكتمل فحص التسليم' }}</strong>
-                      <span>
-                        {{ isStorage()
-                          ? 'تم مسح الرف والصندوق وتحديد المنطقة. يمكنك الآن تأكيد التخزين.'
-                          : 'تم التحقق من اللجنة والصندوق. يمكنك الآن تأكيد التسليم.' }}
+                      <span class="progress-sub">
+                        {{ getBatchStoredBoxes(batch) }} من {{ getBatchTotalBoxes(batch) }} تم تسكينها
                       </span>
                     </div>
                   </div>
+
+                  <!-- Warehouse Racks Preview Chips -->
+                  @if (batch.racks && batch.racks.length > 0) {
+                    <div class="racks-preview-list">
+                      <span class="racks-title"><i class="pi pi-database"></i> الأرفف والمخازن:</span>
+                      <div class="racks-chips-wrap">
+                        @for (rack of batch.racks.slice(0, 3); track $index) {
+                          <span class="rack-badge">
+                            <i class="pi pi-map"></i>
+                            {{ rack.warehouseName }} ({{ rack.rack || rack.area }})
+                            <strong class="badge-count">{{ rack.boxes.length }}</strong>
+                          </span>
+                        }
+                        @if (batch.racks.length > 3) {
+                          <span class="rack-badge-more">+{{ batch.racks.length - 3 }} أخرى</span>
+                        }
+                      </div>
+                    </div>
+                  }
+                </section>
+
+                <!-- Actions -->
+                <footer class="plan-action dual-actions">
+                  <button
+                    type="button"
+                    class="action-btn details-btn"
+                    (click)="openBatchDetails(batch)">
+                    <i class="pi pi-list"></i>
+                    <span>عرض الصناديق والمواقع</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    class="action-btn scan-quick-btn"
+                    (click)="openScannerModal(undefined, batch)">
+                    <i class="pi pi-qrcode"></i>
+                    <span>تسكين ومسح سريع</span>
+                  </button>
+                </footer>
+
+              </article>
+            } @empty {
+              <div class="empty-state">
+                <span class="empty-icon"><i class="pi pi-box"></i></span>
+                <strong>لا توجد دفعات تخزين مطابقة</strong>
+                <span>
+                  @if (activeFilters().length) {
+                    لا توجد دفعات مطابقة للفلاتر المحددة حاليًا
+                  } @else {
+                    لا توجد بيانات تخزين مسجلة في النظام
+                  }
+                </span>
+                @if (activeFilters().length) {
+                  <button type="button" class="empty-clear" (click)="clearFilters()">
+                    <i class="pi pi-filter-slash"></i> مسح الفلاتر
+                  </button>
+                }
+              </div>
+            }
+          </div>
+
+          <!-- Pagination -->
+          @if (filteredBatches().length > 0) {
+            <nav class="printing-pagination" aria-label="تنقل الصفحات" dir="rtl">
+              <div class="pagination-info">
+                <i class="pi pi-list pagination-info-icon" aria-hidden="true"></i>
+                <span>عرض <strong>{{ paginationStart() }} - {{ paginationEnd() }}</strong> من <strong>{{ filteredBatches().length }}</strong> دفعة</span>
+              </div>
+
+              <div class="pagination-size">
+                <span>عدد البطاقات</span>
+                <p-select
+                  [options]="pageSizeOptions"
+                  optionLabel="label"
+                  optionValue="value"
+                  [ngModel]="pageSize()"
+                  (ngModelChange)="pageSize.set($event); onPageSizeChange()"
+                  styleClass="pagination-select"
+                  appendTo="body"
+                />
+              </div>
+
+              @if (!showAll() && totalPages() > 1) {
+                <div class="pagination-pages" role="navigation" aria-label="أرقام الصفحات">
+                  <button
+                    type="button"
+                    class="page-btn page-arrow"
+                    [disabled]="currentPage() === 1"
+                    (click)="previousPage()"
+                    aria-label="الصفحة السابقة">
+                    <i class="pi pi-chevron-right" aria-hidden="true"></i>
+                  </button>
+
+                  @for (p of paginationPages(); track $index) {
+                    @if (p === 'dots') {
+                      <span class="page-dots" aria-hidden="true">...</span>
+                    } @else {
+                      <button
+                        type="button"
+                        class="page-btn"
+                        [class.active]="p === currentPage()"
+                        [attr.aria-current]="p === currentPage() ? 'page' : null"
+                        (click)="goToPage(p)">
+                        {{ p }}
+                      </button>
+                    }
+                  }
+
+                  <button
+                    type="button"
+                    class="page-btn page-arrow"
+                    [disabled]="currentPage() === totalPages()"
+                    (click)="nextPage()"
+                    aria-label="الصفحة التالية">
+                    <i class="pi pi-chevron-left" aria-hidden="true"></i>
+                  </button>
                 </div>
               }
-            </section>
-          </div>
-        </div>
-      }
-    }
+            </nav>
+          }
+        }
+      </div>
 
-    <ng-template pTemplate="footer">
-      @if (allScansCompleted()) {
-        <div class="decision-actions">
-          <button pButton type="button" class="approve-material-button"
-            [class.delivery]="!isStorage()" (click)="confirm()">
-            <i class="pi pi-check"></i>
-            {{ isStorage() ? 'تأكيد التخزين' : 'تأكيد التسليم' }}
+    } @else {
+
+      <!-- ==========================================
+           TAB 2 : DIRECT SCANNING & STORAGE WORKSPACE
+      =========================================== -->
+      <div class="scanner-view-container">
+
+        <!-- Top Guide Banner -->
+        <div class="scanner-guide-card">
+          <div class="guide-icon"><i class="pi pi-qrcode"></i></div>
+          <div class="guide-content">
+            <h3>محطة المسح والتسكين المباشر</h3>
+            <p>قم بمسح كود الرف/الموقع لتحديده، ثم امسح باركود الصندوق لتسكينه في الرف المختار أو تأكيد تسكين جميع صناديق اللجنة دفعة واحدة</p>
+          </div>
+          <button type="button" class="reset-scan-btn" (click)="resetScanner()">
+            <i class="pi pi-refresh"></i>
+            مسح جديد
           </button>
         </div>
-      }
-    </ng-template>
-  </p-dialog>
 
+        <!-- Scan Inputs Row -->
+        <div class="scanner-dual-inputs">
 
-  <!-- =====================================================
-       SYSTEM OPTIONS
-  ====================================================== -->
-  <ng-container system-options>
-    <span class="workflow-summary">
-      <i class="pi pi-database"></i>
-      إدارة التخزين والتسليم
-    </span>
-  </ng-container>
+          <!-- 1. Location Scanner -->
+          <div class="scanner-box-panel location-panel" [class.resolved]="resolvedLocation()">
+            <div class="panel-header">
+              <span class="step-badge">1</span>
+              <div>
+                <h4>مسح كود مكان التخزين (الرف / المكان)</h4>
+                <small>GET /api/Boxes/storage/resolve-location/{{ '{qrCode}' }}</small>
+              </div>
+            </div>
+
+            <div class="scan-input-action">
+              <div class="input-wrapper-lg">
+                <i class="pi pi-th-large"></i>
+                <input
+                  type="text"
+                  pInputText
+                  [(ngModel)]="scannedLocationQr"
+                  (keyup.enter)="resolveLocation()"
+                  placeholder="ادخل أو امسح كود الرف (QR)..."
+                  autocomplete="off"
+                />
+              </div>
+              <button
+                type="button"
+                class="scan-action-btn"
+                [disabled]="locationLoading() || !scannedLocationQr()"
+                (click)="resolveLocation()">
+                <i class="pi" [ngClass]="locationLoading() ? 'pi-spin pi-spinner' : 'pi-search'"></i>
+                <span>فحص الموقع</span>
+              </button>
+            </div>
+
+            @if (locationError()) {
+              <div class="scan-error-msg">
+                <i class="pi pi-exclamation-triangle"></i>
+                <span>{{ locationError() }}</span>
+              </div>
+            }
+
+            @if (resolvedLocation(); as loc) {
+              <div class="resolved-card loc-details">
+                <div class="resolved-header">
+                  <span class="resolved-title">
+                    <i class="pi pi-check-circle text-teal"></i>
+                    بيانات موقع التخزين المحلولة
+                  </span>
+                  <span class="qr-tag">{{ loc.qrCode }}</span>
+                </div>
+
+                <div class="details-mini-grid">
+                  <div class="mini-tile">
+                    <small>المخزن</small>
+                    <strong>{{ loc.warehouseName || loc.warehouseCode || '—' }}</strong>
+                  </div>
+                  <div class="mini-tile">
+                    <small>كود الرف (Rack)</small>
+                    <strong>{{ loc.rackCode || loc.rack || '—' }}</strong>
+                  </div>
+                  <div class="mini-tile">
+                    <small>الرف (Shelf)</small>
+                    <strong>{{ loc.shelfCode || loc.shelf || '—' }}</strong>
+                  </div>
+                  <div class="mini-tile">
+                    <small>الصندوق/الخانة (Bin)</small>
+                    <strong>{{ loc.binCode || loc.bin || '—' }}</strong>
+                  </div>
+                </div>
+
+                <div class="stored-summary">
+                  <div class="summary-chip">
+                    <i class="pi pi-box"></i>
+                    <span>الصناديق المخزنة حالياً بهذا الرف:</span>
+                    <strong>{{ loc.currentStoredBoxesCount || loc.totalStored || 0 }} صندوق</strong>
+                  </div>
+                </div>
+
+                @if (loc.storedBoxes && loc.storedBoxes.length > 0) {
+                  <div class="stored-boxes-preview">
+                    <small class="preview-title">عينة من الصناديق في هذا الرف:</small>
+                    <div class="stored-chips-wrap">
+                      @for (sb of loc.storedBoxes.slice(0, 5); track sb.boxId) {
+                        <span class="stored-chip">
+                          <i class="pi pi-tag"></i>
+                          {{ sb.trackingCode }} (لجنة {{ sb.committeeNumber }})
+                        </span>
+                      }
+                      @if (loc.storedBoxes.length > 5) {
+                        <span class="stored-chip-more">+{{ loc.storedBoxes.length - 5 }} أخرى</span>
+                      }
+                    </div>
+                  </div>
+                }
+              </div>
+            }
+          </div>
+
+          <!-- 2. Box Scanner -->
+          <div class="scanner-box-panel box-panel" [class.resolved]="resolvedBox()">
+            <div class="panel-header">
+              <span class="step-badge">2</span>
+              <div>
+                <h4>مسح باركود الصندوق (Tracking Code)</h4>
+                <small>GET /api/Boxes/storage/resolve-box/{{ '{trackingCode}' }}</small>
+              </div>
+            </div>
+
+            <div class="scan-input-action">
+              <div class="input-wrapper-lg">
+                <i class="pi pi-box"></i>
+                <input
+                  type="text"
+                  pInputText
+                  [(ngModel)]="scannedTrackingCode"
+                  (keyup.enter)="resolveBox()"
+                  placeholder="ادخل أو امسح باركود الصندوق..."
+                  autocomplete="off"
+                />
+              </div>
+              <button
+                type="button"
+                class="scan-action-btn"
+                [disabled]="boxLoading() || !scannedTrackingCode()"
+                (click)="resolveBox()">
+                <i class="pi" [ngClass]="boxLoading() ? 'pi-spin pi-spinner' : 'pi-search'"></i>
+                <span>فحص الصندوق</span>
+              </button>
+            </div>
+
+            @if (boxError()) {
+              <div class="scan-error-msg">
+                <i class="pi pi-exclamation-triangle"></i>
+                <span>{{ boxError() }}</span>
+              </div>
+            }
+
+            @if (resolvedBox(); as b) {
+              <div class="resolved-card box-details">
+                <div class="resolved-header">
+                  <span class="resolved-title">
+                    <i class="pi pi-check-circle text-teal"></i>
+                    بيانات الصندوق واللجنة
+                  </span>
+                  <span class="qr-tag">{{ b.scannedTrackingCode }}</span>
+                </div>
+
+                <div class="details-mini-grid">
+                  <div class="mini-tile">
+                    <small>رقم اللجنة</small>
+                    <strong>لجنة #{{ b.committeeNumber }}</strong>
+                  </div>
+                  <div class="mini-tile">
+                    <small>المدرسة / الإدارة</small>
+                    <strong>{{ b.schoolName || b.educationalAdministration || '—' }}</strong>
+                  </div>
+                  <div class="mini-tile">
+                    <small>المادة / المحافظة</small>
+                    <strong>{{ b.subjectName }} ({{ b.governorateName }})</strong>
+                  </div>
+                  <div class="mini-tile">
+                    <small>إجمالي صناديق اللجنة</small>
+                    <strong>{{ b.totalBoxes }} صندوق</strong>
+                  </div>
+                </div>
+
+                <!-- Committee Status Pill -->
+                <div class="committee-status-strip">
+                  <span class="c-label">حالة اللجنة:</span>
+                  <span class="status-pill info">{{ b.committeeStatusName || b.committeeStatus || 'قيد الإجراء' }}</span>
+                </div>
+
+                <!-- Committee Boxes List -->
+                @if (b.boxes && b.boxes.length > 0) {
+                  <div class="committee-boxes-table">
+                    <small class="table-title">صناديق هذه اللجنة:</small>
+                    <div class="boxes-list-grid">
+                      @for (cBox of b.boxes; track cBox.boxId) {
+                        <div class="cbox-item" [class.stored]="cBox.storageLocationId > 0">
+                          <div class="cbox-info">
+                            <span class="cbox-code">#{{ cBox.sequenceNo }} - {{ cBox.trackingCode }}</span>
+                            <span class="cbox-envelopes">{{ cBox.expectedEnvelopeCount }} مظروف</span>
+                          </div>
+                          <div class="cbox-loc">
+                            @if (cBox.storageLocationQrCode) {
+                              <span class="loc-assigned"><i class="pi pi-check"></i> {{ cBox.storageLocationQrCode }}</span>
+                            } @else {
+                              <span class="loc-unassigned"><i class="pi pi-clock"></i> غير مسكن</span>
+                            }
+                          </div>
+                        </div>
+                      }
+                    </div>
+                  </div>
+                }
+              </div>
+            }
+          </div>
+
+        </div>
+
+        <!-- 3. Confirmation Actions Strip -->
+        <div class="assignment-actions-bar">
+          <div class="actions-summary">
+            <i class="pi pi-arrow-right-arrow-left"></i>
+            <div>
+              <strong>ربط وتسكين الصناديق في موقع التخزين</strong>
+              <span>
+                @if (resolvedBox() && resolvedLocation()) {
+                  جاهز لتسكين الصندوق <b>{{ resolvedBox()?.scannedTrackingCode }}</b> في الموقع <b>{{ resolvedLocation()?.qrCode }}</b>
+                } @else {
+                  يرجى مسح كود الرف وكود الصندوق لتفعيل أزرار التسكين
+                }
+              </span>
+            </div>
+          </div>
+
+          <div class="actions-buttons">
+            <!-- POST /api/Boxes/assign-storage-location -->
+            <button
+              type="button"
+              class="confirm-btn single-assign-btn"
+              [disabled]="assigningStorage() || !resolvedLocation() || !resolvedBox()"
+              (click)="assignStorageLocation()">
+              <i class="pi" [ngClass]="assigningStorage() ? 'pi-spin pi-spinner' : 'pi-check'"></i>
+              <span>تسكين هذا الصندوق في الرف</span>
+            </button>
+
+            <!-- POST /api/Boxes/storage/confirm-committee -->
+            <button
+              type="button"
+              class="confirm-btn committee-assign-btn"
+              [disabled]="confirmingCommittee() || !resolvedLocation() || !resolvedBox() || !resolvedBox()?.boxes?.length"
+              (click)="confirmEntireCommittee()">
+              <i class="pi" [ngClass]="confirmingCommittee() ? 'pi-spin pi-spinner' : 'pi-check-circle'"></i>
+              <span>تأكيد تخزين جميع صناديق اللجنة ({{ resolvedBox()?.totalBoxes || 0 }})</span>
+            </button>
+          </div>
+        </div>
+
+      </div>
+
+    }
+
+    <!-- ==========================================
+         DIALOG 1 : BATCH DETAILS DIALOG
+    =========================================== -->
+    <p-dialog
+      [visible]="batchDetailsVisible()"
+      (visibleChange)="batchDetailsVisible.set($event)"
+      [modal]="true"
+      [closable]="true"
+      [dismissableMask]="true"
+      [style]="{ width: '92vw', maxWidth: '1100px' }"
+      styleClass="ebs-dialog batch-boxes-modal"
+      (onHide)="closeBatchDetails()"
+      dir="rtl">
+
+      <ng-template pTemplate="header">
+        <div class="batch-dialog-header">
+          <div class="dialog-icon-circle"><i class="pi pi-box"></i></div>
+          <div class="dialog-title-info">
+            <h3>تفاصيل صناديق وأرفف الدفعة #{{ selectedBatch()?.batchId }}</h3>
+            <p>
+              {{ selectedBatch()?.subjectName }} - {{ selectedBatch()?.governorateName }}
+              ({{ selectedBatch()?.roundName || 'الدور الأول' }} - {{ selectedBatch()?.year }})
+            </p>
+          </div>
+        </div>
+      </ng-template>
+
+      <div class="batch-dialog-content">
+        <!-- Search bar inside dialog -->
+        <div class="dialog-filter-bar">
+          <div class="modal-search-wrapper">
+            <i class="pi pi-search"></i>
+            <input
+              type="text"
+              pInputText
+              [ngModel]="batchModalSearch()"
+              (ngModelChange)="batchModalSearch.set($event)"
+              placeholder="بحث برقم اللجنة، باركود الصندوق، كود الرف أو المخزن..."
+            />
+            @if (batchModalSearch()) {
+              <button type="button" class="clear-search-btn" (click)="batchModalSearch.set('')">
+                <i class="pi pi-times"></i>
+              </button>
+            }
+          </div>
+
+          <div class="dialog-boxes-count">
+            <span>إجمالي الصناديق المعروضة:</span>
+            <strong>{{ filteredBatchBoxes().length }} صندوق</strong>
+          </div>
+        </div>
+
+        <!-- Boxes Grid / Cards inside modal -->
+        <div class="modal-boxes-grid">
+          @for (box of filteredBatchBoxes(); track box.boxId) {
+            <div class="box-card-item" [class.ready]="box.isReadyForDelivery" [class.blocked]="box.isBlocked">
+              <div class="box-card-top">
+                <div class="box-identity">
+                  <span class="box-seq">#{{ box.sequenceNo }}</span>
+                  <strong class="box-code">{{ box.qrCode }}</strong>
+                </div>
+
+                @if (box.isReadyForDelivery) {
+                  <span class="status-pill success sm">جاهز للتسليم</span>
+                } @else if (box.isBlocked) {
+                  <span class="status-pill danger sm">محظور</span>
+                } @else {
+                  <span class="status-pill info sm">{{ box.statusName || 'قيد التخزين' }}</span>
+                }
+              </div>
+
+              <div class="box-card-body">
+                <div class="box-info-row">
+                  <small>رقم اللجنة:</small>
+                  <strong>لجنة #{{ box.committeeNumber }}</strong>
+                </div>
+
+                <div class="box-info-row">
+                  <small>موقع الرف:</small>
+                  @if (box.shelfLocationCode || box.shelfLocationId > 0) {
+                    <strong class="text-teal">
+                      <i class="pi pi-map-marker"></i>
+                      {{ box.shelfLocationCode || (box.rack + ' - ' + box.shelf) }}
+                    </strong>
+                  } @else {
+                    <strong class="text-muted"><i class="pi pi-clock"></i> لم يُسكّن بعد</strong>
+                  }
+                </div>
+
+                <div class="box-info-row">
+                  <small>المخزن / المنطقة:</small>
+                  <span>{{ box.warehouseName || box.area || 'المخزن الرئيسي' }}</span>
+                </div>
+              </div>
+
+              <div class="box-card-footer">
+                <button
+                  type="button"
+                  class="action-btn scan-sm-btn"
+                  (click)="openScannerModal(box, selectedBatch() ?? undefined)">
+                  <i class="pi pi-qrcode"></i>
+                  <span>مسح وتسكين</span>
+                </button>
+              </div>
+            </div>
+          } @empty {
+            <div class="empty-state modal-empty">
+              <i class="pi pi-inbox"></i>
+              <span>لا توجد صناديق مطابقة لمعايير البحث في هذه الدفعة</span>
+            </div>
+          }
+        </div>
+      </div>
+
+      <ng-template pTemplate="footer">
+        <button type="button" class="dialog-close-btn" (click)="closeBatchDetails()">
+          <i class="pi pi-times"></i>
+          إغلاق
+        </button>
+      </ng-template>
+
+    </p-dialog>
+
+    <!-- ==========================================
+         DIALOG 2 : QUICK SCANNER & ASSIGNMENT DIALOG
+    =========================================== -->
+    <p-dialog
+      [visible]="scannerDialogVisible()"
+      (visibleChange)="scannerDialogVisible.set($event)"
+      [modal]="true"
+      [closable]="true"
+      [dismissableMask]="true"
+      [style]="{ width: '92vw', maxWidth: '1000px' }"
+      styleClass="ebs-dialog scanner-quick-modal"
+      (onHide)="closeScannerModal()"
+      dir="rtl">
+
+      <ng-template pTemplate="header">
+        <div class="batch-dialog-header">
+          <div class="dialog-icon-circle"><i class="pi pi-qrcode"></i></div>
+          <div class="dialog-title-info">
+            <h3>تسكين الصندوق في موقع التخزين</h3>
+            <p>مسح وتسكين الصندوق في الرف أو تأكيد تخزين اللجنة</p>
+          </div>
+        </div>
+      </ng-template>
+
+      <div class="scanner-modal-body">
+        <!-- Dual Inputs inside modal -->
+        <div class="scanner-dual-inputs modal-layout">
+
+          <!-- Location Input -->
+          <div class="scanner-box-panel location-panel sm" [class.resolved]="resolvedLocation()">
+            <div class="panel-header">
+              <span class="step-badge">1</span>
+              <div>
+                <h4>كود موقع التخزين (الرف)</h4>
+                <small>GET /api/Boxes/storage/resolve-location</small>
+              </div>
+            </div>
+
+            <div class="scan-input-action">
+              <div class="input-wrapper-lg">
+                <i class="pi pi-th-large"></i>
+                <input
+                  type="text"
+                  pInputText
+                  [(ngModel)]="scannedLocationQr"
+                  (keyup.enter)="resolveLocation()"
+                  placeholder="كود الرف (QR)..."
+                />
+              </div>
+              <button
+                type="button"
+                class="scan-action-btn"
+                [disabled]="locationLoading() || !scannedLocationQr()"
+                (click)="resolveLocation()">
+                <i class="pi" [ngClass]="locationLoading() ? 'pi-spin pi-spinner' : 'pi-search'"></i>
+                <span>فحص</span>
+              </button>
+            </div>
+
+            @if (resolvedLocation(); as loc) {
+              <div class="resolved-card-mini">
+                <div class="mini-row">
+                  <small>المخزن:</small>
+                  <b>{{ loc.warehouseName || loc.warehouseCode }}</b>
+                </div>
+                <div class="mini-row">
+                  <small>الرف / الخانة:</small>
+                  <b>{{ loc.rackCode || loc.rack }} ({{ loc.shelfCode || loc.shelf }})</b>
+                </div>
+                <div class="mini-row">
+                  <small>المخزن حالياً:</small>
+                  <b class="text-teal">{{ loc.currentStoredBoxesCount || 0 }} صندوق</b>
+                </div>
+              </div>
+            }
+          </div>
+
+          <!-- Box Input -->
+          <div class="scanner-box-panel box-panel sm" [class.resolved]="resolvedBox()">
+            <div class="panel-header">
+              <span class="step-badge">2</span>
+              <div>
+                <h4>باركود الصندوق (Tracking Code)</h4>
+                <small>GET /api/Boxes/storage/resolve-box</small>
+              </div>
+            </div>
+
+            <div class="scan-input-action">
+              <div class="input-wrapper-lg">
+                <i class="pi pi-box"></i>
+                <input
+                  type="text"
+                  pInputText
+                  [(ngModel)]="scannedTrackingCode"
+                  (keyup.enter)="resolveBox()"
+                  placeholder="باركود الصندوق..."
+                />
+              </div>
+              <button
+                type="button"
+                class="scan-action-btn"
+                [disabled]="boxLoading() || !scannedTrackingCode()"
+                (click)="resolveBox()">
+                <i class="pi" [ngClass]="boxLoading() ? 'pi-spin pi-spinner' : 'pi-search'"></i>
+                <span>فحص</span>
+              </button>
+            </div>
+
+            @if (resolvedBox(); as b) {
+              <div class="resolved-card-mini">
+                <div class="mini-row">
+                  <small>اللجنة:</small>
+                  <b>لجنة #{{ b.committeeNumber }} ({{ b.schoolName || '—' }})</b>
+                </div>
+                <div class="mini-row">
+                  <small>المادة / المحافظة:</small>
+                  <b>{{ b.subjectName }} - {{ b.governorateName }}</b>
+                </div>
+                <div class="mini-row">
+                  <small>صناديق اللجنة:</small>
+                  <b class="text-teal">{{ b.totalBoxes }} صندوق</b>
+                </div>
+              </div>
+            }
+          </div>
+
+        </div>
+
+        <!-- Placement Actions inside modal -->
+        <div class="assignment-actions-bar modal-bar">
+          <button
+            type="button"
+            class="confirm-btn single-assign-btn"
+            [disabled]="assigningStorage() || !resolvedLocation() || !resolvedBox()"
+            (click)="assignStorageLocation()">
+            <i class="pi" [ngClass]="assigningStorage() ? 'pi-spin pi-spinner' : 'pi-check'"></i>
+            <span>تسكين الصندوق في الرف (POST /assign-storage-location)</span>
+          </button>
+
+          <button
+            type="button"
+            class="confirm-btn committee-assign-btn"
+            [disabled]="confirmingCommittee() || !resolvedLocation() || !resolvedBox() || !resolvedBox()?.boxes?.length"
+            (click)="confirmEntireCommittee()">
+            <i class="pi" [ngClass]="confirmingCommittee() ? 'pi-spin pi-spinner' : 'pi-check-circle'"></i>
+            <span>تأكيد تخزين اللجنة كاملة (POST /confirm-committee)</span>
+          </button>
+        </div>
+      </div>
+
+      <ng-template pTemplate="footer">
+        <button type="button" class="dialog-close-btn" (click)="closeScannerModal()">
+          <i class="pi pi-times"></i>
+          إغلاق
+        </button>
+      </ng-template>
+
+    </p-dialog>
+
+  </div>
 
 </app-workflow-step-layout>
