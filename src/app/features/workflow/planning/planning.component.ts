@@ -72,11 +72,17 @@ export default class PlanningComponent implements OnInit {
   // TABS ('materials' | 'delivery-orders')
   // ==========================================
   readonly activeTab = signal<'materials' | 'delivery-orders'>('materials');
+  private deliveryLookupsLoaded = false;
+  readonly deliveryLookupsLoading = signal(false);
 
   setTab(tab: 'materials' | 'delivery-orders'): void {
     this.activeTab.set(tab);
-    if (tab === 'delivery-orders' && this.deliveryGovernorates().length === 0 && !this.deliveryLoading()) {
-      this.loadDeliveryGovernorates();
+    if (tab === 'delivery-orders') {
+      if (!this.deliveryLookupsLoaded && !this.deliveryLookupsLoading()) {
+        this.loadDeliveryLookups();
+      } else if (this.deliveryLookupsLoaded && !this.deliveryLoading()) {
+        this.loadDeliveryGovernorates();
+      }
     }
   }
 
@@ -740,7 +746,24 @@ export default class PlanningComponent implements OnInit {
           console.error('Subject lookup err:', e);
           return of([]);
         })
-      ),
+      )
+    }).subscribe({
+      next: ({ governorates, subjects }) => {
+        this.governorates.set(this.mapToOptions(this.extractLookupArray(governorates), 'كل المحافظات'));
+        this.subjects.set(this.mapToOptions(this.extractLookupArray(subjects), 'كل المواد'));
+        this.lookupsLoading.set(false);
+      },
+      error: err => {
+        console.error('Error loading materials lookups:', err);
+        this.lookupsLoading.set(false);
+      }
+    });
+  }
+
+  private loadDeliveryLookups(): void {
+    this.deliveryLookupsLoading.set(true);
+
+    forkJoin({
       rounds: this.committeeService.getRounds().pipe(
         catchError(e => {
           console.error('Rounds lookup err:', e);
@@ -754,38 +777,31 @@ export default class PlanningComponent implements OnInit {
         })
       )
     }).subscribe({
-      next: ({ governorates, subjects, rounds, stages }) => {
-        const gList = this.extractLookupArray(governorates);
-        const sList = this.extractLookupArray(subjects);
+      next: ({ rounds, stages }) => {
         const rList = this.extractLookupArray(rounds);
         const stList = this.extractLookupArray(stages);
 
-        const gOpts = this.mapToOptions(gList, 'كل المحافظات');
-        const sOpts = this.mapToOptions(sList, 'كل المواد');
         const rOpts = this.mapToOptions(rList, 'اختر الدور');
         const stOpts = this.mapToOptions(stList, 'كل المراحل التعليمية');
 
-        this.governorates.set(gOpts);
-        this.subjects.set(sOpts);
         this.rounds.set(rOpts);
         this.educationalStages.set(stOpts);
 
-        // Auto-select first real round for delivery orders if not selected
         const firstRound = rOpts.find(r => r.value !== 'all');
         if (firstRound && (this.deliveryRoundId() === 'all' || !this.deliveryRoundId())) {
           this.deliveryRoundId.set(firstRound.value);
         }
 
-        this.lookupsLoading.set(false);
+        this.deliveryLookupsLoaded = rOpts.length > 1 && stOpts.length > 1;
+        this.deliveryLookupsLoading.set(false);
 
-        // If delivery orders tab is open, load delivery governorates
         if (this.activeTab() === 'delivery-orders') {
           this.loadDeliveryGovernorates();
         }
       },
       error: err => {
-        console.error('Error in forkJoin lookups:', err);
-        this.lookupsLoading.set(false);
+        console.error('Error loading delivery lookups:', err);
+        this.deliveryLookupsLoading.set(false);
       }
     });
   }

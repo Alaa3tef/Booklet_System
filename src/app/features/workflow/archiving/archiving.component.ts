@@ -1,6 +1,10 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { forkJoin, of } from 'rxjs';
+import { catchError } from 'rxjs/operators';
+
+// PrimeNG Modules
 import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
 import { InputTextModule } from 'primeng/inputtext';
@@ -8,412 +12,759 @@ import { SelectModule } from 'primeng/select';
 import { TooltipModule } from 'primeng/tooltip';
 import { MessageService } from 'primeng/api';
 
-// adjust this path to where your layout component lives
+// Layout & Services
 import { WorkflowStepLayoutComponent } from '../../../shared/workflow-step-layout/workflow-step-layout.component';
-import { forkJoin } from 'rxjs';
 import { Lookups } from '../../../shared/services/lookups';
+import {
+  ArchivingBoxService,
+  BatchStorageDto,
+  StorageRackDto,
+  StorageBoxDto,
+  StorageLocationResolveDto,
+  BoxResolveDto,
+  CommitteeBoxItemDto
+} from './service/archiving-box.service';
 
-// ---------------------------------------------------------------- types
-export type ArchiveStatus = 'جاهز للتخزين' | 'تم التخزين' | 'تم التسليم';
-type ScanType = 'shelf' | 'box' | 'zone' | 'committee';
-type FilterKey = 'governorate' | 'subject' | 'committee' | 'education';
-
-export interface ArchiveRow {
-  index: number;
-  governorate: string;
-  committeeNumber: string;
-  educationNumber: string;
-  subject: string;
-  scanPart: string;
-  storage: { shelf: string; box: string } | null;
-  status: ArchiveStatus;
+export interface SelectOption {
+  label: string;
+  value: number | string;
 }
 
-interface ScanStep {
-  type: ScanType;
-  title: string;
-  subtitle: string;
-  scanned: boolean;
-  data?: { scanType: string; qrCode: string; name: string; extra: string };
-}
-
-interface Option { label: string; value: string; }
+export type ArchivingViewTab = 'batches' | 'scanner';
 
 @Component({
   selector: 'app-archiving',
   standalone: true,
   imports: [
-    CommonModule, FormsModule,
-    ButtonModule, DialogModule, InputTextModule, SelectModule, TooltipModule,
-     WorkflowStepLayoutComponent
+    CommonModule,
+    FormsModule,
+    ButtonModule,
+    DialogModule,
+    InputTextModule,
+    SelectModule,
+    TooltipModule,
+    WorkflowStepLayoutComponent
   ],
   templateUrl: './archiving.component.html',
   styleUrl: './archiving.component.scss'
 })
-
-export default class ArchivingComponent {
-   private lookupService = inject(Lookups);
+export default class ArchivingComponent implements OnInit {
+  private archivingBoxService = inject(ArchivingBoxService);
+  private lookupService = inject(Lookups);
   private messageService = inject(MessageService);
 
-
-  
-  ngOnInit(): void {
-    this.loadLookups();
-  }
-  // keep the value you already pass to the layout
   readonly essentials = [
-    'مسح الرف والصندوق',
-    'تحديد منطقة التخزين',
-    'تسجيل التسليم إلكترونيًا'
+    'مسح باركود الصندوق والرف',
+    'تسكين الصناديق في الأرفف والأماكن المحددة',
+    'تأكيد تخزين لجان المواد إلكترونيًا'
   ];
 
   // ================================================================
-  // DATA   (replace the sample data with your API call)
+  // VIEW SWITCH (TABS)
   // ================================================================
-  readonly rows = signal<ArchiveRow[]>(this.sampleRows());
+  readonly activeTab = signal<ArchivingViewTab>('batches');
 
-  // GET your endpoint here, then: this.rows.set(response.data.map(...))
-  private sampleRows(): ArchiveRow[] {
-    const base: Omit<ArchiveRow, 'index'>[] = [
-      { governorate: 'الدقهلية',   committeeNumber: '101', subject: 'اللغة العربية',   educationNumber: 'EDU-001',      scanPart: 'الجزء الأول',  status: 'تم التخزين',   storage: { shelf: 'A-01', box: 'BOX-001' } },
-      { governorate: 'الدقهلية',   committeeNumber: '102', subject: 'اللغة الإنجليزية',  educationNumber: 'EDU-001',    scanPart: 'الجزء الأول',  status: 'جاهز للتخزين', storage: null },
-      { governorate: 'القاهرة',    committeeNumber: '203', subject: 'الرياضيات',            educationNumber: 'EDU-002',    scanPart: 'الجزء الثاني', status: 'جاهز للتخزين', storage: null },
-      { governorate: 'الجيزة',     committeeNumber: '304', subject: 'العلوم',               educationNumber: 'EDU-003',    scanPart: 'الجزء الأول',  status: 'تم التسليم',   storage: { shelf: 'C-03', box: 'BOX-004' } },
-      { governorate: 'الإسكندرية', committeeNumber: '405', subject: 'الدراسات الاجتماعية',  educationNumber: 'EDU-004',    scanPart: 'الجزء الثاني', status: 'جاهز للتخزين', storage: null },
-      { governorate: 'القاهرة',    committeeNumber: '206', subject: 'اللغة العربية',        educationNumber: 'EDU-005',    scanPart: 'الجزء الأول',  status: 'تم التخزين',   storage: { shelf: 'B-02', box: 'BOX-011' } },
-      { governorate: 'الجيزة',     committeeNumber: '307', subject: 'الرياضيات',            educationNumber: 'EDU-006',    scanPart: 'الجزء الثاني', status: 'جاهز للتخزين', storage: null },
-      { governorate: 'الدقهلية',   committeeNumber: '108', subject: 'العلوم',               educationNumber: 'EDU-007',    scanPart: 'الجزء الأول',  status: 'تم التسليم',   storage: { shelf: 'A-04', box: 'BOX-020' } },
-      { governorate: 'الإسكندرية', committeeNumber: '409', subject: 'اللغة الإنجليزية',     educationNumber: 'EDU-008',    scanPart: 'الجزء الثاني', status: 'تم التخزين',   storage: { shelf: 'D-01', box: 'BOX-031' } },
-      { governorate: 'القاهرة',    committeeNumber: '210', subject: 'الدراسات الاجتماعية',  educationNumber: 'EDU-009',    scanPart: 'الجزء الأول',  status: 'جاهز للتخزين', storage: null },
-      { governorate: 'الجيزة',     committeeNumber: '311', subject: 'اللغة العربية',        educationNumber: 'EDU-010',    scanPart: 'الجزء الأول',  status: 'جاهز للتخزين', storage: null },
-      { governorate: 'الدقهلية',   committeeNumber: '112', subject: 'الرياضيات',            educationNumber: 'EDU-011',    scanPart: 'الجزء الثاني', status: 'تم التخزين',   storage: { shelf: 'A-02', box: 'BOX-044' } },
-      { governorate: 'الإسكندرية', committeeNumber: '405', subject: 'الدراسات الاجتماعية',  educationNumber: 'EDU-004',    scanPart: 'الجزء الثاني', status: 'جاهز للتخزين', storage: null },
-      { governorate: 'الجيزة',     committeeNumber: '307', subject: 'الرياضيات',            educationNumber: 'EDU-006',    scanPart: 'الجزء الثاني', status: 'جاهز للتخزين', storage: null },
-      { governorate: 'القاهرة',    committeeNumber: '210', subject: 'الدراسات الاجتماعية',  educationNumber: 'EDU-009',    scanPart: 'الجزء الأول',  status: 'جاهز للتخزين', storage: null },
-      { governorate: 'الجيزة',     committeeNumber: '311', subject: 'اللغة العربية',        educationNumber: 'EDU-010',    scanPart: 'الجزء الأول',  status: 'جاهز للتخزين', storage: null },
-      { governorate: 'الدقهلية',   committeeNumber: '112', subject: 'الرياضيات',            educationNumber: 'EDU-011',    scanPart: 'الجزء الثاني', status: 'تم التخزين',   storage: { shelf: 'A-02', box: 'BOX-044' } },
-      { governorate: 'الإسكندرية', committeeNumber: '405', subject: 'الدراسات الاجتماعية',  educationNumber: 'EDU-004',    scanPart: 'الجزء الثاني', status: 'جاهز للتخزين', storage: null },
-      { governorate: 'الجيزة',     committeeNumber: '307', subject: 'الرياضيات',            educationNumber: 'EDU-006',    scanPart: 'الجزء الثاني', status: 'جاهز للتخزين', storage: null },
-    ];
-          return base.map((r, i) => ({ ...r, index: i + 1 }));
+  setTab(tab: ArchivingViewTab): void {
+    this.activeTab.set(tab);
+    if (tab === 'batches' && this.batches().length === 0) {
+      this.loadBatches();
+    }
   }
 
   // ================================================================
-  // FILTERS  (same three filters as before)
+  // LOOKUPS & SEARCH FILTERS
   // ================================================================
- 
-  governorates: Option[] = [];
-  subjects: Option[] = [];
-  educationals: Option[] = [
-    { label: 'كل الادارات التعليمية', value: 'all' },
-    { label: 'EDU-001', value: 'EDU-001' },
-    { label: 'EDU-002', value: 'EDU-002' },
-    { label: 'EDU-003', value: 'EDU-003' },
-    { label: 'EDU-004', value: 'EDU-004' },
-    { label: 'EDU-005', value: 'EDU-005' },
-    { label: 'EDU-006', value: 'EDU-006' },
-    { label: 'EDU-007', value: 'EDU-007' },
-    { label: 'EDU-008', value: 'EDU-008' },
-    { label: 'EDU-009', value: 'EDU-009' },
-    { label: 'EDU-010', value: 'EDU-010' },
-    { label: 'EDU-011', value: 'EDU-011' }
-  ];
+  readonly governorates = signal<SelectOption[]>([]);
+  readonly subjects = signal<SelectOption[]>([]);
+  readonly lookupsLoading = signal<boolean>(false);
 
-  readonly searchGovernorate = signal<string | null>(null);
-  readonly searchSubject     = signal<string | null>(null);
-   readonly searchCommittee   = signal('');
-  readonly searchEducation   = signal('');
+  readonly searchGovernorate = signal<number | string | null>(null);
+  readonly searchSubject = signal<number | string | null>(null);
+  readonly searchBatchQuery = signal<string>('');
 
+  setGovernorate(v: number | string | null): void {
+    this.searchGovernorate.set(v);
+    this.resetPage();
+    this.loadBatches();
+  }
 
-  setGovernorate(v: string | null): void { this.searchGovernorate.set(v); this.resetPage(); }
-  setSubject(v: string | null): void     { this.searchSubject.set(v);     this.resetPage(); }
-  setCommittee(v: string): void          { this.searchCommittee.set(v ?? ''); this.resetPage(); }
-  setEducation(v: string): void          { this.searchEducation.set(v ?? ''); this.resetPage(); }
+  setSubject(v: number | string | null): void {
+    this.searchSubject.set(v);
+    this.resetPage();
+    this.loadBatches();
+  }
 
-  readonly filteredRows = computed(() => {
-    const gov = this.searchGovernorate();
-    const sub = this.searchSubject();
-    const commit = this.searchCommittee();
-    const edu = this.searchEducation().trim();
+  setBatchQuery(q: string): void {
+    this.searchBatchQuery.set(q ?? '');
+    this.resetPage();
+  }
 
-    return this.rows().filter(r =>
-      (!gov || r.governorate === gov) &&
-      (!sub || r.subject === sub) &&
-      (!commit || r.committeeNumber === commit) &&
-      (!edu || r.educationNumber.includes(edu))
-    );
-  });
-
-  /** what the "filters applied" bar shows */
   readonly activeFilters = computed(() => {
-    const list: { key: FilterKey; title: string; value: string }[] = [];
-    if (this.searchGovernorate()) list.push({ key: 'governorate', title: 'المحافظة',   value: this.searchGovernorate()! });
-    if (this.searchSubject())     list.push({ key: 'subject',     title: 'المادة',      value: this.searchSubject()! });
-    if(this.searchCommittee())      list.push({ key: 'committee', title: 'اللجنة', value: this.searchCommittee() });
-    if (this.searchEducation().trim()) list.push({ key: 'education', title: 'الادارة التعليمية', value: this.searchEducation().trim() });
+    const list: { key: string; title: string; value: string }[] = [];
+
+    const govVal = this.searchGovernorate();
+    if (govVal && govVal !== 'all') {
+      const match = this.governorates().find(g => g.value === govVal);
+      list.push({ key: 'governorate', title: 'المحافظة', value: match?.label || String(govVal) });
+    }
+
+    const subVal = this.searchSubject();
+    if (subVal && subVal !== 'all') {
+      const match = this.subjects().find(s => s.value === subVal);
+      list.push({ key: 'subject', title: 'المادة', value: match?.label || String(subVal) });
+    }
+
+    const q = this.searchBatchQuery().trim();
+    if (q) {
+      list.push({ key: 'query', title: 'بحث سريع', value: q });
+    }
+
     return list;
   });
 
-  removeFilter(key: FilterKey): void {
+  removeFilter(key: string): void {
     if (key === 'governorate') this.searchGovernorate.set(null);
-    if (key === 'subject')     this.searchSubject.set(null);
-    if (key === 'education')   this.searchEducation.set('');
-    if (key === 'committee')   this.searchCommittee.set('');
+    if (key === 'subject') this.searchSubject.set(null);
+    if (key === 'query') this.searchBatchQuery.set('');
     this.resetPage();
+    this.loadBatches();
   }
 
   clearFilters(): void {
     this.searchGovernorate.set(null);
     this.searchSubject.set(null);
-    this.searchEducation.set('');
+    this.searchBatchQuery.set('');
     this.resetPage();
+    this.loadBatches();
   }
- loadLookups(): void {
-  forkJoin({
-    governorates: this.lookupService.getLookupGovernorateData(),
-    subjects: this.lookupService.getLookupSubjectData()
-  }).subscribe({
-    next: (res: any) => {
-      // Governorates
-      const governoratesData = res.governorates?.data?.data ?? [];
 
-      this.governorates = [
-        { label: 'كل المحافظات', value: 'all' },
-        ...governoratesData.map((item: any) => ({
-          label: item.nameAr ?? item.name,
-          value: item.id
-        }))
-      ];
+  // ================================================================
+  // BATCHES DATA & KPIs (GET /api/Boxes/by-governorate-subject)
+  // ================================================================
+  readonly batches = signal<BatchStorageDto[]>([]);
+  readonly batchesLoading = signal<boolean>(false);
 
-      // Subjects
-      const subjectsData = res.subjects?.data?.data ?? [];
+  loadBatches(): void {
+    this.batchesLoading.set(true);
 
-      this.subjects = [
-        { label: 'كل المواد', value: 'all' },
-        ...subjectsData.map((item: any) => ({
-          label: item.name,
-          value: item.id
-        }))
-      ];
+    const govVal = this.searchGovernorate();
+    const govId = govVal && govVal !== 'all' ? Number(govVal) : null;
 
-      console.log('Governorates:', this.governorates);
-      console.log('Subjects:', this.subjects);
-    },
-    error: (err) => {
-      console.error('Error loading lookups:', err);
-      this.messageService.add({
-        severity: 'error',
-        summary: 'خطأ',
-        detail: err.error?.message || 'فشل تحميل بيانات القوائم',
-        life: 3000
-      });
-    }
+    const subVal = this.searchSubject();
+    const subId = subVal && subVal !== 'all' ? Number(subVal) : null;
+
+    this.archivingBoxService.getBoxesByGovernorateAndSubject(govId, subId).subscribe({
+      next: res => {
+        const raw = res as any;
+        const list: BatchStorageDto[] = Array.isArray(raw?.data)
+          ? raw.data
+          : Array.isArray(raw?.data?.data)
+          ? raw.data.data
+          : Array.isArray(raw)
+          ? raw
+          : [];
+        this.batches.set(list);
+        this.batchesLoading.set(false);
+      },
+      error: err => {
+        console.error('Error loading storage batches:', err);
+        this.batchesLoading.set(false);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'خطأ',
+          detail: err?.error?.message || 'فشل تحميل دفعات التخزين',
+          life: 3500
+        });
+      }
+    });
+  }
+
+  readonly filteredBatches = computed(() => {
+    const query = this.searchBatchQuery().trim().toLowerCase();
+    const list = this.batches();
+
+    if (!query) return list;
+
+    return list.filter(b => {
+      const matchBatch =
+        String(b.batchId).includes(query) ||
+        (b.governorateName && b.governorateName.toLowerCase().includes(query)) ||
+        (b.subjectName && b.subjectName.toLowerCase().includes(query)) ||
+        (b.roundName && b.roundName.toLowerCase().includes(query)) ||
+        (b.statusName && b.statusName.toLowerCase().includes(query));
+
+      if (matchBatch) return true;
+
+      // Check racks & boxes inside
+      if (b.racks && b.racks.length) {
+        return b.racks.some(r => {
+          const matchRack =
+            (r.warehouseName && r.warehouseName.toLowerCase().includes(query)) ||
+            (r.rack && r.rack.toLowerCase().includes(query)) ||
+            (r.area && r.area.toLowerCase().includes(query));
+          if (matchRack) return true;
+
+          return r.boxes && r.boxes.some(box =>
+            String(box.committeeNumber).toLowerCase().includes(query) ||
+            (box.qrCode && box.qrCode.toLowerCase().includes(query)) ||
+            (box.shelfLocationCode && box.shelfLocationCode.toLowerCase().includes(query)) ||
+            (box.statusName && box.statusName.toLowerCase().includes(query))
+          );
+        });
+      }
+
+      return false;
+    });
   });
-}
- 
+
+  // KPI Metrics Computed
+  readonly totalBatchesCount = computed(() => this.filteredBatches().length);
+
+  readonly totalBoxesCount = computed(() => {
+    let count = 0;
+    for (const b of this.filteredBatches()) {
+      if (b.racks) {
+        for (const r of b.racks) {
+          count += r.boxes?.length || 0;
+        }
+      }
+    }
+    return count;
+  });
+
+  readonly storedBoxesCount = computed(() => {
+    let count = 0;
+    for (const b of this.filteredBatches()) {
+      if (b.racks) {
+        for (const r of b.racks) {
+          if (r.boxes) {
+            count += r.boxes.filter(box => box.shelfLocationId > 0 || !!box.shelfLocationCode).length;
+          }
+        }
+      }
+    }
+    return count;
+  });
+
+  readonly pendingBoxesCount = computed(() => {
+    return Math.max(0, this.totalBoxesCount() - this.storedBoxesCount());
+  });
+
+  readonly readyForDeliveryCount = computed(() => {
+    let count = 0;
+    for (const b of this.filteredBatches()) {
+      if (b.racks) {
+        for (const r of b.racks) {
+          if (r.boxes) {
+            count += r.boxes.filter(box => box.isReadyForDelivery).length;
+          }
+        }
+      }
+    }
+    return count;
+  });
+
+  // Helper getters for a specific batch
+  getBatchTotalBoxes(batch: BatchStorageDto): number {
+    if (!batch.racks) return 0;
+    return batch.racks.reduce((acc, r) => acc + (r.boxes?.length || 0), 0);
+  }
+
+  getBatchStoredBoxes(batch: BatchStorageDto): number {
+    if (!batch.racks) return 0;
+    return batch.racks.reduce((acc, r) => {
+      const stored = r.boxes?.filter(box => box.shelfLocationId > 0 || !!box.shelfLocationCode).length || 0;
+      return acc + stored;
+    }, 0);
+  }
+
+  getBatchStoredPercentage(batch: BatchStorageDto): number {
+    const total = this.getBatchTotalBoxes(batch);
+    if (!total) return 0;
+    return Math.round((this.getBatchStoredBoxes(batch) / total) * 100);
+  }
+
+  getBatchUniqueWarehouses(batch: BatchStorageDto): string[] {
+    if (!batch.racks) return [];
+    const set = new Set<string>();
+    batch.racks.forEach(r => {
+      if (r.warehouseName) set.add(r.warehouseName);
+    });
+    return Array.from(set);
+  }
+
   // ================================================================
-  // PAGINATION  (works on the filtered rows)
+  // PAGINATION (matching Planning component)
   // ================================================================
-  readonly pageSize    = signal(6);   // 6 = 2 rows x 3 cards, 0 = show all
- 
+  readonly pageSize = signal(6);
+  readonly currentPage = signal(1);
+
   readonly pageSizeOptions = [
-    { label: '6',    value: 6 },
-    { label: '12',   value: 12 },
-    { label: '24',   value: 24 },
+    { label: '6', value: 6 },
+    { label: '12', value: 12 },
+    { label: '24', value: 24 },
     { label: 'الكل', value: 0 }
   ];
-  readonly currentPage = signal(1);
- 
-  readonly showAll = computed(() => this.pageSize() === 0);      // 0 = "الكل"
- 
+
+  readonly showAll = computed(() => this.pageSize() === 0);
+
   readonly totalPages = computed(() =>
-    this.showAll() ? 1 : Math.max(1, Math.ceil(this.filteredRows().length / this.pageSize())));
- 
-  readonly paginatedRows = computed(() => {
-    if (this.showAll()) return this.filteredRows();
+    this.showAll()
+      ? 1
+      : Math.max(1, Math.ceil(this.filteredBatches().length / this.pageSize()))
+  );
+
+  readonly paginatedBatches = computed(() => {
+    if (this.showAll()) return this.filteredBatches();
     const page = Math.min(this.currentPage(), this.totalPages());
     const start = (page - 1) * this.pageSize();
-    return this.filteredRows().slice(start, start + this.pageSize());
+    return this.filteredBatches().slice(start, start + this.pageSize());
   });
- 
+
   readonly paginationStart = computed(() => {
-    if (this.filteredRows().length === 0) return 0;
+    if (this.filteredBatches().length === 0) return 0;
     return this.showAll() ? 1 : (this.currentPage() - 1) * this.pageSize() + 1;
   });
- 
+
   readonly paginationEnd = computed(() =>
     this.showAll()
-      ? this.filteredRows().length
-      : Math.min(this.currentPage() * this.pageSize(), this.filteredRows().length));
- 
-  /**
-   * Page numbers with dots (dots appear as soon as there are more than 3 pages
-   * and at least one page is hidden):
-   *   5 pages -> 1 2 ... 5  |  1 2 3 ... 5  |  1 2 3 4 5  |  1 ... 3 4 5  |  1 ... 4 5
-   *   9 pages -> 1 2 ... 9  |  1 2 3 ... 9  |  1 ... 4 5 6 ... 9  |  1 ... 7 8 9
-   */
+      ? this.filteredBatches().length
+      : Math.min(this.currentPage() * this.pageSize(), this.filteredBatches().length)
+  );
+
   readonly paginationPages = computed<(number | 'dots')[]>(() => {
     const total = this.totalPages();
     const cur = Math.min(this.currentPage(), total);
- 
-    // first page + last page + the page before/after the current one
     const wanted = new Set<number>([1, total, cur - 1, cur, cur + 1]);
     const sorted = [...wanted].filter(p => p >= 1 && p <= total).sort((a, b) => a - b);
- 
+
     const pages: (number | 'dots')[] = [];
     sorted.forEach((p, i) => {
-      if (i > 0 && p - sorted[i - 1] > 1) pages.push('dots');   // hidden pages in between
+      if (i > 0 && p - sorted[i - 1] > 1) pages.push('dots');
       pages.push(p);
     });
     return pages;
   });
- 
-  private resetPage(): void { this.currentPage.set(1); }
- 
-  onPageSizeChange(): void { this.resetPage(); }
-  goToPage(p: number): void { if (p >= 1 && p <= this.totalPages()) this.currentPage.set(p); }
-  previousPage(): void { this.goToPage(this.currentPage() - 1); }
-  nextPage(): void     { this.goToPage(this.currentPage() + 1); }
 
-  // ================================================================
-  // CARD HELPERS
-  // ================================================================
-  readonly stages: ArchiveStatus[] = ['جاهز للتخزين', 'تم التخزين', 'تم التسليم'];
-
-  stepIndex(status: ArchiveStatus): number {
-    return Math.max(0, this.stages.indexOf(status));
+  private resetPage(): void {
+    this.currentPage.set(1);
   }
 
-  statusClass(status: ArchiveStatus): string {
-    return ({ 'جاهز للتخزين': 'st-ready', 'تم التخزين': 'st-stored', 'تم التسليم': 'st-delivered' })[status] ?? '';
+  onPageSizeChange(): void {
+    this.resetPage();
   }
 
-  partClass(part: string): string {
-    return part.includes('الأول') ? 'part-1' : 'part-2';
-  }
-
-  // ================================================================
-  // SCAN DIALOG
-  // ================================================================
-  dialogVisible = signal(false);
-  selectedRow   = signal<ArchiveRow | null>(null);
-  mode          = signal<'storage' | 'delivery'>('storage');
-  steps         = signal<ScanStep[]>([]);
-  currentIndex  = signal(0);
-  isScanning    = signal(false);
-  scanMessage   = signal('');
-
-  readonly zones: Option[] = ['A', 'B', 'C', 'D'].map(z => ({ label: `المنطقة ${z}`, value: z }));
-  selectedZone = 'A';
-
-  readonly isStorage = computed(() => this.mode() === 'storage');
-  readonly currentStep = computed(() => this.steps()[this.currentIndex()] ?? null);
-  readonly completedScans = computed(() => this.steps().filter(s => s.scanned).length);
-  readonly allScansCompleted = computed(() =>
-    this.steps().length > 0 && this.completedScans() === this.steps().length);
-  readonly scanProgress = computed(() =>
-    this.steps().length ? Math.round((this.completedScans() / this.steps().length) * 100) : 0);
-
-  openStorageDialog(row: ArchiveRow): void {
-    this.openDialog(row, 'storage', [
-      { type: 'shelf', title: 'مسح الرف',   subtitle: 'QR الخاص بالرف', scanned: false },
-      { type: 'box',   title: 'مسح الصندوق', subtitle: 'QR الخاص بالصندوق', scanned: false },
-      { type: 'zone',  title: 'تحديد المنطقة', subtitle: 'اختيار منطقة التخزين', scanned: false }
-    ]);
-  }
-
-  openDeliveryDialog(row: ArchiveRow): void {
-    this.openDialog(row, 'delivery', [
-      { type: 'committee', title: 'مسح اللجنة',   subtitle: 'QR الخاص باللجنة', scanned: false },
-      { type: 'box',       title: 'مسح الصندوق', subtitle: 'QR الخاص بالصندوق', scanned: false }
-    ]);
-  }
-
-  private openDialog(row: ArchiveRow, mode: 'storage' | 'delivery', steps: ScanStep[]): void {
-    this.selectedRow.set(row);
-    this.mode.set(mode);
-    this.steps.set(steps);
-    this.currentIndex.set(0);
-    this.scanMessage.set('');
-    this.isScanning.set(false);
-    this.dialogVisible.set(true);
-  }
-
-  isLocked(i: number): boolean {
-    return i > 0 && !this.steps()[i - 1]?.scanned;
-  }
-
-  selectScanStep(i: number): void {
-    if (this.isScanning() || this.isLocked(i)) return;
-    this.currentIndex.set(i);
-    this.scanMessage.set('');
-  }
-
-  stepIcon(type: ScanType): string {
-    return ({ shelf: 'pi-th-large', box: 'pi-box', zone: 'pi-map-marker', committee: 'pi-users' })[type];
-  }
-
-  startScan(): void {
-    const step = this.currentStep();
-    const row = this.selectedRow();
-    if (!step || !row || step.scanned || this.isScanning()) return;
-
-    this.isScanning.set(true);
-    this.scanMessage.set('');
-
-    // replace the timeout with the real scanner / API call
-    setTimeout(() => {
-      this.steps.update(list => list.map((s, i) =>
-        i === this.currentIndex() ? { ...s, scanned: true, data: this.buildScanData(s.type, row) } : s));
-      this.isScanning.set(false);
-      this.scanMessage.set('تم تنفيذ الخطوة بنجاح');
-    }, step.type === 'zone' ? 300 : 1200);
-  }
-
-  private buildScanData(type: ScanType, row: ArchiveRow): ScanStep['data'] {
-    switch (type) {
-      case 'shelf':     return { scanType: 'مسح الرف',    qrCode: 'QR-SHELF-A-01',  name: 'رف A-01',  extra: `لجنة ${row.committeeNumber}` };
-      case 'box':       return { scanType: 'مسح الصندوق', qrCode: 'QR-BOX-001',     name: 'BOX-001',  extra: row.subject };
-      case 'zone':      return { scanType: 'تحديد المنطقة', qrCode: '—',            name: `المنطقة ${this.selectedZone}`, extra: row.governorate };
-      case 'committee': return { scanType: 'مسح اللجنة',  qrCode: `QR-COMMITTEE-${row.committeeNumber}`, name: `لجنة ${row.committeeNumber}`, extra: row.governorate };
+  goToPage(p: number): void {
+    if (p >= 1 && p <= this.totalPages()) {
+      this.currentPage.set(p);
     }
   }
 
-  previousScan(): void { if (this.currentIndex() > 0) this.currentIndex.update(i => i - 1); }
-  nextScan(): void {
-    if (this.currentStep()?.scanned && this.currentIndex() < this.steps().length - 1) {
-      this.currentIndex.update(i => i + 1);
-    }
+  previousPage(): void {
+    this.goToPage(this.currentPage() - 1);
   }
 
-  confirm(): void {
-    const row = this.selectedRow();
-    if (!row || !this.allScansCompleted()) return;
+  nextPage(): void {
+    this.goToPage(this.currentPage() + 1);
+  }
 
-    const shelf = this.steps().find(s => s.type === 'shelf')?.data?.name.replace('رف ', '') ?? 'A-01';
-    const box   = this.steps().find(s => s.type === 'box')?.data?.name ?? 'BOX-001';
+  // ================================================================
+  // BATCH DETAILS DIALOG
+  // ================================================================
+  batchDetailsVisible = signal<boolean>(false);
+  selectedBatch = signal<BatchStorageDto | null>(null);
+  batchModalSearch = signal<string>('');
 
-    // call your API here, then reload the rows instead of editing them locally
-    this.rows.update(list => list.map(r =>
-      r.index !== row.index ? r
-        : this.isStorage()
-          ? { ...r, status: 'تم التخزين' as ArchiveStatus, storage: { shelf, box } }
-          : { ...r, status: 'تم التسليم' as ArchiveStatus }));
+  openBatchDetails(batch: BatchStorageDto): void {
+    this.selectedBatch.set(batch);
+    this.batchModalSearch.set('');
+    this.batchDetailsVisible.set(true);
+  }
 
-    this.messageService.add({
-      severity: 'success', summary: 'تمت العملية', life: 3500,
-      detail: this.isStorage() ? 'تم تأكيد التخزين بنجاح' : 'تم تأكيد التسليم بنجاح'
+  closeBatchDetails(): void {
+    this.batchDetailsVisible.set(false);
+    this.selectedBatch.set(null);
+  }
+
+  readonly allBoxesInSelectedBatch = computed(() => {
+    const batch = this.selectedBatch();
+    if (!batch || !batch.racks) return [];
+
+    const boxes: (StorageBoxDto & { warehouseName?: string; rackName?: string })[] = [];
+    for (const r of batch.racks) {
+      if (r.boxes) {
+        for (const b of r.boxes) {
+          boxes.push({
+            ...b,
+            warehouseName: r.warehouseName,
+            rackName: r.rack
+          });
+        }
+      }
+    }
+    return boxes;
+  });
+
+  readonly filteredBatchBoxes = computed(() => {
+    const q = this.batchModalSearch().trim().toLowerCase();
+    const list = this.allBoxesInSelectedBatch();
+    if (!q) return list;
+
+    return list.filter(b =>
+      String(b.committeeNumber).toLowerCase().includes(q) ||
+      (b.qrCode && b.qrCode.toLowerCase().includes(q)) ||
+      (b.shelfLocationCode && b.shelfLocationCode.toLowerCase().includes(q)) ||
+      (b.rack && b.rack.toLowerCase().includes(q)) ||
+      (b.warehouseName && b.warehouseName.toLowerCase().includes(q)) ||
+      (b.statusName && b.statusName.toLowerCase().includes(q))
+    );
+  });
+
+  // ================================================================
+  // SCANNER & STORAGE RESOLVER WORKSPACE & DIALOG
+  // Endpoints:
+  // - GET /api/Boxes/storage/resolve-location/{qrCode}
+  // - GET /api/Boxes/storage/resolve-box/{trackingCode}
+  // - POST /api/Boxes/assign-storage-location
+  // - POST /api/Boxes/storage/confirm-committee
+  // ================================================================
+  scannerDialogVisible = signal<boolean>(false);
+
+  // Inputs
+  scannedLocationQr = signal<string>('');
+  scannedTrackingCode = signal<string>('');
+
+  // Resolved entities
+  resolvedLocation = signal<StorageLocationResolveDto | null>(null);
+  resolvedBox = signal<BoxResolveDto | null>(null);
+
+  // Status flags
+  locationLoading = signal<boolean>(false);
+  boxLoading = signal<boolean>(false);
+  assigningStorage = signal<boolean>(false);
+  confirmingCommittee = signal<boolean>(false);
+
+  locationError = signal<string | null>(null);
+  boxError = signal<string | null>(null);
+
+  openScannerModal(box?: StorageBoxDto, batch?: BatchStorageDto | null): void {
+    this.resetScanner();
+    if (box) {
+      this.scannedTrackingCode.set(box.qrCode || '');
+      this.resolveBox(box.qrCode);
+      if (box.shelfLocationCode) {
+        this.scannedLocationQr.set(box.shelfLocationCode);
+        this.resolveLocation(box.shelfLocationCode);
+      }
+    }
+    this.scannerDialogVisible.set(true);
+  }
+
+  closeScannerModal(): void {
+    this.scannerDialogVisible.set(false);
+    this.resetScanner();
+  }
+
+  resetScanner(): void {
+    this.scannedLocationQr.set('');
+    this.scannedTrackingCode.set('');
+    this.resolvedLocation.set(null);
+    this.resolvedBox.set(null);
+    this.locationError.set(null);
+    this.boxError.set(null);
+  }
+
+  /**
+   * Resolve Location via GET /api/Boxes/storage/resolve-location/{qrCode}
+   */
+  resolveLocation(forcedQr?: string): void {
+    const qr = (forcedQr ?? this.scannedLocationQr()).trim();
+    if (!qr) {
+      this.locationError.set('يرجى إدخال أو مسح كود الرف/الموقع أولاً');
+      return;
+    }
+
+    this.locationLoading.set(true);
+    this.locationError.set(null);
+
+    this.archivingBoxService.resolveLocation(qr).subscribe({
+      next: res => {
+        this.locationLoading.set(false);
+        const data = res?.data;
+        if (data) {
+          this.resolvedLocation.set(data);
+          this.messageService.add({
+            severity: 'success',
+            summary: 'تم العثور على الموقع',
+            detail: `المخزن: ${data.warehouseName || data.warehouseCode} - الرف: ${data.rack || data.rackCode || qr}`,
+            life: 2500
+          });
+        } else {
+          this.locationError.set('لم يتم العثور على بيانات لهذا الموقع');
+        }
+      },
+      error: err => {
+        this.locationLoading.set(false);
+        const msg = err?.error?.message || 'تعذر الوصول إلى موقع التخزين المحدد';
+        this.locationError.set(msg);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'خطأ في الموقع',
+          detail: msg,
+          life: 3500
+        });
+      }
     });
-    this.closeDialog();
   }
 
-  closeDialog(): void { this.dialogVisible.set(false); }
+  /**
+   * Resolve Box via GET /api/Boxes/storage/resolve-box/{trackingCode}
+   */
+  resolveBox(forcedCode?: string): void {
+    const code = (forcedCode ?? this.scannedTrackingCode()).trim();
+    if (!code) {
+      this.boxError.set('يرجى إدخال أو مسح باركود الصندوق أولاً');
+      return;
+    }
 
-  onDialogHide(): void {
-    this.selectedRow.set(null);
-    this.steps.set([]);
-    this.currentIndex.set(0);
-    this.isScanning.set(false);
-    this.scanMessage.set('');
+    this.boxLoading.set(true);
+    this.boxError.set(null);
+
+    this.archivingBoxService.resolveBox(code).subscribe({
+      next: res => {
+        this.boxLoading.set(false);
+        const data = res?.data;
+        if (data) {
+          this.resolvedBox.set(data);
+          this.messageService.add({
+            severity: 'success',
+            summary: 'تم العثور على الصندوق',
+            detail: `لجنة: ${data.committeeNumber} - ${data.schoolName || ''}`,
+            life: 2500
+          });
+        } else {
+          this.boxError.set('لم يتم العثور على بيانات لهذا الصندوق');
+        }
+      },
+      error: err => {
+        this.boxLoading.set(false);
+        const msg = err?.error?.message || 'تعذر الوصول إلى الصندوق المحدد';
+        this.boxError.set(msg);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'خطأ في الصندوق',
+          detail: msg,
+          life: 3500
+        });
+      }
+    });
+  }
+
+  /**
+   * Assign Single Box via POST /api/Boxes/assign-storage-location
+   */
+  assignStorageLocation(): void {
+    const location = this.resolvedLocation();
+    const box = this.resolvedBox();
+
+    const trackingCode = (box?.scannedTrackingCode || this.scannedTrackingCode()).trim();
+    const qrCode = (location?.qrCode || this.scannedLocationQr()).trim();
+
+    if (!trackingCode || !qrCode) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'تنبيه',
+        detail: 'يرجى التأكد من مسح كود الرف وكود الصندوق معًا قبل التسكين',
+        life: 3500
+      });
+      return;
+    }
+
+    this.assigningStorage.set(true);
+    this.archivingBoxService.assignStorageLocation({ trackingCode, qrCode }).subscribe({
+      next: res => {
+        this.assigningStorage.set(false);
+        this.messageService.add({
+          severity: 'success',
+          summary: 'تم التسكين بنجاح',
+          detail: res?.message || `تم تسكين الصندوق ${trackingCode} في الموقع ${qrCode}`,
+          life: 3500
+        });
+
+        // Re-resolve location to update stored boxes count and items
+        this.resolveLocation(qrCode);
+        this.resolveBox(trackingCode);
+        this.loadBatches();
+      },
+      error: err => {
+        this.assigningStorage.set(false);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'فشل التسكين',
+          detail: err?.error?.message || 'تعذر تسكين الصندوق في هذا الموقع',
+          life: 4000
+        });
+      }
+    });
+  }
+
+  /**
+   * Confirm Entire Committee via POST /api/Boxes/storage/confirm-committee
+   */
+  confirmEntireCommittee(): void {
+    const location = this.resolvedLocation();
+    const box = this.resolvedBox();
+
+    const qrCode = (location?.qrCode || this.scannedLocationQr()).trim();
+    if (!qrCode) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'تنبيه',
+        detail: 'يرجى تحديد ومسح موقع التخزين (الرف) أولاً',
+        life: 3500
+      });
+      return;
+    }
+
+    if (!box || !box.boxes || box.boxes.length === 0) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'تنبيه',
+        detail: 'لا توجد صناديق للجنة الحالية لتأكيد تخزينها',
+        life: 3500
+      });
+      return;
+    }
+
+    const placements = box.boxes.map(b => ({
+      trackingCode: b.trackingCode,
+      qrCode: qrCode
+    }));
+
+    this.confirmingCommittee.set(true);
+    this.archivingBoxService.confirmCommitteeStorage({ placements }).subscribe({
+      next: res => {
+        this.confirmingCommittee.set(false);
+        this.messageService.add({
+          severity: 'success',
+          summary: 'تم تأكيد اللجنة',
+          detail: res?.message || `تم تأكيد تخزين جميع صناديق اللجنة (${placements.length}) بنجاح`,
+          life: 4000
+        });
+
+        // Refresh
+        this.resolveLocation(qrCode);
+        this.resolveBox(box.scannedTrackingCode);
+        this.loadBatches();
+      },
+      error: err => {
+        this.confirmingCommittee.set(false);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'فشل التأكيد',
+          detail: err?.error?.message || 'تعذر تأكيد تخزين صناديق اللجنة',
+          life: 4000
+        });
+      }
+    });
+  }
+
+  // ================================================================
+  // LIFECYCLE & LOOKUPS LOADING
+  // ================================================================
+  ngOnInit(): void {
+    this.loadLookups();
+    this.loadBatches();
+  }
+
+  /**
+   * Recursively extract array from any lookup JSON format
+   */
+  private extractLookupArray(response: any): any[] {
+    if (!response) return [];
+    if (Array.isArray(response)) return response;
+
+    const possibleKeys = ['data', 'items', 'result', 'results', 'records', 'value'];
+    for (const key of possibleKeys) {
+      const val = response[key];
+      if (Array.isArray(val)) return val;
+      if (val && typeof val === 'object') {
+        const nested = this.extractLookupArray(val);
+        if (nested.length > 0) return nested;
+      }
+    }
+    return [];
+  }
+
+  /**
+   * Map lookups to standard SelectOption array with fallback labels
+   */
+  private mapToOptions(
+    rawList: any[],
+    defaultLabel: string,
+    idKeys: string[] = ['id', 'governorateId', 'subjectId', 'code', 'value']
+  ): SelectOption[] {
+    const options: SelectOption[] = [{ label: defaultLabel, value: 'all' }];
+    if (!Array.isArray(rawList)) return options;
+
+    rawList.forEach((item: any) => {
+      if (!item) return;
+
+      let value: number | string | null = null;
+      for (const k of idKeys) {
+        if (item[k] !== undefined && item[k] !== null && String(item[k]).trim() !== '') {
+          const num = Number(item[k]);
+          value = !isNaN(num) && num > 0 ? num : item[k];
+          break;
+        }
+      }
+
+      const nameKeys = ['nameAr', 'arabicName', 'name', 'title', 'governorateName', 'subjectName', 'label'];
+      let label: string | null = null;
+      for (const k of nameKeys) {
+        if (item[k] !== undefined && item[k] !== null && String(item[k]).trim() !== '') {
+          label = String(item[k]).trim();
+          break;
+        }
+      }
+
+      if (value != null && label) {
+        options.push({ label, value });
+      }
+    });
+
+    return options;
+  }
+
+  loadLookups(): void {
+    this.lookupsLoading.set(true);
+
+    forkJoin({
+      governorates: this.lookupService.getLookupGovernorateData().pipe(
+        catchError(e => {
+          console.error('Gov lookup err:', e);
+          return of([]);
+        })
+      ),
+      subjects: this.lookupService.getLookupSubjectData().pipe(
+        catchError(e => {
+          console.error('Subject lookup err:', e);
+          return of([]);
+        })
+      )
+    }).subscribe({
+      next: res => {
+        const rawGov = this.extractLookupArray(res.governorates);
+        const rawSub = this.extractLookupArray(res.subjects);
+
+        this.governorates.set(this.mapToOptions(rawGov, 'كل المحافظات'));
+        this.subjects.set(this.mapToOptions(rawSub, 'كل المواد'));
+        this.lookupsLoading.set(false);
+      },
+      error: err => {
+        console.error('Error loading lookups in Archiving:', err);
+        this.lookupsLoading.set(false);
+      }
+    });
   }
 }

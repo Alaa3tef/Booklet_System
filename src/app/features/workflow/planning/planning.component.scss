@@ -1317,7 +1317,10 @@ background: #1565c0;
 
 /* ----- floating action bar ----- */
 .assign-bar {
-  position: sticky; bottom: 14px; z-index: 20;
+  position: fixed;
+  inset-inline: calc(var(--ebs-sidebar-width, 188px) + 14px) 14px;
+  bottom: max(14px, env(safe-area-inset-bottom));
+  z-index: 2000;
   display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;
   padding: 12px 16px;
   background: #0b2e4f; color: #fff;
@@ -1325,6 +1328,8 @@ background: #1565c0;
   box-shadow: 0 12px 32px rgba(11, 46, 79, .35);
   animation: bar-in .2s ease;
 }
+
+.has-selection-bar { padding-bottom: 110px; }
 
 .assign-bar-info {
   display: flex; align-items: center; gap: 9px; flex-wrap: wrap; font-size: 14px;
@@ -1364,10 +1369,16 @@ background: #1565c0;
   .select-all { width: 100%; justify-content: center; }
   .view-tabs { width: 100%; }
   .view-tab { flex: 1; justify-content: center; padding-inline: 10px; }
-  .assign-bar { bottom: 8px; }
+  .assign-bar {
+    inset-inline: 8px;
+    bottom: max(8px, env(safe-area-inset-bottom));
+    max-height: min(45vh, 220px);
+    overflow-y: auto;
+  }
   .assign-bar-actions { width: 100%; }
   .bar-btn { flex: 1; justify-content: center; }
   .header-tools { width: 100%; justify-content: space-between; }
+  .has-selection-bar { padding-bottom: 175px; }
 }
 @media (prefers-reduced-motion: reduce) {
   .assign-bar, .view-tab, .wh-option, .pick-card, .bar-btn { animation: none; transition: none; }

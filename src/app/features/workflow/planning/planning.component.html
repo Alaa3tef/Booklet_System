@@ -15,7 +15,7 @@
   resultText="متابعة جاهزية الدفعات وتوزيع المحافظات بسهولة ودقة"
 >
 
-  <div panel-content>
+  <div panel-content [class.has-selection-bar]="selectedCount() > 0 && activeTab() === 'materials'">
 
     <!-- ==========================================
          VIEW SWITCH (tabs)
@@ -835,6 +835,7 @@
           (ngModelChange)="createDeliveryYear.set($event); clearDeliveryCreateValidationError()"
           class="w-full"
           required
+          readonly="true"
         />
       </div>
 
@@ -849,7 +850,7 @@
           optionValue="value"
           styleClass="w-full"
           appendTo="body"
-          [loading]="lookupsLoading()"
+          [loading]="deliveryLookupsLoading()"
           [disabled]="deliveryReadinessLoading()"
           placeholder="اختر الدور"
           readonly="true"
@@ -867,7 +868,7 @@
           optionValue="value"
           styleClass="w-full"
           appendTo="body"
-          [loading]="lookupsLoading()"
+          [loading]="deliveryLookupsLoading()"
           [disabled]="deliveryReadinessLoading()"
           placeholder="اختر المرحلة التعليمية"
           readonly="true"
