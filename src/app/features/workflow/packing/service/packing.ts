@@ -19,8 +19,6 @@ import {
 } from '../model/packing.model';
 import { AppConfigService } from '../../../../shared/services/app-config.service';
 
-// عدّلي الـ base url حسب الـ environment عندك (مثال: `${environment.apiUrl}/Packing`)
-
 const PAGE_NUMBER_KEY = 'PageNumber';
 const PAGE_SIZE_KEY = 'PageSize';
 
@@ -30,9 +28,9 @@ const JSON_HEADERS = new HttpHeaders({ Accept: 'application/json' });
 @Injectable({ providedIn: 'root' })
 export class PackingService {
   private readonly http = inject(HttpClient);
-    private readonly config = inject(AppConfigService);
-   API_URL = `${this.config.baseURL}api/Packing`;
- COMMITTEES_URL =`${this.config.baseURL}api/Committees`;
+  private readonly config = inject(AppConfigService);
+
+  readonly API_URL = `${this.config.baseURL}api/Packing`;
 
   /** GET /api/Packing/batches - مع pagination */
   getBatches(
@@ -63,17 +61,17 @@ export class PackingService {
   }
 
   /** GET /api/Packing/batches/{batchId}/committees - مع pagination */
- getCommittees(
+  getCommittees(
     batchId: number,
     page: PageQuery,
     searchTerm?: string | null
   ): Observable<PagedResult<PackingCommittee>> {
     let params = this.pageParams(page);
- 
+
     if (searchTerm?.trim()) {
       params = params.set('SearchTerm', searchTerm.trim());
     }
- 
+
     return this.http
       .get<ApiResponse<any>>(`${this.API_URL}/batches/${batchId}/committees`, {
         params,
@@ -82,12 +80,13 @@ export class PackingService {
       .pipe(map(res => this.toPaged<PackingCommittee>(res)));
   }
 
-  /** GET /api/Committees/{id}/envelopes-with-boxes → الصناديق وجواها الأظرف */
-  getCommitteeBoxes(committeeId: number): Observable<CommitteeBoxes> {
+  /** GET /api/Packing/batches/{batchId}/committees/{committeeId}/boxes → الصناديق وجواها الأظرف */
+  getCommitteeBoxes(batchId: number, committeeId: number): Observable<CommitteeBoxes> {
     return this.http
-      .get<ApiResponse<any>>(`${this.COMMITTEES_URL}/${committeeId}/envelopes-with-boxes`, {
-        headers: JSON_HEADERS
-      })
+      .get<ApiResponse<any>>(
+        `${this.API_URL}/batches/${batchId}/committees/${committeeId}/boxes`,
+        { headers: JSON_HEADERS }
+      )
       .pipe(map(res => this.normalizeBoxes(this.unwrap(res))));
   }
 
@@ -177,14 +176,14 @@ export class PackingService {
     return res?.errors?.[0] || res?.message || 'حدث خطأ غير متوقع';
   }
 
-  // ---------- تطبيع شكل الصناديق (نقطة التعديل الوحيدة لو أسماء الحقول اختلفت) ----------
+  // ---------- تطبيع شكل الصناديق ----------
+  // الرد: data = { batchId, committeeId, committeeNumber, boxes: [{ boxId, sequenceNo, qrCode,
+  //   expectedEnvelopeCount, mainEnvelopes: string[], reserveEnvelopes: string[] }] }
 
   private normalizeBoxes(raw: any): CommitteeBoxes {
     const boxes: CommitteeBox[] = (raw?.boxes ?? [])
       .map((box: any, index: number) => {
-        const required = this.serials(
-          box.requiredEnvelopes ?? box.mainEnvelopes ?? box.envelopes
-        );
+        const required = this.serials(box.mainEnvelopes);
 
         return {
           boxId: box.boxId,
@@ -192,7 +191,7 @@ export class PackingService {
           qrCode: String(box.qrCode ?? '').trim(),
           expectedEnvelopeCount: box.expectedEnvelopeCount ?? required.length,
           requiredEnvelopes: required,
-          bonusEnvelopes: this.serials(box.bonusEnvelopes ?? box.reserveEnvelopes)
+          bonusEnvelopes: this.serials(box.reserveEnvelopes)
         };
       })
       .sort((a: CommitteeBox, b: CommitteeBox) => a.sequenceNo - b.sequenceNo);

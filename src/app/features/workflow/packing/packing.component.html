@@ -171,11 +171,13 @@
     <!-- BIG DIALOG: اللجان ← الصناديق ← الأظرف -->
     <!-- ====================================================== -->
     <p-dialog [visible]="!!selectedBatch()" (visibleChange)="onBatchDialogVisibleChange($event)"
-      [modal]="true" [baseZIndex]="1000" [draggable]="false" [resizable]="false"
-      [closable]="!packing()" [closeOnEscape]="false"
-      [style]="{ width: '1680px', maxWidth: '96vw' }"
-      [contentStyle]="{ height: '78vh', overflow: 'auto' }"
-      styleClass="pk-dlg pk-dlg-big">
+  [modal]="true" [baseZIndex]="1000" [draggable]="false" [resizable]="false"
+  [closable]="!packing()" [closeOnEscape]="false"
+  [style]="{ width: '1680px', maxWidth: '96vw' }"
+  [contentStyle]="step() === 'packing'
+    ? { minHeight: '70vh', maxHeight: '86vh', overflow: 'auto' }
+    : { minHeight: '440px', maxHeight: '86vh', overflow: 'auto' }"
+  styleClass="pk-dlg pk-dlg-big">
 
       <ng-template pTemplate="header">
         <div class="pk-dlg-title">
@@ -247,7 +249,7 @@
               </button>
             </div>
           } @else if (committees().length) {
-            <section class="pk-grid">
+            <section class="pk-grid pk-grid-committees">
               @for (c of committees(); track c.committeeId) {
                 <article class="pk-card pk-clickable" data-tone="info" tabindex="0" role="button"
                   (click)="openCommittee(c)" (keydown.enter)="openCommittee(c)">

@@ -238,6 +238,19 @@
   gap: 1rem;
 }
 
+// كروت اللجان: أصغر، وتتوزع 3 في الصف بدل ما الكارت الواحد ياخد نص الشاشة
+.pk-grid.pk-grid-committees {
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 360px), 1fr));
+  align-items: start;
+
+  .pk-skel { height: 190px; }
+}
+.pk-dlg-big.p-dialog {
+  max-height: 94vh;            // ← جديد
+  .p-dialog-content { background: #f8fafc; }
+  .p-dialog-header { padding-block: .85rem; }
+  .p-dialog-title { flex: 1; min-width: 0; }
+}
 .pk-card {
   display: flex;
   flex-direction: column;

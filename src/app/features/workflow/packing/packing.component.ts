@@ -670,8 +670,9 @@ submitManualQr(): void {
 
   loadBoxes(): void {
     const committee = this.selectedCommittee();
+    const batch = this.selectedBatch();
 
-    if (!committee) {
+    if (!committee || !batch) {
       return;
     }
 
@@ -680,7 +681,7 @@ submitManualQr(): void {
     this.boxesError.set(null);
 
     this.boxesSub = this.api
-      .getCommitteeBoxes(committee.committeeId)
+      .getCommitteeBoxes(batch.batchId, committee.committeeId)
       .pipe(
         takeUntilDestroyed(this.destroyRef),
         finalize(() => this.boxesLoading.set(false))
