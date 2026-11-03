@@ -1,0 +1,703 @@
+
+<div class="edu-committee-page" dir="rtl">
+
+  <!-- ================= HEADER ================= -->
+
+  <div class="page-header">
+
+    <div class="header-info">
+
+      <div class="header-icon">
+        <i class="pi pi-sitemap"></i>
+      </div>
+
+      <div>
+        <h2>ربط المراحل التعليمية بأنواع اللجان</h2>
+        <p>
+          إدارة إعدادات اللجان والمكافآت وأعداد الكتيبات والأظرف
+        </p>
+      </div>
+
+    </div>
+
+    <button
+      pButton
+      type="button"
+      label="إضافة ربط جديد"
+      icon="pi pi-plus"
+      class="add-btn"
+      (click)="openAddDialog()">
+    </button>
+
+  </div>
+
+  <!-- ================= ALERTS ================= -->
+
+  <div class="alert success-alert" *ngIf="successMessage">
+
+    <i class="pi pi-check-circle"></i>
+
+    <span>{{ successMessage }}</span>
+
+    <button type="button" (click)="successMessage = ''">
+      <i class="pi pi-times"></i>
+    </button>
+
+  </div>
+
+  <div class="alert error-alert" *ngIf="errorMessage">
+
+    <i class="pi pi-exclamation-circle"></i>
+
+    <span>{{ errorMessage }}</span>
+
+    <button type="button" (click)="errorMessage = ''">
+      <i class="pi pi-times"></i>
+    </button>
+
+  </div>
+
+  <!-- ================= STATISTICS ================= -->
+
+  <div class="stats-grid">
+
+    <div class="stat-card">
+
+      <div class="stat-icon blue">
+        <i class="pi pi-sitemap"></i>
+      </div>
+
+      <div class="stat-info">
+        <span>إجمالي الربطات</span>
+        <strong>{{ totalRecords }}</strong>
+      </div>
+
+    </div>
+
+    <div class="stat-card">
+
+      <div class="stat-icon green">
+        <i class="pi pi-check-circle"></i>
+      </div>
+
+      <div class="stat-info">
+        <span>الربطات النشطة بالصفحة</span>
+
+        <strong>
+          {{
+           activeCount 
+          }}
+        </strong>
+
+      </div>
+
+    </div>
+
+    <div class="stat-card">
+
+      <div class="stat-icon orange">
+        <i class="pi pi-lock"></i>
+      </div>
+
+      <div class="stat-info">
+        <span>اللجان المغلقة بالصفحة</span>
+
+        <strong>
+          {{ closedCount           }}
+        </strong>
+
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- ================= MAIN CONTENT ================= -->
+
+  <div class="content-card">
+
+    <!-- Filters Header -->
+
+    <div class="section-heading">
+
+      <div>
+        <h3>بيانات ربط اللجان</h3>
+        <p>يمكنك البحث والفلترة للوصول إلى الربط المطلوب</p>
+      </div>
+
+      <span class="records-count">
+        {{ totalRecords }} سجل
+      </span>
+
+    </div>
+
+    <!-- Filters -->
+
+    <div class="filters-grid">
+
+      <div class="filter-item search-filter">
+
+        <label>بحث</label>
+
+        <div class="search-input-wrapper">
+
+          <i class="pi pi-search"></i>
+
+          <input
+            pInputText
+            type="text"
+            [(ngModel)]="searchTerm"
+            placeholder="ابحث باسم المرحلة أو اللجنة..."
+            (keyup.enter)="search()" />
+
+        </div>
+
+      </div>
+
+      <div class="filter-item">
+
+        <label>رقم المرحلة التعليمية</label>
+
+        <p-inputNumber
+          [(ngModel)]="filterEducationalStageId"
+          [useGrouping]="false"
+          [min]="1"
+          placeholder="رقم المرحلة">
+        </p-inputNumber>
+
+      </div>
+
+      <div class="filter-item">
+
+        <label>نوع اللجنة</label>
+
+        <p-select
+          [(ngModel)]="filterCommitteeTypeId"
+          [options]="committeeTypesLookup"
+          optionLabel="name"
+          optionValue="id"
+          placeholder="كل أنواع اللجان"
+          [showClear]="true"
+          appendTo="body">
+        </p-select>
+
+      </div>
+
+      <div class="filter-item">
+
+        <label>الحالة</label>
+
+        <p-select
+          [(ngModel)]="filterIsActive"
+          [options]="statusOptions"
+          optionLabel="label"
+          optionValue="value"
+          placeholder="كل الحالات"
+          appendTo="body">
+        </p-select>
+
+      </div>
+
+    </div>
+
+    <!-- Filter Actions -->
+
+    <div class="filter-actions">
+
+      <button
+        pButton
+        type="button"
+        label="بحث"
+        icon="pi pi-search"
+        class="search-btn"
+        (click)="search()">
+      </button>
+
+      <button
+        pButton
+        type="button"
+        label="إعادة تعيين"
+        icon="pi pi-refresh"
+        class="reset-btn"
+        (click)="resetFilters()">
+      </button>
+
+    </div>
+
+    <!-- ================= TABLE ================= -->
+
+    <div class="table-wrapper">
+
+      <table class="committee-table">
+
+        <thead>
+
+          <tr>
+            <th>#</th>
+            <th>المرحلة التعليمية</th>
+            <th>نوع اللجنة</th>
+           <th>تصنيف اللجنة</th>
+            <th>البونص</th>
+            <th>الكتيبات / الظرف</th>
+            <th>الأظرف / الصندوق</th>
+            <th>الحالة</th>
+            <th>تاريخ الإضافة</th>
+            <th>الإجراءات</th>
+          </tr>
+
+        </thead>
+
+        <tbody>
+
+          <!-- Loading -->
+
+          <tr *ngIf="loading">
+
+            <td colspan="10" class="empty-state">
+
+              <i class="pi pi-spin pi-spinner"></i>
+
+              جاري تحميل البيانات...
+
+            </td>
+
+          </tr>
+
+          <!-- Empty -->
+
+          <tr *ngIf="!loading && committeeTypesData.length === 0">
+
+            <td colspan="10" class="empty-state">
+
+              <i class="pi pi-inbox"></i>
+
+              لا توجد بيانات لعرضها
+
+            </td>
+
+          </tr>
+
+          <!-- Data -->
+
+          <tr
+            *ngFor="
+              let item of committeeTypesData;
+              let i = index;
+              trackBy: trackById
+            ">
+
+            <td>
+              {{ (pageNumber - 1) * pageSize + i + 1 }}
+            </td>
+
+            <td>
+              <div class="stage-cell">
+                <span class="cell-icon">
+                  <i class="pi pi-graduation-cap"></i>
+                </span>
+
+                <div>
+                  <strong>{{ item.educationalStageName || '-' }}</strong>
+                  <small>ID: {{ item.educationalStageId }}</small>
+                </div>
+              </div>
+            </td>
+
+            <td>
+              <span class="committee-name">
+                {{ item.committeeTypeName || '-' }}
+              </span>
+            </td>
+
+            <td>
+              <span
+                class="type-badge"
+                [class.closed]="item.bonusType === 0"
+                [class.open]="item.bonusType === 1">
+
+                <i
+                  class="pi"
+                  [ngClass]="item.bonusType === 0
+                    ? 'pi-lock'
+                    : 'pi-lock-open'">
+                </i>
+
+                {{ item.bonusType === 0 ? 'مغلقة' : 'مفتوحة' }}
+
+              </span>
+            </td>
+
+            <td>
+              <strong class="bonus-value">
+                {{ item.bonus }}
+              </strong>
+            </td>
+
+            <td>
+              {{ item.bookletsPerEnvelope }}
+            </td>
+
+            <td>
+              {{ item.envelopesPerBox }}
+            </td>
+
+            <td>
+
+              <span
+                class="status-badge"
+                [class.active]="item.isActive"
+                [class.inactive]="!item.isActive">
+
+                {{ item.isActive ? 'نشط' : 'غير نشط' }}
+
+              </span>
+
+            </td>
+
+            <td>
+              {{ item.dateCreated
+                ? (item.dateCreated | date:'dd/MM/yyyy')
+                : '-' }}
+            </td>
+
+            <td>
+
+              <button
+                type="button"
+                class="action-btn"
+                title="تعديل"
+                (click)="openEditDialog(item)">
+
+                <i class="pi pi-pencil"></i>
+
+              </button>
+
+            </td>
+
+          </tr>
+
+        </tbody>
+
+      </table>
+
+    </div>
+
+    <!-- ================= PAGINATION ================= -->
+
+    <div
+      class="pagination-container"
+      *ngIf="totalRecords > 0">
+
+      <p-paginator
+        [first]="(pageNumber - 1) * pageSize"
+        [rows]="pageSize"
+        [totalRecords]="totalRecords"
+        [rowsPerPageOptions]="[5, 10, 20, 50]"
+        [showCurrentPageReport]="true"
+        currentPageReportTemplate="عرض {first} إلى {last} من إجمالي {totalRecords}"
+        (onPageChange)="onPageChange($event)">
+      </p-paginator>
+
+    </div>
+
+  </div>
+
+  <!-- ================= ADD / EDIT DIALOG ================= -->
+
+  <p-dialog
+    [(visible)]="displayDialog"
+    [modal]="true"
+    [draggable]="false" [baseZIndex]="10000"
+    [resizable]="false"
+    [closable]="!saving"
+    [style]="{ width: '650px', maxWidth: '95vw' }"
+    [header]="isEditMode ? 'تعديل إعدادات اللجنة' : 'إضافة ربط جديد'"
+    styleClass="edu-committee-dialog">
+
+    <form
+      [formGroup]="committeeForm"
+      (ngSubmit)="save()">
+
+      <div class="dialog-intro">
+
+        <div class="dialog-intro-icon">
+          <i class="pi pi-sitemap"></i>
+        </div>
+
+        <div>
+          <h3>
+            {{ isEditMode ? 'تعديل بيانات الربط' : 'بيانات الربط الجديد' }}
+          </h3>
+
+          <p>
+            أدخلي بيانات المرحلة التعليمية ونوع اللجنة والإعدادات الخاصة بها
+          </p>
+        </div>
+
+      </div>
+
+      <div class="form-grid">
+
+        <!-- Educational Stage -->
+
+        <div class="form-field">
+
+          <label>
+            رقم المرحلة التعليمية
+            <span class="required">*</span>
+          </label>
+
+          <p-inputNumber
+            formControlName="educationalStageId"
+            [useGrouping]="false"
+            [min]="1"
+            placeholder="أدخلي رقم المرحلة"
+            [class.invalid-field]="
+              educationalStageIdControl?.invalid &&
+              educationalStageIdControl?.touched
+            ">
+          </p-inputNumber>
+
+          <small
+            class="field-error"
+            *ngIf="
+              educationalStageIdControl?.invalid &&
+              educationalStageIdControl?.touched
+            ">
+            رقم المرحلة التعليمية مطلوب ويجب أن يكون أكبر من صفر
+          </small>
+
+        </div>
+
+        <!-- Committee Type -->
+
+        <div class="form-field">
+
+          <label>
+            نوع اللجنة
+            <span class="required">*</span>
+          </label>
+
+          <p-select
+            formControlName="committeeTypeId"
+            [options]="committeeTypesLookup"
+            optionLabel="name"
+            optionValue="id"
+            placeholder="اختاري نوع اللجنة"
+            [filter]="true"
+            filterBy="name,code"
+            appendTo="body"
+            [class.invalid-field]="
+              committeeTypeIdControl?.invalid &&
+              committeeTypeIdControl?.touched
+            ">
+
+            <ng-template #item let-option>
+              <div class="committee-option">
+                <strong>{{ option.name }}</strong>
+                <small>{{ option.code }}</small>
+              </div>
+            </ng-template>
+
+          </p-select>
+
+          <small
+            class="field-error"
+            *ngIf="
+              committeeTypeIdControl?.invalid &&
+              committeeTypeIdControl?.touched
+            ">
+            يجب اختيار نوع اللجنة
+          </small>
+
+        </div>
+
+      </div>
+
+      <!-- Bonus Type -->
+
+      <div class="bonus-section">
+
+        <div class="field-title">
+          <i class="pi pi-sliders-h"></i>
+          نوع اللجنة
+        </div>
+
+        <div class="bonus-options">
+
+          <label
+            class="bonus-option"
+            [class.selected]="bonusTypeControl?.value === 0">
+
+            <input
+              type="radio"
+              formControlName="bonusType"
+              [value]="0" />
+
+            <span class="radio-custom"></span>
+
+            <span class="bonus-option-icon closed-icon">
+              <i class="pi pi-lock"></i>
+            </span>
+
+            <span class="bonus-option-content">
+              <strong>لجنة مغلقة</strong>
+              <small>القيمة المرسلة 0</small>
+            </span>
+
+          </label>
+
+          <label
+            class="bonus-option"
+            [class.selected]="bonusTypeControl?.value === 1">
+
+            <input
+              type="radio"
+              formControlName="bonusType"
+              [value]="1" />
+
+            <span class="radio-custom"></span>
+
+            <span class="bonus-option-icon open-icon">
+              <i class="pi pi-lock-open"></i>
+            </span>
+
+            <span class="bonus-option-content">
+              <strong>لجنة مفتوحة</strong>
+              <small>القيمة المرسلة 1</small>
+            </span>
+
+          </label>
+
+        </div>
+
+      </div>
+
+      <!-- Numbers -->
+
+      <div class="numbers-section">
+
+        <div class="field-title">
+          <i class="pi pi-calculator"></i>
+          إعدادات الكميات
+        </div>
+
+        <div class="form-grid">
+
+          <!-- Bonus -->
+
+          <div class="form-field">
+
+            <label>
+              البونص
+              <span class="required">*</span>
+            </label>
+
+            <p-inputNumber
+              formControlName="bonus"
+              [min]="0"
+              [useGrouping]="false"
+              placeholder="قيمة البونص">
+            </p-inputNumber>
+
+            <small
+              class="field-error"
+              *ngIf="
+                bonusControl?.invalid &&
+                bonusControl?.touched
+              ">
+              البونص يجب أن يكون صفرًا أو أكبر
+            </small>
+
+          </div>
+
+          <!-- Booklets -->
+
+          <div class="form-field">
+
+            <label>
+              عدد الكتيبات في الظرف
+              <span class="required">*</span>
+            </label>
+
+            <p-inputNumber
+              formControlName="bookletsPerEnvelope"
+              [min]="1"
+              [useGrouping]="false"
+              placeholder="عدد الكتيبات">
+            </p-inputNumber>
+
+            <small
+              class="field-error"
+              *ngIf="
+                bookletsPerEnvelopeControl?.invalid &&
+                bookletsPerEnvelopeControl?.touched
+              ">
+              يجب إدخال عدد أكبر من صفر
+            </small>
+
+          </div>
+
+          <!-- Envelopes -->
+
+          <div class="form-field">
+
+            <label>
+              عدد الأظرف في الصندوق
+              <span class="required">*</span>
+            </label>
+
+            <p-inputNumber
+              formControlName="envelopesPerBox"
+              [min]="1"
+              [useGrouping]="false"
+              placeholder="عدد الأظرف">
+            </p-inputNumber>
+
+            <small
+              class="field-error"
+              *ngIf="
+                envelopesPerBoxControl?.invalid &&
+                envelopesPerBoxControl?.touched
+              ">
+              يجب إدخال عدد أكبر من صفر
+            </small>
+
+          </div>
+
+        </div>
+
+      </div>
+
+      <!-- Footer -->
+
+      <div class="dialog-footer">
+
+        <button
+          pButton
+          type="button"
+          label="إلغاء"
+          icon="pi pi-times"
+          class="cancel-btn"
+          [disabled]="saving"
+          (click)="closeDialog()">
+        </button>
+
+        <button
+          pButton
+          type="submit"
+          [label]="isEditMode ? 'حفظ التعديلات' : 'إضافة الربط'"
+          [icon]="saving
+            ? 'pi pi-spin pi-spinner'
+            : 'pi pi-check'"
+          class="save-btn"
+          [disabled]="saving">
+        </button>
+
+      </div>
+
+    </form>
+
+  </p-dialog>
+
+</div>
