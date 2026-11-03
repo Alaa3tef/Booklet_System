@@ -77,6 +77,18 @@ export const routes: Routes = [
         data: { breadcrumb: ' ادارة المخازن' }
       },
       {
+        path: 'committeType',
+        loadComponent: () =>
+          import('./features/commitType/commit-type-component/commit-type-component'),
+        data: { breadcrumb: ' أنواع اللجان' }
+      },
+      {
+        path: 'educationalStageCommitteType',
+        loadComponent: () =>
+          import('./features/educationStageCommitType/education-stage-committee-type-component/education-stage-committee-type-component'),
+        data: { breadcrumb: ' أنواع اللجان' }
+      },
+      {
         path: 'workflow/planning',
         loadComponent: () =>
           import('./features/workflow/planning/planning.component'),

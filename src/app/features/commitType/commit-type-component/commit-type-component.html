@@ -1,0 +1,350 @@
+
+<div class="committee-types-page" dir="rtl">
+
+  <!-- Page Header -->
+  <div class="page-header">
+
+    <div class="header-info">
+      <div class="header-icon">
+        <i class="pi pi-users"></i>
+      </div>
+
+      <div>
+        <h2>أنواع اللجان</h2>
+        <p>إدارة وعرض أنواع اللجان وإضافة وتعديل البيانات</p>
+      </div>
+    </div>
+
+    <button
+      pButton
+      type="button"
+      label="إضافة نوع لجنة"
+      icon="pi pi-plus"
+      class="add-btn"
+      (click)="openAddDialog()">
+    </button>
+
+  </div>
+
+  <!-- Messages -->
+  <div class="alert alert-success" *ngIf="successMessage">
+    <i class="pi pi-check-circle"></i>
+    {{ successMessage }}
+    <button type="button" (click)="successMessage = ''">
+      <i class="pi pi-times"></i>
+    </button>
+  </div>
+
+  <div class="alert alert-danger" *ngIf="errorMessage">
+    <i class="pi pi-exclamation-circle"></i>
+    {{ errorMessage }}
+    <button type="button" (click)="errorMessage = ''">
+      <i class="pi pi-times"></i>
+    </button>
+  </div>
+
+  <!-- Statistics -->
+  <div class="stats-card">
+
+    <div class="stats-icon">
+      <i class="pi pi-list"></i>
+    </div>
+
+    <div class="stats-content">
+      <span>إجمالي أنواع اللجان</span>
+      <strong>{{ totalRecords }}</strong>
+    </div>
+
+  </div>
+
+  <!-- Search Section -->
+  <div class="content-card">
+
+    <div class="filter-section">
+
+      <div class="search-box">
+
+        <i class="pi pi-search"></i>
+
+        <input
+          pInputText
+          type="text"
+          [(ngModel)]="searchTerm"
+          placeholder="ابحث بالكود أو اسم نوع اللجنة..."
+          (keyup.enter)="onSearch()" />
+
+        <button
+          *ngIf="searchTerm"
+          type="button"
+          class="clear-search"
+          (click)="clearSearch()">
+          <i class="pi pi-times"></i>
+        </button>
+
+      </div>
+
+      <button
+        pButton
+        type="button"
+        label="بحث"
+        icon="pi pi-search"
+        class="search-btn"
+        (click)="onSearch()">
+      </button>
+
+      <button
+        pButton
+        type="button"
+        label="إعادة تعيين"
+        icon="pi pi-refresh"
+        class="reset-btn"
+        (click)="clearSearch()">
+      </button>
+
+    </div>
+
+    <!-- Table -->
+    <div class="table-container">
+
+      <table class="committee-table">
+
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>كود اللجنة</th>
+            <th>اسم نوع اللجنة</th>
+            <th>الحالة</th>
+            <th>تاريخ الإضافة</th>
+            <th>الإجراءات</th>
+          </tr>
+        </thead>
+
+        <tbody>
+
+          <tr *ngIf="loading">
+            <td colspan="6" class="empty-state">
+              <i class="pi pi-spin pi-spinner"></i>
+              جاري تحميل البيانات...
+            </td>
+          </tr>
+
+          <tr *ngIf="!loading && committeeTypes.length === 0">
+            <td colspan="6" class="empty-state">
+              <i class="pi pi-inbox"></i>
+              لا توجد أنواع لجان
+            </td>
+          </tr>
+
+          <tr
+            *ngFor="let item of committeeTypes; let i = index; trackBy: trackById">
+
+            <td>
+              {{ (pageNumber - 1) * pageSize + i + 1 }}
+            </td>
+
+            <td>
+              <span class="code-badge">
+                {{ item.code }}
+              </span>
+            </td>
+
+            <td class="name-cell">
+              {{ item.name }}
+            </td>
+
+            <td>
+              <span
+                class="status-badge"
+                [class.active]="item.isActive"
+                [class.inactive]="!item.isActive">
+
+                {{ item.isActive ? 'نشط' : 'غير نشط' }}
+
+              </span>
+            </td>
+
+            <td>
+              {{ item.dateCreated
+                ? (item.dateCreated | date:'dd/MM/yyyy')
+                : '-' }}
+            </td>
+
+            <td>
+              <button
+                type="button"
+                class="action-btn edit-btn"
+                title="تعديل"
+                (click)="openEditDialog(item)">
+
+                <i class="pi pi-pencil"></i>
+
+              </button>
+            </td>
+
+          </tr>
+
+        </tbody>
+
+      </table>
+
+    </div>
+
+    <!-- Pagination -->
+    <div class="pagination-container" *ngIf="totalRecords > 0">
+
+      <p-paginator
+        [first]="(pageNumber - 1) * pageSize"
+        [rows]="pageSize"
+        [totalRecords]="totalRecords"
+        [rowsPerPageOptions]="[5, 10, 20, 50]"
+        (onPageChange)="onPageChange($event)"
+        [showCurrentPageReport]="true"
+        currentPageReportTemplate="عرض {first} إلى {last} من إجمالي {totalRecords}">
+
+      </p-paginator>
+
+    </div>
+
+  </div>
+
+  <!-- Add / Edit Dialog -->
+  <p-dialog
+    [(visible)]="displayDialog"
+    [modal]="true" [baseZIndex]="10000"
+    [draggable]="false"
+    [resizable]="false"
+    [closable]="!saving"
+    [style]="{ width: '500px', maxWidth: '95vw' }"
+    [header]="isEditMode ? 'تعديل نوع لجنة' : 'إضافة نوع لجنة'"
+    styleClass="committee-type-dialog">
+
+    <form
+      [formGroup]="committeeTypeForm"
+      (ngSubmit)="saveCommitteeType()">
+
+      <div class="form-content">
+
+        <!-- Code -->
+        <div class="form-group">
+
+          <label for="code">
+            كود اللجنة
+            <span class="required">*</span>
+          </label>
+
+          <input
+            id="code"
+            pInputText
+            type="text"
+            formControlName="code"
+            placeholder="أدخل كود اللجنة"
+            maxlength="50"
+            [class.invalid-input]="codeControl?.invalid && codeControl?.touched" />
+
+          <small
+            class="validation-error"
+            *ngIf="codeControl?.hasError('required') && codeControl?.touched">
+
+            كود اللجنة مطلوب
+
+          </small>
+
+          <small
+            class="validation-error"
+            *ngIf="codeControl?.hasError('maxlength')">
+
+            الحد الأقصى 50 حرف
+
+          </small>
+
+        </div>
+
+        <!-- Name -->
+        <div class="form-group">
+
+          <label for="name">
+            اسم نوع اللجنة
+            <span class="required">*</span>
+          </label>
+
+          <input
+            id="name"
+            pInputText
+            type="text"
+            formControlName="name"
+            placeholder="أدخل اسم نوع اللجنة"
+            maxlength="200"
+            [class.invalid-input]="nameControl?.invalid && nameControl?.touched" />
+
+          <small
+            class="validation-error"
+            *ngIf="nameControl?.hasError('required') && nameControl?.touched">
+
+            اسم نوع اللجنة مطلوب
+
+          </small>
+
+          <small
+            class="validation-error"
+            *ngIf="nameControl?.hasError('maxlength')">
+
+            الحد الأقصى 200 حرف
+
+          </small>
+
+        </div>
+
+        <!-- Active Status -->
+        <div class="form-group status-form-group">
+
+          <label>حالة نوع اللجنة</label>
+
+          <label class="switch-container">
+
+            <input
+              type="checkbox"
+              formControlName="isActive" />
+
+            <span class="switch-slider"></span>
+
+            <span class="switch-text">
+              {{ committeeTypeForm.get('isActive')?.value
+                ? 'نشط'
+                : 'غير نشط' }}
+            </span>
+
+          </label>
+
+        </div>
+
+      </div>
+
+      <!-- Dialog Footer -->
+      <div class="dialog-footer">
+
+        <button
+          pButton
+          type="button"
+          label="إلغاء"
+          icon="pi pi-times"
+          class="cancel-btn"
+          [disabled]="saving"
+          (click)="closeDialog()">
+        </button>
+
+        <button
+          pButton
+          type="submit"
+          [label]="isEditMode ? 'حفظ التعديلات' : 'إضافة'"
+          [icon]="saving ? 'pi pi-spin pi-spinner' : 'pi pi-check'"
+          class="save-btn"
+          [disabled]="saving">
+        </button>
+
+      </div>
+
+    </form>
+
+  </p-dialog>
+
+</div>
