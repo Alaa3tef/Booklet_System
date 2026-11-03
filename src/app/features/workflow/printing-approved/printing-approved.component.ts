@@ -74,7 +74,7 @@ interface ApprovalRow {
   committeeCount: number;
   requiredBookletTotal: number;
   reserveBookletTotal: number;
-  expectedBoxCount: number;
+  expectedBoxCount: number | null;
 
   requiredEnvelopeTotal: number;
   reserveEnvelopeTotal: number;
@@ -470,10 +470,6 @@ export default class PrintingApprovedComponent implements OnInit {
     batch: PendingBatch,
     index: number
   ): ApprovalRow {
-
-    const committees = batch.committees ?? [];
-
-
     const [
       governorateName = '',
       subjectName = ''
@@ -481,84 +477,35 @@ export default class PrintingApprovedComponent implements OnInit {
       .split('+')
       .map(value => value.trim());
 
-
-    const requiredBookletTotal = committees.reduce(
-      (total, committee) =>
-        total + (Number(committee.requiredBookletCount) || 0),
-      0
-    );
-
-
-    const reserveBookletTotal = committees.reduce(
-      (total, committee) =>
-        total + (Number(committee.bonusBookletCount) || 0),
-      0
-    );
-
-
-    const expectedBoxCount = committees.reduce(
-      (total, committee) =>
-        total + (Number(committee.boxCount) || 0),
-      0
-    );
-
-
-    const requiredEnvelopeTotal = committees.reduce(
-      (total, committee) =>
-        total + (Number(committee.requiredEnvelopeCount) || 0),
-      0
-    );
-
-
-    const reserveEnvelopeTotal = committees.reduce(
-      (total, committee) =>
-        total + (Number(committee.bonusEnvelopeCount) || 0),
-      0
-    );
-
-
     return {
-
       index,
-
       batchId: batch.batchId,
-
-      displayLabel: batch.displayLabel,
-
+      displayLabel: batch.displayLabel ?? '',
       year: batch.year ?? null,
-
       roundCode: batch.roundCode ?? '',
-
       roundName: (batch.roundName ?? '').trim(),
 
       governorateName,
-
       subjectName,
 
-      committeeCount: committees.length,
+      committeeCount: Number(batch.committeeCount) || 0,
+      requiredBookletTotal: Number(batch.requiredBookletTotal) || 0,
+      reserveBookletTotal: Number(batch.reserveBookletTotal) || 0,
 
-      requiredBookletTotal,
+      // الـ API الحالي لا يُرجع عدد الكراتين.
+      expectedBoxCount: null,
 
-      reserveBookletTotal,
+      requiredEnvelopeTotal: Number(batch.requiredEnvelopeTotal) || 0,
+      reserveEnvelopeTotal: Number(batch.reserveEnvelopeTotal) || 0,
 
-      expectedBoxCount,
-
-      requiredEnvelopeTotal,
-
-      reserveEnvelopeTotal,
-
-      committees,
-
+      // تفاصيل اللجان غير موجودة في استجابة pending الحالية.
+      committees: [],
       detailsFailed: false,
 
       status: ST_PENDING,
-
       statusTone: 'warning'
-
     };
-
   }
-
 
   fmt(value: number | null | undefined): string {
 
@@ -1180,11 +1127,6 @@ export default class PrintingApprovedComponent implements OnInit {
 
     };
 
-
-    console.log(
-      'Reject Request:',
-      rejectionData
-    );
 
 
     // TODO: API CALL WILL BE HERE

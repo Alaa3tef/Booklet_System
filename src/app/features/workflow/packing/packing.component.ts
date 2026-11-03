@@ -2,14 +2,13 @@ import { CommonModule } from '@angular/common';
 import {
   Component,
   DestroyRef,
-  ElementRef,
+  HostListener,
   OnInit,
   ViewEncapsulation,
   WritableSignal,
   computed,
   inject,
-  signal,
-  viewChild
+  signal
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
@@ -22,16 +21,24 @@ import { TooltipModule } from 'primeng/tooltip';
 
 import { Lookups } from '../../../shared/services/lookups';
 import { WorkflowStepLayoutComponent } from '../../../shared/workflow-step-layout/workflow-step-layout.component';
-import { PackingBatch, PackingCommittee, ClaimedCommittee, PackResult, PackProblem, ClaimedBox, PackRequest } from './model/packing.model';
+import {
+  CommitteeBox,
+  PackProblem,
+  PackRequest,
+  PackResult,
+  PackingBatch,
+  PackingCommittee
+} from './model/packing.model';
 import { PackingService } from './service/packing';
 
 // =====================================================
 // Types
 // =====================================================
 
-type View = 'batches' | 'committees' | 'packing';
+type Step = 'committees' | 'packing';
 type PagerKind = 'batch' | 'committee';
 type Tone = 'success' | 'warning' | 'danger';
+type LeaveTarget = 'committees' | 'close';
 
 interface Option {
   label: string;
@@ -55,6 +62,8 @@ interface BoxVm {
 }
 
 interface BoxView extends BoxVm {
+  main: EnvelopeVm[];
+  reserve: EnvelopeVm[];
   mainTotal: number;
   mainScanned: number;
   reserveTotal: number;
@@ -64,13 +73,13 @@ interface BoxView extends BoxVm {
 }
 
 interface ScanFeedback {
+  id: number;
   tone: Tone;
   code: string;
   text: string;
 }
 
 interface ScanLog extends ScanFeedback {
-  id: number;
   time: string;
 }
 
@@ -134,6 +143,8 @@ export default class PackingComponent implements OnInit {
   private readonly lookups = inject(Lookups);
   private readonly destroyRef = inject(DestroyRef);
 
+readonly manualQrCode = signal('');
+
   readonly essentials = [
     'اختيار المادة ثم اللجنة المطلوب تغليفها',
     'مسح QR الصناديق وسيريال الأظرف بجهاز القراءة',
@@ -146,7 +157,16 @@ export default class PackingComponent implements OnInit {
     { label: '24', value: 24 }
   ];
 
-  readonly view = signal<View>('batches');
+  ngOnInit(): void {
+    this.loadSubjects();
+    this.loadGovernorates();
+    this.loadBatches();
+
+    this.destroyRef.onDestroy(() => {
+      this.clearIdleTimer();
+      this.clearSearchTimer();
+    });
+  }
 
   // =====================================================
   // Lookups (المحافظة + المادة)
@@ -156,12 +176,6 @@ export default class PackingComponent implements OnInit {
   readonly governorateOptions = signal<Option[]>([]);
   readonly subjectsLoading = signal(false);
   readonly governoratesLoading = signal(false);
-
-  ngOnInit(): void {
-    this.loadSubjects();
-    this.loadGovernorates();
-    this.loadBatches();
-  }
 
   loadSubjects(): void {
     this.loadLookup(
@@ -182,7 +196,17 @@ export default class PackingComponent implements OnInit {
       this.governoratesLoading
     );
   }
+/** تنفيذ المسح اليدوي عند الضغط على Enter */
+submitManualQr(): void {
+  const code = this.manualQrCode().trim();
 
+  if (!code || !this.scanActive()) {
+    return;
+  }
+
+  this.manualQrCode.set('');
+  this.processScan(code);
+}
   private loadLookup(
     request$: Observable<unknown>,
     nameKeys: string[],
@@ -313,7 +337,10 @@ export default class PackingComponent implements OnInit {
   readonly batchesLoading = signal(false);
   readonly batchesError = signal<string | null>(null);
   readonly batchPager = createPager(6);
+
+  /** المادة المفتوحة في الدايلوج (null = الدايلوج مقفول) */
   readonly selectedBatch = signal<PackingBatch | null>(null);
+  readonly step = signal<Step>('committees');
 
   private batchesSub?: Subscription;
 
@@ -346,14 +373,26 @@ export default class PackingComponent implements OnInit {
       });
   }
 
-  selectBatch(batch: PackingBatch): void {
-    this.selectedBatch.set(batch);
+  /** الضغط على مادة → يفتح دايلوج اللجان */
+  openBatch(batch: PackingBatch): void {
+    this.resetSession();
     this.committees.set([]);
     this.committeePager.page.set(1);
     this.committeePager.total.set(0);
-    this.claimError.set(null);
-    this.view.set('committees');
+    this.committeeSearch.set('');
+    this.clearSearchTimer();
+    this.selectedBatch.set(batch);
+    this.step.set('committees');
     this.loadCommittees();
+  }
+
+  private closeBatchDialog(): void {
+    this.resetSession();
+    this.committeeSearch.set('');
+    this.clearSearchTimer();
+    this.selectedBatch.set(null);
+    this.step.set('committees');
+    this.loadBatches(); // عشان أعداد اللجان المتبقية تتحدث
   }
 
   batchTone(batch: PackingBatch): Tone {
@@ -361,7 +400,7 @@ export default class PackingComponent implements OnInit {
   }
 
   // =====================================================
-  // Committees (اللجان)
+  // Committees (اللجان) - داخل الدايلوج
   // =====================================================
 
   readonly committees = signal<PackingCommittee[]>([]);
@@ -369,10 +408,37 @@ export default class PackingComponent implements OnInit {
   readonly committeesError = signal<string | null>(null);
   readonly committeePager = createPager(6);
 
-  readonly claimingId = signal<number | null>(null);
-  readonly claimError = signal<string | null>(null);
+  /** البحث برقم اللجنة (SearchTerm) */
+  readonly committeeSearch = signal('');
 
   private committeesSub?: Subscription;
+  private searchTimer?: ReturnType<typeof setTimeout>;
+
+  onCommitteeSearchInput(value: string): void {
+    this.committeeSearch.set(value ?? '');
+    this.clearSearchTimer();
+
+    // بحث تلقائي بعد ما اليوزر يوقف كتابة لحظة
+    this.searchTimer = setTimeout(() => this.searchCommitteesNow(), 400);
+  }
+
+  searchCommitteesNow(): void {
+    this.clearSearchTimer();
+    this.committeePager.page.set(1);
+    this.loadCommittees();
+  }
+
+  clearCommitteeSearch(): void {
+    this.committeeSearch.set('');
+    this.searchCommitteesNow();
+  }
+
+  private clearSearchTimer(): void {
+    if (this.searchTimer) {
+      clearTimeout(this.searchTimer);
+      this.searchTimer = undefined;
+    }
+  }
 
   loadCommittees(): void {
     const batch = this.selectedBatch();
@@ -386,10 +452,14 @@ export default class PackingComponent implements OnInit {
     this.committeesError.set(null);
 
     this.committeesSub = this.api
-      .getCommittees(batch.batchId, {
-        pageNumber: this.committeePager.page(),
-        pageSize: this.committeePager.size()
-      })
+      .getCommittees(
+        batch.batchId,
+        {
+          pageNumber: this.committeePager.page(),
+          pageSize: this.committeePager.size()
+        },
+        this.committeeSearch()
+      )
       .pipe(
         takeUntilDestroyed(this.destroyRef),
         finalize(() => this.committeesLoading.set(false))
@@ -404,29 +474,6 @@ export default class PackingComponent implements OnInit {
           this.committeePager.total.set(0);
           this.committeesError.set(this.errorMessage(error, 'تعذر تحميل اللجان'));
         }
-      });
-  }
-
-  claimCommittee(committee: PackingCommittee): void {
-    const batch = this.selectedBatch();
-
-    if (!batch || this.claimingId() !== null) {
-      return;
-    }
-
-    this.claimingId.set(committee.committeeId);
-    this.claimError.set(null);
-
-    this.api
-      .claimCommittee(batch.batchId, committee.committeeId)
-      .pipe(
-        takeUntilDestroyed(this.destroyRef),
-        finalize(() => this.claimingId.set(null))
-      )
-      .subscribe({
-        next: claimed => this.startSession(claimed),
-        error: error =>
-          this.claimError.set(this.errorMessage(error, 'تعذر حجز اللجنة للتغليف'))
       });
   }
 
@@ -466,17 +513,20 @@ export default class PackingComponent implements OnInit {
   }
 
   // =====================================================
-  // Packing session
+  // Packing session (صناديق + أظرف + مسح)
   // =====================================================
 
-  readonly scanInput = viewChild<ElementRef<HTMLInputElement>>('scanInput');
+  readonly selectedCommittee = signal<PackingCommittee | null>(null);
 
-  readonly claimed = signal<ClaimedCommittee | null>(null);
   readonly boxes = signal<BoxVm[]>([]);
+  readonly boxesLoading = signal(false);
+  readonly boxesError = signal<string | null>(null);
   readonly activeBoxId = signal<number | null>(null);
 
   readonly feedback = signal<ScanFeedback | null>(null);
   readonly scanLog = signal<ScanLog[]>([]);
+  readonly scanBuffer = signal('');
+  readonly soundOn = signal(true);
 
   readonly packing = signal(false);
   readonly packResult = signal<PackResult | null>(null);
@@ -484,11 +534,13 @@ export default class PackingComponent implements OnInit {
   readonly problems = signal<PackProblem[]>([]);
 
   readonly leaveDialogVisible = signal(false);
-  readonly releasing = signal(false);
-  private leaveTarget: 'batches' | 'committees' = 'committees';
 
+  private leaveTarget: LeaveTarget = 'committees';
+  private boxesSub?: Subscription;
   private serialIndex = new Map<string, number>();
   private logCounter = 0;
+  private idleTimer?: ReturnType<typeof setTimeout>;
+  private audioCtx?: AudioContext;
 
   readonly packDone = computed(() => this.packResult() !== null);
 
@@ -511,6 +563,8 @@ export default class PackingComponent implements OnInit {
 
       return {
         ...box,
+        main,
+        reserve,
         mainTotal: main.length,
         mainScanned,
         reserveTotal: reserve.length,
@@ -527,6 +581,7 @@ export default class PackingComponent implements OnInit {
     const boxesConfirmed = views.filter(v => v.qrScanned).length;
     const mainTotal = views.reduce((sum, v) => sum + v.mainTotal, 0);
     const mainScanned = views.reduce((sum, v) => sum + v.mainScanned, 0);
+    const reserveTotal = views.reduce((sum, v) => sum + v.reserveTotal, 0);
     const reserveScanned = views.reduce((sum, v) => sum + v.reserveScanned, 0);
     const all = boxTotal + mainTotal;
     const done = boxesConfirmed + mainScanned;
@@ -536,7 +591,10 @@ export default class PackingComponent implements OnInit {
       boxesConfirmed,
       mainTotal,
       mainScanned,
+      reserveTotal,
       reserveScanned,
+      boxesLeft: boxTotal - boxesConfirmed,
+      mainLeft: mainTotal - mainScanned,
       progress: all ? Math.round((done / all) * 100) : 0
     };
   });
@@ -546,15 +604,104 @@ export default class PackingComponent implements OnInit {
 
     return (
       t.boxTotal > 0 &&
-      t.boxesConfirmed === t.boxTotal &&
-      t.mainScanned === t.mainTotal &&
+      t.boxesLeft === 0 &&
+      t.mainLeft === 0 &&
       !this.packing() &&
       !this.packDone()
     );
   });
 
-  private startSession(data: ClaimedCommittee): void {
-    const boxes: BoxVm[] = [...data.boxes]
+  /** في مسح اتعمل ومتحفظش؟ */
+  readonly hasUnsaved = computed(() => {
+    const t = this.totals();
+
+    return (
+      this.step() === 'packing' &&
+      !this.packDone() &&
+      t.boxesConfirmed + t.mainScanned + t.reserveScanned > 0
+    );
+  });
+
+  /** القارئ شغال؟ */
+  readonly scanActive = computed(
+    () =>
+      this.selectedBatch() !== null &&
+      this.step() === 'packing' &&
+      !this.boxesLoading() &&
+      !this.boxesError() &&
+      this.boxes().length > 0 &&
+      !this.packing() &&
+      !this.packDone() &&
+      !this.leaveDialogVisible()
+  );
+
+  /** رسالة توجيهية للمستخدم */
+  readonly guide = computed(() => {
+    if (this.packDone()) {
+      return 'تم حفظ التغليف بنجاح';
+    }
+
+    const t = this.totals();
+
+    if (this.canPack()) {
+      return 'اكتمل المسح — اضغط «تأكيد التغليف»';
+    }
+
+    const parts: string[] = [];
+
+    if (t.boxesLeft) {
+      parts.push(`${t.boxesLeft} صندوق`);
+    }
+    if (t.mainLeft) {
+      parts.push(`${t.mainLeft} ظرف أساسي`);
+    }
+
+    return `متبقي مسح: ${parts.join(' و ')}`;
+  });
+
+  // ---------- فتح لجنة وتحميل صناديقها ----------
+
+  openCommittee(committee: PackingCommittee): void {
+    this.resetSession();
+    this.selectedCommittee.set(committee);
+    this.step.set('packing');
+    this.loadBoxes();
+  }
+
+  loadBoxes(): void {
+    const committee = this.selectedCommittee();
+    const batch = this.selectedBatch();
+
+    if (!committee || !batch) {
+      return;
+    }
+
+    this.boxesSub?.unsubscribe();
+    this.boxesLoading.set(true);
+    this.boxesError.set(null);
+
+    this.boxesSub = this.api
+      .getCommitteeBoxes(batch.batchId, committee.committeeId)
+      .pipe(
+        takeUntilDestroyed(this.destroyRef),
+        finalize(() => this.boxesLoading.set(false))
+      )
+      .subscribe({
+        next: data => {
+          if (!data.boxes.length) {
+            this.boxesError.set('لا توجد صناديق لهذه اللجنة');
+            return;
+          }
+
+          this.startSession(data.boxes);
+        },
+        error: error =>
+          this.boxesError.set(this.errorMessage(error, 'تعذر تحميل الصناديق والأظرف'))
+      });
+  }
+
+  private startSession(committeeBoxes: CommitteeBox[]): void {
+    const boxes: BoxVm[] = [...committeeBoxes]
       .sort((a, b) => a.sequenceNo - b.sequenceNo)
       .map(box => this.toBoxVm(box));
 
@@ -562,7 +709,6 @@ export default class PackingComponent implements OnInit {
       boxes.flatMap(box => box.envelopes.map(env => [env.serial, box.boxId] as const))
     );
 
-    this.claimed.set(data);
     this.boxes.set(boxes);
     this.activeBoxId.set(boxes[0]?.boxId ?? null);
     this.feedback.set(null);
@@ -570,12 +716,9 @@ export default class PackingComponent implements OnInit {
     this.problems.set([]);
     this.packResult.set(null);
     this.packError.set(null);
-    this.view.set('packing');
-
-    this.focusScanner(80);
   }
 
-  private toBoxVm(box: ClaimedBox): BoxVm {
+  private toBoxVm(box: CommitteeBox): BoxVm {
     const toEnvelope = (serial: string, kind: 'main' | 'reserve'): EnvelopeVm => ({
       serial,
       kind,
@@ -590,38 +733,76 @@ export default class PackingComponent implements OnInit {
       expectedEnvelopeCount: box.expectedEnvelopeCount,
       qrScanned: false,
       envelopes: [
-        ...(box.mainEnvelopes ?? []).map(serial => toEnvelope(serial, 'main')),
-        ...(box.reserveEnvelopes ?? []).map(serial => toEnvelope(serial, 'reserve'))
+        ...box.requiredEnvelopes.map(serial => toEnvelope(serial, 'main')),
+        ...box.bonusEnvelopes.map(serial => toEnvelope(serial, 'reserve'))
       ]
     };
   }
 
-  // ---------- Scanner (الجلسة مفتوحة دائماً) ----------
+  // ---------- Scanner: الجلسة مفتوحة دائمًا بدون input ----------
+  // جهاز القراءة بيكتب الكود ثم Enter، فبنلتقطه من الكيبورد مباشرة.
 
-  onScan(input: HTMLInputElement): void {
-    const code = input.value.trim();
-    input.value = '';
-
-    if (!code || this.packing() || this.packDone()) {
+  @HostListener('document:keydown', ['$event'])
+  onKeydown(event: KeyboardEvent): void {
+    if (!this.scanActive()) {
       return;
     }
 
-    this.processScan(code);
+    const target = event.target as HTMLElement | null;
+    const tag = target?.tagName;
+
+    if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || target?.isContentEditable) {
+      return;
+    }
+
+    if (event.ctrlKey || event.metaKey || event.altKey) {
+      return;
+    }
+
+    if (event.key === 'Enter' || event.key === 'Tab') {
+      if (this.scanBuffer()) {
+        event.preventDefault();
+        this.flushBuffer();
+      }
+      return;
+    }
+
+    if (event.key.length !== 1) {
+      return;
+    }
+
+    // المسافة بدون كود قيد القراءة تفضل شغالة للأزرار
+    if (event.key === ' ' && !this.scanBuffer()) {
+      return;
+    }
+
+    event.preventDefault();
+    this.scanBuffer.update(buffer => buffer + event.key);
+    this.armIdleReset();
   }
 
-  keepFocus(): void {
-    if (
-      this.view() === 'packing' &&
-      !this.packing() &&
-      !this.packDone() &&
-      !this.leaveDialogVisible()
-    ) {
-      this.focusScanner();
+  private flushBuffer(): void {
+    const code = this.scanBuffer().trim();
+
+    this.scanBuffer.set('');
+    this.clearIdleTimer();
+
+    if (code) {
+      this.processScan(code);
     }
   }
 
-  focusScanner(delay = 0): void {
-    setTimeout(() => this.scanInput()?.nativeElement.focus(), delay);
+  /** لو القراءة وقفت في النص، بنمسح الباقي عشان ما يتلخبطش */
+  private armIdleReset(): void {
+    this.clearIdleTimer();
+    this.idleTimer = setTimeout(() => this.scanBuffer.set(''), 1000);
+  }
+
+  private clearIdleTimer(): void {
+    if (this.idleTimer) {
+      clearTimeout(this.idleTimer);
+      this.idleTimer = undefined;
+    }
   }
 
   private processScan(code: string): void {
@@ -693,14 +874,13 @@ export default class PackingComponent implements OnInit {
 
     this.problems.update(list => list.filter(problem => problem.boxId !== boxId));
     this.notify('warning', '', 'تمت إعادة تعيين مسح الصندوق');
-    this.focusScanner();
   }
 
   private patchBox(boxId: number, fn: (box: BoxVm) => BoxVm): void {
     this.boxes.update(list => list.map(box => (box.boxId === boxId ? fn(box) : box)));
   }
 
-  private highlightBox(boxId: number): void {
+  highlightBox(boxId: number): void {
     this.activeBoxId.set(boxId);
 
     setTimeout(
@@ -713,12 +893,36 @@ export default class PackingComponent implements OnInit {
   }
 
   private notify(tone: Tone, code: string, text: string): void {
-    const entry: ScanFeedback = { tone, code, text };
+    const entry: ScanFeedback = { id: ++this.logCounter, tone, code, text };
 
     this.feedback.set(entry);
-    this.scanLog.update(list =>
-      [{ ...entry, id: ++this.logCounter, time: this.now() }, ...list].slice(0, 8)
-    );
+    this.scanLog.update(list => [{ ...entry, time: this.now() }, ...list].slice(0, 8));
+    this.beep(tone);
+  }
+
+  private beep(tone: Tone): void {
+    if (!this.soundOn()) {
+      return;
+    }
+
+    try {
+      const ctx = (this.audioCtx ??= new AudioContext());
+      void ctx.resume();
+
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+
+      osc.type = 'sine';
+      osc.frequency.value = tone === 'success' ? 880 : tone === 'warning' ? 520 : 220;
+      gain.gain.value = 0.08;
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + (tone === 'danger' ? 0.28 : 0.1));
+    } catch {
+      // الصوت اختياري
+    }
   }
 
   private now(): string {
@@ -737,10 +941,18 @@ export default class PackingComponent implements OnInit {
         : 'pi-times-circle';
   }
 
+  envTone(env: EnvelopeVm): 'success' | 'danger' | 'pending' {
+    if (this.problemSerials().has(env.serial)) {
+      return 'danger';
+    }
+
+    return env.scanned ? 'success' : 'pending';
+  }
+
   // ---------- Confirm packing ----------
 
   confirmPacking(): void {
-    const committee = this.claimed();
+    const committee = this.selectedCommittee();
 
     if (!committee || !this.canPack()) {
       return;
@@ -777,83 +989,87 @@ export default class PackingComponent implements OnInit {
           }
 
           this.packError.set(outcome.message || 'يوجد مشاكل في التغليف، راجع التفاصيل أدناه');
-          this.focusScanner();
         },
-        error: error => {
-          this.packError.set(this.errorMessage(error, 'تعذر تأكيد التغليف'));
-          this.focusScanner();
-        }
+        error: error => this.packError.set(this.errorMessage(error, 'تعذر تأكيد التغليف'))
       });
   }
 
-  // ---------- Leave / release ----------
+  // ---------- Navigation / leave ----------
 
-  goBack(target: 'batches' | 'committees'): void {
-    if (this.view() === 'packing' && !this.packDone()) {
-      this.leaveTarget = target;
+  /** رجوع من الصناديق إلى اللجان */
+  requestBack(): void {
+    if (this.packing()) {
+      return;
+    }
+
+    if (this.hasUnsaved()) {
+      this.leaveTarget = 'committees';
       this.leaveDialogVisible.set(true);
       return;
     }
 
-    this.navigate(target);
+    this.backToCommittees();
   }
 
-  confirmRelease(): void {
-    const committee = this.claimed();
-
-    if (!committee || this.releasing()) {
+  /** قفل الدايلوج بالكامل */
+  requestCloseDialog(): void {
+    if (this.packing()) {
       return;
     }
 
-    this.releasing.set(true);
+    if (this.hasUnsaved()) {
+      this.leaveTarget = 'close';
+      this.leaveDialogVisible.set(true);
+      return;
+    }
 
-    this.api
-      .releaseCommittee(committee.committeeId)
-      .pipe(
-        takeUntilDestroyed(this.destroyRef),
-        finalize(() => this.releasing.set(false))
-      )
-      .subscribe({
-        next: () => {
-          this.leaveDialogVisible.set(false);
-          this.navigate(this.leaveTarget);
-        },
-        error: error => {
-          this.leaveDialogVisible.set(false);
-          this.packError.set(this.errorMessage(error, 'تعذر تحرير اللجنة'));
-        }
-      });
+    this.closeBatchDialog();
+  }
+
+  onBatchDialogVisibleChange(visible: boolean): void {
+    if (!visible) {
+      this.requestCloseDialog();
+    }
+  }
+
+  onLeaveVisibleChange(visible: boolean): void {
+    if (!visible) {
+      this.leaveDialogVisible.set(false);
+    }
+  }
+
+  confirmLeave(): void {
+    this.leaveDialogVisible.set(false);
+
+    if (this.leaveTarget === 'close') {
+      this.closeBatchDialog();
+    } else {
+      this.backToCommittees();
+    }
   }
 
   cancelLeave(): void {
-    if (this.releasing()) {
-      return;
-    }
-
     this.leaveDialogVisible.set(false);
-    this.focusScanner();
   }
 
-  private navigate(target: 'batches' | 'committees'): void {
+  private backToCommittees(): void {
     this.resetSession();
-
-    if (target === 'batches') {
-      this.selectedBatch.set(null);
-      this.view.set('batches');
-      this.loadBatches();
-      return;
-    }
-
-    this.view.set('committees');
-    this.loadCommittees();
+    this.step.set('committees');
+    this.loadCommittees(); // اللجنة اللي اتغلفت تختفي من القائمة
   }
 
   private resetSession(): void {
-    this.claimed.set(null);
+    this.boxesSub?.unsubscribe();
+    this.clearIdleTimer();
+
+    this.selectedCommittee.set(null);
     this.boxes.set([]);
+    this.boxesLoading.set(false);
+    this.boxesError.set(null);
     this.activeBoxId.set(null);
     this.feedback.set(null);
     this.scanLog.set([]);
+    this.scanBuffer.set('');
     this.problems.set([]);
     this.packResult.set(null);
     this.packError.set(null);

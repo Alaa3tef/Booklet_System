@@ -1,12 +1,17 @@
-// core/models/packing.model.ts
+// model/packing.model.ts
+
+// =====================================================
+// Generic
+// =====================================================
 
 export interface ApiResponse<T> {
   success: boolean;
-  message: string;
-  data: T;
-  statusCode: number;
-  errors: string[] | null;
+  message?: string;
+  data?: T;
+  errors?: string[];
+  statusCode?: number;
   count?: number;
+  totalCount?: number;
 }
 
 export interface PageQuery {
@@ -19,7 +24,9 @@ export interface PagedResult<T> {
   total: number;
 }
 
-// ---------- Batches (المواد) ----------
+// =====================================================
+// Batches
+// =====================================================
 
 export interface PackingBatchFilters {
   governorateId?: number | null;
@@ -40,7 +47,9 @@ export interface PackingBatch {
   pendingCommitteeCount: number;
 }
 
-// ---------- Committees (اللجان) ----------
+// =====================================================
+// Committees
+// =====================================================
 
 export interface PackingCommittee {
   committeeId: number;
@@ -52,39 +61,42 @@ export interface PackingCommittee {
   boxCount: number;
 }
 
-// ---------- Claim (الصناديق + الأظرف) ----------
-
-export interface ClaimedBox {
+/** صندوق + الأظرف اللي جواه */
+export interface CommitteeBox {
   boxId: number;
   sequenceNo: number;
   qrCode: string;
   expectedEnvelopeCount: number;
-  mainEnvelopes: string[];
-  reserveEnvelopes: string[];
+  /** الأظرف الأساسية */
+  requiredEnvelopes: string[];
+  /** الأظرف الاحتياطية */
+  bonusEnvelopes: string[];
 }
 
-export interface ClaimedCommittee {
-  batchId: number;
-  batchLabel: string;
+/** GET /api/Committees/{id}/envelopes-with-boxes */
+export interface CommitteeBoxes {
   committeeId: number;
   committeeNumber: string;
-  status: string;
-  assignedToUserId: number;
-  assignedAt: string;
-  boxCount: number;
-  boxes: ClaimedBox[];
+  boxes: CommitteeBox[];
 }
 
-// ---------- Pack ----------
-
-export interface PackBoxRequest {
-  boxId: number;
-  qrCode: string;
-  envelopeSerials: string[];
-}
+// =====================================================
+// Pack
+// =====================================================
 
 export interface PackRequest {
-  boxes: PackBoxRequest[];
+  boxes: {
+    boxId: number;
+    qrCode: string;
+    envelopeSerials: string[];
+  }[];
+}
+
+export interface PackProblem {
+  boxId: number;
+  sequenceNo: number;
+  serial?: string | null;
+  reason: string;
 }
 
 export interface PackedBox {
@@ -92,14 +104,6 @@ export interface PackedBox {
   sequenceNo: number;
   qrCode: string;
   status: string;
-}
-
-export interface PackProblem {
-  boxId: number;
-  sequenceNo: number;
-  serial: string;
-  qrCode: string;
-  reason: string;
 }
 
 export interface PackResult {
@@ -112,11 +116,24 @@ export interface PackResult {
 
 export interface PackOutcome {
   success: boolean;
-  message: string;
+  message?: string;
   data: PackResult | null;
 }
 
-// ---------- Release ----------
+// =====================================================
+// Claim / Release (غير مستخدمين حاليًا)
+// =====================================================
+
+export interface ClaimedCommittee {
+  batchId: number;
+  batchLabel: string;
+  committeeId: number;
+  committeeNumber: string;
+  status: string;
+  assignedToUserId?: number;
+  assignedAt?: string;
+  boxCount?: number;
+}
 
 export interface ReleasedCommittee {
   committeeId: number;

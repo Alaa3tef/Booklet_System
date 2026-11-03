@@ -657,6 +657,9 @@
 <!-- ==========================================
      BATCH DETAILS DIALOG
 =========================================== -->
+<!-- ==========================================
+     BATCH DETAILS DIALOG
+=========================================== -->
 <p-dialog
   [(visible)]="batchDetailsDialogVisible"
   [modal]="true"
@@ -719,47 +722,125 @@
         </div>
       </div>
 
-      <!-- Committees Table -->
-      <h5 class="committees-table-title">قائمة اللجان التابعة للدفعة ({{ selectedBatchDetails.committees.length }} لجنة)</h5>
+      <!-- Committees header + search -->
+      <div class="details-toolbar">
+        <h5 class="committees-table-title">قائمة اللجان التابعة للدفعة ({{ detailsTotal() }} لجنة)</h5>
 
-      <p-table
-        [value]="selectedBatchDetails.committees || []"
-        [paginator]="true"
-        [rows]="5"
-        styleClass="p-datatable-sm p-datatable-striped"
-        responsiveLayout="scroll">
+        <div class="details-search">
+          <i class="pi pi-search"></i>
+          <input
+            type="text"
+            pInputText
+            [ngModel]="detailsSearch()"
+            (ngModelChange)="onDetailsSearch($event)"
+            placeholder="بحث برقم اللجنة أو المدرسة..."
+            autocomplete="off"
+          />
+          @if (detailsSearch()) {
+            <button type="button" class="details-search-clear" aria-label="مسح البحث" (click)="clearDetailsSearch()">
+              <i class="pi pi-times"></i>
+            </button>
+          }
+        </div>
+      </div>
 
-        <ng-template pTemplate="header">
-          <tr>
-            <th>رقم اللجنة</th>
-            <th>اسم المدرسة / اللجنة</th>
-            <th>الإدارة التعليمية</th>
-            <th>نوع اللجنة</th>
-            <th>البوكليت المطلوب</th>
-            <th>البوكليت الاحتياطي</th>
-            <th>الصناديق</th>
-          </tr>
-        </ng-template>
+      <!-- Committees Table (البيانات جاية من الباك صفحة صفحة، فمفيش paginator جوه الجدول) -->
+      <div class="details-table-wrap">
+        <p-table
+          [value]="detailsCommittees()"
+          [loading]="detailsTableLoading()"
+          [paginator]="false"
+          styleClass="p-datatable-sm p-datatable-striped">
 
-        <ng-template pTemplate="body" let-c>
-          <tr>
-            <td dir="ltr" class="font-bold">{{ c.committeeNumber }}</td>
-            <td>{{ c.schoolName }}</td>
-            <td>{{ c.educationalAdministration || '—' }}</td>
-            <td>{{ c.committeeType || '—' }}</td>
-            <td>{{ c.requiredBookletCount }}</td>
-            <td>{{ c.bonusBookletCount }}</td>
-            <td>{{ c.boxCount }}</td>
-          </tr>
-        </ng-template>
+          <ng-template pTemplate="header">
+            <tr>
+              <th>رقم اللجنة</th>
+              <th>اسم المدرسة / اللجنة</th>
+              <th>الإدارة التعليمية</th>
+              <th>نوع اللجنة</th>
+              <th>البوكليت المطلوب</th>
+              <th>البوكليت الاحتياطي</th>
+              <th>الصناديق</th>
+            </tr>
+          </ng-template>
 
-        <ng-template pTemplate="emptymessage">
-          <tr>
-            <td colspan="7" class="text-center py-4">لا توجد لجان مسجلة في هذه الدفعة.</td>
-          </tr>
-        </ng-template>
+          <ng-template pTemplate="body" let-c>
+            <tr>
+              <td dir="ltr" class="font-bold">{{ c.committeeNumber }}</td>
+              <td>{{ c.schoolName }}</td>
+              <td>{{ c.educationalAdministration || '—' }}</td>
+              <td>{{ c.committeeType || '—' }}</td>
+              <td>{{ c.requiredBookletCount }}</td>
+              <td>{{ c.bonusBookletCount }}</td>
+              <td>{{ c.boxCount }}</td>
+            </tr>
+          </ng-template>
 
-      </p-table>
+          <ng-template pTemplate="emptymessage">
+            <tr>
+              <td colspan="7" class="text-center py-4">
+                {{ detailsSearch() ? 'لا توجد لجان مطابقة للبحث.' : 'لا توجد لجان مسجلة في هذه الدفعة.' }}
+              </td>
+            </tr>
+          </ng-template>
+        </p-table>
+      </div>
+
+      <!-- Details pagination (server-side) -->
+      @if (detailsTotal() > 0) {
+        <nav class="details-pagination" aria-label="تنقل صفحات اللجان" dir="rtl">
+          <div class="details-pagination-info">
+            عرض <strong>{{ detailsPaginationStart() }} - {{ detailsPaginationEnd() }}</strong>
+            من <strong>{{ detailsTotal() }}</strong> لجنة
+          </div>
+
+          <div class="details-page-size">
+            <span>عدد الصفوف</span>
+            <p-select
+              [options]="detailsPageSizeOptions"
+              optionLabel="label"
+              optionValue="value"
+              [ngModel]="detailsPageSize()"
+              (ngModelChange)="onDetailsPageSizeChange($event)"
+              appendTo="body"
+              [baseZIndex]="4000"
+              styleClass="details-size-select"
+            />
+          </div>
+
+          @if (detailsTotalPages() > 1) {
+            <div class="details-pagination-controls">
+              <button type="button" class="details-page-btn"
+                [disabled]="detailsPage() === 1 || detailsTableLoading()"
+                (click)="goToDetailsPage(detailsPage() - 1)"
+                aria-label="الصفحة السابقة">
+                <i class="pi pi-chevron-right"></i>
+              </button>
+
+              @for (p of detailsPaginationPages(); track $index) {
+                @if (p === 'dots') {
+                  <span class="details-page-dots" aria-hidden="true">...</span>
+                } @else {
+                  <button type="button" class="details-page-btn"
+                    [class.active]="p === detailsPage()"
+                    [disabled]="detailsTableLoading()"
+                    [attr.aria-current]="p === detailsPage() ? 'page' : null"
+                    (click)="goToDetailsPage(p)">
+                    {{ p }}
+                  </button>
+                }
+              }
+
+              <button type="button" class="details-page-btn"
+                [disabled]="detailsPage() === detailsTotalPages() || detailsTableLoading()"
+                (click)="goToDetailsPage(detailsPage() + 1)"
+                aria-label="الصفحة التالية">
+                <i class="pi pi-chevron-left"></i>
+              </button>
+            </div>
+          }
+        </nav>
+      }
 
     </div>
   }

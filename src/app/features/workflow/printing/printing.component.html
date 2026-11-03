@@ -35,69 +35,69 @@
           <i class="pi pi-building"></i>
           <div>
             <strong>{{ totalPending() }}</strong>
-            <span>لجنة قيد الطباعة</span>
+            <span>لجنة قيد الطباعة (بالصفحة)</span>
           </div>
         </div>
       </div>
     </section>
 
     <!-- ========== Filters ========== -->
-<section class="pr-box pr-filters">
+    <section class="pr-box pr-filters">
 
-  <div class="pr-field">
-    <label for="printing-governorate">المحافظة</label>
+      <div class="pr-field">
+        <label for="printing-governorate">المحافظة</label>
 
-    <p-select
-      inputId="printing-governorate"
-      [options]="governorateOptions()"
-      [ngModel]="selectedGovernorate()"
-      (ngModelChange)="onGovernorateChange($event)"
-      optionLabel="label"
-      optionValue="value"
-      placeholder="كل المحافظات"
-      [filter]="true"
-      filterPlaceholder="ابحث عن محافظة..."
-      emptyMessage="لا توجد محافظات"
-      [showClear]="true"
-      [disabled]="lookupsLoading()"
-      styleClass="pr-input"
-    />
-  </div>
+        <p-select
+          inputId="printing-governorate"
+          [options]="governorateOptions()"
+          [ngModel]="selectedGovernorate()"
+          (ngModelChange)="onGovernorateChange($event)"
+          optionLabel="label"
+          optionValue="value"
+          placeholder="كل المحافظات"
+          [filter]="true"
+          filterPlaceholder="ابحث عن محافظة..."
+          emptyMessage="لا توجد محافظات"
+          [showClear]="true"
+          [disabled]="lookupsLoading()"
+          styleClass="pr-input"
+        />
+      </div>
 
-  <div class="pr-field">
-    <label for="printing-subject">المادة</label>
+      <div class="pr-field">
+        <label for="printing-subject">المادة</label>
 
-    <p-select
-      inputId="printing-subject"
-      [options]="subjectOptions()"
-      [ngModel]="selectedSubject()"
-      (ngModelChange)="onSubjectChange($event)"
-      optionLabel="label"
-      optionValue="value"
-      placeholder="كل المواد"
-      [filter]="true"
-      filterPlaceholder="ابحث عن مادة..."
-      emptyMessage="لا توجد مواد"
-      [showClear]="true"
-      [disabled]="lookupsLoading()"
-      styleClass="pr-input"
-    />
-  </div>
+        <p-select
+          inputId="printing-subject"
+          [options]="subjectOptions()"
+          [ngModel]="selectedSubject()"
+          (ngModelChange)="onSubjectChange($event)"
+          optionLabel="label"
+          optionValue="value"
+          placeholder="كل المواد"
+          [filter]="true"
+          filterPlaceholder="ابحث عن مادة..."
+          emptyMessage="لا توجد مواد"
+          [showClear]="true"
+          [disabled]="lookupsLoading()"
+          styleClass="pr-input"
+        />
+      </div>
 
-  <button
-    pButton
-    type="button"
-    class="pr-btn pr-btn-ghost"
-    pTooltip="إعادة تعيين"
-    tooltipPosition="top"
-    aria-label="إعادة تعيين"
-    [disabled]="!hasActiveFilters() || loading()"
-    (click)="resetFilters()"
-  >
-    <i class="pi pi-filter-slash"></i>
-  </button>
+      <button
+        pButton
+        type="button"
+        class="pr-btn pr-btn-ghost"
+        pTooltip="إعادة تعيين"
+        tooltipPosition="top"
+        aria-label="إعادة تعيين"
+        [disabled]="!hasActiveFilters() || loading()"
+        (click)="resetFilters()"
+      >
+        <i class="pi pi-filter-slash"></i>
+      </button>
 
-</section>
+    </section>
 
     <!-- ========== Error ========== -->
     <div class="pr-alert" *ngIf="loadError()">
@@ -172,12 +172,12 @@
     <ng-template #emptyState>
       <div class="pr-box pr-empty" *ngIf="!(loading() && !batches().length)">
         <i class="pi pi-search"></i>
-        <strong>{{ batches().length ? 'لا توجد نتائج مطابقة للبحث' : 'لا توجد مواد للطباعة حالياً' }}</strong>
-        <span *ngIf="batches().length">جرّب تغيير معايير البحث أو إعادة تعيين الفلاتر.</span>
+        <strong>{{ hasActiveFilters() ? 'لا توجد نتائج مطابقة للبحث' : 'لا توجد مواد للطباعة حالياً' }}</strong>
+        <span *ngIf="hasActiveFilters()">جرّب تغيير معايير البحث أو إعادة تعيين الفلاتر.</span>
       </div>
     </ng-template>
 
-    <!-- ========== Pagination ========== -->
+    <!-- ========== Pagination (batches) ========== -->
     <div class="pr-pager" *ngIf="total() > 0">
       <span>
         عرض <b>{{ paginationStart() }}</b> - <b>{{ paginationEnd() }}</b> من <b>{{ total() }}</b> مادة
@@ -191,12 +191,13 @@
           optionValue="value"
           [ngModel]="pageSize()"
           (ngModelChange)="onPageSizeChange($event)"
+          [disabled]="loading()"
           styleClass="pr-input pr-size"
         />
       </div>
 
       <div class="pr-pager-nav">
-        <button type="button" [disabled]="currentPage() === 1" (click)="goToPage(currentPage() - 1)" aria-label="السابق">
+        <button type="button" [disabled]="currentPage() === 1 || loading()" (click)="goToPage(currentPage() - 1)" aria-label="السابق">
           <i class="pi pi-chevron-right"></i>
         </button>
 
@@ -206,13 +207,14 @@
             *ngIf="page !== 'dots'"
             type="button"
             [class.active]="page === currentPage()"
+            [disabled]="loading()"
             (click)="goToPage(+page)"
           >
             {{ page }}
           </button>
         </ng-container>
 
-        <button type="button" [disabled]="currentPage() === totalPages()" (click)="goToPage(currentPage() + 1)" aria-label="التالي">
+        <button type="button" [disabled]="currentPage() === totalPages() || loading()" (click)="goToPage(currentPage() + 1)" aria-label="التالي">
           <i class="pi pi-chevron-left"></i>
         </button>
       </div>
@@ -260,150 +262,206 @@
           </button>
         </div>
 
-        <!-- Loading -->
-        <div class="pr-empty" *ngIf="committeesLoading()">
+        <!-- Loading (أول تحميل فقط) -->
+        <div class="pr-empty" *ngIf="committeesLoading() && !committees().length">
           <i class="pi pi-spin pi-spinner"></i>
           <strong>جاري تحميل اللجان...</strong>
         </div>
 
-        <ng-container *ngIf="!committeesLoading() && !committeesError()">
+        <ng-container *ngIf="!(committeesLoading() && !committees().length) && !committeesError()">
 
-          <!-- All printed -->
-          <div class="pr-empty pr-empty-success" *ngIf="finishedAll()">
-            <i class="pi pi-check-circle"></i>
-            <strong>تم تسجيل انتهاء طباعة كل لجان هذه المادة</strong>
-            <span>لا توجد لجان متبقية قيد الطباعة.</span>
+          <!-- Summary -->
+          <div class="pr-summary" *ngIf="committeesTotal() > 0">
+            <div class="pr-sum" data-tone="neutral">
+              <i class="pi pi-building"></i>
+              <div>
+                <small>اللجان</small>
+                <strong>{{ committeesTotal() | number }}</strong>
+                <em>الإجمالي</em>
+              </div>
+            </div>
+            <div class="pr-sum" data-tone="info">
+              <i class="pi pi-book"></i>
+              <div>
+                <small>إجمالي الكراسات (هذه الصفحة)</small>
+                <strong>{{ totals().booklets | number }}</strong>
+                <em>مطلوب {{ totals().requiredBooklets | number }} + إضافي {{ totals().bonusBooklets | number }}</em>
+              </div>
+            </div>
+            <div class="pr-sum" data-tone="warning">
+              <i class="pi pi-envelope"></i>
+              <div>
+                <small>إجمالي الظروف (هذه الصفحة)</small>
+                <strong>{{ totals().envelopes | number }}</strong>
+                <em>مطلوب {{ totals().requiredEnvelopes | number }} + إضافي {{ totals().bonusEnvelopes | number }}</em>
+              </div>
+            </div>
+            <div class="pr-sum" data-tone="success">
+              <i class="pi pi-box"></i>
+              <div>
+                <small>الكراتين (هذه الصفحة)</small>
+                <strong>{{ totals().boxes | number }}</strong>
+              </div>
+            </div>
           </div>
 
-          <ng-container *ngIf="!finishedAll()">
+          <!-- Toolbar -->
+          <div class="pr-toolbar">
+            <label class="pr-check pr-check-all">
+              <input
+                type="checkbox"
+                [checked]="allSelected()"
+                [indeterminate]="someSelected()"
+                [disabled]="!dialogRows().length || printSubmitting()"
+                (change)="toggleAll()"
+              />
+              <span>تحديد كل لجان الصفحة ({{ dialogRows().length }})</span>
+            </label>
 
-            <!-- Summary -->
-            <div class="pr-summary" *ngIf="totals().committees">
-              <div class="pr-sum" data-tone="neutral">
-                <i class="pi pi-building"></i>
-                <div><small>اللجان</small><strong>{{ totals().committees }}</strong></div>
-              </div>
-              <div class="pr-sum" data-tone="info">
-                <i class="pi pi-book"></i>
-                <div>
-                  <small>إجمالي الكراسات</small>
-                  <strong>{{ totals().booklets | number }}</strong>
-                  <em>مطلوب {{ totals().requiredBooklets | number }} + إضافي {{ totals().bonusBooklets | number }}</em>
+            <span class="pr-search pr-search-sm">
+              <i class="pi pi-search"></i>
+              <input
+                pInputText
+                class="pr-input"
+                inputmode="numeric"
+                maxlength="10"
+                placeholder="بحث برقم اللجنة"
+                [ngModel]="dialogSearch()"
+                (ngModelChange)="onDialogSearch($event)"
+              />
+            </span>
+          </div>
+
+          <!-- Committees -->
+          <div
+            class="pr-list"
+            [class.pr-loading]="committeesLoading()"
+            *ngIf="dialogRows().length; else noCommittees"
+          >
+            <article
+              class="pr-com"
+              *ngFor="let c of dialogRows(); trackBy: trackCommittee"
+              role="checkbox"
+              tabindex="0"
+              [attr.aria-checked]="isSelected(c)"
+              [class.selected]="isSelected(c)"
+              (click)="toggleRow(c)"
+              (keydown.space)="toggleRow(c); $event.preventDefault()"
+            >
+              <header>
+                <label class="pr-check" (click)="$event.stopPropagation()">
+                  <input
+                    type="checkbox"
+                    [checked]="isSelected(c)"
+                    [disabled]="printSubmitting()"
+                    (change)="toggleRow(c)"
+                    [attr.aria-label]="'تحديد اللجنة ' + c.committeeNumber"
+                  />
+                </label>
+
+                <div class="pr-com-no">
+                  <small>رقم اللجنة</small>
+                  <strong class="pr-mono">{{ c.committeeNumber }}</strong>
+                </div>
+
+                <span class="pr-pill" data-tone="warning">
+                  <i class="pi pi-clock"></i>قيد الطباعة
+                </span>
+              </header>
+
+              <div class="pr-metrics">
+                <div class="pr-metric" data-tone="info">
+                  <span class="pr-metric-ico"><i class="pi pi-book"></i></span>
+                  <div>
+                    <small>الكراسات</small>
+                    <strong>{{ booklets(c) | number }}</strong>
+                    <em>{{ c.requiredBooklets | number }} مطلوب + {{ c.bonusBooklets | number }} إضافي</em>
+                  </div>
+                </div>
+
+                <div class="pr-metric" data-tone="warning">
+                  <span class="pr-metric-ico"><i class="pi pi-envelope"></i></span>
+                  <div>
+                    <small>الظروف</small>
+                    <strong>{{ envelopes(c) | number }}</strong>
+                    <em>{{ c.requiredEnvelopes | number }} مطلوب + {{ c.bonusEnvelopes | number }} إضافي</em>
+                  </div>
+                </div>
+
+                <div class="pr-metric" data-tone="success">
+                  <span class="pr-metric-ico"><i class="pi pi-box"></i></span>
+                  <div>
+                    <small>الكراتين</small>
+                    <strong>{{ c.boxCount | number }}</strong>
+                    <em>عدد الكراتين</em>
+                  </div>
                 </div>
               </div>
-              <div class="pr-sum" data-tone="warning">
-                <i class="pi pi-envelope"></i>
-                <div>
-                  <small>إجمالي الظروف</small>
-                  <strong>{{ totals().envelopes | number }}</strong>
-                  <em>مطلوب {{ totals().requiredEnvelopes | number }} + إضافي {{ totals().bonusEnvelopes | number }}</em>
-                </div>
-              </div>
-              <div class="pr-sum" data-tone="success">
-                <i class="pi pi-box"></i>
-                <div><small>الكراتين</small><strong>{{ totals().boxes | number }}</strong></div>
-              </div>
+            </article>
+          </div>
+
+          <ng-template #noCommittees>
+            <div class="pr-empty" *ngIf="!committeesLoading()">
+              <i class="pi pi-search"></i>
+              <strong>{{ dialogSearch().trim() ? 'لا توجد لجان مطابقة' : 'لا توجد لجان قيد الطباعة' }}</strong>
+              <span *ngIf="dialogSearch().trim()">جرّب تغيير رقم اللجنة.</span>
+            </div>
+          </ng-template>
+
+          <!-- Pagination (committees) -->
+          <div class="pr-pager" *ngIf="committeesTotal() > 0">
+            <span>
+              عرض <b>{{ committeesStart() }}</b> - <b>{{ committeesEnd() }}</b> من <b>{{ committeesTotal() }}</b> لجنة
+            </span>
+
+            <div class="pr-pager-size">
+              <span>عدد اللجان</span>
+              <p-select
+                [options]="pageSizes"
+                optionLabel="label"
+                optionValue="value"
+                appendTo="body"
+                [ngModel]="committeesPageSize()"
+                (ngModelChange)="onCommitteesPageSizeChange($event)"
+                [disabled]="committeesLoading() || printSubmitting()"
+                styleClass="pr-input pr-size"
+              />
             </div>
 
-            <!-- Toolbar -->
-            <div class="pr-toolbar">
-              <label class="pr-check pr-check-all">
-                <input
-                  type="checkbox"
-                  [checked]="allSelected()"
-                  [indeterminate]="someSelected()"
-                  [disabled]="!dialogRows().length || printSubmitting()"
-                  (change)="toggleAll()"
-                />
-                <span>تحديد الكل ({{ dialogRows().length }})</span>
-              </label>
-
-              <span class="pr-search pr-search-sm">
-                <i class="pi pi-search"></i>
-                <input
-                  pInputText
-                  class="pr-input"
-                  inputmode="numeric"
-                  maxlength="10"
-                  placeholder="بحث برقم اللجنة"
-                  [ngModel]="dialogSearch()"
-                  (ngModelChange)="dialogSearch.set($event)"
-                />
-              </span>
-            </div>
-
-            <!-- Committees -->
-            <div class="pr-list" *ngIf="dialogRows().length; else noCommittees">
-              <article
-                class="pr-com"
-                *ngFor="let c of dialogRows(); trackBy: trackCommittee"
-                role="checkbox"
-                tabindex="0"
-                [attr.aria-checked]="isSelected(c)"
-                [class.selected]="isSelected(c)"
-                (click)="toggleRow(c)"
-                (keydown.space)="toggleRow(c); $event.preventDefault()"
+            <div class="pr-pager-nav">
+              <button
+                type="button"
+                [disabled]="committeesPage() === 1 || committeesLoading()"
+                (click)="goToCommitteesPage(committeesPage() - 1)"
+                aria-label="السابق"
               >
-                <header>
-                  <label class="pr-check" (click)="$event.stopPropagation()">
-                    <input
-                      type="checkbox"
-                      [checked]="isSelected(c)"
-                      [disabled]="printSubmitting()"
-                      (change)="toggleRow(c)"
-                      [attr.aria-label]="'تحديد اللجنة ' + c.committeeNumber"
-                    />
-                  </label>
+                <i class="pi pi-chevron-right"></i>
+              </button>
 
-                  <div class="pr-com-no">
-                    <small>رقم اللجنة</small>
-                    <strong class="pr-mono">{{ c.committeeNumber }}</strong>
-                  </div>
+              <ng-container *ngFor="let page of committeesPaginationPages()">
+                <span *ngIf="page === 'dots'">...</span>
+                <button
+                  *ngIf="page !== 'dots'"
+                  type="button"
+                  [class.active]="page === committeesPage()"
+                  [disabled]="committeesLoading()"
+                  (click)="goToCommitteesPage(+page)"
+                >
+                  {{ page }}
+                </button>
+              </ng-container>
 
-                  <span class="pr-pill" data-tone="warning">
-                    <i class="pi pi-clock"></i>قيد الطباعة
-                  </span>
-                </header>
-
-                <div class="pr-metrics">
-                  <div class="pr-metric" data-tone="info">
-                    <span class="pr-metric-ico"><i class="pi pi-book"></i></span>
-                    <div>
-                      <small>الكراسات</small>
-                      <strong>{{ booklets(c) | number }}</strong>
-                      <em>{{ c.requiredBooklets | number }} مطلوب + {{ c.bonusBooklets | number }} إضافي</em>
-                    </div>
-                  </div>
-
-                  <div class="pr-metric" data-tone="warning">
-                    <span class="pr-metric-ico"><i class="pi pi-envelope"></i></span>
-                    <div>
-                      <small>الظروف</small>
-                      <strong>{{ envelopes(c) | number }}</strong>
-                      <em>{{ c.requiredEnvelopes | number }} مطلوب + {{ c.bonusEnvelopes | number }} إضافي</em>
-                    </div>
-                  </div>
-
-                  <div class="pr-metric" data-tone="success">
-                    <span class="pr-metric-ico"><i class="pi pi-box"></i></span>
-                    <div>
-                      <small>الكراتين</small>
-                      <strong>{{ c.boxCount | number }}</strong>
-                      <em>عدد الكراتين</em>
-                    </div>
-                  </div>
-                </div>
-              </article>
+              <button
+                type="button"
+                [disabled]="committeesPage() === committeesTotalPages() || committeesLoading()"
+                (click)="goToCommitteesPage(committeesPage() + 1)"
+                aria-label="التالي"
+              >
+                <i class="pi pi-chevron-left"></i>
+              </button>
             </div>
+          </div>
 
-            <ng-template #noCommittees>
-              <div class="pr-empty">
-                <i class="pi pi-search"></i>
-                <strong>لا توجد لجان مطابقة</strong>
-                <span>جرّب تغيير رقم اللجنة.</span>
-              </div>
-            </ng-template>
-          </ng-container>
         </ng-container>
       </div>
 
