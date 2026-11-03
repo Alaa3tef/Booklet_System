@@ -2,14 +2,14 @@ import { Component, HostListener, OnInit, computed, inject, signal } from '@angu
 import { CommonModule } from '@angular/common';
 import { MessageService } from 'primeng/api';
 import { DialogModule } from 'primeng/dialog';
-import { finalize } from 'rxjs';
+import { finalize, Subscription } from 'rxjs';
 
 import { AuthService } from '../../../core/services/auth.service';
 import { WorkflowStepLayoutComponent } from '../../../shared/workflow-step-layout/workflow-step-layout.component';
 import {
-  StorageLocationResolveDto, BoxResolveDto, StorageBoxDto, ArchivingBoxService, BatchStorageDto,
+  StorageLocationResolveDto, BoxResolveDto, ArchivingBoxService,
   DeliveryOrderDto, DeliveryBatchDto, DeliveryCommitteeDto, DeliverCommitteeResult,
-  PackedItemDto, CommitteeBoxItemDto,
+  PackedItemDto, PackedCommitteeDto, CommitteeBoxItemDto,
 } from './service/archiving-box.service';
 
 type Tab = 'archive' | 'warehouse';
@@ -17,8 +17,7 @@ type Feedback = { kind: 'ok' | 'warn' | 'err'; text: string };
 type Lookup = { kind: 'location'; data: StorageLocationResolveDto } | { kind: 'box'; data: BoxResolveDto };
 type Crumb = { label: string; go: () => void };
 
-interface BoxView extends StorageBoxDto { place: string; }
-interface ArCommittee { id: number; number: string; governorate: string; subject: string; round: string; boxes: BoxView[]; }
+interface ArCommittee { id: number; number: string; boxCount: number; }
 interface Placement { trackingCode: string; qrCode: string; place: string; }
 interface SessionBox { id: number; seq: number; code: string; state: 'done' | 'pending' | 'todo'; note: string; }
 interface Slot { text: string; state: 'ok' | 'wait' | 'idle'; }
@@ -27,7 +26,6 @@ interface SideItem { id: number; number: string; label: string; status: 'now' | 
 
 const PAGE_SIZE = 12;
 const DELIVERED_TEXT = 'تم التسليم';
-const isStored = (b: { shelfLocationId?: number | null }) => (b.shelfLocationId ?? 0) > 0;
 const isDeliveredText = (s?: string) => /deliver|تم التسليم|مسلم|مسلّم/i.test(s ?? '');
 
 @Component({
@@ -50,12 +48,12 @@ export default class ArchivingComponent implements OnInit {
 
   // =====================================================================
   //  Pagination
-  //   - دفعات الأرشيف (packed-items) ولجان المخزن: من الباك
+  //   - دفعات الأرشيف ولجان الدفعة (الأرشيف) ولجان المخزن: من الباك
   //   - باقي المستويات: الـ endpoints بترجّع الكل فبنقسّم على الشاشة
   // =====================================================================
   readonly pg = signal({ page: 1, size: PAGE_SIZE, total: 0 });
   readonly pageTotal = computed(() => {
-    if (this.tab() === 'archive') return this.arLevel() === 'batch' ? this.pg().total : this.arCommittees().length;
+    if (this.tab() === 'archive') return this.pg().total;
     switch (this.whLevel()) {
       case 'gov': return this.whGovernorates().length;
       case 'order': return this.whOrders().length;
@@ -78,7 +76,10 @@ export default class ArchivingComponent implements OnInit {
   goPage(p: number): void {
     if (p < 1 || p > this.pageCount() || p === this.pg().page) return;
     this.pg.update(s => ({ ...s, page: p }));
-    if (this.tab() === 'archive' && this.arLevel() === 'batch') this.loadArchive();
+    if (this.tab() === 'archive') {
+      const b = this.arBatch();
+      b ? this.loadBatchCommittees(b) : this.loadArchive();
+    }
     if (this.tab() === 'warehouse' && this.whLevel() === 'committee') this.loadCommittees(this.whBatchId()!);
   }
 
@@ -89,7 +90,7 @@ export default class ArchivingComponent implements OnInit {
   readonly arError = signal<string | null>(null);
   readonly arItems = signal<PackedItemDto[]>([]);            // الدفعات (packed-items)
   readonly arBatch = signal<PackedItemDto | null>(null);
-  readonly arBatchData = signal<BatchStorageDto[]>([]);      // لجان الدفعة المختارة
+  readonly arCommittees = signal<ArCommittee[]>([]);         // packed-committees (صفحة من الباك)
   readonly arCommitteeId = signal<number | null>(null);
   readonly packedBoxes = signal<CommitteeBoxItemDto[]>([]);  // packed-boxes
   readonly arBoxesLoading = signal(false);
@@ -113,13 +114,17 @@ export default class ArchivingComponent implements OnInit {
     });
   }
 
-  /** لجان الدفعة (اللجان + أماكن التخزين) من by-governorate-subject مفلترة بالـ batchId */
+  /** GET /Boxes/batches/{batchId}/packed-committees — pagination من الباك */
   private loadBatchCommittees(item: PackedItemDto, silent = false): void {
+    const { page, size } = this.pg();
     if (!silent) this.arLoading.set(true);
     this.arError.set(null);
-    this.api.getBoxesByGovernorateAndSubject().subscribe({
+    this.api.getBatchPackedCommittees(item.batchId, { isPaged: true, pageNumber: page, pageSize: size }).subscribe({
       next: r => {
-        this.arBatchData.set(this.toArray<BatchStorageDto>(r.data).filter(b => b.batchId === item.batchId));
+        const items = this.toArray<PackedCommitteeDto>(r.data)
+          .map(c => ({ id: c.committeeId, number: c.committeeNumber, boxCount: c.boxCount }));
+        this.arCommittees.set(items);
+        this.pg.update(s => ({ ...s, total: r.data?.totalCount ?? items.length }));
         this.arLoading.set(false);
       },
       error: e => { this.arError.set(this.errText(e)); this.arLoading.set(false); },
@@ -140,40 +145,22 @@ export default class ArchivingComponent implements OnInit {
     });
   }
 
-  private buildArCommittees(list: BatchStorageDto[]): ArCommittee[] {
-    const m = new Map<number, ArCommittee>();
-    for (const b of list) for (const rack of b.racks ?? []) for (const box of rack.boxes ?? []) {
-      const c = m.get(box.committeeId) ?? {
-        id: box.committeeId, number: box.committeeNumber, governorate: b.governorateName,
-        subject: b.subjectName, round: b.roundName, boxes: [],
-      };
-      c.boxes.push({ ...box, place: [box.rack || rack.rack, box.shelf].filter(Boolean).join(' / ') });
-      m.set(box.committeeId, c);
-    }
-    return [...m.values()].sort((a, b) => a.number.localeCompare(b.number, 'ar', { numeric: true }));
-  }
-
-  readonly arCommittees = computed(() => this.buildArCommittees(this.arBatchData()));
   readonly arSelected = computed(() => this.arCommittees().find(c => c.id === this.arCommitteeId()) ?? null);
   readonly arLevel = computed<'batch' | 'committee'>(() => (this.arBatch() === null ? 'batch' : 'committee'));
-  readonly arCommitteesPage = computed(() => this.slice(this.arCommittees()));
 
   readonly arCrumbs = computed<Crumb[]>(() => {
     const out: Crumb[] = [{ label: 'الدفعات', go: () => this.arGoBatches() }];
     const b = this.arBatch();
-    if (b) out.push({ label: b.label, go: () => this.pickArCommittee(null) });
+    if (b) out.push({ label: b.governorateName || b.label, go: () => this.pickArCommittee(null) });
     const c = this.arSelected();
     if (c) out.push({ label: `لجنة ${c.number}`, go: () => undefined });
     return out;
   });
 
-  arDone(c: ArCommittee): boolean {
-    return this.doneCommittees().has(c.id) || (c.boxes.length > 0 && c.boxes.every(isStored));
-  }
-  arStoredCount(c: ArCommittee): number { return c.boxes.filter(isStored).length; }
+  arDone(c: ArCommittee): boolean { return this.doneCommittees().has(c.id); }
 
   pickArBatch(item: PackedItemDto): void {
-    this.arBatch.set(item); this.arBatchData.set([]); this.arCommitteeId.set(null);
+    this.arBatch.set(item); this.arCommittees.set([]); this.arCommitteeId.set(null);
     this.resetPage(); this.resetScan();
     this.loadBatchCommittees(item);
   }
@@ -182,7 +169,7 @@ export default class ArchivingComponent implements OnInit {
     if (id !== null) this.loadPackedBoxes(id);
   }
   arGoBatches(): void {
-    this.arBatch.set(null); this.arBatchData.set([]); this.arCommitteeId.set(null);
+    this.arBatch.set(null); this.arCommittees.set([]); this.arCommitteeId.set(null);
     this.resetPage(); this.resetScan();
     this.loadArchive();
   }
@@ -228,6 +215,21 @@ export default class ArchivingComponent implements OnInit {
   readonly whSubmittedCount = signal(0);
   readonly whDeliveryError = signal(false);
 
+  // اشتراكات الـ batches واللجان — بنلغي القديم قبل ما ننده جديد
+  private batchesSub?: Subscription;
+  private committeesSub?: Subscription;
+
+  /** عنوان أمر التوريد: الـ API ساعات بيرجّع subjectName فاضي */
+  orderTitle(o: DeliveryOrderDto | null): string {
+    if (!o) return '';
+    return o.subjectName?.trim() || `أمر توريد ${o.deliveryOrderId}`;
+  }
+
+  private cancelWh(): void {
+    this.batchesSub?.unsubscribe();
+    this.committeesSub?.unsubscribe();
+  }
+
   readonly whScannedCount = computed(() => this.whScannedCodes().length);
   readonly whExpectedScanCount = computed(() => {
     const committee = this.whSelected();
@@ -268,7 +270,7 @@ export default class ArchivingComponent implements OnInit {
     const out: Crumb[] = [{ label: 'المحافظات', go: () => this.whGoGov() }];
     if (this.whGov()) out.push({ label: this.whGov()!, go: () => this.whGoOrders() });
     const o = this.whSelectedOrder();
-    if (o) out.push({ label: o.subjectName, go: () => this.whGoBatches() });
+    if (o && this.whOrders().length > 1) out.push({ label: this.orderTitle(o), go: () => this.whGoBatches() });
     const b = this.whSelectedBatch();
     if (b && this.whBatches().length > 1) out.push({ label: b.label, go: () => this.pickWhCommittee(null) });
     const c = this.whSelected();
@@ -277,26 +279,34 @@ export default class ArchivingComponent implements OnInit {
   });
 
   pickGov(name: string): void {
-    this.whGov.set(name); this.whOrderId.set(null); this.whBatchId.set(null); this.whCommittees.set([]); this.whCommitteeId.set(null);
+    this.cancelWh();
+    this.whGov.set(name); this.whOrderId.set(null); this.whBatchId.set(null);
+    this.whBatches.set([]); this.whCommittees.set([]); this.whCommitteeId.set(null);
     this.resetPage(); this.resetScan();
+    const orders = this.whOrders();
+    if (orders.length === 1) this.pickOrder(orders[0].deliveryOrderId);   // أمر واحد → ننده batches علطول
   }
 
   pickOrder(id: number): void {
-    this.whOrderId.set(id); this.whBatchId.set(null); this.whBatches.set([]); this.whCommittees.set([]); this.whCommitteeId.set(null);
+    this.cancelWh();
+    this.whOrderId.set(id); this.whBatchId.set(null); this.whBatches.set([]);
+    this.whCommittees.set([]); this.whCommitteeId.set(null);
     this.resetPage(); this.resetScan();
     this.whLoading.set(true);
-    this.api.getDeliveryOrderBatches(id).subscribe({
+    this.batchesSub = this.api.getDeliveryOrderBatches(id).subscribe({
       next: r => {
+        if (this.whOrderId() !== id) return;   // رد قديم
         const list = this.toArray<DeliveryBatchDto>(r.data);
         this.whBatches.set(list);
         this.whLoading.set(false);
-        if (list.length === 1) this.pickBatch(list[0].batchId);
+        if (list.length === 1) this.pickBatch(list[0].batchId);   // اللجان بعد الدفعات بالترتيب
       },
       error: e => { this.whLoading.set(false); this.say('err', this.errText(e)); },
     });
   }
 
   pickBatch(id: number): void {
+    this.committeesSub?.unsubscribe();
     this.whBatchId.set(id); this.whCommittees.set([]); this.whCommitteeId.set(null);
     this.resetPage(); this.resetScan();
     this.loadCommittees(id);
@@ -305,9 +315,11 @@ export default class ArchivingComponent implements OnInit {
   /** لجان الدفعة: pagination من الباك */
   private loadCommittees(batchId: number, silent = false): void {
     const { page, size } = this.pg();
+    this.committeesSub?.unsubscribe();   // يلغي أي طلب لجان شغال
     if (!silent) this.whLoading.set(true);
-    this.api.getBatchCommittees(batchId, { isPaged: true, pageNumber: page, pageSize: size }).subscribe({
+    this.committeesSub = this.api.getBatchCommittees(batchId, { isPaged: true, pageNumber: page, pageSize: size }).subscribe({
       next: r => {
+        if (this.whBatchId() !== batchId) return;
         const d = r.data;
         const items = Array.isArray(d) ? d as DeliveryCommitteeDto[] : (d?.data ?? []);
         const total = Array.isArray(d) ? d.length : (d?.totalCount ?? items.length);
@@ -320,11 +332,33 @@ export default class ArchivingComponent implements OnInit {
   }
 
   pickWhCommittee(id: number | null): void { this.whCommitteeId.set(id); this.resetScan(); }
-  whGoGov(): void { this.whGov.set(null); this.whOrderId.set(null); this.whBatchId.set(null); this.whCommitteeId.set(null); this.resetPage(); this.resetScan(); }
-  whGoOrders(): void { this.whOrderId.set(null); this.whBatchId.set(null); this.whCommitteeId.set(null); this.resetPage(); this.resetScan(); }
+
+  whGoGov(): void {
+    this.cancelWh();
+    this.whGov.set(null); this.whOrderId.set(null); this.whBatchId.set(null);
+    this.whBatches.set([]); this.whCommittees.set([]); this.whCommitteeId.set(null);
+    this.resetPage(); this.resetScan();
+  }
+
+  whGoOrders(): void {
+    this.whCommitteeId.set(null); this.resetScan();
+    if (this.whOrders().length === 1) {   // مفيش مستوى أوامر
+      if (this.whBatches().length > 1) {
+        this.committeesSub?.unsubscribe();
+        this.whBatchId.set(null); this.whCommittees.set([]); this.resetPage();
+      }
+      return;
+    }
+    this.cancelWh();
+    this.whOrderId.set(null); this.whBatchId.set(null);
+    this.whBatches.set([]); this.whCommittees.set([]); this.resetPage();
+  }
+
   whGoBatches(): void {
-    this.whBatchId.set(null); this.whCommitteeId.set(null); this.resetPage(); this.resetScan();
-    if (this.whBatches().length === 1) this.whGoOrders();
+    if (this.whBatches().length === 1) { this.whGoOrders(); return; }
+    this.committeesSub?.unsubscribe();
+    this.whBatchId.set(null); this.whCommitteeId.set(null); this.whCommittees.set([]);
+    this.resetPage(); this.resetScan();
   }
 
   boxDelivered(b: { status: string }): boolean { return isDeliveredText(b.status); }
@@ -420,11 +454,11 @@ export default class ArchivingComponent implements OnInit {
 
   readonly session = computed(() => {
     if (this.tab() === 'archive') {
-      const c = this.arSelected();
-      return c ? { id: c.id, number: c.number, subject: c.subject, chips: [c.governorate, c.subject, c.round] } : null;
+      const c = this.arSelected(), b = this.arBatch();
+      return c ? { id: c.id, number: c.number, subject: b?.subjectName ?? '', chips: [b?.governorateName ?? '', b?.subjectName ?? '', b?.roundName ?? ''] } : null;
     }
     const c = this.whSelected(), o = this.whSelectedOrder(), b = this.whSelectedBatch();
-    return c ? { id: c.committeeId, number: c.committeeNumber, subject: o?.subjectName ?? '', chips: [o?.governorateName ?? '', o?.subjectName ?? '', b?.roundName ?? o?.roundName ?? ''] } : null;
+    return c ? { id: c.committeeId, number: c.committeeNumber, subject: this.orderTitle(o), chips: [o?.governorateName ?? '', this.orderTitle(o), b?.roundName ?? o?.roundName ?? ''] } : null;
   });
 
   readonly sessionBoxes = computed<SessionBox[]>(() => {
@@ -471,7 +505,7 @@ export default class ArchivingComponent implements OnInit {
   readonly sideList = computed<SideItem[]>(() => {
     const q = this.sideSearch().trim();
     const items: SideItem[] = this.tab() === 'archive'
-      ? this.arCommittees().map(c => ({ id: c.id, number: c.number, label: c.governorate, status: c.id === this.arCommitteeId() ? 'now' as const : this.arDone(c) ? 'done' as const : 'todo' as const }))
+      ? this.arCommittees().map(c => ({ id: c.id, number: c.number, label: `${c.boxCount} صناديق`, status: c.id === this.arCommitteeId() ? 'now' as const : this.arDone(c) ? 'done' as const : 'todo' as const }))
       : this.whCommittees().map(c => ({ id: c.committeeId, number: c.committeeNumber, label: `${c.boxes.length} صناديق`, status: c.committeeId === this.whCommitteeId() ? 'now' as const : this.whDone(c) ? 'done' as const : 'todo' as const }));
     return q ? items.filter(i => i.number.includes(q) || i.label.includes(q)) : items;
   });
@@ -486,7 +520,6 @@ export default class ArchivingComponent implements OnInit {
 
   whDeliveredCount(c: DeliveryCommitteeDto): number { return c.boxes.filter(b => this.boxDelivered(b)).length; }
   whLocations(c: DeliveryCommitteeDto): string[] { return [...new Set(c.boxes.map(b => b.storageLocationCode).filter(Boolean))]; }
-  arFirstPlace(c: ArCommittee): string { return c.boxes.find(b => b.place)?.place ?? ''; }
 
   // ---------------------------------------------------------------- scanner
   private buf = '';

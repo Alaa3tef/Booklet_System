@@ -61,6 +61,11 @@ export interface PackedItemsQuery extends ListQuery {
 }
 
 // ---------------------------------------------------------------------
+// Boxes: GET /api/Boxes/batches/{batchId}/packed-committees
+// ---------------------------------------------------------------------
+export interface PackedCommitteeDto { committeeId: number; committeeNumber: string; boxCount: number; }
+
+// ---------------------------------------------------------------------
 // Boxes: GET /api/Boxes/storage/resolve-location/{qrCode}
 // ---------------------------------------------------------------------
 export interface StoredBoxLocationItemDto {
@@ -156,6 +161,12 @@ export class ArchivingBoxService {
     if (q.year) p = p.set('Year', q.year);
     if (q.search) p = p.set('Search', q.search);
     return this.http.get<ApiResponse<PagedResult<PackedItemDto>>>(`${this.baseUrl}/Boxes/packed-items`, { params: p });
+  }
+
+  /** GET /api/Boxes/batches/{batchId}/packed-committees (paged) */
+  getBatchPackedCommittees(batchId: number, q?: ListQuery): Observable<ApiResponse<PagedResult<PackedCommitteeDto>>> {
+    return this.http.get<ApiResponse<PagedResult<PackedCommitteeDto>>>(
+      `${this.baseUrl}/Boxes/batches/${batchId}/packed-committees`, { params: this.toParams(q) });
   }
 
   /** GET /api/Boxes/committees/{committeeId}/packed-boxes */

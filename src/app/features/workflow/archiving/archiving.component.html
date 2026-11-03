@@ -1,6 +1,6 @@
 <app-workflow-step-layout
   stepNumber="05"
-  englishLabel="Archiving"
+  englishLabel="Warehouse"
   arabicTitle="مستخدم التخزين"
   arabicSubtitle="تخزين المادة وتحديد مكان التخزين في المخزن"
   theme="teal"
@@ -53,7 +53,7 @@
       }
     </ng-template>
 
-    @if (!session()) {
+    <!-- @if (!session()) {
       <div class="idle-scan">
         <span class="idle-ico"><i class="pi pi-qrcode"></i></span>
         <div class="idle-txt">
@@ -63,7 +63,7 @@
         @if (lastRead()) { <code class="idle-last">{{ lastRead() }}</code> }
         <input #manual data-no-scan class="idle-input" type="text" autocomplete="off" placeholder="أو اكتبي الكود + Enter" (keydown.enter)="manualScan(manual)" />
       </div>
-    }
+    } -->
 
     @if (lookup(); as l) {
       <div class="lookup">
@@ -107,13 +107,13 @@
           @for (b of arItems(); track b.batchId) {
             <article class="pcard">
               <header class="pcard-top">
-                <span class="pcard-ico"><i class="pi pi-box"></i></span>
-                <div><small>دفعة</small><b>{{ b.label }}</b></div>
+                <span class="pcard-ico"><i class="pi pi-map-marker"></i></span>
+                <div><small>محافظة</small><b>{{ b.governorateName }}</b></div>
                 <span class="pcard-pill">{{ b.year }}</span>
               </header>
               <div class="tiles">
-                <div class="tile"><small>المحافظة</small><b class="sm">{{ b.governorateName }}</b><em>&nbsp;</em></div>
-                <div class="tile"><small>المادة</small><b class="sm">{{ b.subjectName }}</b><em>{{ b.roundName }}</em></div>
+                <div class="tile"><small>المادة</small><b class="sm">{{ b.subjectName }}</b><em>&nbsp;</em></div>
+                <div class="tile"><small>الدور</small><b class="sm">{{ b.roundName }}</b><em>{{ b.label }}</em></div>
               </div>
               <button type="button" class="pcard-btn" (click)="pickArBatch(b)"><i class="pi pi-list"></i> عرض اللجان</button>
             </article>
@@ -124,25 +124,25 @@
       } @else {
 
         <header class="lvl-head">
-          <div><h2>{{ arBatch()?.subjectName }}</h2><p>{{ arBatch()?.governorateName }} · {{ arBatch()?.roundName }} — اختاري اللجنة لبدء التخزين.</p></div>
-          <div class="count-tile"><span class="count-ico"><i class="pi pi-users"></i></span><b>{{ arCommittees().length }}</b><small>لجنة</small></div>
+          <div><h2>{{ arBatch()?.governorateName }}</h2><p>{{ arBatch()?.subjectName }} · {{ arBatch()?.roundName }} — اختاري اللجنة لبدء التخزين.</p></div>
+          <div class="count-tile"><span class="count-ico"><i class="pi pi-users"></i></span><b>{{ pg().total }}</b><small>لجنة</small></div>
         </header>
         <div class="pcards" [class.busy]="arLoading()">
-          @for (c of arCommitteesPage(); track c.id) {
+          @for (c of arCommittees(); track c.id) {
             <article class="pcard" [class.done]="arDone(c)">
               <header class="pcard-top">
                 <span class="pcard-ico"><i class="pi pi-users"></i></span>
                 <div><small>لجنة رقم</small><b>{{ c.number }}</b></div>
-                <span class="pcard-pill"><i class="pi pi-box"></i> {{ c.boxes.length }} صندوق</span>
+                <span class="pcard-pill"><i class="pi pi-box"></i> {{ c.boxCount }} صندوق</span>
               </header>
               <div class="tiles">
-                <div class="tile"><small>الصناديق المخزّنة</small><b>{{ arStoredCount(c) }}</b><em>من {{ c.boxes.length }}</em></div>
-                <div class="tile"><small>المحافظة</small><b class="sm">{{ c.governorate }}</b><em>{{ arFirstPlace(c) || 'لم يُحدَّد المكان' }}</em></div>
+                <div class="tile"><small>الصناديق</small><b>{{ c.boxCount }}</b><em>صندوق</em></div>
+                <div class="tile"><small>المادة</small><b class="sm">{{ arBatch()?.subjectName }}</b><em>{{ arBatch()?.roundName }}</em></div>
               </div>
               @if (arDone(c)) {
                 <div class="pcard-done"><i class="pi pi-check-circle"></i> تم تخزين اللجنة</div>
               } @else {
-                <button type="button" class="pcard-btn" (click)="openCommittee(c.id)"><i class="pi pi-qrcode"></i> {{ arStoredCount(c) ? 'استكمال التخزين' : 'بدء التخزين' }}</button>
+                <button type="button" class="pcard-btn" (click)="openCommittee(c.id)"><i class="pi pi-qrcode"></i> بدء التخزين</button>
               }
             </article>
           } @empty { <p class="empty">لا توجد لجان لهذه الدفعة.</p> }
@@ -192,7 +192,7 @@
             <article class="pcard">
               <header class="pcard-top">
                 <span class="pcard-ico"><i class="pi pi-book"></i></span>
-                <div><small>مادة</small><b>{{ o.subjectName }}</b></div>
+                <div><small>مادة</small><b>{{ orderTitle(o) }}</b></div>
                 <span class="pcard-pill">{{ o.status }}</span>
               </header>
               <div class="tiles">
@@ -208,7 +208,7 @@
       } @else if (whLevel() === 'batch') {
 
         <header class="lvl-head">
-          <div><h2>دفعات {{ whSelectedOrder()?.subjectName }}</h2><p>اختاري الدفعة لعرض لجانها.</p></div>
+          <div><h2>دفعات {{ orderTitle(whSelectedOrder()) }}</h2><p>اختاري الدفعة لعرض لجانها.</p></div>
           <div class="count-tile"><span class="count-ico"><i class="pi pi-box"></i></span><b>{{ whBatches().length }}</b><small>دفعة</small></div>
         </header>
         <div class="pcards" [class.busy]="whLoading()">
@@ -225,14 +225,14 @@
               </div>
               <button type="button" class="pcard-btn" (click)="pickBatch(b.batchId)"><i class="pi pi-list"></i> عرض اللجان</button>
             </article>
-          } @empty { <p class="empty">لا توجد دفعات.</p> }
+          } @empty { @if (!whLoading()) { <p class="empty">لا توجد دفعات.</p> } }
         </div>
         <ng-container *ngTemplateOutlet="pager" />
 
       } @else {
 
         <header class="lvl-head">
-          <div><h2>{{ whSelectedOrder()?.subjectName }}</h2><p>{{ whGov() }} — اختاري اللجنة لبدء التسليم.</p></div>
+          <div><h2>{{ orderTitle(whSelectedOrder()) }}</h2><p>{{ whGov() }} — اختاري اللجنة لبدء التسليم.</p></div>
           <div class="count-tile"><span class="count-ico"><i class="pi pi-users"></i></span><b>{{ whCommittees().length }}</b><small>لجنة</small></div>
         </header>
         <div class="pcards" [class.busy]="whLoading()">
@@ -253,7 +253,7 @@
                 <button type="button" class="pcard-btn" (click)="openCommittee(c.committeeId)"><i class="pi pi-qrcode"></i> بدء التسليم</button>
               }
             </article>
-          } @empty { <p class="empty">لا توجد لجان في الدفعة دي.</p> }
+          } @empty { @if (!whLoading()) { <p class="empty">لا توجد لجان في الدفعة دي.</p> } }
         </div>
         <ng-container *ngTemplateOutlet="pager" />
       }
@@ -305,27 +305,28 @@
 
         <div class="ses-main">
 
-          <div class="banner" [attr.data-kind]="feedback()?.kind ?? 'idle'">
-            <span class="banner-ico" aria-hidden="true">
-              <span class="bc tl"></span><span class="bc tr"></span><span class="bc bl"></span><span class="bc br"></span>
-              <i class="pi pi-qrcode"></i>
-            </span>
-            <div class="banner-txt">
-              @if (feedback(); as f) {
-                <b>{{ f.text }}</b>
-                <small>القراءة الأخيرة: <code>{{ lastRead() }}</code></small>
-              } @else if (tab() === 'archive') {
-                <b>{{ arStep() === 1 ? 'في انتظار مسح الصندوق' : 'في انتظار مسح الرف' }}</b>
-                <small>{{ arStep() === 1 ? 'امسحي أي صندوق من اللجنة — الترتيب غير مهم.' : 'امسحي الرف اللي هتحطي فيه الصندوق ' + pendingBox() }}</small>
-              } @else {
-                <b>تم مسح {{ whScannedCount() }} من {{ whExpectedScanCount() }} صندوق</b>
-                <small>
-                  امسحي الصناديق — الترتيب غير مهم، وبعدها اضغطي زرار «تسليم» تحت لإرسال القايمة كلها مرة واحدة.
-                </small>
-              }
+          <section class="scanner" [attr.data-kind]="feedback()?.kind ?? 'idle'">
+            <header class="scanner-head">
+              <h4><i class="pi pi-qrcode"></i> قارئ الباركود</h4>
+              <span class="scanner-chip" [class.busy]="busy()"><i></i> {{ busy() ? 'جاري المعالجة…' : 'جاهز للمسح' }}</span>
+            </header>
+            <div class="scanner-zone">
+              <span class="scanner-box" aria-hidden="true"><i class="pi pi-qrcode"></i><span class="scanner-line"></span></span>
+              <div class="scanner-txt">
+                @if (feedback(); as f) {
+                  <b>{{ f.text }}</b>
+                  <small>القراءة الأخيرة: <code>{{ lastRead() }}</code></small>
+                } @else if (tab() === 'archive') {
+                  <b>{{ arStep() === 1 ? 'وجّهي القارئ نحو الصندوق' : 'وجّهي القارئ نحو الرف' }}</b>
+                  <small>{{ arStep() === 1 ? 'الجلسة مفتوحة تلقائيًا — الترتيب غير مهم.' : 'الرف اللي هتحطي فيه الصندوق ' + pendingBox() }}</small>
+                } @else {
+                  <b>تم مسح {{ whScannedCount() }} من {{ whExpectedScanCount() }} صندوق</b>
+                  <small>امسحي الصناديق، وبعدها اضغطي «تسليم» لإرسال القايمة مرة واحدة.</small>
+                }
+              </div>
             </div>
-            <input #manualS data-no-scan class="banner-input" type="text" autocomplete="off" placeholder="أو اكتبي الكود + Enter" (keydown.enter)="manualScan(manualS)" />
-          </div>
+            <input #manualS data-no-scan class="scanner-input" type="text" autocomplete="off" placeholder="أو اكتبي كود QR واضغطي Enter…" (keydown.enter)="manualScan(manualS)" />
+          </section>
 
           @if (tab() === 'archive') {
             <div class="slots">
@@ -407,7 +408,11 @@
             }
           </span>
           @if (tab() === 'warehouse' && whScannedCount() > 0) {
-            <button type="button" class="ses-finish" [disabled]="busy()" (click)="submitWarehouseDelivery()">
+            <button
+              type="button"
+              class="ses-finish"
+              [disabled]="busy() || whScannedCount() < whExpectedScanCount()"
+              (click)="submitWarehouseDelivery()">
               @if (busy()) { جاري الإرسال… }
               @else if (whDeliveryError()) { <i class="pi pi-refresh"></i> إعادة إرسال {{ whScannedCount() }} صندوق }
               @else { <i class="pi pi-send"></i> تسليم {{ whScannedCount() }} صندوق }

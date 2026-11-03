@@ -133,14 +133,22 @@ code, .mono { font-family: ui-monospace, Consolas, monospace; direction: ltr; un
 /* المحتوى */
 .ses-main { padding: 20px 24px; overflow: auto; display: flex; flex-direction: column; gap: 16px; min-height: 0; }
 
-.banner { display: flex; align-items: center; gap: 18px; background: $navy-2; color: #fff; border-radius: 18px; padding: 16px 18px; flex-wrap: wrap; border: 2px solid transparent;
-  &[data-kind='ok'] { border-color: #2fd5bd; } &[data-kind='warn'] { border-color: $amber; } &[data-kind='err'] { border-color: $red; background: #5a1e2a; }
-  .banner-ico { position: relative; width: 112px; height: 82px; border-radius: 12px; background: rgba(255, 255, 255, .06); display: grid; place-items: center; font-size: 26px; color: #7fb0ff; flex-shrink: 0;
-    .bc { position: absolute; width: 22px; height: 22px; border: 3px solid #5b8cff;
-      &.tl { top: 8px; left: 8px; border-right: 0; border-bottom: 0; border-top-left-radius: 6px; } &.tr { top: 8px; right: 8px; border-left: 0; border-bottom: 0; border-top-right-radius: 6px; }
-      &.bl { bottom: 8px; left: 8px; border-right: 0; border-top: 0; border-bottom-left-radius: 6px; } &.br { bottom: 8px; right: 8px; border-left: 0; border-top: 0; border-bottom-right-radius: 6px; } } }
-  .banner-txt { flex: 1; min-width: 220px; b { display: block; font-size: 18px; font-weight: 800; } small { color: #c5d4e8; font-size: 13px; } code { background: rgba(255, 255, 255, .12); border-radius: 6px; padding: 1px 8px; } }
-  .banner-input { background: rgba(255, 255, 255, .08); border: 1px solid rgba(255, 255, 255, .25); color: #fff; border-radius: 10px; padding: 10px 12px; font: inherit; font-size: 13px; direction: ltr; text-align: left; min-width: 190px; &:focus { outline: 2px solid #5b8cff; } } }
+/* ---------- قارئ الباركود (شبه كارت التغليف) ---------- */
+.scanner { background: #fff; border: 2px solid var(--accent); border-radius: 18px; padding: 14px 16px; display: grid; gap: 12px;
+  &[data-kind='ok'] { border-color: $green; } &[data-kind='warn'] { border-color: $amber; } &[data-kind='err'] { border-color: $red; }
+  .scanner-head { display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    h4 { margin: 0; display: inline-flex; align-items: center; gap: 8px; font-size: 15px; font-weight: 800; color: $ink; i { color: var(--accent); } } }
+  .scanner-chip { display: inline-flex; align-items: center; gap: 7px; padding: 3px 12px; border-radius: 999px; background: $green-soft; color: $green; font-size: 12.5px; font-weight: 800;
+    i { width: 8px; height: 8px; border-radius: 50%; background: currentColor; } &.busy { background: $amber-soft; color: #a16207; } }
+  .scanner-zone { display: flex; align-items: center; gap: 16px; padding: 16px; border: 2px dashed var(--accent); border-radius: 14px; background: var(--accent-soft); }
+  .scanner-box { position: relative; width: 64px; height: 64px; flex-shrink: 0; border-radius: 14px; background: #fff; display: grid; place-items: center; font-size: 30px; color: $ink; overflow: hidden; box-shadow: 0 2px 8px rgba(15, 23, 42, .08);
+    .scanner-line { position: absolute; inset-inline: 8px; top: 10px; height: 2px; background: $red; box-shadow: 0 0 6px rgba(220, 38, 38, .6); animation: scan-move 1.8s ease-in-out infinite alternate; } }
+  .scanner-txt { flex: 1; min-width: 0; b { display: block; font-size: 16px; font-weight: 800; color: $ink; } small { color: $muted; font-size: 13px; }
+    code { background: #fff; border-radius: 6px; padding: 1px 8px; } }
+  .scanner-input { width: 100%; border: 1px solid $line; border-radius: 12px; padding: 11px 14px; font: inherit; font-size: 13.5px; direction: ltr; text-align: center; background: #fff;
+    &:focus { outline: 2px solid var(--accent); border-color: transparent; } } }
+@keyframes scan-move { from { top: 10px; } to { top: calc(100% - 12px); } }
+@media (prefers-reduced-motion: reduce) { .scanner .scanner-line { animation: none; top: 50%; } }
 
 .stats { display: grid; grid-template-columns: auto repeat(4, minmax(0, 1fr)); gap: 12px; align-items: stretch; background: #fff; border: 1px solid $line; border-radius: 18px; padding: 14px; }
 .ring { --p: 0; width: 92px; height: 92px; border-radius: 50%; display: grid; place-content: center; text-align: center; position: relative;
@@ -216,11 +224,11 @@ code, .mono { font-family: ui-monospace, Consolas, monospace; direction: ltr; un
 /* =====================================================================
    PrimeNG dialog — لازم يبقى في آخر الملف.
    الـ dialog بقى appendTo="body" عشان يطلع فوق الـ sidebar، فمفيش :host هنا.
-   الـ --accent معرّف هنا لأنه بقى برّه .flow.
+   الـ --accent و --accent-soft معرّفين هنا لأنهم بقوا برّه .flow.
    ===================================================================== */
 ::ng-deep .ses-dialog {
-  --accent: #{$teal};
-  &.wh { --accent: #{$blue}; }
+  --accent: #{$teal}; --accent-soft: #{$teal-soft};
+  &.wh { --accent: #{$blue}; --accent-soft: #{$blue-soft}; }
 
   border-radius: 20px; overflow: hidden; background: #f6f8fb; border: 0;
   box-shadow: 0 30px 80px rgba(0, 0, 0, .35); display: flex; flex-direction: column;
