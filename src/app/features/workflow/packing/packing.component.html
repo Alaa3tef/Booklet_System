@@ -340,7 +340,21 @@
                       <small>الجلسة مفتوحة تلقائيًا — لا حاجة للضغط على أي زر أو الكتابة</small>
                     }
                   </div>
+<!-- Manual QR Input -->
+<label class="pk-search">
+  <i class="pi pi-keyboard"></i>
 
+  <input
+    type="text"
+    autocomplete="off"
+    placeholder="اكتبي كود QR واضغطي Enter..."
+    [ngModel]="manualQrCode()"
+    (ngModelChange)="manualQrCode.set($event)"
+    (keydown.enter)="$event.preventDefault(); $event.stopPropagation(); submitManualQr()"
+    [disabled]="!scanActive()"
+    dir="ltr"
+  />
+</label>
                   @if (feedback(); as f) {
                     @for (x of [f]; track x.id) {
                       <div class="pk-feedback" [attr.data-tone]="x.tone">
@@ -506,7 +520,7 @@
                     @if (box.reserve.length) {
                       <div class="pk-group">
                         <div class="pk-group-head">
-                          <span><i class="pi pi-clone"></i> الأظرف الاحتياطية (اختياري)</span>
+                          <span><i class="pi pi-clone"></i> الأظرف الاحتياطية </span>
                           <b>{{ box.reserveScanned }} / {{ box.reserveTotal }}</b>
                         </div>
                         <div class="pk-env-grid">
