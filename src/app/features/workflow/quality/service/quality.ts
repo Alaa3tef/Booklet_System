@@ -150,7 +150,7 @@ export class QualityService {
   }
 
   private get committeesUrl(): string {
-    return `${this.config.baseURL}api/Committees`;
+    return `${this.config.baseURL}api/Quality/Committees`;
   }
 
   // ==========================================

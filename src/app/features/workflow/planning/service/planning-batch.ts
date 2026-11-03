@@ -25,6 +25,22 @@ export interface PlanningBatch {
   nextStatusNameAr: string;
 }
 
+/** Query params المشتركة للـ Pagination في الباك */
+export interface PagedQuery {
+  pageNumber?: number;
+  pageSize?: number;
+  isPaged?: boolean;
+  searchTerm?: string;
+  ascending?: boolean;
+}
+
+export interface BatchesForApproveQuery extends PagedQuery {
+  governorateId?: number;
+  subjectId?: number;
+}
+
+export type BatchDetailsQuery = PagedQuery;
+
 export interface BatchCommittee {
   committeeId: number;
   committeeNumber: string;
@@ -104,7 +120,21 @@ export class PlanningService {
   private readonly appConfig = inject(AppConfigService);
   private readonly baseUrl = `${this.appConfig.baseURL}api/Planning`;
 
-  getBatchesForApprove(governorateId?: number, subjectId?: number): Observable<ApiResponse<PlanningBatch[]>> {
+  /** يضيف بارامترات الـ Pagination للـ HttpParams (لو اتبعتت بس) */
+  private applyPaging(params: HttpParams, q?: PagedQuery): HttpParams {
+    if (!q) return params;
+    if (q.pageNumber != null && q.pageNumber > 0) params = params.set('PageNumber', q.pageNumber.toString());
+    if (q.pageSize != null && q.pageSize > 0) params = params.set('PageSize', q.pageSize.toString());
+    if (q.searchTerm?.trim()) params = params.set('SearchTerm', q.searchTerm.trim());
+    if (q.ascending != null) params = params.set('Ascending', String(q.ascending));
+    return params;
+  }
+
+  /**
+   * الباك لسه مضافش عليه Pagination للدفعات، فمن غير query بيشتغل زي الأول.
+   * بعد ما الباك يجهز ابعتي pageNumber / pageSize / isPaged.
+   */
+  getBatchesForApprove(governorateId?: number, subjectId?: number, paging?: PagedQuery): Observable<ApiResponse<PlanningBatch[]>> {
     let params = new HttpParams();
     if (governorateId != null && governorateId > 0) {
       params = params.set('GovernorateId', governorateId.toString());
@@ -112,11 +142,13 @@ export class PlanningService {
     if (subjectId != null && subjectId > 0) {
       params = params.set('SubjectId', subjectId.toString());
     }
+    params = this.applyPaging(params, paging);
     return this.http.get<ApiResponse<PlanningBatch[]>>(`${this.baseUrl}/batches/for-approve`, { params });
   }
 
-  getBatchDetails(batchId: number): Observable<ApiResponse<BatchDetails>> {
-    return this.http.get<ApiResponse<BatchDetails>>(`${this.baseUrl}/batches/${batchId}`);
+  getBatchDetails(batchId: number, query?: BatchDetailsQuery): Observable<ApiResponse<BatchDetails>> {
+    const params = this.applyPaging(new HttpParams(), query);
+    return this.http.get<ApiResponse<BatchDetails>>(`${this.baseUrl}/batches/${batchId}`, { params });
   }
 
   sendBatchesToPreQuality(batchIds: number[]): Observable<ApiResponse<unknown>> {
@@ -127,19 +159,6 @@ export class PlanningService {
   }
 
   getDeliveryOrdersGovernorates(query: DeliveryOrdersGovernoratesQuery): Observable<ApiResponse<GovernorateDeliveryReadiness[]>> {
-    // let params = new HttpParams();
-    // if (query.year != null && query.year > 0) {
-    //   params = params.set('Year', query.year.toString());
-    // }
-    // if (query.roundId != null && query.roundId > 0) {
-    //   params = params.set('RoundId', query.roundId.toString());
-    // }
-    // if (query.educationalStageId != null && query.educationalStageId > 0) {
-    //   params = params.set('EducationalStageId', query.educationalStageId.toString());
-    // }
-    // if (query.onlyEligible != null) {
-    //   params = params.set('OnlyEligible', String(query.onlyEligible));
-    // }
     return this.http.get<ApiResponse<GovernorateDeliveryReadiness[]>>(`${this.baseUrl}/delivery-orders/governorates`);
   }
 
@@ -154,5 +173,4 @@ export class PlanningService {
   createDeliveryOrder(request: CreateDeliveryOrderRequest): Observable<ApiResponse<unknown>> {
     return this.http.post<ApiResponse<unknown>>(`${this.baseUrl}/delivery-orders`, request);
   }
-
 }

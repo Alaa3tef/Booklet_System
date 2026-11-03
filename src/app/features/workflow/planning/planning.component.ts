@@ -19,6 +19,7 @@ import {
   PlanningService,
   PlanningBatch,
   BatchDetails,
+  BatchCommittee,
   GovernorateDeliveryReadiness,
   DeliveryOrderReadiness,
   DeliveryOrdersGovernoratesQuery
@@ -35,6 +36,19 @@ function todayAsDateInput(): string {
   const date = new Date();
   const offset = date.getTimezoneOffset();
   return new Date(date.getTime() - offset * 60_000).toISOString().slice(0, 10);
+}
+
+/** يبني أرقام الصفحات مع النقاط (1 ... 4 5 6 ... 20) */
+function buildPages(total: number, currentPage: number): (number | 'dots')[] {
+  const cur = Math.min(Math.max(1, currentPage), total);
+  const wanted = new Set<number>([1, total, cur - 1, cur, cur + 1]);
+  const sorted = [...wanted].filter(p => p >= 1 && p <= total).sort((a, b) => a - b);
+  const pages: (number | 'dots')[] = [];
+  sorted.forEach((p, i) => {
+    if (i > 0 && p - sorted[i - 1] > 1) pages.push('dots');
+    pages.push(p);
+  });
+  return pages;
 }
 
 @Component({
@@ -198,7 +212,7 @@ export default class PlanningComponent implements OnInit {
   }
 
   // ==========================================
-  // PAGINATION FOR BATCHES
+  // PAGINATION FOR BATCHES (client-side لحد ما الباك يجهز)
   // ==========================================
   readonly pageSize = signal(6);
   readonly currentPage = signal(1);
@@ -236,19 +250,9 @@ export default class PlanningComponent implements OnInit {
       : Math.min(this.currentPage() * this.pageSize(), this.filteredBatches().length)
   );
 
-  readonly paginationPages = computed<(number | 'dots')[]>(() => {
-    const total = this.totalPages();
-    const cur = Math.min(this.currentPage(), total);
-    const wanted = new Set<number>([1, total, cur - 1, cur, cur + 1]);
-    const sorted = [...wanted].filter(p => p >= 1 && p <= total).sort((a, b) => a - b);
-
-    const pages: (number | 'dots')[] = [];
-    sorted.forEach((p, i) => {
-      if (i > 0 && p - sorted[i - 1] > 1) pages.push('dots');
-      pages.push(p);
-    });
-    return pages;
-  });
+  readonly paginationPages = computed<(number | 'dots')[]>(() =>
+    buildPages(this.totalPages(), this.currentPage())
+  );
 
   private resetPage(): void {
     this.currentPage.set(1);
@@ -473,18 +477,9 @@ export default class PlanningComponent implements OnInit {
       ? this.filteredDeliveryGovernorates().length
       : Math.min(this.deliveryCurrentPage() * this.deliveryPageSize(), this.filteredDeliveryGovernorates().length)
   );
-  readonly deliveryPaginationPages = computed<(number | 'dots')[]>(() => {
-    const total = this.deliveryTotalPages();
-    const current = Math.min(this.deliveryCurrentPage(), total);
-    const wanted = new Set<number>([1, total, current - 1, current, current + 1]);
-    const sorted = [...wanted].filter(page => page >= 1 && page <= total).sort((a, b) => a - b);
-    const pages: (number | 'dots')[] = [];
-    sorted.forEach((page, index) => {
-      if (index > 0 && page - sorted[index - 1] > 1) pages.push('dots');
-      pages.push(page);
-    });
-    return pages;
-  });
+  readonly deliveryPaginationPages = computed<(number | 'dots')[]>(() =>
+    buildPages(this.deliveryTotalPages(), this.deliveryCurrentPage())
+  );
 
   resetDeliveryPage(): void {
     this.deliveryCurrentPage.set(1);
@@ -623,43 +618,159 @@ export default class PlanningComponent implements OnInit {
   }
 
   // ==========================================
-  // BATCH DETAILS DIALOG
+  // BATCH DETAILS DIALOG (server-side pagination)
   // ==========================================
   batchDetailsDialogVisible = false;
-  batchDetailsLoading = false;
+  batchDetailsLoading = false;                 // تحميل أول مرة (الدايلوج كله)
   selectedBatchDetails: BatchDetails | null = null;
 
-  openBatchDetails(batchId: number): void {
-    this.batchDetailsDialogVisible = true;
-    this.batchDetailsLoading = true;
-    this.selectedBatchDetails = null;
+  private detailsBatchId: number | null = null;
+  private detailsRequestId = 0;                // لتجاهل الردود القديمة
+  private detailsSearchTimer: ReturnType<typeof setTimeout> | null = null;
 
-    this.planningService.getBatchDetails(batchId).subscribe({
+  readonly detailsCommittees = signal<BatchCommittee[]>([]);
+  readonly detailsTableLoading = signal(false); // تحميل الجدول فقط (تغيير صفحة/بحث)
+  readonly detailsTotal = signal(0);
+  readonly detailsPage = signal(1);
+  readonly detailsPageSize = signal(5);
+  readonly detailsSearch = signal('');
+
+  readonly detailsPageSizeOptions = [
+    { label: '5', value: 5 },
+    { label: '10', value: 10 },
+    { label: '20', value: 20 },
+    { label: '50', value: 50 }
+  ];
+
+  readonly detailsTotalPages = computed(() =>
+    Math.max(1, Math.ceil(this.detailsTotal() / this.detailsPageSize()))
+  );
+  readonly detailsPaginationStart = computed(() =>
+    this.detailsTotal() === 0 ? 0 : (this.detailsPage() - 1) * this.detailsPageSize() + 1
+  );
+  readonly detailsPaginationEnd = computed(() =>
+    Math.min(this.detailsPage() * this.detailsPageSize(), this.detailsTotal())
+  );
+  readonly detailsPaginationPages = computed<(number | 'dots')[]>(() =>
+    buildPages(this.detailsTotalPages(), this.detailsPage())
+  );
+
+  openBatchDetails(batchId: number): void {
+    this.detailsBatchId = batchId;
+    this.detailsPage.set(1);
+    this.detailsPageSize.set(5);
+    this.detailsSearch.set('');
+    this.detailsCommittees.set([]);
+    this.detailsTotal.set(0);
+
+    this.batchDetailsDialogVisible = true;
+    this.selectedBatchDetails = null;
+    this.loadBatchDetails(true);
+  }
+
+  /**
+   * GET api/Planning/batches/{id}?PageNumber=&PageSize=&SearchTerm=&IsPaged=true
+   */
+  loadBatchDetails(initial = false): void {
+    if (this.detailsBatchId == null) return;
+
+    const requestId = ++this.detailsRequestId;
+    if (initial) this.batchDetailsLoading = true;
+    else this.detailsTableLoading.set(true);
+
+    this.planningService.getBatchDetails(this.detailsBatchId, {
+      pageNumber: this.detailsPage(),
+      pageSize: this.detailsPageSize(),
+      isPaged: true,
+      searchTerm: this.detailsSearch()
+    }).subscribe({
       next: res => {
+        if (requestId !== this.detailsRequestId) return; // رد قديم، تجاهليه
+
         const raw = res as any;
         const data = raw?.data?.data ?? raw?.data ?? raw;
-        if (data && !data.committees) {
-          data.committees = [];
-        }
-        this.selectedBatchDetails = data;
+        const { list, total } = this.normalizeCommittees(data);
+
+        this.selectedBatchDetails = { ...data, committees: list } as BatchDetails;
+        this.detailsCommittees.set(list);
+        this.detailsTotal.set(total);
+
         this.batchDetailsLoading = false;
+        this.detailsTableLoading.set(false);
       },
       error: err => {
+        if (requestId !== this.detailsRequestId) return;
         console.error('Error loading batch details:', err);
         this.batchDetailsLoading = false;
+        this.detailsTableLoading.set(false);
         this.messageService.add({
           severity: 'error',
           summary: 'خطأ',
-          detail: err.error?.message || 'فشل تحميل تفاصيل الدفعة',
+          detail: err?.error?.message || 'فشل تحميل تفاصيل الدفعة',
           life: 3000
         });
       }
     });
   }
 
+  /**
+   * committees ممكن ترجع:
+   *  - Array مباشرة
+   *  - Object مقسّم صفحات: { items | data | results: [], totalCount | totalRecords | total | count }
+   * وده كان سبب "_data.slice is not a function".
+   */
+  private normalizeCommittees(data: any): { list: BatchCommittee[]; total: number } {
+    const fallbackTotal = Number(data?.totalCommittees) || 0;
+    const source = data?.committees;
+
+    if (Array.isArray(source)) {
+      const total = Number(data?.totalCount ?? data?.totalRecords ?? data?.total ?? fallbackTotal) || source.length;
+      return { list: source, total };
+    }
+
+    if (source && typeof source === 'object') {
+      const list = this.extractLookupArray(source);
+      const total = Number(
+        source.totalCount ?? source.totalRecords ?? source.totalItems ?? source.total ?? source.count ?? fallbackTotal
+      ) || list.length;
+      return { list, total };
+    }
+
+    return { list: [], total: 0 };
+  }
+
+  onDetailsSearch(value: string): void {
+    this.detailsSearch.set(value ?? '');
+    if (this.detailsSearchTimer) clearTimeout(this.detailsSearchTimer);
+    this.detailsSearchTimer = setTimeout(() => {
+      this.detailsPage.set(1);
+      this.loadBatchDetails();
+    }, 400);
+  }
+
+  clearDetailsSearch(): void {
+    this.onDetailsSearch('');
+  }
+
+  onDetailsPageSizeChange(size: number): void {
+    this.detailsPageSize.set(size);
+    this.detailsPage.set(1);
+    this.loadBatchDetails();
+  }
+
+  goToDetailsPage(p: number): void {
+    if (p < 1 || p > this.detailsTotalPages() || p === this.detailsPage()) return;
+    this.detailsPage.set(p);
+    this.loadBatchDetails();
+  }
+
   closeBatchDetails(): void {
+    if (this.detailsSearchTimer) clearTimeout(this.detailsSearchTimer);
+    this.detailsRequestId++; // أي رد جاي بعد الإغلاق يتجاهل
     this.batchDetailsDialogVisible = false;
     this.selectedBatchDetails = null;
+    this.detailsBatchId = null;
+    this.detailsCommittees.set([]);
   }
 
   // ==========================================
@@ -808,6 +919,13 @@ export default class PlanningComponent implements OnInit {
 
   /**
    * GET api/Planning/batches/for-approve?GovernorateId=&SubjectId=
+   *
+   * لما الباك يضيف الـ Pagination:
+   *   1) ابعتي { pageNumber: this.currentPage(), pageSize: this.pageSize(), isPaged: !this.showAll() }
+   *      كـ paging في getBatchesForApprove
+   *   2) خلي paginatedBatches = filteredBatches (من غير slice)
+   *   3) خدي totalCount من الـ response وحطيه في signal بدل filteredBatches().length
+   *   4) goToPage / onPageSizeChange ينادوا loadBatches()
    */
   loadBatches(): void {
     this.batchesLoading.set(true);
