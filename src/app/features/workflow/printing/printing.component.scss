@@ -48,7 +48,7 @@
   color: var(--blue);
 }
 
-.pr-mono { font-family: monospace; direction: ltr; unicode-bidi: isolate; }
+.pr-mono { font-family: monospace; direction: rtl; unicode-bidi: isolate; }
 
 .pr-field {
   display: flex;
@@ -287,7 +287,11 @@
   grid-template-columns: repeat(auto-fill, minmax(min(100%, 480px), 1fr));
   gap: 1rem;
 }
-
+// pagination جوه دايلوج اللجان
+.pr-dlg .pr-pager {
+  margin-top: 1rem;
+  padding-top: .9rem;
+}
 .pr-card {
   display: flex;
   flex-direction: column;

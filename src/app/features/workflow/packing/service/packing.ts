@@ -1,34 +1,44 @@
-// core/services/packing.service.ts
-import { HttpClient, HttpParams } from '@angular/common/http';
+// service/packing.ts
+import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable, delay, map, of } from 'rxjs';
-import { PackingBatchFilters, PageQuery, PagedResult, PackingBatch, ApiResponse, PackingCommittee, ClaimedCommittee, PackRequest, PackOutcome, PackResult, ReleasedCommittee } from '../model/packing.model';
-
+import { Observable, map } from 'rxjs';
+import {
+  ApiResponse,
+  ClaimedCommittee,
+  CommitteeBox,
+  CommitteeBoxes,
+  PackOutcome,
+  PackRequest,
+  PackResult,
+  PackingBatch,
+  PackingBatchFilters,
+  PackingCommittee,
+  PageQuery,
+  PagedResult,
+  ReleasedCommittee
+} from '../model/packing.model';
+import { AppConfigService } from '../../../../shared/services/app-config.service';
 
 // عدّلي الـ base url حسب الـ environment عندك (مثال: `${environment.apiUrl}/Packing`)
-const API_URL = '/api/Packing';
 
-// أسماء باراميترات الـ pagination (عدّليها لو الباك سماها بشكل مختلف)
 const PAGE_NUMBER_KEY = 'PageNumber';
 const PAGE_SIZE_KEY = 'PageSize';
 
-// ✅ true = بيانات تجريبية لمعاينة الشكل بدون باك. خليها false لما الـ API يشتغل.
-const USE_MOCK = true;
-const MOCK_DELAY = 500;
+// بنطلب JSON صراحةً عشان الباك ما يرجعش text/plain
+const JSON_HEADERS = new HttpHeaders({ Accept: 'application/json' });
 
 @Injectable({ providedIn: 'root' })
 export class PackingService {
   private readonly http = inject(HttpClient);
+    private readonly config = inject(AppConfigService);
+   API_URL = `${this.config.baseURL}api/Packing`;
+ COMMITTEES_URL =`${this.config.baseURL}api/Committees`;
 
-  /** GET /api/Packing/batches (المواد) - مع pagination */
+  /** GET /api/Packing/batches - مع pagination */
   getBatches(
     filters: PackingBatchFilters,
     page: PageQuery
   ): Observable<PagedResult<PackingBatch>> {
-    if (USE_MOCK) {
-      return of(this.mockBatches(filters, page)).pipe(delay(MOCK_DELAY));
-    }
-
     let params = this.pageParams(page);
 
     if (filters.governorateId != null) {
@@ -48,62 +58,45 @@ export class PackingService {
     }
 
     return this.http
-      .get<ApiResponse<PackingBatch[]>>(`${API_URL}/batches`, { params })
-      .pipe(map(res => this.toPaged(res)));
+      .get<ApiResponse<any>>(`${this.API_URL}/batches`, { params, headers: JSON_HEADERS })
+      .pipe(map(res => this.toPaged<PackingBatch>(res)));
   }
 
-  /** GET /api/Packing/batches/{batchId}/committees (اللجان) - مع pagination */
-  getCommittees(
+  /** GET /api/Packing/batches/{batchId}/committees - مع pagination */
+ getCommittees(
     batchId: number,
-    page: PageQuery
+    page: PageQuery,
+    searchTerm?: string | null
   ): Observable<PagedResult<PackingCommittee>> {
-    if (USE_MOCK) {
-      return of(this.mockCommittees(page)).pipe(delay(MOCK_DELAY));
+    let params = this.pageParams(page);
+ 
+    if (searchTerm?.trim()) {
+      params = params.set('SearchTerm', searchTerm.trim());
     }
-
+ 
     return this.http
-      .get<ApiResponse<PackingCommittee[]>>(
-        `${API_URL}/batches/${batchId}/committees`,
-        { params: this.pageParams(page) }
-      )
-      .pipe(map(res => this.toPaged(res)));
+      .get<ApiResponse<any>>(`${this.API_URL}/batches/${batchId}/committees`, {
+        params,
+        headers: JSON_HEADERS
+      })
+      .pipe(map(res => this.toPaged<PackingCommittee>(res)));
   }
 
-  /** PUT /api/Packing/batches/{batchId}/committees/{committeeId}/claim (حجز اللجنة + الصناديق والأظرف) */
-  claimCommittee(batchId: number, committeeId: number): Observable<ClaimedCommittee> {
-    if (USE_MOCK) {
-      return of(this.mockClaim(batchId, committeeId)).pipe(delay(MOCK_DELAY));
-    }
-
+  /** GET /api/Committees/{id}/envelopes-with-boxes → الصناديق وجواها الأظرف */
+  getCommitteeBoxes(committeeId: number): Observable<CommitteeBoxes> {
     return this.http
-      .put<ApiResponse<ClaimedCommittee>>(
-        `${API_URL}/batches/${batchId}/committees/${committeeId}/claim`,
-        {}
-      )
-      .pipe(map(res => this.unwrap(res)));
+      .get<ApiResponse<any>>(`${this.COMMITTEES_URL}/${committeeId}/envelopes-with-boxes`, {
+        headers: JSON_HEADERS
+      })
+      .pipe(map(res => this.normalizeBoxes(this.unwrap(res))));
   }
 
-  /** PUT /api/Packing/committees/{committeeId}/pack (تأكيد التغليف) */
+  /** PUT /api/Packing/committees/{committeeId}/pack */
   packCommittee(committeeId: number, body: PackRequest): Observable<PackOutcome> {
-    if (USE_MOCK) {
-      const data: PackResult = {
-        committeeId,
-        committeeNumber: String(100 + committeeId),
-        status: 'تم التغليف',
-        boxes: body.boxes.map((box:any, i:any) => ({
-          boxId: box.boxId,
-          sequenceNo: i + 1,
-          qrCode: box.qrCode,
-          status: 'Packed'
-        })),
-        problems: []
-      };
-
-      return of({ success: true, message: 'تم', data }).pipe(delay(MOCK_DELAY));
-    }
-
     return this.http
-      .put<ApiResponse<PackResult>>(`${API_URL}/committees/${committeeId}/pack`, body)
+      .put<ApiResponse<PackResult>>(`${this.API_URL}/committees/${committeeId}/pack`, body, {
+        headers: JSON_HEADERS
+      })
       .pipe(
         map(res => {
           // لو فيه data (حتى مع problems) بنرجعها عشان نعرض المشاكل
@@ -120,24 +113,28 @@ export class PackingService {
       );
   }
 
-  /** PUT /api/Packing/committees/{committeeId}/release (تحرير اللجنة) */
-  releaseCommittee(committeeId: number): Observable<ReleasedCommittee> {
-    if (USE_MOCK) {
-      return of({
-        committeeId,
-        committeeNumber: String(100 + committeeId),
-        requiredBookletCount: 0,
-        bonusBookletCount: 0,
-        requiredEnvelopeCount: 0,
-        bonusEnvelopeCount: 0,
-        boxCount: 0
-      }).pipe(delay(MOCK_DELAY));
-    }
+  // =====================================================
+  // غير مستخدمين حاليًا (جاهزين لو احتجتيهم بعدين)
+  // =====================================================
 
+  /** PUT /api/Packing/batches/{batchId}/committees/{committeeId}/claim */
+  claimCommittee(batchId: number, committeeId: number): Observable<ClaimedCommittee> {
+    return this.http
+      .put<ApiResponse<ClaimedCommittee>>(
+        `${this.API_URL}/batches/${batchId}/committees/${committeeId}/claim`,
+        {},
+        { headers: JSON_HEADERS }
+      )
+      .pipe(map(res => this.unwrap(res)));
+  }
+
+  /** PUT /api/Packing/committees/{committeeId}/release */
+  releaseCommittee(committeeId: number): Observable<ReleasedCommittee> {
     return this.http
       .put<ApiResponse<ReleasedCommittee>>(
-        `${API_URL}/committees/${committeeId}/release`,
-        {}
+        `${this.API_URL}/committees/${committeeId}/release`,
+        {},
+        { headers: JSON_HEADERS }
       )
       .pipe(map(res => this.unwrap(res)));
   }
@@ -160,84 +157,73 @@ export class PackingService {
     return res.data;
   }
 
-  private toPaged<T>(res: ApiResponse<T[]>): PagedResult<T> {
-    const items = this.unwrap(res) ?? [];
+  /**
+   * الرد: { success, data: { currentPage, totalPages, totalCount, ..., data: [...] } }
+   * بندعم كمان الشكل القديم (data = array مباشرة).
+   */
+  private toPaged<T>(res: ApiResponse<any>): PagedResult<T> {
+    const data = this.unwrap(res);
 
-    return { items, total: res.count ?? items.length };
+    if (Array.isArray(data)) {
+      return { items: data, total: res.count ?? res.totalCount ?? data.length };
+    }
+
+    const items: T[] = data?.data ?? data?.items ?? [];
+
+    return { items, total: data?.totalCount ?? res.count ?? items.length };
   }
 
   private errorText(res: ApiResponse<unknown> | null | undefined): string {
     return res?.errors?.[0] || res?.message || 'حدث خطأ غير متوقع';
   }
 
-  // =====================================================
-  // Mock data (للمعاينة فقط - امسحيها لما الـ API يشتغل)
-  // =====================================================
+  // ---------- تطبيع شكل الصناديق (نقطة التعديل الوحيدة لو أسماء الحقول اختلفت) ----------
 
-  private slice<T>(all: T[], page: PageQuery): PagedResult<T> {
-    const start = (page.pageNumber - 1) * page.pageSize;
+  private normalizeBoxes(raw: any): CommitteeBoxes {
+    const boxes: CommitteeBox[] = (raw?.boxes ?? [])
+      .map((box: any, index: number) => {
+        const required = this.serials(
+          box.requiredEnvelopes ?? box.mainEnvelopes ?? box.envelopes
+        );
 
-    return { items: all.slice(start, start + page.pageSize), total: all.length };
-  }
-
-  private mockBatches(filters: PackingBatchFilters, page: PageQuery): PagedResult<PackingBatch> {
-    const subjects = ['اللغة العربية', 'الرياضيات', 'العلوم', 'اللغة الإنجليزية', 'الدراسات الاجتماعية'];
-    const governorates = ['القاهرة', 'الجيزة', 'المنوفية', 'الإسكندرية'];
-
-    const all: PackingBatch[] = Array.from({ length: 14 }, (_, i) => ({
-      batchId: i + 1,
-      label: `دفعة ${i + 1} - ${subjects[i % subjects.length]}`,
-      governorateName: governorates[i % governorates.length],
-      subjectName: subjects[i % subjects.length],
-      year: 2026,
-      roundName: i % 3 === 0 ? 'الدور الثاني' : 'الدور الأول',
-      status: i % 5 === 4 ? 'مكتمل' : 'قيد التغليف',
-      pendingCommitteeCount: i % 5 === 4 ? 0 : 3 + (i % 7)
-    }));
-
-    return this.slice(all, page);
-  }
-
-  private mockCommittees(page: PageQuery): PagedResult<PackingCommittee> {
-    const all: PackingCommittee[] = Array.from({ length: 15 }, (_, i) => ({
-      committeeId: i + 1,
-      committeeNumber: String(101 + i),
-      requiredBookletCount: 120 + i,
-      bonusBookletCount: 10,
-      requiredEnvelopeCount: 12,
-      bonusEnvelopeCount: 2,
-      boxCount: 3
-    }));
-
-    return this.slice(all, page);
-  }
-
-  /**
-   * أكواد التجربة (اكتبيها في خانة المسح واضغطي Enter):
-   *   صندوق:  BOX-{committeeId}-{رقم الصندوق}          مثال: BOX-1-1
-   *   ظرف:    ENV-{committeeId}-{الصندوق}-{رقم}        مثال: ENV-1-1-01
-   *   احتياطي: RES-{committeeId}-{الصندوق}-{رقم}       مثال: RES-1-1-01
-   */
-  private mockClaim(batchId: number, committeeId: number): ClaimedCommittee {
-    const pad = (n: number) => String(n).padStart(2, '0');
+        return {
+          boxId: box.boxId,
+          sequenceNo: box.sequenceNo ?? index + 1,
+          qrCode: String(box.qrCode ?? '').trim(),
+          expectedEnvelopeCount: box.expectedEnvelopeCount ?? required.length,
+          requiredEnvelopes: required,
+          bonusEnvelopes: this.serials(box.bonusEnvelopes ?? box.reserveEnvelopes)
+        };
+      })
+      .sort((a: CommitteeBox, b: CommitteeBox) => a.sequenceNo - b.sequenceNo);
 
     return {
-      batchId,
-      batchLabel: `دفعة ${batchId}`,
-      committeeId,
-      committeeNumber: String(100 + committeeId),
-      status: 'Claimed',
-      assignedToUserId: 1,
-      assignedAt: new Date().toISOString(),
-      boxCount: 3,
-      boxes: [1, 2, 3].map(seq => ({
-        boxId: committeeId * 10 + seq,
-        sequenceNo: seq,
-        qrCode: `BOX-${committeeId}-${seq}`,
-        expectedEnvelopeCount: 12,
-        mainEnvelopes: Array.from({ length: 12 }, (_, n) => `ENV-${committeeId}-${seq}-${pad(n + 1)}`),
-        reserveEnvelopes: Array.from({ length: 2 }, (_, n) => `RES-${committeeId}-${seq}-${pad(n + 1)}`)
-      }))
+      committeeId: raw?.committeeId,
+      committeeNumber: String(raw?.committeeNumber ?? ''),
+      boxes
     };
+  }
+
+  /** الأظرف ممكن ترجع strings أو objects فيها serial */
+  private serials(list: unknown): string[] {
+    if (!Array.isArray(list)) {
+      return [];
+    }
+
+    return list
+      .map((item: any) =>
+        typeof item === 'string' || typeof item === 'number'
+          ? String(item)
+          : String(
+              item?.serial ??
+                item?.serialNumber ??
+                item?.envelopeSerial ??
+                item?.qrCode ??
+                item?.code ??
+                ''
+            )
+      )
+      .map(serial => serial.trim())
+      .filter(Boolean);
   }
 }

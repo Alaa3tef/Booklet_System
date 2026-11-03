@@ -17,400 +17,123 @@
   <div panel-content class="pk">
 
     <!-- ====================================================== -->
-    <!-- Breadcrumb -->
-    <!-- ====================================================== -->
-    <nav class="pk-crumbs" aria-label="مسار التنقل">
-      <button type="button" class="pk-crumb" [class.current]="view() === 'batches'"
-        [disabled]="view() === 'batches'" (click)="goBack('batches')">
-        <i class="pi pi-th-large"></i> المواد
-      </button>
-
-      @if (selectedBatch(); as batch) {
-        <i class="pi pi-angle-left pk-crumb-sep"></i>
-        <button type="button" class="pk-crumb" [class.current]="view() === 'committees'"
-          [disabled]="view() === 'committees'" (click)="goBack('committees')">
-          <i class="pi pi-book"></i> {{ batch.subjectName }}
-        </button>
-      }
-
-      @if (view() === 'packing' && claimed(); as c) {
-        <i class="pi pi-angle-left pk-crumb-sep"></i>
-        <span class="pk-crumb current"><i class="pi pi-box"></i> لجنة {{ c.committeeNumber }}</span>
-      }
-    </nav>
-
-    <!-- ====================================================== -->
     <!-- Page head -->
     <!-- ====================================================== -->
     <section class="pk-head">
       <div>
-        @switch (view()) {
-          @case ('batches') {
-            <h2>المواد المطلوب تغليفها</h2>
-            <p>اختر المادة لعرض اللجان الخاصة بها.</p>
-          }
-          @case ('committees') {
-            <h2>{{ selectedBatch()?.subjectName }}</h2>
-            <p>{{ selectedBatch()?.label }} — اختر اللجنة لبدء التغليف.</p>
-          }
-          @case ('packing') {
-            <h2>تغليف لجنة {{ claimed()?.committeeNumber }}</h2>
-            <p>جلسة المسح مفتوحة: امسح QR كل صندوق وسيريال أظرفه بجهاز القراءة.</p>
-          }
-        }
+        <h2>المواد المطلوب تغليفها</h2>
+        <p>اضغط على المادة لعرض لجانها، ثم اختر اللجنة وابدأ المسح.</p>
       </div>
 
-      @if (view() === 'batches') {
-        <div class="pk-count"><i class="pi pi-th-large"></i>
-          <div><strong>{{ batchPager.total() }}</strong><span>مادة</span></div></div>
-      }
-      @if (view() === 'committees') {
-        <div class="pk-count"><i class="pi pi-box"></i>
-          <div><strong>{{ committeePager.total() }}</strong><span>لجنة</span></div></div>
-      }
+      <div class="pk-count"><i class="pi pi-th-large"></i>
+        <div><strong>{{ batchPager.total() }}</strong><span>مادة</span></div></div>
     </section>
 
     <!-- ====================================================== -->
-    <!-- VIEW 1: BATCHES -->
+    <!-- BATCHES -->
     <!-- ====================================================== -->
-    @if (view() === 'batches') {
-      <section class="pk-box pk-filters">
-        <div class="pk-field">
-          <label>المحافظة</label>
-          <p-select [options]="governorateOptions()" optionLabel="label" optionValue="value"
-            placeholder="كل المحافظات" [ngModel]="governorateFilter()"
-            (ngModelChange)="governorateFilter.set($event)" [loading]="governoratesLoading()"
-            [showClear]="true" [filter]="true" filterPlaceholder="ابحث عن محافظة..."
-            emptyMessage="لا توجد محافظات" styleClass="pk-input" />
-        </div>
-        <div class="pk-field">
-          <label>المادة</label>
-          <p-select [options]="subjectOptions()" optionLabel="label" optionValue="value"
-            placeholder="كل المواد" [ngModel]="subjectFilter()"
-            (ngModelChange)="subjectFilter.set($event)" [loading]="subjectsLoading()"
-            [showClear]="true" [filter]="true" filterPlaceholder="ابحث عن مادة..."
-            emptyMessage="لا توجد مواد" styleClass="pk-input" />
-        </div>
-        <div class="pk-actions">
-          <button pButton type="button" class="pk-btn pk-btn-primary" (click)="applyFilters()">
-            <i class="pi pi-search"></i><span>بحث</span>
-          </button>
-          <button pButton type="button" class="pk-btn pk-btn-icon" pTooltip="إعادة تعيين"
-            tooltipPosition="top" (click)="resetFilters()">
-            <i class="pi pi-filter-slash"></i>
-          </button>
-        </div>
+    <section class="pk-box pk-filters">
+      <div class="pk-field">
+        <label>المحافظة</label>
+        <p-select [options]="governorateOptions()" optionLabel="label" optionValue="value"
+          placeholder="كل المحافظات" [ngModel]="governorateFilter()"
+          (ngModelChange)="governorateFilter.set($event)" [loading]="governoratesLoading()"
+          [showClear]="true" [filter]="true" filterPlaceholder="ابحث عن محافظة..."
+          emptyMessage="لا توجد محافظات" styleClass="pk-input" />
+      </div>
+      <div class="pk-field">
+        <label>المادة</label>
+        <p-select [options]="subjectOptions()" optionLabel="label" optionValue="value"
+          placeholder="كل المواد" [ngModel]="subjectFilter()"
+          (ngModelChange)="subjectFilter.set($event)" [loading]="subjectsLoading()"
+          [showClear]="true" [filter]="true" filterPlaceholder="ابحث عن مادة..."
+          emptyMessage="لا توجد مواد" styleClass="pk-input" />
+      </div>
+      <div class="pk-actions">
+        <button pButton type="button" class="pk-btn pk-btn-primary" (click)="applyFilters()">
+          <i class="pi pi-search"></i><span>بحث</span>
+        </button>
+        <button pButton type="button" class="pk-btn pk-btn-icon" pTooltip="إعادة تعيين"
+          tooltipPosition="top" (click)="resetFilters()">
+          <i class="pi pi-filter-slash"></i>
+        </button>
+      </div>
+    </section>
+
+    @if (batchesLoading()) {
+      <section class="pk-grid">
+        @for (n of [1, 2, 3, 4, 5, 6]; track n) { <div class="pk-skel"></div> }
+      </section>
+    } @else if (batchesError()) {
+      <div class="pk-box pk-empty">
+        <i class="pi pi-exclamation-circle"></i>
+        <strong>{{ batchesError() }}</strong>
+        <button pButton type="button" class="pk-btn" (click)="loadBatches()">
+          <i class="pi pi-refresh"></i><span>إعادة المحاولة</span>
+        </button>
+      </div>
+    } @else if (batches().length) {
+      <section class="pk-grid">
+        @for (batch of batches(); track batch.batchId) {
+          <article class="pk-card pk-clickable" [attr.data-tone]="batchTone(batch)"
+            tabindex="0" role="button" (click)="openBatch(batch)"
+            (keydown.enter)="openBatch(batch)">
+            <header>
+              <span class="pk-ico"><i class="pi pi-book"></i></span>
+              <div class="pk-card-title">
+                <strong>{{ batch.subjectName }}</strong>
+                <small>{{ batch.label }}</small>
+              </div>
+              <span class="pk-pill">{{ batch.status }}</span>
+            </header>
+
+            <dl class="pk-meta">
+              <div><dt><i class="pi pi-map-marker"></i> المحافظة</dt><dd>{{ batch.governorateName }}</dd></div>
+              <div><dt><i class="pi pi-calendar"></i> السنة</dt><dd>{{ batch.year }}</dd></div>
+              <div class="pk-wide"><dt><i class="pi pi-sync"></i> الدور</dt><dd>{{ batch.roundName }}</dd></div>
+            </dl>
+
+            <footer class="pk-card-foot">
+              <span class="pk-pending">
+                <b>{{ batch.pendingCommitteeCount }}</b> لجنة بانتظار التغليف
+              </span>
+              <span class="pk-go">عرض اللجان <i class="pi pi-arrow-left"></i></span>
+            </footer>
+          </article>
+        }
       </section>
 
-      @if (batchesLoading()) {
-        <section class="pk-grid">
-          @for (n of [1, 2, 3, 4, 5, 6]; track n) { <div class="pk-skel"></div> }
-        </section>
-      } @else if (batchesError()) {
-        <div class="pk-box pk-empty">
-          <i class="pi pi-exclamation-circle"></i>
-          <strong>{{ batchesError() }}</strong>
-          <button pButton type="button" class="pk-btn" (click)="loadBatches()">
-            <i class="pi pi-refresh"></i><span>إعادة المحاولة</span>
-          </button>
-        </div>
-      } @else if (batches().length) {
-        <section class="pk-grid">
-          @for (batch of batches(); track batch.batchId) {
-            <article class="pk-card pk-clickable" [attr.data-tone]="batchTone(batch)"
-              tabindex="0" role="button" (click)="selectBatch(batch)"
-              (keydown.enter)="selectBatch(batch)">
-              <header>
-                <span class="pk-ico"><i class="pi pi-book"></i></span>
-                <div class="pk-card-title">
-                  <strong>{{ batch.subjectName }}</strong>
-                  <small>{{ batch.label }}</small>
-                </div>
-                <span class="pk-pill">{{ batch.status }}</span>
-              </header>
-
-              <dl class="pk-meta">
-                <div><dt><i class="pi pi-map-marker"></i> المحافظة</dt><dd>{{ batch.governorateName }}</dd></div>
-                <div><dt><i class="pi pi-calendar"></i> السنة</dt><dd>{{ batch.year }}</dd></div>
-                <div class="pk-wide"><dt><i class="pi pi-sync"></i> الدور</dt><dd>{{ batch.roundName }}</dd></div>
-              </dl>
-
-              <footer class="pk-card-foot">
-                <span class="pk-pending">
-                  <b>{{ batch.pendingCommitteeCount }}</b> لجنة بانتظار التغليف
-                </span>
-                <span class="pk-go">عرض اللجان <i class="pi pi-arrow-left"></i></span>
-              </footer>
-            </article>
-          }
-        </section>
-
-        <ng-container *ngTemplateOutlet="pagerTpl; context: { p: batchPager, k: 'batch', label: 'مادة' }" />
-      } @else {
-        <div class="pk-box pk-empty">
-          <i class="pi pi-inbox"></i>
-          <strong>{{ hasActiveFilters() ? 'لا توجد نتائج مطابقة للبحث' : 'لا توجد مواد للتغليف' }}</strong>
-          <span>{{ hasActiveFilters() ? 'جرّب تغيير المحافظة أو المادة أو إعادة تعيين الفلاتر.' : 'ستظهر المواد المطلوب تغليفها هنا.' }}</span>
-        </div>
-      }
-    }
-
-    <!-- ====================================================== -->
-    <!-- VIEW 2: COMMITTEES -->
-    <!-- ====================================================== -->
-    @if (view() === 'committees') {
-      @if (claimError()) {
-        <div class="pk-alert" data-tone="danger">
-          <i class="pi pi-times-circle"></i><span>{{ claimError() }}</span>
-          <button type="button" (click)="claimError.set(null)" aria-label="إغلاق"><i class="pi pi-times"></i></button>
-        </div>
-      }
-
-      @if (committeesLoading()) {
-        <section class="pk-grid">
-          @for (n of [1, 2, 3, 4, 5, 6]; track n) { <div class="pk-skel"></div> }
-        </section>
-      } @else if (committeesError()) {
-        <div class="pk-box pk-empty">
-          <i class="pi pi-exclamation-circle"></i>
-          <strong>{{ committeesError() }}</strong>
-          <button pButton type="button" class="pk-btn" (click)="loadCommittees()">
-            <i class="pi pi-refresh"></i><span>إعادة المحاولة</span>
-          </button>
-        </div>
-      } @else if (committees().length) {
-        <section class="pk-grid">
-          @for (c of committees(); track c.committeeId) {
-            <article class="pk-card" data-tone="info">
-              <header>
-                <span class="pk-ico"><i class="pi pi-users"></i></span>
-                <div class="pk-card-title">
-                  <small>لجنة رقم</small>
-                  <strong class="pk-big">{{ c.committeeNumber }}</strong>
-                </div>
-                <span class="pk-pill"><i class="pi pi-box"></i>{{ c.boxCount }} صندوق</span>
-              </header>
-
-              <div class="pk-stats">
-                <div>
-                  <small>الكراسات المطلوبة</small>
-                  <strong>{{ c.requiredBookletCount }}</strong>
-                  <span>+ {{ c.bonusBookletCount }} إضافي</span>
-                </div>
-                <div>
-                  <small>الأظرف المطلوبة</small>
-                  <strong>{{ c.requiredEnvelopeCount }}</strong>
-                  <span>+ {{ c.bonusEnvelopeCount }} احتياطي</span>
-                </div>
-              </div>
-
-              <footer>
-                <button pButton type="button" class="pk-btn pk-btn-primary pk-block"
-                  [disabled]="claimingId() !== null" (click)="claimCommittee(c)">
-                  <i class="pi" [ngClass]="claimingId() === c.committeeId ? 'pi-spin pi-spinner' : 'pi-qrcode'"></i>
-                  <span>{{ claimingId() === c.committeeId ? 'جاري الحجز...' : 'بدء التغليف' }}</span>
-                </button>
-              </footer>
-            </article>
-          }
-        </section>
-
-        <ng-container *ngTemplateOutlet="pagerTpl; context: { p: committeePager, k: 'committee', label: 'لجنة' }" />
-      } @else {
-        <div class="pk-box pk-empty">
-          <i class="pi pi-inbox"></i>
-          <strong>لا توجد لجان بانتظار التغليف</strong>
-          <span>تم الانتهاء من كل لجان هذه المادة أو لا توجد لجان متاحة.</span>
-        </div>
-      }
-    }
-
-    <!-- ====================================================== -->
-    <!-- VIEW 3: PACKING SESSION -->
-    <!-- ====================================================== -->
-    @if (view() === 'packing') {
-      <div class="pk-session">
-
-        <!-- Sidebar: scanner + progress -->
-        <aside class="pk-side">
-          <div class="pk-box pk-scanbox" [attr.data-state]="packDone() ? 'done' : (feedback()?.tone ?? 'idle')">
-            <div class="pk-label">
-              <i class="pi pi-qrcode"></i> جلسة المسح
-              <span class="pk-live" [class.off]="packing() || packDone()">
-                <i class="pk-dot"></i>{{ packDone() ? 'مكتملة' : packing() ? 'جاري الحفظ' : 'جاهز للمسح' }}
-              </span>
-            </div>
-
-            <label class="pk-scan-input">
-              <i class="pi pi-qrcode"></i>
-              <input #scanInput type="text" autocomplete="off" spellcheck="false" autofocus
-                placeholder="امسح QR الصندوق أو سيريال الظرف..."
-                [disabled]="packing() || packDone()"
-                (keydown.enter)="onScan(scanInput)" (blur)="keepFocus()" />
-            </label>
-
-            @if (feedback(); as f) {
-              <div class="pk-feedback" [attr.data-tone]="f.tone">
-                <i class="pi" [ngClass]="toneIcon(f.tone)"></i>
-                <div>
-                  <strong>{{ f.text }}</strong>
-                  @if (f.code) { <small class="pk-mono">{{ f.code }}</small> }
-                </div>
-              </div>
-            } @else {
-              <div class="pk-hint-box">
-                <i class="pi pi-info-circle"></i>
-                لا تحتاج للضغط على أي زر: وجّه الجهاز وامسح، وسيتم التعرف على الكود تلقائيًا.
-              </div>
-            }
-          </div>
-
-          <div class="pk-box">
-            <div class="pk-progress">
-              <div class="pk-progress-head">
-                <span>تقدم المسح</span><b>{{ totals().progress }}%</b>
-              </div>
-              <div class="pk-track"><div [style.width.%]="totals().progress"></div></div>
-            </div>
-
-            <div class="pk-counters">
-              <div><strong>{{ totals().boxesConfirmed }} / {{ totals().boxTotal }}</strong><small>صناديق</small></div>
-              <div><strong>{{ totals().mainScanned }} / {{ totals().mainTotal }}</strong><small>أظرف أساسية</small></div>
-              <div><strong>{{ totals().reserveScanned }}</strong><small>أظرف احتياطية</small></div>
-            </div>
-
-            <div class="pk-actions pk-actions-col">
-              <button pButton type="button" class="pk-btn pk-btn-success pk-block"
-                [disabled]="!canPack()" (click)="confirmPacking()">
-                <i class="pi" [ngClass]="packing() ? 'pi-spin pi-spinner' : 'pi-check'"></i>
-                <span>{{ packing() ? 'جاري الحفظ...' : 'تأكيد التغليف' }}</span>
-              </button>
-              @if (!packDone()) {
-                <button pButton type="button" class="pk-btn pk-block" [disabled]="packing()"
-                  (click)="goBack('committees')">
-                  <i class="pi pi-undo"></i><span>إلغاء وتحرير اللجنة</span>
-                </button>
-              } @else {
-                <button pButton type="button" class="pk-btn pk-btn-primary pk-block"
-                  (click)="goBack('committees')">
-                  <i class="pi pi-arrow-right"></i><span>العودة إلى اللجان</span>
-                </button>
-              }
-            </div>
-
-            @if (!canPack() && !packDone()) {
-              <p class="pk-hint pk-hint-note">
-                يُفعَّل التأكيد بعد مسح QR كل الصناديق وكل الأظرف الأساسية (الاحتياطي اختياري).
-              </p>
-            }
-          </div>
-
-          @if (scanLog().length) {
-            <div class="pk-box">
-              <div class="pk-label"><i class="pi pi-history"></i> آخر عمليات المسح</div>
-              <ul class="pk-log">
-                @for (log of scanLog(); track log.id) {
-                  <li [attr.data-tone]="log.tone">
-                    <i class="pi" [ngClass]="toneIcon(log.tone)"></i>
-                    <span>{{ log.text }}</span>
-                    <small>{{ log.time }}</small>
-                  </li>
-                }
-              </ul>
-            </div>
-          }
-        </aside>
-
-        <!-- Main: boxes + envelopes -->
-        <section class="pk-boxes">
-
-          @if (packDone()) {
-            <div class="pk-banner" data-tone="success">
-              <i class="pi pi-check-circle"></i>
-              <div>
-                <strong>تم تغليف لجنة {{ packResult()?.committeeNumber }} بنجاح</strong>
-                <span>الحالة: {{ packResult()?.status }}</span>
-              </div>
-            </div>
-          }
-
-          @if (packError()) {
-            <div class="pk-alert" data-tone="danger">
-              <i class="pi pi-times-circle"></i><span>{{ packError() }}</span>
-              <button type="button" (click)="packError.set(null)" aria-label="إغلاق"><i class="pi pi-times"></i></button>
-            </div>
-          }
-
-          @if (problems().length) {
-            <div class="pk-box pk-problems">
-              <div class="pk-label"><i class="pi pi-exclamation-triangle"></i> مشاكل تحتاج مراجعة ({{ problems().length }})</div>
-              <ul>
-                @for (p of problems(); track $index) {
-                  <li>
-                    <span class="pk-pill" data-tone="danger">صندوق {{ p.sequenceNo }}</span>
-                    @if (p.serial) { <b class="pk-mono">{{ p.serial }}</b> }
-                    <span>{{ p.reason }}</span>
-                  </li>
-                }
-              </ul>
-            </div>
-          }
-
-          @for (box of boxViews(); track box.boxId) {
-            <article class="pk-bx" [id]="'pk-box-' + box.boxId"
-              [class.active]="box.boxId === activeBoxId()"
-              [class.problem]="problemBoxIds().has(box.boxId)"
-              [attr.data-tone]="box.complete ? 'success' : 'info'">
-
-              <header>
-                <span class="pk-bx-no">{{ box.sequenceNo }}</span>
-                <div class="pk-bx-title">
-                  <strong>صندوق رقم {{ box.sequenceNo }}</strong>
-                  <small class="pk-mono">{{ box.qrCode }}</small>
-                </div>
-                <span class="pk-pill" [attr.data-tone]="box.qrScanned ? 'success' : 'warning'">
-                  <i class="pi" [ngClass]="box.qrScanned ? 'pi-check-circle' : 'pi-clock'"></i>
-                  {{ box.qrScanned ? 'تم مسح الصندوق' : 'بانتظار QR الصندوق' }}
-                </span>
-                @if (!packDone()) {
-                  <button type="button" class="pk-link" pTooltip="إعادة مسح هذا الصندوق"
-                    tooltipPosition="top" [disabled]="packing()" (click)="resetBox(box.boxId)">
-                    <i class="pi pi-refresh"></i>
-                  </button>
-                }
-              </header>
-
-              <div class="pk-bx-prog">
-                <div class="pk-track"><div [style.width.%]="box.progress"></div></div>
-                <span>
-                  <b>{{ box.mainScanned }} / {{ box.mainTotal }}</b> أساسي
-                  @if (box.reserveTotal) { · <b>{{ box.reserveScanned }} / {{ box.reserveTotal }}</b> احتياطي }
-                </span>
-              </div>
-
-              <div class="pk-env-grid">
-                @for (env of box.envelopes; track env.serial) {
-                  <div class="pk-env" [class.scanned]="env.scanned"
-                    [class.reserve]="env.kind === 'reserve'"
-                    [class.problem]="problemSerials().has(env.serial)">
-                    <span class="pk-env-ico">
-                      <i class="pi" [ngClass]="env.scanned ? 'pi-check' : 'pi-envelope'"></i>
-                    </span>
-                    <div class="pk-env-info">
-                      <strong class="pk-mono">{{ env.serial }}</strong>
-                      <small>
-                        {{ env.kind === 'main' ? 'أساسي' : 'احتياطي' }}
-                        @if (env.scannedAt) { · {{ env.scannedAt }} }
-                      </small>
-                    </div>
-                  </div>
-                }
-              </div>
-            </article>
-          }
-        </section>
+      <ng-container *ngTemplateOutlet="pagerTpl; context: { p: batchPager, k: 'batch', label: 'مادة' }" />
+    } @else {
+      <div class="pk-box pk-empty">
+        <i class="pi pi-inbox"></i>
+        <strong>{{ hasActiveFilters() ? 'لا توجد نتائج مطابقة للبحث' : 'لا توجد مواد للتغليف' }}</strong>
+        <span>{{ hasActiveFilters() ? 'جرّب تغيير المحافظة أو المادة أو إعادة تعيين الفلاتر.' : 'ستظهر المواد المطلوب تغليفها هنا.' }}</span>
       </div>
     }
+
+    <!-- ====================================================== -->
+    <!-- Reusable envelope card -->
+    <!-- ====================================================== -->
+    <ng-template #envTpl let-env>
+      <div class="pk-env" [attr.data-tone]="envTone(env)" [class.reserve]="env.kind === 'reserve'">
+        <div class="pk-env-top">
+          <span class="pk-env-ico">
+            <i class="pi" [ngClass]="env.scanned ? 'pi-check' : 'pi-envelope'"></i>
+          </span>
+          <span class="pk-env-kind">{{ env.kind === 'main' ? 'أساسي' : 'احتياطي' }}</span>
+        </div>
+        <strong class="pk-env-serial pk-mono" [attr.title]="env.serial">{{ env.serial }}</strong>
+        <div class="pk-env-state">
+          @if (env.scanned) {
+            <i class="pi pi-check-circle"></i><span>تم المسح</span>
+            @if (env.scannedAt) { <small>{{ env.scannedAt }}</small> }
+          } @else {
+            <i class="pi pi-clock"></i><span>بانتظار المسح</span>
+          }
+        </div>
+      </div>
+    </ng-template>
 
     <!-- ====================================================== -->
     <!-- Reusable pager -->
@@ -445,33 +168,394 @@
     </ng-template>
 
     <!-- ====================================================== -->
-    <!-- Leave / release dialog -->
+    <!-- BIG DIALOG: اللجان ← الصناديق ← الأظرف -->
     <!-- ====================================================== -->
-    <p-dialog [visible]="leaveDialogVisible()" (visibleChange)="leaveDialogVisible.set($event)"
-      (onHide)="cancelLeave()" [modal]="true" [baseZIndex]="10000" [draggable]="false"
-      [resizable]="false" [closable]="!releasing()" [style]="{ width: '460px', maxWidth: '95vw' }"
-      styleClass="pk-dlg">
+    <p-dialog [visible]="!!selectedBatch()" (visibleChange)="onBatchDialogVisibleChange($event)"
+      [modal]="true" [baseZIndex]="1000" [draggable]="false" [resizable]="false"
+      [closable]="!packing()" [closeOnEscape]="false"
+      [style]="{ width: '1680px', maxWidth: '96vw' }"
+      [contentStyle]="{ height: '78vh', overflow: 'auto' }"
+      styleClass="pk-dlg pk-dlg-big">
+
       <ng-template pTemplate="header">
         <div class="pk-dlg-title">
-          <span class="pk-ico pk-ico-danger"><i class="pi pi-undo"></i></span>
-          <div><h3>تحرير اللجنة</h3><small>لم يتم تأكيد التغليف بعد</small></div>
+          @if (step() === 'packing') {
+            <button type="button" class="pk-back" pTooltip="رجوع إلى اللجان" tooltipPosition="bottom"
+              [disabled]="packing()" (click)="requestBack()" aria-label="رجوع">
+              <i class="pi pi-arrow-right"></i>
+            </button>
+          } @else {
+            <span class="pk-ico"><i class="pi pi-book"></i></span>
+          }
+
+          <div class="pk-dlg-names">
+            <h3>{{ selectedBatch()?.subjectName }}</h3>
+            <small>
+              {{ selectedBatch()?.label }}
+              @if (step() === 'packing') { · لجنة {{ selectedCommittee()?.committeeNumber }} }
+            </small>
+          </div>
+
+          <div class="pk-steps" aria-label="خطوات العمل">
+            <span class="pk-step" [class.on]="step() === 'committees'"><b>1</b> اللجان</span>
+            <i class="pi pi-angle-left"></i>
+            <span class="pk-step" [class.on]="step() === 'packing'"><b>2</b> الصناديق والمسح</span>
+          </div>
+        </div>
+      </ng-template>
+
+      <div class="pk-dlg-body">
+
+        <!-- ===================== STEP 1: COMMITTEES ===================== -->
+        @if (step() === 'committees') {
+          <div class="pk-sub">
+            <div>
+              <h4>لجان {{ selectedBatch()?.subjectName }}</h4>
+              <p>اضغط على اللجنة لعرض صناديقها وأظرفها وبدء المسح.</p>
+            </div>
+            <div class="pk-count"><i class="pi pi-users"></i>
+              <div><strong>{{ committeePager.total() }}</strong><span>لجنة</span></div></div>
+          </div>
+
+          <div class="pk-box pk-searchbar">
+            <label class="pk-search">
+              <i class="pi pi-search"></i>
+              <input type="text" autocomplete="off" inputmode="numeric"
+                placeholder="ابحث برقم اللجنة..."
+                [ngModel]="committeeSearch()"
+                (ngModelChange)="onCommitteeSearchInput($event)"
+                (keydown.enter)="searchCommitteesNow()" />
+              @if (committeeSearch()) {
+                <button type="button" class="pk-search-clear" (click)="clearCommitteeSearch()"
+                  aria-label="مسح البحث">
+                  <i class="pi pi-times"></i>
+                </button>
+              }
+            </label>
+          </div>
+
+          @if (committeesLoading()) {
+            <section class="pk-grid">
+              @for (n of [1, 2, 3, 4, 5, 6]; track n) { <div class="pk-skel"></div> }
+            </section>
+          } @else if (committeesError()) {
+            <div class="pk-box pk-empty">
+              <i class="pi pi-exclamation-circle"></i>
+              <strong>{{ committeesError() }}</strong>
+              <button pButton type="button" class="pk-btn" (click)="loadCommittees()">
+                <i class="pi pi-refresh"></i><span>إعادة المحاولة</span>
+              </button>
+            </div>
+          } @else if (committees().length) {
+            <section class="pk-grid">
+              @for (c of committees(); track c.committeeId) {
+                <article class="pk-card pk-clickable" data-tone="info" tabindex="0" role="button"
+                  (click)="openCommittee(c)" (keydown.enter)="openCommittee(c)">
+                  <header>
+                    <span class="pk-ico"><i class="pi pi-users"></i></span>
+                    <div class="pk-card-title">
+                      <small>لجنة رقم</small>
+                      <strong class="pk-big">{{ c.committeeNumber }}</strong>
+                    </div>
+                    <span class="pk-pill"><i class="pi pi-box"></i>{{ c.boxCount }} صندوق</span>
+                  </header>
+
+                  <div class="pk-stats">
+                    <div>
+                      <small>الكراسات المطلوبة</small>
+                      <strong>{{ c.requiredBookletCount }}</strong>
+                      <span>+ {{ c.bonusBookletCount }} إضافي</span>
+                    </div>
+                    <div>
+                      <small>الأظرف المطلوبة</small>
+                      <strong>{{ c.requiredEnvelopeCount }}</strong>
+                      <span>+ {{ c.bonusEnvelopeCount }} احتياطي</span>
+                    </div>
+                  </div>
+
+                  <footer class="pk-card-foot">
+                    <span class="pk-pending">بانتظار التغليف</span>
+                    <span class="pk-go">الصناديق والمسح <i class="pi pi-arrow-left"></i></span>
+                  </footer>
+                </article>
+              }
+            </section>
+
+            <ng-container *ngTemplateOutlet="pagerTpl; context: { p: committeePager, k: 'committee', label: 'لجنة' }" />
+          } @else {
+            <div class="pk-box pk-empty">
+              <i class="pi pi-inbox"></i>
+              <strong>{{ committeeSearch() ? 'لا توجد لجان مطابقة للبحث' : 'لا توجد لجان بانتظار التغليف' }}</strong>
+              <span>{{ committeeSearch() ? 'تأكد من رقم اللجنة أو امسح البحث.' : 'تم الانتهاء من كل لجان هذه المادة أو لا توجد لجان متاحة.' }}</span>
+            </div>
+          }
+        }
+
+        <!-- ===================== STEP 2: BOXES + ENVELOPES + SCAN ===================== -->
+        @if (step() === 'packing') {
+
+          @if (boxesLoading()) {
+            <div class="pk-session">
+              <div class="pk-side"><div class="pk-skel"></div><div class="pk-skel"></div></div>
+              <div class="pk-boxes"><div class="pk-skel"></div><div class="pk-skel"></div><div class="pk-skel"></div></div>
+            </div>
+          } @else if (boxesError()) {
+            <div class="pk-box pk-empty">
+              <i class="pi pi-exclamation-circle"></i>
+              <strong>{{ boxesError() }}</strong>
+              <div class="pk-actions">
+                <button pButton type="button" class="pk-btn" (click)="requestBack()">
+                  <i class="pi pi-arrow-right"></i><span>رجوع إلى اللجان</span>
+                </button>
+                <button pButton type="button" class="pk-btn pk-btn-primary" (click)="loadBoxes()">
+                  <i class="pi pi-refresh"></i><span>إعادة المحاولة</span>
+                </button>
+              </div>
+            </div>
+          } @else {
+            <div class="pk-session">
+
+              <!-- Sidebar: scanner + progress -->
+              <aside class="pk-side">
+
+                <div class="pk-box pk-scanner" [attr.data-state]="packDone() ? 'done' : (feedback()?.tone ?? 'idle')">
+                  <div class="pk-label">
+                    <i class="pi pi-qrcode"></i> قارئ الباركود
+                    <span class="pk-live" [class.off]="!scanActive()">
+                      <i class="pk-dot"></i>{{ packDone() ? 'مكتملة' : packing() ? 'جاري الحفظ' : 'جاهز للمسح' }}
+                    </span>
+                  </div>
+
+                  <div class="pk-reader" [class.reading]="!!scanBuffer()">
+                    <div class="pk-reader-ico">
+                      <i class="pi" [ngClass]="packDone() ? 'pi-check-circle' : 'pi-qrcode'"></i>
+                      @if (scanActive()) { <span class="pk-laser"></span> }
+                    </div>
+                    <strong>
+                      {{ packDone() ? 'تم تأكيد التغليف' : scanBuffer() ? 'جاري قراءة الكود...' : 'وجّه القارئ نحو الصندوق أو الظرف' }}
+                    </strong>
+                    @if (scanBuffer()) {
+                      <code class="pk-buffer pk-mono">{{ scanBuffer() }}</code>
+                    } @else if (!packDone()) {
+                      <small>الجلسة مفتوحة تلقائيًا — لا حاجة للضغط على أي زر أو الكتابة</small>
+                    }
+                  </div>
+
+                  @if (feedback(); as f) {
+                    @for (x of [f]; track x.id) {
+                      <div class="pk-feedback" [attr.data-tone]="x.tone">
+                        <i class="pi" [ngClass]="toneIcon(x.tone)"></i>
+                        <div>
+                          <strong>{{ x.text }}</strong>
+                          @if (x.code) { <small class="pk-mono">{{ x.code }}</small> }
+                        </div>
+                      </div>
+                    }
+                  }
+
+                  <button type="button" class="pk-sound" (click)="soundOn.set(!soundOn())">
+                    <i class="pi" [ngClass]="soundOn() ? 'pi-volume-up' : 'pi-volume-off'"></i>
+                    {{ soundOn() ? 'الصوت شغال' : 'الصوت متوقف' }}
+                  </button>
+                </div>
+
+                <div class="pk-box">
+                  <div class="pk-progress">
+                    <div class="pk-progress-head">
+                      <span>تقدم المسح</span><b>{{ totals().progress }}%</b>
+                    </div>
+                    <div class="pk-track"><div [style.width.%]="totals().progress"></div></div>
+                    <p class="pk-guide" [class.ok]="canPack() || packDone()">
+                      <i class="pi" [ngClass]="canPack() || packDone() ? 'pi-check-circle' : 'pi-info-circle'"></i>
+                      {{ guide() }}
+                    </p>
+                  </div>
+
+                  <div class="pk-counters">
+                    <div><strong>{{ totals().boxesConfirmed }} / {{ totals().boxTotal }}</strong><small>صناديق</small></div>
+                    <div><strong>{{ totals().mainScanned }} / {{ totals().mainTotal }}</strong><small>أظرف أساسية</small></div>
+                    <div><strong>{{ totals().reserveScanned }} / {{ totals().reserveTotal }}</strong><small>أظرف احتياطية</small></div>
+                  </div>
+
+                  <div class="pk-actions pk-actions-col">
+                    <button pButton type="button" class="pk-btn pk-btn-success pk-block"
+                      [class.ready]="canPack()" [disabled]="!canPack()" (click)="confirmPacking()">
+                      <i class="pi" [ngClass]="packing() ? 'pi-spin pi-spinner' : 'pi-check'"></i>
+                      <span>{{ packing() ? 'جاري الحفظ...' : 'تأكيد التغليف' }}</span>
+                    </button>
+
+                    @if (packDone()) {
+                      <button pButton type="button" class="pk-btn pk-btn-primary pk-block" (click)="requestBack()">
+                        <i class="pi pi-arrow-right"></i><span>العودة إلى اللجان</span>
+                      </button>
+                    } @else {
+                      <button pButton type="button" class="pk-btn pk-block" [disabled]="packing()" (click)="requestBack()">
+                        <i class="pi pi-arrow-right"></i><span>رجوع إلى اللجان</span>
+                      </button>
+                    }
+                  </div>
+                </div>
+
+                @if (scanLog().length) {
+                  <div class="pk-box">
+                    <div class="pk-label"><i class="pi pi-history"></i> آخر عمليات المسح</div>
+                    <ul class="pk-log">
+                      @for (log of scanLog(); track log.id) {
+                        <li [attr.data-tone]="log.tone">
+                          <i class="pi" [ngClass]="toneIcon(log.tone)"></i>
+                          <span>{{ log.text }}</span>
+                          <small>{{ log.time }}</small>
+                        </li>
+                      }
+                    </ul>
+                  </div>
+                }
+              </aside>
+
+              <!-- Main: boxes + envelopes -->
+              <section class="pk-boxes">
+
+                @if (packDone()) {
+                  <div class="pk-banner" data-tone="success">
+                    <i class="pi pi-check-circle"></i>
+                    <div>
+                      <strong>تم تغليف لجنة {{ packResult()?.committeeNumber }} بنجاح</strong>
+                      <span>الحالة: {{ packResult()?.status }}</span>
+                    </div>
+                  </div>
+                }
+
+                @if (packError()) {
+                  <div class="pk-alert" data-tone="danger">
+                    <i class="pi pi-times-circle"></i><span>{{ packError() }}</span>
+                    <button type="button" (click)="packError.set(null)" aria-label="إغلاق"><i class="pi pi-times"></i></button>
+                  </div>
+                }
+
+                @if (problems().length) {
+                  <div class="pk-box pk-problems">
+                    <div class="pk-label"><i class="pi pi-exclamation-triangle"></i> مشاكل تحتاج مراجعة ({{ problems().length }})</div>
+                    <ul>
+                      @for (p of problems(); track $index) {
+                        <li>
+                          <span class="pk-pill" data-tone="danger">صندوق {{ p.sequenceNo }}</span>
+                          @if (p.serial) { <b class="pk-mono">{{ p.serial }}</b> }
+                          <span>{{ p.reason }}</span>
+                        </li>
+                      }
+                    </ul>
+                  </div>
+                }
+
+                <!-- خريطة الصناديق -->
+                <div class="pk-map" role="list" aria-label="حالة الصناديق">
+                  @for (box of boxViews(); track box.boxId) {
+                    <button type="button" class="pk-chip" role="listitem"
+                      [class.active]="box.boxId === activeBoxId()"
+                      [attr.data-tone]="problemBoxIds().has(box.boxId) ? 'danger' : box.complete ? 'success' : 'pending'"
+                      (click)="highlightBox(box.boxId)">
+                      <i class="pi" [ngClass]="box.complete ? 'pi-check-circle' : 'pi-box'"></i>
+                      <b>{{ box.sequenceNo }}</b>
+                      <small>{{ box.mainScanned }}/{{ box.mainTotal }}</small>
+                    </button>
+                  }
+                </div>
+
+                @for (box of boxViews(); track box.boxId) {
+                  <article class="pk-bx" [id]="'pk-box-' + box.boxId"
+                    [class.active]="box.boxId === activeBoxId()"
+                    [class.problem]="problemBoxIds().has(box.boxId)"
+                    [attr.data-tone]="problemBoxIds().has(box.boxId) ? 'danger' : box.complete ? 'success' : 'info'">
+
+                    <header>
+                      <span class="pk-bx-no">{{ box.sequenceNo }}</span>
+                      <div class="pk-bx-title">
+                        <strong>صندوق رقم {{ box.sequenceNo }}</strong>
+                        <small class="pk-mono">{{ box.qrCode }}</small>
+                      </div>
+                      <span class="pk-pill" data-tone="neutral">
+                        <i class="pi pi-envelope"></i>{{ box.expectedEnvelopeCount }} ظرف مطلوب
+                      </span>
+                      <span class="pk-pill" [attr.data-tone]="box.qrScanned ? 'success' : 'warning'">
+                        <i class="pi" [ngClass]="box.qrScanned ? 'pi-check-circle' : 'pi-clock'"></i>
+                        {{ box.qrScanned ? 'تم مسح الصندوق' : 'بانتظار QR الصندوق' }}
+                      </span>
+                      <div class="pk-ring" [style.--p]="box.progress"><span>{{ box.progress }}%</span></div>
+                      @if (!packDone()) {
+                        <button type="button" class="pk-link" pTooltip="إعادة مسح هذا الصندوق"
+                          tooltipPosition="top" [disabled]="packing()" (click)="resetBox(box.boxId)">
+                          <i class="pi pi-refresh"></i>
+                        </button>
+                      }
+                    </header>
+
+                    @if (box.main.length) {
+                      <div class="pk-group">
+                        <div class="pk-group-head">
+                          <span><i class="pi pi-envelope"></i> الأظرف الأساسية</span>
+                          <b>{{ box.mainScanned }} / {{ box.mainTotal }}</b>
+                        </div>
+                        <div class="pk-env-grid">
+                          @for (env of box.main; track env.serial) {
+                            <ng-container *ngTemplateOutlet="envTpl; context: { $implicit: env }" />
+                          }
+                        </div>
+                      </div>
+                    }
+
+                    @if (box.reserve.length) {
+                      <div class="pk-group">
+                        <div class="pk-group-head">
+                          <span><i class="pi pi-clone"></i> الأظرف الاحتياطية (اختياري)</span>
+                          <b>{{ box.reserveScanned }} / {{ box.reserveTotal }}</b>
+                        </div>
+                        <div class="pk-env-grid">
+                          @for (env of box.reserve; track env.serial) {
+                            <ng-container *ngTemplateOutlet="envTpl; context: { $implicit: env }" />
+                          }
+                        </div>
+                      </div>
+                    }
+
+                    @if (!box.main.length && !box.reserve.length) {
+                      <div class="pk-hint-box"><i class="pi pi-info-circle"></i> لا توجد أظرف مسجلة لهذا الصندوق.</div>
+                    }
+                  </article>
+                }
+              </section>
+            </div>
+          }
+        }
+      </div>
+    </p-dialog>
+
+    <!-- ====================================================== -->
+    <!-- Leave confirmation -->
+    <!-- ====================================================== -->
+    <p-dialog [visible]="leaveDialogVisible()" (visibleChange)="onLeaveVisibleChange($event)"
+      [modal]="true" [baseZIndex]="10000" [draggable]="false" [resizable]="false"
+      [style]="{ width: '460px', maxWidth: '95vw' }" styleClass="pk-dlg">
+      <ng-template pTemplate="header">
+        <div class="pk-dlg-title">
+          <span class="pk-ico pk-ico-danger"><i class="pi pi-exclamation-triangle"></i></span>
+          <div class="pk-dlg-names"><h3>مغادرة جلسة المسح</h3><small>لم يتم تأكيد التغليف بعد</small></div>
         </div>
       </ng-template>
 
       <div class="pk-dlg-body">
         <p class="pk-confirm-text">
-          سيتم تحرير اللجنة <b>{{ claimed()?.committeeNumber }}</b> وفقدان كل عمليات المسح الحالية، وستعود إلى قائمة اللجان المتاحة.
+          عمليات المسح الحالية للجنة <b>{{ selectedCommittee()?.committeeNumber }}</b> لم تُحفظ بعد،
+          وستفقدها إذا غادرت الآن. هل تريد المتابعة؟
         </p>
       </div>
 
       <ng-template pTemplate="footer">
         <div class="pk-actions">
-          <button pButton type="button" class="pk-btn" [disabled]="releasing()" (click)="cancelLeave()">
-            <span>متابعة التغليف</span>
+          <button pButton type="button" class="pk-btn" (click)="cancelLeave()">
+            <span>متابعة المسح</span>
           </button>
-          <button pButton type="button" class="pk-btn pk-btn-danger" [disabled]="releasing()" (click)="confirmRelease()">
-            <i class="pi" [ngClass]="releasing() ? 'pi-spin pi-spinner' : 'pi-undo'"></i>
-            <span>{{ releasing() ? 'جاري التحرير...' : 'تحرير اللجنة' }}</span>
+          <button pButton type="button" class="pk-btn pk-btn-danger" (click)="confirmLeave()">
+            <i class="pi pi-sign-out"></i><span>مغادرة وفقدان المسح</span>
           </button>
         </div>
       </ng-template>

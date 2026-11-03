@@ -1,5 +1,4 @@
-
-import { HttpClient, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable, map } from 'rxjs';
 
@@ -16,6 +15,20 @@ interface ApiResponse<T> {
   statusCode: number;
   errors: unknown;
   count?: number;
+}
+
+/**
+ * {
+ *   success, message,
+ *   data: { currentPage, totalPages, totalCount, pageSize, ..., data: [...] }
+ * }
+ */
+interface PagedData<T> {
+  currentPage?: number;
+  totalPages?: number;
+  totalCount?: number;
+  pageSize?: number;
+  data?: T[];
 }
 
 // ==========================================
@@ -68,8 +81,17 @@ export interface PrintingCommittee {
   boxCount: number;
 }
 
+/** نتيجة paginated موحّدة */
+export interface PagedResult<T> {
+  items: T[];
+  totalCount: number;
+  totalPages: number;
+  currentPage: number;
+  pageSize: number;
+}
+
 // ==========================================
-// GET Batches Filters
+// Query models
 // ==========================================
 
 export interface PrintingBatchFilters {
@@ -78,6 +100,15 @@ export interface PrintingBatchFilters {
   roundId?: number | null;
   year?: number | null;
   search?: string | null;
+  pageNumber?: number;
+  pageSize?: number;
+}
+
+export interface PrintingCommitteeQuery {
+  pageNumber?: number;
+  pageSize?: number;
+  /** رقم اللجنة */
+  searchTerm?: string | null;
 }
 
 // ==========================================
@@ -87,6 +118,9 @@ export interface PrintingBatchFilters {
 export interface PrintBatchRequest {
   committeeIds: number[];
 }
+
+// طلب JSON صراحةً
+const JSON_HEADERS = new HttpHeaders({ Accept: 'application/json' });
 
 // ==========================================
 // Service
@@ -111,89 +145,63 @@ export class PrintingService {
 
   getBatches(
     filters: PrintingBatchFilters = {}
-  ): Observable<PrintingBatch[]> {
+  ): Observable<PagedResult<PrintingBatch>> {
 
-    let params = new HttpParams();
+    const pageNumber = filters.pageNumber ?? 1;
+    const pageSize = filters.pageSize ?? 6;
+
+    let params = new HttpParams()
+      .set('PageNumber', pageNumber.toString())
+      .set('PageSize', pageSize.toString());
 
     // المحافظة
     if (filters.governorateId != null) {
-      params = params.set(
-        'GovernorateId',
-        filters.governorateId.toString()
-      );
+      params = params.set('GovernorateId', filters.governorateId.toString());
     }
 
     // المادة
     if (filters.subjectId != null) {
-      params = params.set(
-        'SubjectId',
-        filters.subjectId.toString()
-      );
+      params = params.set('SubjectId', filters.subjectId.toString());
     }
 
     // الدور (اختياري)
     if (filters.roundId != null) {
-      params = params.set(
-        'RoundId',
-        filters.roundId.toString()
-      );
+      params = params.set('RoundId', filters.roundId.toString());
     }
 
     // السنة (اختياري)
     if (filters.year != null) {
-      params = params.set(
-        'Year',
-        filters.year.toString()
-      );
+      params = params.set('Year', filters.year.toString());
     }
 
     // البحث النصي (اختياري)
     if (filters.search?.trim()) {
-      params = params.set(
-        'Search',
-        filters.search.trim()
-      );
+      params = params.set('Search', filters.search.trim());
     }
 
     return this.http
-      .get<ApiResponse<BatchDto[]>>(
+      .get<ApiResponse<PagedData<BatchDto> | BatchDto[]>>(
         `${this.url}/batches`,
-        { params }
+        { params, headers: JSON_HEADERS }
       )
       .pipe(
+        map(res => this.toPaged<BatchDto>(res, pageNumber, pageSize)),
 
-        map(res => this.unwrap(res) ?? []),
-
-        map(list =>
-          list.map(
+        map(result => ({
+          ...result,
+          items: result.items.map(
             (b): PrintingBatch => ({
-
               id: b.batchId,
-
               label: (b.label ?? '').trim(),
-
-              governorate: (
-                b.governorateName ?? ''
-              ).trim(),
-
-              subject: (
-                b.subjectName ?? ''
-              ).trim(),
-
+              governorate: (b.governorateName ?? '').trim(),
+              subject: (b.subjectName ?? '').trim(),
               year: b.year ?? null,
-
-              round: (
-                b.roundName ?? ''
-              ).trim(),
-
+              round: (b.roundName ?? '').trim(),
               status: b.status ?? '',
-
-              pendingCommittees:
-                b.pendingCommitteeCount ?? 0
-
+              pendingCommittees: b.pendingCommitteeCount ?? 0
             })
           )
-        )
+        }))
       );
   }
 
@@ -202,44 +210,44 @@ export class PrintingService {
   // ==========================================
 
   getCommittees(
-    batchId: number
-  ): Observable<PrintingCommittee[]> {
+    batchId: number,
+    query: PrintingCommitteeQuery = {}
+  ): Observable<PagedResult<PrintingCommittee>> {
+
+    const pageNumber = query.pageNumber ?? 1;
+    const pageSize = query.pageSize ?? 12;
+
+    let params = new HttpParams()
+      .set('PageNumber', pageNumber.toString())
+      .set('PageSize', pageSize.toString());
+
+    // البحث برقم اللجنة
+    if (query.searchTerm?.trim()) {
+      params = params.set('SearchTerm', query.searchTerm.trim());
+    }
 
     return this.http
-      .get<ApiResponse<CommitteeDto[]>>(
-        `${this.url}/batches/${batchId}/committees`
+      .get<ApiResponse<PagedData<CommitteeDto> | CommitteeDto[]>>(
+        `${this.url}/batches/${batchId}/committees`,
+        { params, headers: JSON_HEADERS }
       )
       .pipe(
+        map(res => this.toPaged<CommitteeDto>(res, pageNumber, pageSize)),
 
-        map(res => this.unwrap(res) ?? []),
-
-        map(list =>
-          list.map(
+        map(result => ({
+          ...result,
+          items: result.items.map(
             (c): PrintingCommittee => ({
-
               id: c.committeeId,
-
-              committeeNumber: String(
-                c.committeeNumber ?? c.committeeId
-              ),
-
-              requiredBooklets:
-                c.requiredBookletCount ?? 0,
-
-              bonusBooklets:
-                c.bonusBookletCount ?? 0,
-
-              requiredEnvelopes:
-                c.requiredEnvelopeCount ?? 0,
-
-              bonusEnvelopes:
-                c.bonusEnvelopeCount ?? 0,
-
+              committeeNumber: String(c.committeeNumber ?? c.committeeId),
+              requiredBooklets: c.requiredBookletCount ?? 0,
+              bonusBooklets: c.bonusBookletCount ?? 0,
+              requiredEnvelopes: c.requiredEnvelopeCount ?? 0,
+              bonusEnvelopes: c.bonusEnvelopeCount ?? 0,
               boxCount: c.boxCount ?? 0
-
             })
           )
-        )
+        }))
       );
   }
 
@@ -252,14 +260,13 @@ export class PrintingService {
     committeeIds: number[]
   ): Observable<void> {
 
-    const body: PrintBatchRequest = {
-      committeeIds
-    };
+    const body: PrintBatchRequest = { committeeIds };
 
     return this.http
       .put<ApiResponse<unknown>>(
         `${this.url}/batches/${batchId}/print`,
-        body
+        body,
+        { headers: JSON_HEADERS }
       )
       .pipe(
         map(res => {
@@ -270,17 +277,49 @@ export class PrintingService {
   }
 
   // ==========================================
-  // Unwrap API Response
+  // Helpers
   // ==========================================
 
-  private unwrap<T>(
-    res: ApiResponse<T>
-  ): T {
+  /**
+   * بيحوّل الرد إلى PagedResult سواء كان:
+   *  - data = { currentPage, totalPages, totalCount, data: [...] }
+   *  - data = [...]  (لو السيرفر رجّع array مباشرة)
+   */
+  private toPaged<T>(
+    res: ApiResponse<PagedData<T> | T[]>,
+    pageNumber: number,
+    pageSize: number
+  ): PagedResult<T> {
+
+    const data = this.unwrap(res);
+
+    if (Array.isArray(data)) {
+      return {
+        items: data,
+        totalCount: data.length,
+        totalPages: Math.max(1, Math.ceil(data.length / pageSize)),
+        currentPage: pageNumber,
+        pageSize
+      };
+    }
+
+    const items = data?.data ?? [];
+    const totalCount = data?.totalCount ?? items.length;
+
+    return {
+      items,
+      totalCount,
+      totalPages:
+        data?.totalPages ?? Math.max(1, Math.ceil(totalCount / pageSize)),
+      currentPage: data?.currentPage ?? pageNumber,
+      pageSize: data?.pageSize ?? pageSize
+    };
+  }
+
+  private unwrap<T>(res: ApiResponse<T>): T {
 
     if (res && res.success === false) {
-      throw new Error(
-        res.message || 'حدث خطأ غير متوقع'
-      );
+      throw new Error(res.message || 'حدث خطأ غير متوقع');
     }
 
     return res?.data;

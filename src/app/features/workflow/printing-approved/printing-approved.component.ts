@@ -1181,11 +1181,6 @@ export default class PrintingApprovedComponent implements OnInit {
     };
 
 
-    console.log(
-      'Reject Request:',
-      rejectionData
-    );
-
 
     // TODO: API CALL WILL BE HERE
 

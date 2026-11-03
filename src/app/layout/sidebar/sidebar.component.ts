@@ -193,7 +193,6 @@ export class SidebarComponent implements OnInit {
 
 readonly visibleNavItems = computed(() => {
   const currentRole = this.normalizeRole(this.role());
-   console.log('kkd', currentRole)
   return this.navItems().filter(item => {
     // Dashboard is restricted to system administrators and top management.
     if (item.route === '/dashboard') {
