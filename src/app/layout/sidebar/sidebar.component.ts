@@ -74,13 +74,13 @@ export class SidebarComponent implements OnInit {
     },
 
     // إدارة البيانات الأساسية (IT فقط)
-    {
-      label: 'إدارة البيانات الأساسية',
-      icon: 'pi pi-database',
-      expanded: false,
-          roles: ['it'],
+    // {
+      // label: 'إدارة البيانات الأساسية',
+      // icon: 'pi pi-database',
+      // expanded: false,
+      //     roles: ['it'],
 
-      children: [
+      // children: [
         {
           label: 'إدارة اللجان',
           icon: 'pi pi-circle-fill',
@@ -88,8 +88,8 @@ export class SidebarComponent implements OnInit {
 
         },
 
-      ]
-    },
+      // ]
+    // },
 
     {
       label: 'الإعداد',
@@ -130,15 +130,10 @@ export class SidebarComponent implements OnInit {
       label: 'التخزين',
       icon: 'pi pi-database',
       route: '/workflow/archiving',
-      roles: ['archive' , 'superadmin']
+      roles: ['warehouse' , 'superadmin']
     },
 
-    // {
-    //   label: 'إدارة المخازن',
-    //   icon: 'pi pi-building',
-    //   route: '/warehouses',
-    //   roles: ['warehouse', 'warehouses', 'warehouse management']
-    // },
+
 
     {
       label: 'إدارة المخازن والتخزين',
@@ -150,6 +145,7 @@ export class SidebarComponent implements OnInit {
           label: 'إدارة المخازن',
           icon: 'pi pi-building',
           route: '/warehouses'
+
         },
         {
           label: 'مواقع التخزين',

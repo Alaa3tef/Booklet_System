@@ -1,770 +1,766 @@
-import { Component, computed, inject, OnInit, signal } from '@angular/core';
+import { Component, HostListener, OnInit, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
-import { forkJoin, of } from 'rxjs';
-import { catchError } from 'rxjs/operators';
-
-// PrimeNG Modules
-import { ButtonModule } from 'primeng/button';
-import { DialogModule } from 'primeng/dialog';
-import { InputTextModule } from 'primeng/inputtext';
-import { SelectModule } from 'primeng/select';
-import { TooltipModule } from 'primeng/tooltip';
 import { MessageService } from 'primeng/api';
+import { DialogModule } from 'primeng/dialog';
+import { finalize } from 'rxjs';
 
-// Layout & Services
+import { AuthService } from '../../../core/services/auth.service';
 import { WorkflowStepLayoutComponent } from '../../../shared/workflow-step-layout/workflow-step-layout.component';
-import { Lookups } from '../../../shared/services/lookups';
 import {
-  ArchivingBoxService,
-  BatchStorageDto,
-  StorageRackDto,
-  StorageBoxDto,
-  StorageLocationResolveDto,
-  BoxResolveDto,
-  CommitteeBoxItemDto
+  StorageLocationResolveDto, BoxResolveDto, StorageBoxDto, ArchivingBoxService, BatchStorageDto,
+  DeliveryOrderDto, DeliveryBatchDto, DeliveryCommitteeDto, DeliverCommitteeResult,
+  PackedItemDto, CommitteeBoxItemDto,
 } from './service/archiving-box.service';
 
-export interface SelectOption {
-  label: string;
-  value: number | string;
-}
+type Tab = 'archive' | 'warehouse';
+type Feedback = { kind: 'ok' | 'warn' | 'err'; text: string };
+type Lookup = { kind: 'location'; data: StorageLocationResolveDto } | { kind: 'box'; data: BoxResolveDto };
+type Crumb = { label: string; go: () => void };
 
-export type ArchivingViewTab = 'batches' | 'scanner';
+interface BoxView extends StorageBoxDto { place: string; }
+interface ArCommittee { id: number; number: string; governorate: string; subject: string; round: string; boxes: BoxView[]; }
+interface Placement { trackingCode: string; qrCode: string; place: string; }
+interface SessionBox { id: number; seq: number; code: string; state: 'done' | 'pending' | 'todo'; note: string; }
+interface Slot { text: string; state: 'ok' | 'wait' | 'idle'; }
+type BoxFilter = 'all' | 'todo' | 'done';
+interface SideItem { id: number; number: string; label: string; status: 'now' | 'done' | 'todo'; }
+
+const PAGE_SIZE = 12;
+const DELIVERED_TEXT = 'تم التسليم';
+const isStored = (b: { shelfLocationId?: number | null }) => (b.shelfLocationId ?? 0) > 0;
+const isDeliveredText = (s?: string) => /deliver|تم التسليم|مسلم|مسلّم/i.test(s ?? '');
 
 @Component({
   selector: 'app-archiving',
   standalone: true,
-  imports: [
-    CommonModule,
-    FormsModule,
-    ButtonModule,
-    DialogModule,
-    InputTextModule,
-    SelectModule,
-    TooltipModule,
-    WorkflowStepLayoutComponent
-  ],
+  imports: [CommonModule, DialogModule, WorkflowStepLayoutComponent],
   templateUrl: './archiving.component.html',
-  styleUrl: './archiving.component.scss'
+  styleUrl: './archiving.component.scss',
 })
 export default class ArchivingComponent implements OnInit {
-  private archivingBoxService = inject(ArchivingBoxService);
-  private lookupService = inject(Lookups);
-  private messageService = inject(MessageService);
+  private api = inject(ArchivingBoxService);
+  private messages = inject(MessageService);
+  private authService = inject(AuthService);
 
-  readonly essentials = [
-    'مسح باركود الصندوق والرف',
-    'تسكين الصناديق في الأرفف والأماكن المحددة',
-    'تأكيد تخزين لجان المواد إلكترونيًا'
-  ];
+  readonly essentials = ['مسح الصندوق والرف', 'تأكيد تخزين اللجنة', 'تسليم اللجان من المخزن'];
+  readonly tab = signal<Tab>('archive');
+  readonly accessRoleResolved = signal(false);
+  readonly warehouseOnly = signal(false);
+  readonly roleLoadError = signal<string | null>(null);
 
-  // ================================================================
-  // VIEW SWITCH (TABS)
-  // ================================================================
-  readonly activeTab = signal<ArchivingViewTab>('batches');
-
-  setTab(tab: ArchivingViewTab): void {
-    this.activeTab.set(tab);
-    if (tab === 'batches' && this.batches().length === 0) {
-      this.loadBatches();
+  // =====================================================================
+  //  Pagination
+  //   - دفعات الأرشيف (packed-items) ولجان المخزن: من الباك
+  //   - باقي المستويات: الـ endpoints بترجّع الكل فبنقسّم على الشاشة
+  // =====================================================================
+  readonly pg = signal({ page: 1, size: PAGE_SIZE, total: 0 });
+  readonly pageTotal = computed(() => {
+    if (this.tab() === 'archive') return this.arLevel() === 'batch' ? this.pg().total : this.arCommittees().length;
+    switch (this.whLevel()) {
+      case 'gov': return this.whGovernorates().length;
+      case 'order': return this.whOrders().length;
+      case 'batch': return this.whBatches().length;
+      default: return this.pg().total;
     }
-  }
-
-  // ================================================================
-  // LOOKUPS & SEARCH FILTERS
-  // ================================================================
-  readonly governorates = signal<SelectOption[]>([]);
-  readonly subjects = signal<SelectOption[]>([]);
-  readonly lookupsLoading = signal<boolean>(false);
-
-  readonly searchGovernorate = signal<number | string | null>(null);
-  readonly searchSubject = signal<number | string | null>(null);
-  readonly searchBatchQuery = signal<string>('');
-
-  setGovernorate(v: number | string | null): void {
-    this.searchGovernorate.set(v);
-    this.resetPage();
-    this.loadBatches();
-  }
-
-  setSubject(v: number | string | null): void {
-    this.searchSubject.set(v);
-    this.resetPage();
-    this.loadBatches();
-  }
-
-  setBatchQuery(q: string): void {
-    this.searchBatchQuery.set(q ?? '');
-    this.resetPage();
-  }
-
-  readonly activeFilters = computed(() => {
-    const list: { key: string; title: string; value: string }[] = [];
-
-    const govVal = this.searchGovernorate();
-    if (govVal && govVal !== 'all') {
-      const match = this.governorates().find(g => g.value === govVal);
-      list.push({ key: 'governorate', title: 'المحافظة', value: match?.label || String(govVal) });
-    }
-
-    const subVal = this.searchSubject();
-    if (subVal && subVal !== 'all') {
-      const match = this.subjects().find(s => s.value === subVal);
-      list.push({ key: 'subject', title: 'المادة', value: match?.label || String(subVal) });
-    }
-
-    const q = this.searchBatchQuery().trim();
-    if (q) {
-      list.push({ key: 'query', title: 'بحث سريع', value: q });
-    }
-
-    return list;
   });
+  readonly pageCount = computed(() => Math.max(1, Math.ceil(this.pageTotal() / this.pg().size)));
+  readonly pageNumbers = computed(() => {
+    const cur = this.pg().page, last = this.pageCount();
+    const from = Math.max(1, Math.min(cur - 2, last - 4)), to = Math.min(last, from + 4);
+    return Array.from({ length: to - from + 1 }, (_, i) => from + i);
+  });
+  readonly pageFrom = computed(() => (this.pageTotal() ? (this.pg().page - 1) * this.pg().size + 1 : 0));
+  readonly pageTo = computed(() => Math.min(this.pg().page * this.pg().size, this.pageTotal()));
 
-  removeFilter(key: string): void {
-    if (key === 'governorate') this.searchGovernorate.set(null);
-    if (key === 'subject') this.searchSubject.set(null);
-    if (key === 'query') this.searchBatchQuery.set('');
-    this.resetPage();
-    this.loadBatches();
+  private resetPage(): void { this.pg.set({ page: 1, size: PAGE_SIZE, total: 0 }); }
+  private slice<T>(list: T[]): T[] { const { page, size } = this.pg(); return list.slice((page - 1) * size, page * size); }
+
+  goPage(p: number): void {
+    if (p < 1 || p > this.pageCount() || p === this.pg().page) return;
+    this.pg.update(s => ({ ...s, page: p }));
+    if (this.tab() === 'archive' && this.arLevel() === 'batch') this.loadArchive();
+    if (this.tab() === 'warehouse' && this.whLevel() === 'committee') this.loadCommittees(this.whBatchId()!);
   }
 
-  clearFilters(): void {
-    this.searchGovernorate.set(null);
-    this.searchSubject.set(null);
-    this.searchBatchQuery.set('');
-    this.resetPage();
-    this.loadBatches();
-  }
+  // =====================================================================
+  //  ARCHIVE  (دفعة ← لجنة ← سكان صندوق/رف ← تأكيد اللجنة)
+  // =====================================================================
+  readonly arLoading = signal(false);
+  readonly arError = signal<string | null>(null);
+  readonly arItems = signal<PackedItemDto[]>([]);            // الدفعات (packed-items)
+  readonly arBatch = signal<PackedItemDto | null>(null);
+  readonly arBatchData = signal<BatchStorageDto[]>([]);      // لجان الدفعة المختارة
+  readonly arCommitteeId = signal<number | null>(null);
+  readonly packedBoxes = signal<CommitteeBoxItemDto[]>([]);  // packed-boxes
+  readonly arBoxesLoading = signal(false);
 
-  // ================================================================
-  // BATCHES DATA & KPIs (GET /api/Boxes/by-governorate-subject)
-  // ================================================================
-  readonly batches = signal<BatchStorageDto[]>([]);
-  readonly batchesLoading = signal<boolean>(false);
+  readonly pendingBox = signal<string | null>(null);
+  readonly placed = signal<Placement[]>([]);
 
-  loadBatches(): void {
-    this.batchesLoading.set(true);
-
-    const govVal = this.searchGovernorate();
-    const govId = govVal && govVal !== 'all' ? Number(govVal) : null;
-
-    const subVal = this.searchSubject();
-    const subId = subVal && subVal !== 'all' ? Number(subVal) : null;
-
-    this.archivingBoxService.getBoxesByGovernorateAndSubject(govId, subId).subscribe({
-      next: res => {
-        const raw = res as any;
-        const list: BatchStorageDto[] = Array.isArray(raw?.data)
-          ? raw.data
-          : Array.isArray(raw?.data?.data)
-          ? raw.data.data
-          : Array.isArray(raw)
-          ? raw
-          : [];
-        this.batches.set(list);
-        this.batchesLoading.set(false);
+  /** GET /Boxes/packed-items — pagination من الباك */
+  loadArchive(): void {
+    const { page, size } = this.pg();
+    this.arLoading.set(true);
+    this.arError.set(null);
+    this.api.getPackedItems({ isPaged: true, pageNumber: page, pageSize: size }).subscribe({
+      next: r => {
+        const items = this.toArray<PackedItemDto>(r.data);
+        this.arItems.set(items);
+        this.pg.update(s => ({ ...s, total: r.data?.totalCount ?? items.length }));
+        this.arLoading.set(false);
       },
-      error: err => {
-        console.error('Error loading storage batches:', err);
-        this.batchesLoading.set(false);
-        this.messageService.add({
-          severity: 'error',
-          summary: 'خطأ',
-          detail: err?.error?.message || 'فشل تحميل دفعات التخزين',
-          life: 3500
-        });
+      error: e => { this.arError.set(this.errText(e)); this.arLoading.set(false); },
+    });
+  }
+
+  /** لجان الدفعة (اللجان + أماكن التخزين) من by-governorate-subject مفلترة بالـ batchId */
+  private loadBatchCommittees(item: PackedItemDto, silent = false): void {
+    if (!silent) this.arLoading.set(true);
+    this.arError.set(null);
+    this.api.getBoxesByGovernorateAndSubject().subscribe({
+      next: r => {
+        this.arBatchData.set(this.toArray<BatchStorageDto>(r.data).filter(b => b.batchId === item.batchId));
+        this.arLoading.set(false);
+      },
+      error: e => { this.arError.set(this.errText(e)); this.arLoading.set(false); },
+    });
+  }
+
+  /** GET /Boxes/committees/{id}/packed-boxes */
+  private loadPackedBoxes(committeeId: number): void {
+    this.arBoxesLoading.set(true);
+    this.api.getCommitteePackedBoxes(committeeId).subscribe({
+      next: r => {
+        // تجاهل الرد لو المستخدم قفل اللجنة أو فتح غيرها قبل ما يوصل
+        if (this.arCommitteeId() !== committeeId) return;
+        this.packedBoxes.set(this.toArray<CommitteeBoxItemDto>(r.data));
+        this.arBoxesLoading.set(false);
+      },
+      error: e => { this.arBoxesLoading.set(false); this.say('err', this.errText(e)); },
+    });
+  }
+
+  private buildArCommittees(list: BatchStorageDto[]): ArCommittee[] {
+    const m = new Map<number, ArCommittee>();
+    for (const b of list) for (const rack of b.racks ?? []) for (const box of rack.boxes ?? []) {
+      const c = m.get(box.committeeId) ?? {
+        id: box.committeeId, number: box.committeeNumber, governorate: b.governorateName,
+        subject: b.subjectName, round: b.roundName, boxes: [],
+      };
+      c.boxes.push({ ...box, place: [box.rack || rack.rack, box.shelf].filter(Boolean).join(' / ') });
+      m.set(box.committeeId, c);
+    }
+    return [...m.values()].sort((a, b) => a.number.localeCompare(b.number, 'ar', { numeric: true }));
+  }
+
+  readonly arCommittees = computed(() => this.buildArCommittees(this.arBatchData()));
+  readonly arSelected = computed(() => this.arCommittees().find(c => c.id === this.arCommitteeId()) ?? null);
+  readonly arLevel = computed<'batch' | 'committee'>(() => (this.arBatch() === null ? 'batch' : 'committee'));
+  readonly arCommitteesPage = computed(() => this.slice(this.arCommittees()));
+
+  readonly arCrumbs = computed<Crumb[]>(() => {
+    const out: Crumb[] = [{ label: 'الدفعات', go: () => this.arGoBatches() }];
+    const b = this.arBatch();
+    if (b) out.push({ label: b.label, go: () => this.pickArCommittee(null) });
+    const c = this.arSelected();
+    if (c) out.push({ label: `لجنة ${c.number}`, go: () => undefined });
+    return out;
+  });
+
+  arDone(c: ArCommittee): boolean {
+    return this.doneCommittees().has(c.id) || (c.boxes.length > 0 && c.boxes.every(isStored));
+  }
+  arStoredCount(c: ArCommittee): number { return c.boxes.filter(isStored).length; }
+
+  pickArBatch(item: PackedItemDto): void {
+    this.arBatch.set(item); this.arBatchData.set([]); this.arCommitteeId.set(null);
+    this.resetPage(); this.resetScan();
+    this.loadBatchCommittees(item);
+  }
+  pickArCommittee(id: number | null): void {
+    this.arCommitteeId.set(id); this.resetScan();
+    if (id !== null) this.loadPackedBoxes(id);
+  }
+  arGoBatches(): void {
+    this.arBatch.set(null); this.arBatchData.set([]); this.arCommitteeId.set(null);
+    this.resetPage(); this.resetScan();
+    this.loadArchive();
+  }
+
+  readonly arBoxes = computed(() => {
+    const placedMap = new Map(this.placed().map(p => [p.trackingCode, p]));
+    return this.packedBoxes().map(b => {
+      const p = placedMap.get(b.trackingCode);
+      const state: 'done' | 'pending' | 'todo' =
+        p || (b.storageLocationId ?? 0) > 0 ? 'done' : this.pendingBox() === b.trackingCode ? 'pending' : 'todo';
+      return { ...b, state, where: p?.place ?? b.storageLocationQrCode ?? '' };
+    });
+  });
+  readonly arAllPlaced = computed(() => this.arBoxes().length > 0 && this.arBoxes().every(b => b.state === 'done'));
+  readonly arStep = computed<1 | 2>(() => (this.pendingBox() ? 2 : 1));
+
+  /** خانتين ظاهرين في الجلسة: الصندوق ← الرف */
+  readonly arSlots = computed<{ box: Slot; shelf: Slot }>(() => {
+    const pending = this.pendingBox();
+    const last = this.placed()[this.placed().length - 1];
+    if (pending) return { box: { text: pending, state: 'ok' }, shelf: { text: 'امسحي كود الرف', state: 'wait' } };
+    if (last) return { box: { text: last.trackingCode, state: 'ok' }, shelf: { text: last.place, state: 'ok' } };
+    return { box: { text: 'امسحي الصندوق', state: 'wait' }, shelf: { text: '—', state: 'idle' } };
+  });
+
+  // =====================================================================
+  //  WAREHOUSE  (محافظة ← مادة/أمر توريد ← دفعة ← لجنة ← سكان وتسليم فوري)
+  // =====================================================================
+  readonly whLoading = signal(false);
+  readonly whError = signal<string | null>(null);
+  readonly orders = signal<DeliveryOrderDto[]>([]);
+  readonly whBatches = signal<DeliveryBatchDto[]>([]);
+  readonly whCommittees = signal<DeliveryCommitteeDto[]>([]);
+
+  readonly whGov = signal<string | null>(null);
+  readonly whOrderId = signal<number | null>(null);
+  readonly whBatchId = signal<number | null>(null);
+  readonly whCommitteeId = signal<number | null>(null);
+  readonly deliverResult = signal<DeliverCommitteeResult | null>(null);
+
+  // أكواد الصناديق التي تم عمل Scan لها ولم يتم إرسالها/تأكيدها بعد.
+  readonly whScannedCodes = signal<string[]>([]);
+  readonly whSubmittedCount = signal(0);
+  readonly whDeliveryError = signal(false);
+
+  readonly whScannedCount = computed(() => this.whScannedCodes().length);
+  readonly whExpectedScanCount = computed(() => {
+    const committee = this.whSelected();
+    if (!committee) return 0;
+    return committee.boxes.filter(box => !this.boxDelivered(box)).length;
+  });
+
+  loadOrders(): void {
+    this.whLoading.set(true);
+    this.whError.set(null);
+    this.api.getDeliveryOrders().subscribe({
+      next: r => { this.orders.set(this.toArray<DeliveryOrderDto>(r.data)); this.whLoading.set(false); },
+      error: e => { this.whError.set(this.errText(e)); this.whLoading.set(false); },
+    });
+  }
+
+  readonly whGovernorates = computed(() => {
+    const m = new Map<string, { name: string; orders: number; batches: number; delivered: number }>();
+    for (const o of this.orders()) {
+      const g = m.get(o.governorateName) ?? { name: o.governorateName, orders: 0, batches: 0, delivered: 0 };
+      g.orders++; g.batches += o.batchCount; g.delivered += o.deliveredBatchCount;
+      m.set(o.governorateName, g);
+    }
+    return [...m.values()].sort((a, b) => a.name.localeCompare(b.name, 'ar'));
+  });
+  readonly whOrders = computed(() => this.orders().filter(o => o.governorateName === this.whGov()));
+  readonly whGovernoratesPage = computed(() => this.slice(this.whGovernorates()));
+  readonly whOrdersPage = computed(() => this.slice(this.whOrders()));
+  readonly whBatchesPage = computed(() => this.slice(this.whBatches()));
+
+  readonly whSelectedOrder = computed(() => this.orders().find(o => o.deliveryOrderId === this.whOrderId()) ?? null);
+  readonly whSelectedBatch = computed(() => this.whBatches().find(b => b.batchId === this.whBatchId()) ?? null);
+  readonly whSelected = computed(() => this.whCommittees().find(c => c.committeeId === this.whCommitteeId()) ?? null);
+  readonly whLevel = computed<'gov' | 'order' | 'batch' | 'committee'>(() =>
+    !this.whGov() ? 'gov' : this.whOrderId() === null ? 'order' : this.whBatchId() === null ? 'batch' : 'committee');
+
+  readonly whCrumbs = computed<Crumb[]>(() => {
+    const out: Crumb[] = [{ label: 'المحافظات', go: () => this.whGoGov() }];
+    if (this.whGov()) out.push({ label: this.whGov()!, go: () => this.whGoOrders() });
+    const o = this.whSelectedOrder();
+    if (o) out.push({ label: o.subjectName, go: () => this.whGoBatches() });
+    const b = this.whSelectedBatch();
+    if (b && this.whBatches().length > 1) out.push({ label: b.label, go: () => this.pickWhCommittee(null) });
+    const c = this.whSelected();
+    if (c) out.push({ label: `لجنة ${c.committeeNumber}`, go: () => undefined });
+    return out;
+  });
+
+  pickGov(name: string): void {
+    this.whGov.set(name); this.whOrderId.set(null); this.whBatchId.set(null); this.whCommittees.set([]); this.whCommitteeId.set(null);
+    this.resetPage(); this.resetScan();
+  }
+
+  pickOrder(id: number): void {
+    this.whOrderId.set(id); this.whBatchId.set(null); this.whBatches.set([]); this.whCommittees.set([]); this.whCommitteeId.set(null);
+    this.resetPage(); this.resetScan();
+    this.whLoading.set(true);
+    this.api.getDeliveryOrderBatches(id).subscribe({
+      next: r => {
+        const list = this.toArray<DeliveryBatchDto>(r.data);
+        this.whBatches.set(list);
+        this.whLoading.set(false);
+        if (list.length === 1) this.pickBatch(list[0].batchId);
+      },
+      error: e => { this.whLoading.set(false); this.say('err', this.errText(e)); },
+    });
+  }
+
+  pickBatch(id: number): void {
+    this.whBatchId.set(id); this.whCommittees.set([]); this.whCommitteeId.set(null);
+    this.resetPage(); this.resetScan();
+    this.loadCommittees(id);
+  }
+
+  /** لجان الدفعة: pagination من الباك */
+  private loadCommittees(batchId: number, silent = false): void {
+    const { page, size } = this.pg();
+    if (!silent) this.whLoading.set(true);
+    this.api.getBatchCommittees(batchId, { isPaged: true, pageNumber: page, pageSize: size }).subscribe({
+      next: r => {
+        const d = r.data;
+        const items = Array.isArray(d) ? d as DeliveryCommitteeDto[] : (d?.data ?? []);
+        const total = Array.isArray(d) ? d.length : (d?.totalCount ?? items.length);
+        this.whCommittees.set(items);
+        this.pg.update(s => ({ ...s, total }));
+        this.whLoading.set(false);
+      },
+      error: e => { this.whLoading.set(false); this.say('err', this.errText(e)); },
+    });
+  }
+
+  pickWhCommittee(id: number | null): void { this.whCommitteeId.set(id); this.resetScan(); }
+  whGoGov(): void { this.whGov.set(null); this.whOrderId.set(null); this.whBatchId.set(null); this.whCommitteeId.set(null); this.resetPage(); this.resetScan(); }
+  whGoOrders(): void { this.whOrderId.set(null); this.whBatchId.set(null); this.whCommitteeId.set(null); this.resetPage(); this.resetScan(); }
+  whGoBatches(): void {
+    this.whBatchId.set(null); this.whCommitteeId.set(null); this.resetPage(); this.resetScan();
+    if (this.whBatches().length === 1) this.whGoOrders();
+  }
+
+  boxDelivered(b: { status: string }): boolean { return isDeliveredText(b.status); }
+  whDone(c: DeliveryCommitteeDto): boolean {
+    return this.doneCommittees().has(c.committeeId) || (c.boxes.length > 0 && c.boxes.every(b => this.boxDelivered(b)));
+  }
+  pct(done: number, total: number): number { return total ? Math.round((done / total) * 100) : 0; }
+
+  // =====================================================================
+  //  عام
+  // =====================================================================
+  readonly doneCommittees = signal<Set<number>>(new Set());
+  readonly busy = signal(false);
+  readonly lastRead = signal('');
+  readonly feedback = signal<Feedback | null>(null);
+  readonly lookup = signal<Lookup | null>(null);
+
+  /** التابة الافتراضية (الأرشيف) بس — المخزن بيتحمّل لما تتضغط */
+  ngOnInit(): void { this.loadTab(); }
+
+  setTab(t: Tab): void {
+    if (this.warehouseOnly() && t === 'archive') return;
+    this.tab.set(t); this.resetPage(); this.resetScan();
+    this.loadTab();   // بيحمّل بيانات التابة اللي اتضغطت
+  }
+
+  private resolveArchivingRole(): void {
+    const normalizeRole = (role: unknown): string =>
+      String(role ?? '').trim().toLowerCase().replace(/[\s_-]+/g, ' ');
+    const applyRole = (role: unknown): void => {
+      this.warehouseOnly.set(normalizeRole(role) === 'warehouse');
+      this.tab.set(this.warehouseOnly() ? 'warehouse' : 'archive');
+      this.accessRoleResolved.set(true);
+      this.roleLoadError.set(null);
+      this.loadTab();
+    };
+
+    const cachedRole = this.authService.profileRole() || this.authService.currentUser()?.role;
+    if (cachedRole) {
+      applyRole(cachedRole);
+      return;
+    }
+
+    this.authService.profile().subscribe({
+      next: response => {
+        const profile = response?.data?.data ?? response?.data ?? response;
+        const role = profile?.roleName
+          ?? profile?.role
+          ?? profile?.user?.roleName
+          ?? profile?.user?.role;
+        if (!role) {
+          this.roleLoadError.set('تعذر تحديد صلاحية المستخدم. أعد تحميل الصفحة.');
+          return;
+        }
+        applyRole(role);
+      },
+      error: error => {
+        console.error('Failed to resolve archiving role:', error);
+        this.roleLoadError.set('تعذر تحميل صلاحية المستخدم. أعد المحاولة.');
       }
     });
   }
 
-  readonly filteredBatches = computed(() => {
-    const query = this.searchBatchQuery().trim().toLowerCase();
-    const list = this.batches();
+  retryResolveArchivingRole(): void {
+    this.roleLoadError.set(null);
+    this.resolveArchivingRole();
+  }
+  refresh(): void { this.loadTab(); }
 
-    if (!query) return list;
-
-    return list.filter(b => {
-      const matchBatch =
-        String(b.batchId).includes(query) ||
-        (b.governorateName && b.governorateName.toLowerCase().includes(query)) ||
-        (b.subjectName && b.subjectName.toLowerCase().includes(query)) ||
-        (b.roundName && b.roundName.toLowerCase().includes(query)) ||
-        (b.statusName && b.statusName.toLowerCase().includes(query));
-
-      if (matchBatch) return true;
-
-      // Check racks & boxes inside
-      if (b.racks && b.racks.length) {
-        return b.racks.some(r => {
-          const matchRack =
-            (r.warehouseName && r.warehouseName.toLowerCase().includes(query)) ||
-            (r.rack && r.rack.toLowerCase().includes(query)) ||
-            (r.area && r.area.toLowerCase().includes(query));
-          if (matchRack) return true;
-
-          return r.boxes && r.boxes.some(box =>
-            String(box.committeeNumber).toLowerCase().includes(query) ||
-            (box.qrCode && box.qrCode.toLowerCase().includes(query)) ||
-            (box.shelfLocationCode && box.shelfLocationCode.toLowerCase().includes(query)) ||
-            (box.statusName && box.statusName.toLowerCase().includes(query))
-          );
-        });
+  private loadTab(): void {
+    if (this.tab() === 'archive') {
+      const b = this.arBatch();
+      if (b) {
+        this.loadBatchCommittees(b);
+        const id = this.arCommitteeId();
+        if (id !== null) this.loadPackedBoxes(id);
+      } else {
+        this.loadArchive();
       }
+    } else {
+      this.loadOrders();
+      const batchId = this.whBatchId();
+      if (batchId !== null) this.loadCommittees(batchId);
+    }
+  }
 
-      return false;
+  // =====================================================================
+  //  جلسة السكان
+  // =====================================================================
+  readonly boxFilter = signal<BoxFilter>('all');
+  readonly sideSearch = signal('');
+  readonly errorCount = signal(0);
+
+  readonly session = computed(() => {
+    if (this.tab() === 'archive') {
+      const c = this.arSelected();
+      return c ? { id: c.id, number: c.number, subject: c.subject, chips: [c.governorate, c.subject, c.round] } : null;
+    }
+    const c = this.whSelected(), o = this.whSelectedOrder(), b = this.whSelectedBatch();
+    return c ? { id: c.committeeId, number: c.committeeNumber, subject: o?.subjectName ?? '', chips: [o?.governorateName ?? '', o?.subjectName ?? '', b?.roundName ?? o?.roundName ?? ''] } : null;
+  });
+
+  readonly sessionBoxes = computed<SessionBox[]>(() => {
+    if (this.tab() === 'archive') {
+      if (!this.arSelected()) return [];
+      const placedMap = new Map(this.placed().map(p => [p.trackingCode, p]));
+      return this.packedBoxes().map(b => {
+        const p = placedMap.get(b.trackingCode);
+        const stored = (b.storageLocationId ?? 0) > 0;
+        const state: SessionBox['state'] = p || stored ? 'done' : this.pendingBox() === b.trackingCode ? 'pending' : 'todo';
+        return { id: b.boxId, seq: b.sequenceNo, code: b.trackingCode, state, note: p?.place ?? b.storageLocationQrCode ?? '' };
+      });
+    }
+    const c = this.whSelected();
+    if (!c) return [];
+    const scannedCodes = new Set(this.whScannedCodes());
+    return c.boxes.map(b => {
+      const delivered = this.boxDelivered(b);
+      const scanned = scannedCodes.has(b.qrCode);
+      return {
+        id: b.boxId,
+        seq: b.sequenceNo,
+        code: b.qrCode,
+        state: (delivered ? 'done' : scanned ? 'pending' : 'todo') as SessionBox['state'],
+        note: delivered
+          ? 'اتسلّم'
+          : scanned
+            ? 'تم المسح — في انتظار إرسال اللجنة'
+            : b.storageLocationCode,
+      };
     });
   });
 
-  // KPI Metrics Computed
-  readonly totalBatchesCount = computed(() => this.filteredBatches().length);
-
-  readonly totalBoxesCount = computed(() => {
-    let count = 0;
-    for (const b of this.filteredBatches()) {
-      if (b.racks) {
-        for (const r of b.racks) {
-          count += r.boxes?.length || 0;
-        }
-      }
-    }
-    return count;
+  readonly sessionStats = computed(() => {
+    const list = this.sessionBoxes();
+    const total = list.length, done = list.filter(b => b.state === 'done').length;
+    return { total, done, remaining: total - done, pct: total ? Math.round((done / total) * 100) : 0 };
+  });
+  readonly visibleBoxes = computed(() => {
+    const f = this.boxFilter();
+    return this.sessionBoxes().filter(b => f === 'all' || (f === 'done' ? b.state === 'done' : b.state !== 'done'));
   });
 
-  readonly storedBoxesCount = computed(() => {
-    let count = 0;
-    for (const b of this.filteredBatches()) {
-      if (b.racks) {
-        for (const r of b.racks) {
-          if (r.boxes) {
-            count += r.boxes.filter(box => box.shelfLocationId > 0 || !!box.shelfLocationCode).length;
+  readonly sideList = computed<SideItem[]>(() => {
+    const q = this.sideSearch().trim();
+    const items: SideItem[] = this.tab() === 'archive'
+      ? this.arCommittees().map(c => ({ id: c.id, number: c.number, label: c.governorate, status: c.id === this.arCommitteeId() ? 'now' as const : this.arDone(c) ? 'done' as const : 'todo' as const }))
+      : this.whCommittees().map(c => ({ id: c.committeeId, number: c.committeeNumber, label: `${c.boxes.length} صناديق`, status: c.committeeId === this.whCommitteeId() ? 'now' as const : this.whDone(c) ? 'done' as const : 'todo' as const }));
+    return q ? items.filter(i => i.number.includes(q) || i.label.includes(q)) : items;
+  });
+
+  readonly canFinish = computed(() => this.tab() === 'archive' && this.arAllPlaced() && this.placed().length > 0);
+
+  openCommittee(id: number): void { this.tab() === 'archive' ? this.pickArCommittee(id) : this.pickWhCommittee(id); }
+  closeSession(): void {
+    if (!this.session()) return;
+    this.tab() === 'archive' ? this.pickArCommittee(null) : this.pickWhCommittee(null);
+  }
+
+  whDeliveredCount(c: DeliveryCommitteeDto): number { return c.boxes.filter(b => this.boxDelivered(b)).length; }
+  whLocations(c: DeliveryCommitteeDto): string[] { return [...new Set(c.boxes.map(b => b.storageLocationCode).filter(Boolean))]; }
+  arFirstPlace(c: ArCommittee): string { return c.boxes.find(b => b.place)?.place ?? ''; }
+
+  // ---------------------------------------------------------------- scanner
+  private buf = '';
+  private lastKey = 0;
+  private queue: string[] = [];
+
+  /**
+   * الماسح شغّال على مستوى الصفحة كلها من غير focus على أي input:
+   * بنلقط keydown على document، وبنقرا e.code عشان الكيبورد العربي، وEnter/Tab بينهوا القراءة.
+   * أي عنصر جواه [data-no-scan] (زي بحث اللجان) بيتجاهل.
+   */
+  @HostListener('document:keydown', ['$event'])
+  onKey(e: KeyboardEvent): void {
+    if (e.key === 'Escape' && this.session()) { this.closeSession(); return; }
+    const t = e.target as HTMLElement | null;
+    if (t?.closest('[data-no-scan]')) return;
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+
+    const now = Date.now();
+    if (now - this.lastKey > 250) this.buf = '';
+    this.lastKey = now;
+
+    if (e.key === 'Enter' || e.key === 'Tab') {
+      const code = this.buf; this.buf = '';
+      if (code.length >= 3) { e.preventDefault(); this.onScan(code); }
+      return;
+    }
+    const ch = this.keyChar(e);
+    if (ch) this.buf += ch;
+  }
+
+  private keyChar(e: KeyboardEvent): string {
+    if (e.key.length === 1 && e.key.charCodeAt(0) < 128) return e.key;
+    const c = e.code;
+    let m: RegExpExecArray | null;
+    if ((m = /^Key([A-Z])$/.exec(c))) return e.shiftKey ? m[1] : m[1].toLowerCase();
+    if ((m = /^(?:Digit|Numpad)(\d)$/.exec(c))) return m[1];
+    if (c === 'Minus' && e.shiftKey) return '_';
+    return ({ Minus: '-', NumpadSubtract: '-', Slash: '/', Period: '.', Comma: ',', Semicolon: ';', Backslash: '\\' } as Record<string, string>)[c] ?? '';
+  }
+
+  manualScan(input: HTMLInputElement): void {
+    const v = input.value.trim();
+    if (v) this.onScan(v);
+    input.value = '';
+  }
+  sideEnter(): void {
+    const v = this.sideSearch().trim();
+    if (v.length >= 6) { this.sideSearch.set(''); this.onScan(v); }
+  }
+
+  /** كل قراءة بتدخل طابور — مفيش قراءة بتضيع لو في طلب شغال */
+  onScan(raw: string): void {
+    const code = raw.trim();
+    if (!code) return;
+    this.queue.push(code);
+    this.pump();
+  }
+  private pump(): void {
+    while (!this.busy() && this.queue.length) {
+      const code = this.queue.shift()!;
+      this.lastRead.set(code);
+      if (this.tab() === 'archive') this.arSelected() ? this.archiveScan(code) : this.resolve(code);
+      else this.whSelected() ? this.warehouseScan(code) : this.resolve(code);
+    }
+  }
+  private begin(): void { this.busy.set(true); }
+  private release(): void { this.busy.set(false); this.pump(); }
+
+  // ---- أرشيف: صندوق ثم رف (بيتجمّعوا محليًا والتأكيد بـ confirm-committee)
+  private archiveScan(code: string): void {
+    if (this.arBoxesLoading()) return this.say('warn', 'جاري تحميل صناديق اللجنة — حاولي كمان لحظة');
+
+    const pending = this.pendingBox();
+    const asBox = this.packedBoxes().find(b => b.trackingCode === code);
+    const isDone = (b: CommitteeBoxItemDto) =>
+      (b.storageLocationId ?? 0) > 0 || this.placed().some(p => p.trackingCode === b.trackingCode);
+
+    if (!pending) {
+      if (!asBox) return this.say('err', 'الكود ده مش صندوق تابع للجنة المختارة');
+      if (isDone(asBox)) return this.say('warn', 'الصندوق ده متخزن قبل كده');
+      this.pendingBox.set(code);
+      return this.say('ok', 'تم مسح الصندوق — امسح كود الرف');
+    }
+
+    if (asBox) {
+      if (isDone(asBox)) return this.say('warn', 'الصندوق ده متخزن قبل كده');
+      this.pendingBox.set(code);
+      return this.say('warn', 'اتغيّر الصندوق — امسح كود الرف');
+    }
+
+    this.begin();
+    this.api.resolveLocation(code).pipe(finalize(() => this.release())).subscribe({
+      next: r => {
+        if (!r.success || !r.data) return this.say('err', r.message || 'كود الرف غير معروف');
+        const place = `${r.data.rack} / ${r.data.shelf}`;
+        this.placed.update(p => [...p, { trackingCode: pending, qrCode: code, place }]);
+        this.pendingBox.set(null);
+        this.say('ok', this.arAllPlaced()
+          ? `تم تخزين الصندوق في ${place} — اضغطي «تأكيد تخزين اللجنة»`
+          : `تم تخزين الصندوق في ${place}`);
+      },
+      error: e => this.say('err', this.errText(e)),
+    });
+  }
+
+  /** POST /Boxes/storage/confirm-committee */
+  confirmCommittee(): void {
+    const c = this.arSelected();
+    const batch = this.arBatch();
+    if (!c || !this.placed().length || this.busy()) return;
+    this.begin();
+    this.api.confirmCommitteeStorage({ placements: this.placed().map(p => ({ trackingCode: p.trackingCode, qrCode: p.qrCode })) })
+      .pipe(finalize(() => this.release())).subscribe({
+        next: r => {
+          if (!r.success) return this.say('err', r.message || 'تعذر تأكيد التخزين');
+          this.doneCommittees.update(s => new Set(s).add(c.id));
+          this.messages.add({ severity: 'success', summary: 'تمت العملية', detail: `تم تأكيد تخزين اللجنة ${c.number}`, life: 3500 });
+          this.pickArCommittee(null);
+          if (batch) this.loadBatchCommittees(batch, true);
+        },
+        error: e => this.say('err', this.errText(e)),
+      });
+  }
+
+  // ---- مخزن: نجمع أكواد اللجنة أولًا، ثم نرسل طلبًا واحدًا بعد آخر صندوق.
+  private warehouseScan(code: string): void {
+    const committee = this.whSelected();
+    if (!committee) return;
+
+    const box = committee.boxes.find(item => item.qrCode === code);
+    if (!box) {
+      this.say('err', 'الكود ده مش تابع للجنة المختارة');
+      return;
+    }
+
+    if (this.boxDelivered(box)) {
+      this.say('warn', `الصندوق ${box.sequenceNo} اتسلّم قبل كده`);
+      return;
+    }
+
+    if (this.whScannedCodes().includes(code)) {
+      this.say('warn', `الصندوق ${box.sequenceNo} اتعمله Scan بالفعل`);
+      return;
+    }
+
+    this.whScannedCodes.update(codes => [...codes, code]);
+
+    const scanned = this.whScannedCount();
+    const expected = this.whExpectedScanCount();
+
+    this.say('ok', `تم Scan الصندوق ${box.sequenceNo} — ${scanned} من ${expected}`);
+    // الإرسال بيتم بزرار "تسليم" في الـ footer — مفيش إرسال تلقائي.
+  }
+
+  submitWarehouseDelivery(): void {
+    const committee = this.whSelected();
+    const qrCodes = this.whScannedCodes();
+
+    if (!committee || !qrCodes.length || this.busy()) return;
+
+    this.whSubmittedCount.set(qrCodes.length);
+    this.whDeliveryError.set(false);
+    this.begin();
+
+    this.api.deliverCommittee(committee.committeeId, qrCodes)
+      .pipe(finalize(() => this.release()))
+      .subscribe({
+        next: response => {
+          const result = response.data ?? null;
+          this.deliverResult.set(result);
+
+          const problems = result?.problems ?? [];
+          const failedCodes = new Set(problems.map(problem => problem.qrCode));
+
+          // لو الطلب كله فشل بدون تفاصيل لكل كود، لا نعتبر أي صندوق تم تسليمه.
+          const successfulCodes = response.success
+            ? qrCodes.filter(code => !failedCodes.has(code))
+            : [];
+
+          successfulCodes.forEach(code => this.patchBox(committee.committeeId, code));
+
+          // نحتفظ بالأكواد الفاشلة فقط حتى لا نعيد إرسال الصناديق الناجحة عند المحاولة مرة أخرى.
+          const retryCodes = response.success
+            ? qrCodes.filter(code => failedCodes.has(code))
+            : qrCodes;
+
+          this.whScannedCodes.set(retryCodes);
+          this.whDeliveryError.set(!response.success || retryCodes.length > 0);
+
+          const deliveredCount = result?.deliveredBoxCount ?? successfulCodes.length;
+
+          const left = this.whSelected()?.boxes.filter(box => !this.boxDelivered(box)).length ?? 0;
+
+          if (this.whDeliveryError()) {
+            this.say(
+              'err',
+              `تم تأكيد ${successfulCodes.length} صندوق، ويوجد ${retryCodes.length} صندوق لم يتم تسليمه`
+            );
+          } else if (left === 0) {
+            this.doneCommittees.update(set => new Set(set).add(committee.committeeId));
+            this.messages.add({
+              severity: 'success',
+              summary: 'تم التسليم بنجاح',
+              detail: `تم تسليم ${deliveredCount} صندوق للجنة ${committee.committeeNumber}`,
+              life: 5000,
+            });
+            this.say('ok', `اكتمل تسليم اللجنة — ${deliveredCount} صندوق`);
+          } else {
+            this.messages.add({
+              severity: 'success',
+              summary: 'تم التسليم',
+              detail: `تم تسليم ${deliveredCount} صندوق — متبقي ${left} صندوق في اللجنة`,
+              life: 5000,
+            });
+            this.say('ok', `تم تسليم ${deliveredCount} صندوق — متبقي ${left}`);
           }
-        }
-      }
-    }
-    return count;
-  });
 
-  readonly pendingBoxesCount = computed(() => {
-    return Math.max(0, this.totalBoxesCount() - this.storedBoxesCount());
-  });
-
-  readonly readyForDeliveryCount = computed(() => {
-    let count = 0;
-    for (const b of this.filteredBatches()) {
-      if (b.racks) {
-        for (const r of b.racks) {
-          if (r.boxes) {
-            count += r.boxes.filter(box => box.isReadyForDelivery).length;
-          }
-        }
-      }
-    }
-    return count;
-  });
-
-  // Helper getters for a specific batch
-  getBatchTotalBoxes(batch: BatchStorageDto): number {
-    if (!batch.racks) return 0;
-    return batch.racks.reduce((acc, r) => acc + (r.boxes?.length || 0), 0);
-  }
-
-  getBatchStoredBoxes(batch: BatchStorageDto): number {
-    if (!batch.racks) return 0;
-    return batch.racks.reduce((acc, r) => {
-      const stored = r.boxes?.filter(box => box.shelfLocationId > 0 || !!box.shelfLocationCode).length || 0;
-      return acc + stored;
-    }, 0);
-  }
-
-  getBatchStoredPercentage(batch: BatchStorageDto): number {
-    const total = this.getBatchTotalBoxes(batch);
-    if (!total) return 0;
-    return Math.round((this.getBatchStoredBoxes(batch) / total) * 100);
-  }
-
-  getBatchUniqueWarehouses(batch: BatchStorageDto): string[] {
-    if (!batch.racks) return [];
-    const set = new Set<string>();
-    batch.racks.forEach(r => {
-      if (r.warehouseName) set.add(r.warehouseName);
-    });
-    return Array.from(set);
-  }
-
-  // ================================================================
-  // PAGINATION (matching Planning component)
-  // ================================================================
-  readonly pageSize = signal(6);
-  readonly currentPage = signal(1);
-
-  readonly pageSizeOptions = [
-    { label: '6', value: 6 },
-    { label: '12', value: 12 },
-    { label: '24', value: 24 },
-    { label: 'الكل', value: 0 }
-  ];
-
-  readonly showAll = computed(() => this.pageSize() === 0);
-
-  readonly totalPages = computed(() =>
-    this.showAll()
-      ? 1
-      : Math.max(1, Math.ceil(this.filteredBatches().length / this.pageSize()))
-  );
-
-  readonly paginatedBatches = computed(() => {
-    if (this.showAll()) return this.filteredBatches();
-    const page = Math.min(this.currentPage(), this.totalPages());
-    const start = (page - 1) * this.pageSize();
-    return this.filteredBatches().slice(start, start + this.pageSize());
-  });
-
-  readonly paginationStart = computed(() => {
-    if (this.filteredBatches().length === 0) return 0;
-    return this.showAll() ? 1 : (this.currentPage() - 1) * this.pageSize() + 1;
-  });
-
-  readonly paginationEnd = computed(() =>
-    this.showAll()
-      ? this.filteredBatches().length
-      : Math.min(this.currentPage() * this.pageSize(), this.filteredBatches().length)
-  );
-
-  readonly paginationPages = computed<(number | 'dots')[]>(() => {
-    const total = this.totalPages();
-    const cur = Math.min(this.currentPage(), total);
-    const wanted = new Set<number>([1, total, cur - 1, cur, cur + 1]);
-    const sorted = [...wanted].filter(p => p >= 1 && p <= total).sort((a, b) => a - b);
-
-    const pages: (number | 'dots')[] = [];
-    sorted.forEach((p, i) => {
-      if (i > 0 && p - sorted[i - 1] > 1) pages.push('dots');
-      pages.push(p);
-    });
-    return pages;
-  });
-
-  private resetPage(): void {
-    this.currentPage.set(1);
-  }
-
-  onPageSizeChange(): void {
-    this.resetPage();
-  }
-
-  goToPage(p: number): void {
-    if (p >= 1 && p <= this.totalPages()) {
-      this.currentPage.set(p);
-    }
-  }
-
-  previousPage(): void {
-    this.goToPage(this.currentPage() - 1);
-  }
-
-  nextPage(): void {
-    this.goToPage(this.currentPage() + 1);
-  }
-
-  // ================================================================
-  // BATCH DETAILS DIALOG
-  // ================================================================
-  batchDetailsVisible = signal<boolean>(false);
-  selectedBatch = signal<BatchStorageDto | null>(null);
-  batchModalSearch = signal<string>('');
-
-  openBatchDetails(batch: BatchStorageDto): void {
-    this.selectedBatch.set(batch);
-    this.batchModalSearch.set('');
-    this.batchDetailsVisible.set(true);
-  }
-
-  closeBatchDetails(): void {
-    this.batchDetailsVisible.set(false);
-    this.selectedBatch.set(null);
-  }
-
-  readonly allBoxesInSelectedBatch = computed(() => {
-    const batch = this.selectedBatch();
-    if (!batch || !batch.racks) return [];
-
-    const boxes: (StorageBoxDto & { warehouseName?: string; rackName?: string })[] = [];
-    for (const r of batch.racks) {
-      if (r.boxes) {
-        for (const b of r.boxes) {
-          boxes.push({
-            ...b,
-            warehouseName: r.warehouseName,
-            rackName: r.rack
-          });
-        }
-      }
-    }
-    return boxes;
-  });
-
-  readonly filteredBatchBoxes = computed(() => {
-    const q = this.batchModalSearch().trim().toLowerCase();
-    const list = this.allBoxesInSelectedBatch();
-    if (!q) return list;
-
-    return list.filter(b =>
-      String(b.committeeNumber).toLowerCase().includes(q) ||
-      (b.qrCode && b.qrCode.toLowerCase().includes(q)) ||
-      (b.shelfLocationCode && b.shelfLocationCode.toLowerCase().includes(q)) ||
-      (b.rack && b.rack.toLowerCase().includes(q)) ||
-      (b.warehouseName && b.warehouseName.toLowerCase().includes(q)) ||
-      (b.statusName && b.statusName.toLowerCase().includes(q))
-    );
-  });
-
-  // ================================================================
-  // SCANNER & STORAGE RESOLVER WORKSPACE & DIALOG
-  // Endpoints:
-  // - GET /api/Boxes/storage/resolve-location/{qrCode}
-  // - GET /api/Boxes/storage/resolve-box/{trackingCode}
-  // - POST /api/Boxes/assign-storage-location
-  // - POST /api/Boxes/storage/confirm-committee
-  // ================================================================
-  scannerDialogVisible = signal<boolean>(false);
-
-  // Inputs
-  scannedLocationQr = signal<string>('');
-  scannedTrackingCode = signal<string>('');
-
-  // Resolved entities
-  resolvedLocation = signal<StorageLocationResolveDto | null>(null);
-  resolvedBox = signal<BoxResolveDto | null>(null);
-
-  // Status flags
-  locationLoading = signal<boolean>(false);
-  boxLoading = signal<boolean>(false);
-  assigningStorage = signal<boolean>(false);
-  confirmingCommittee = signal<boolean>(false);
-
-  locationError = signal<string | null>(null);
-  boxError = signal<string | null>(null);
-
-  openScannerModal(box?: StorageBoxDto, batch?: BatchStorageDto | null): void {
-    this.resetScanner();
-    if (box) {
-      this.scannedTrackingCode.set(box.qrCode || '');
-      this.resolveBox(box.qrCode);
-      if (box.shelfLocationCode) {
-        this.scannedLocationQr.set(box.shelfLocationCode);
-        this.resolveLocation(box.shelfLocationCode);
-      }
-    }
-    this.scannerDialogVisible.set(true);
-  }
-
-  closeScannerModal(): void {
-    this.scannerDialogVisible.set(false);
-    this.resetScanner();
-  }
-
-  resetScanner(): void {
-    this.scannedLocationQr.set('');
-    this.scannedTrackingCode.set('');
-    this.resolvedLocation.set(null);
-    this.resolvedBox.set(null);
-    this.locationError.set(null);
-    this.boxError.set(null);
-  }
-
-  /**
-   * Resolve Location via GET /api/Boxes/storage/resolve-location/{qrCode}
-   */
-  resolveLocation(forcedQr?: string): void {
-    const qr = (forcedQr ?? this.scannedLocationQr()).trim();
-    if (!qr) {
-      this.locationError.set('يرجى إدخال أو مسح كود الرف/الموقع أولاً');
-      return;
-    }
-
-    this.locationLoading.set(true);
-    this.locationError.set(null);
-
-    this.archivingBoxService.resolveLocation(qr).subscribe({
-      next: res => {
-        this.locationLoading.set(false);
-        const data = res?.data;
-        if (data) {
-          this.resolvedLocation.set(data);
-          this.messageService.add({
-            severity: 'success',
-            summary: 'تم العثور على الموقع',
-            detail: `المخزن: ${data.warehouseName || data.warehouseCode} - الرف: ${data.rack || data.rackCode || qr}`,
-            life: 2500
-          });
-        } else {
-          this.locationError.set('لم يتم العثور على بيانات لهذا الموقع');
-        }
-      },
-      error: err => {
-        this.locationLoading.set(false);
-        const msg = err?.error?.message || 'تعذر الوصول إلى موقع التخزين المحدد';
-        this.locationError.set(msg);
-        this.messageService.add({
-          severity: 'error',
-          summary: 'خطأ في الموقع',
-          detail: msg,
-          life: 3500
-        });
-      }
-    });
-  }
-
-  /**
-   * Resolve Box via GET /api/Boxes/storage/resolve-box/{trackingCode}
-   */
-  resolveBox(forcedCode?: string): void {
-    const code = (forcedCode ?? this.scannedTrackingCode()).trim();
-    if (!code) {
-      this.boxError.set('يرجى إدخال أو مسح باركود الصندوق أولاً');
-      return;
-    }
-
-    this.boxLoading.set(true);
-    this.boxError.set(null);
-
-    this.archivingBoxService.resolveBox(code).subscribe({
-      next: res => {
-        this.boxLoading.set(false);
-        const data = res?.data;
-        if (data) {
-          this.resolvedBox.set(data);
-          this.messageService.add({
-            severity: 'success',
-            summary: 'تم العثور على الصندوق',
-            detail: `لجنة: ${data.committeeNumber} - ${data.schoolName || ''}`,
-            life: 2500
-          });
-        } else {
-          this.boxError.set('لم يتم العثور على بيانات لهذا الصندوق');
-        }
-      },
-      error: err => {
-        this.boxLoading.set(false);
-        const msg = err?.error?.message || 'تعذر الوصول إلى الصندوق المحدد';
-        this.boxError.set(msg);
-        this.messageService.add({
-          severity: 'error',
-          summary: 'خطأ في الصندوق',
-          detail: msg,
-          life: 3500
-        });
-      }
-    });
-  }
-
-  /**
-   * Assign Single Box via POST /api/Boxes/assign-storage-location
-   */
-  assignStorageLocation(): void {
-    const location = this.resolvedLocation();
-    const box = this.resolvedBox();
-
-    const trackingCode = (box?.scannedTrackingCode || this.scannedTrackingCode()).trim();
-    const qrCode = (location?.qrCode || this.scannedLocationQr()).trim();
-
-    if (!trackingCode || !qrCode) {
-      this.messageService.add({
-        severity: 'warn',
-        summary: 'تنبيه',
-        detail: 'يرجى التأكد من مسح كود الرف وكود الصندوق معًا قبل التسكين',
-        life: 3500
+          this.loadOrders();
+          const batchId = this.whBatchId();
+          if (batchId !== null) this.loadCommittees(batchId, true);
+        },
+        error: error => {
+          this.whDeliveryError.set(true);
+          this.say('err', this.errText(error));
+        },
       });
-      return;
-    }
+  }
 
-    this.assigningStorage.set(true);
-    this.archivingBoxService.assignStorageLocation({ trackingCode, qrCode }).subscribe({
-      next: res => {
-        this.assigningStorage.set(false);
-        this.messageService.add({
-          severity: 'success',
-          summary: 'تم التسكين بنجاح',
-          detail: res?.message || `تم تسكين الصندوق ${trackingCode} في الموقع ${qrCode}`,
-          life: 3500
-        });
+  private patchBox(committeeId: number, code: string): void {
+    this.whCommittees.update(list => list.map(c => c.committeeId !== committeeId ? c
+      : { ...c, boxes: c.boxes.map(b => b.qrCode === code ? { ...b, status: DELIVERED_TEXT } : b) }));
+  }
 
-        // Re-resolve location to update stored boxes count and items
-        this.resolveLocation(qrCode);
-        this.resolveBox(trackingCode);
-        this.loadBatches();
-      },
-      error: err => {
-        this.assigningStorage.set(false);
-        this.messageService.add({
-          severity: 'error',
-          summary: 'فشل التسكين',
-          detail: err?.error?.message || 'تعذر تسكين الصندوق في هذا الموقع',
-          life: 4000
-        });
-      }
+  // ---- استعلام (من غير لجنة مختارة)
+  private resolve(code: string): void {
+    this.begin();
+    this.api.resolveLocation(code).pipe(finalize(() => this.release())).subscribe({
+      next: r => r.success && r.data ? this.lookup.set({ kind: 'location', data: r.data }) : this.resolveBox(code),
+      error: () => this.resolveBox(code),
     });
   }
-
-  /**
-   * Confirm Entire Committee via POST /api/Boxes/storage/confirm-committee
-   */
-  confirmEntireCommittee(): void {
-    const location = this.resolvedLocation();
-    const box = this.resolvedBox();
-
-    const qrCode = (location?.qrCode || this.scannedLocationQr()).trim();
-    if (!qrCode) {
-      this.messageService.add({
-        severity: 'warn',
-        summary: 'تنبيه',
-        detail: 'يرجى تحديد ومسح موقع التخزين (الرف) أولاً',
-        life: 3500
-      });
-      return;
-    }
-
-    if (!box || !box.boxes || box.boxes.length === 0) {
-      this.messageService.add({
-        severity: 'warn',
-        summary: 'تنبيه',
-        detail: 'لا توجد صناديق للجنة الحالية لتأكيد تخزينها',
-        life: 3500
-      });
-      return;
-    }
-
-    const placements = box.boxes.map(b => ({
-      trackingCode: b.trackingCode,
-      qrCode: qrCode
-    }));
-
-    this.confirmingCommittee.set(true);
-    this.archivingBoxService.confirmCommitteeStorage({ placements }).subscribe({
-      next: res => {
-        this.confirmingCommittee.set(false);
-        this.messageService.add({
-          severity: 'success',
-          summary: 'تم تأكيد اللجنة',
-          detail: res?.message || `تم تأكيد تخزين جميع صناديق اللجنة (${placements.length}) بنجاح`,
-          life: 4000
-        });
-
-        // Refresh
-        this.resolveLocation(qrCode);
-        this.resolveBox(box.scannedTrackingCode);
-        this.loadBatches();
-      },
-      error: err => {
-        this.confirmingCommittee.set(false);
-        this.messageService.add({
-          severity: 'error',
-          summary: 'فشل التأكيد',
-          detail: err?.error?.message || 'تعذر تأكيد تخزين صناديق اللجنة',
-          life: 4000
-        });
-      }
+  private resolveBox(code: string): void {
+    this.api.resolveBox(code).subscribe({
+      next: r => r.success && r.data ? this.lookup.set({ kind: 'box', data: r.data }) : this.say('err', r.message || 'الكود غير معروف'),
+      error: e => this.say('err', this.errText(e)),
     });
   }
+  closeLookup(): void { this.lookup.set(null); }
 
-  // ================================================================
-  // LIFECYCLE & LOOKUPS LOADING
-  // ================================================================
-  ngOnInit(): void {
-    this.loadLookups();
-    this.loadBatches();
+  // ---- helpers
+  private resetScan(): void {
+    this.packedBoxes.set([]); this.arBoxesLoading.set(false);
+    this.pendingBox.set(null); this.placed.set([]);
+    this.deliverResult.set(null);
+    this.whScannedCodes.set([]);
+    this.whSubmittedCount.set(0);
+    this.whDeliveryError.set(false);
+    this.lookup.set(null); this.feedback.set(null);
+    this.errorCount.set(0); this.boxFilter.set('all'); this.sideSearch.set(''); this.queue = [];
   }
-
-  /**
-   * Recursively extract array from any lookup JSON format
-   */
-  private extractLookupArray(response: any): any[] {
-    if (!response) return [];
-    if (Array.isArray(response)) return response;
-
-    const possibleKeys = ['data', 'items', 'result', 'results', 'records', 'value'];
-    for (const key of possibleKeys) {
-      const val = response[key];
-      if (Array.isArray(val)) return val;
-      if (val && typeof val === 'object') {
-        const nested = this.extractLookupArray(val);
-        if (nested.length > 0) return nested;
-      }
-    }
-    return [];
+  private timer?: ReturnType<typeof setTimeout>;
+  private say(kind: Feedback['kind'], text: string): void {
+    if (kind === 'err' && this.session()) this.errorCount.update(n => n + 1);
+    this.feedback.set({ kind, text });
+    clearTimeout(this.timer);
+    this.timer = setTimeout(() => this.feedback.set(null), 3500);
   }
-
-  /**
-   * Map lookups to standard SelectOption array with fallback labels
-   */
-  private mapToOptions(
-    rawList: any[],
-    defaultLabel: string,
-    idKeys: string[] = ['id', 'governorateId', 'subjectId', 'code', 'value']
-  ): SelectOption[] {
-    const options: SelectOption[] = [{ label: defaultLabel, value: 'all' }];
-    if (!Array.isArray(rawList)) return options;
-
-    rawList.forEach((item: any) => {
-      if (!item) return;
-
-      let value: number | string | null = null;
-      for (const k of idKeys) {
-        if (item[k] !== undefined && item[k] !== null && String(item[k]).trim() !== '') {
-          const num = Number(item[k]);
-          value = !isNaN(num) && num > 0 ? num : item[k];
-          break;
-        }
-      }
-
-      const nameKeys = ['nameAr', 'arabicName', 'name', 'title', 'governorateName', 'subjectName', 'label'];
-      let label: string | null = null;
-      for (const k of nameKeys) {
-        if (item[k] !== undefined && item[k] !== null && String(item[k]).trim() !== '') {
-          label = String(item[k]).trim();
-          break;
-        }
-      }
-
-      if (value != null && label) {
-        options.push({ label, value });
-      }
-    });
-
-    return options;
+  private toArray<T>(d: unknown): T[] {
+    if (Array.isArray(d)) return d as T[];
+    const inner = (d as { data?: unknown } | null)?.data;
+    return Array.isArray(inner) ? (inner as T[]) : [];
   }
-
-  loadLookups(): void {
-    this.lookupsLoading.set(true);
-
-    forkJoin({
-      governorates: this.lookupService.getLookupGovernorateData().pipe(
-        catchError(e => {
-          console.error('Gov lookup err:', e);
-          return of([]);
-        })
-      ),
-      subjects: this.lookupService.getLookupSubjectData().pipe(
-        catchError(e => {
-          console.error('Subject lookup err:', e);
-          return of([]);
-        })
-      )
-    }).subscribe({
-      next: res => {
-        const rawGov = this.extractLookupArray(res.governorates);
-        const rawSub = this.extractLookupArray(res.subjects);
-
-        this.governorates.set(this.mapToOptions(rawGov, 'كل المحافظات'));
-        this.subjects.set(this.mapToOptions(rawSub, 'كل المواد'));
-        this.lookupsLoading.set(false);
-      },
-      error: err => {
-        console.error('Error loading lookups in Archiving:', err);
-        this.lookupsLoading.set(false);
-      }
-    });
+  private errText(e: any): string {
+    return e?.error?.message || e?.error?.errors?.[0] || e?.message || 'حصل خطأ في الاتصال';
   }
 }
