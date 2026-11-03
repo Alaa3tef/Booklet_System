@@ -143,6 +143,8 @@ export default class PackingComponent implements OnInit {
   private readonly lookups = inject(Lookups);
   private readonly destroyRef = inject(DestroyRef);
 
+readonly manualQrCode = signal('');
+
   readonly essentials = [
     'اختيار المادة ثم اللجنة المطلوب تغليفها',
     'مسح QR الصناديق وسيريال الأظرف بجهاز القراءة',
@@ -194,7 +196,17 @@ export default class PackingComponent implements OnInit {
       this.governoratesLoading
     );
   }
+/** تنفيذ المسح اليدوي عند الضغط على Enter */
+submitManualQr(): void {
+  const code = this.manualQrCode().trim();
 
+  if (!code || !this.scanActive()) {
+    return;
+  }
+
+  this.manualQrCode.set('');
+  this.processScan(code);
+}
   private loadLookup(
     request$: Observable<unknown>,
     nameKeys: string[],

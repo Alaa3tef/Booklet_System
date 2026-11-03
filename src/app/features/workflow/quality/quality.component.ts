@@ -608,6 +608,9 @@ export default class QualityComponent implements OnInit, OnDestroy {
   /** الحروف اللي الماسح بيكتبها حالياً (للعرض فقط) */
   readonly liveBuffer = signal('');
 
+  /** كود QR عند إدخاله يدويًا بدل جهاز الاسكان */
+  readonly manualScanCode = signal('');
+
   readonly totalCount = computed(() => this.envelopes().length);
   readonly scannedCount = computed(() => this.envelopes().filter(e => e.scanned).length);
   readonly remainingCount = computed(() => this.totalCount() - this.scannedCount());
@@ -648,6 +651,7 @@ export default class QualityComponent implements OnInit, OnDestroy {
   private resetWorkspace(): void {
     this.envelopesSub?.unsubscribe();
     this.resetBuffer();
+    this.manualScanCode.set('');
     this.activeCommittee.set(null);
     this.envelopes.set([]);
     this.envelopesLoading.set(false);
@@ -722,6 +726,18 @@ export default class QualityComponent implements OnInit, OnDestroy {
 
   setEnvelopeTab(tab: EnvelopeTab): void {
     this.envelopeTab.set(tab);
+  }
+
+  /** تنفيذ المسح اليدوي عند الضغط على Enter */
+  submitManualScan(): void {
+    const code = this.manualScanCode().trim();
+
+    if (!code || !this.activeCommittee() || this.envelopesLoading() || this.completing()) {
+      return;
+    }
+
+    this.manualScanCode.set('');
+    this.processScan(code);
   }
 
   // ---------- قراءة الماسح (keyboard wedge) ----------

@@ -123,7 +123,7 @@
 
       <div class="table-header">
         <h4>قائمة المواد</h4>
-        <span class="results-count">{{ filteredRows().length }} مادة</span>
+        <span class="results-count">{{ totalCount() }} مادة</span>
       </div>
 
       <!-- Error -->
@@ -178,10 +178,10 @@
                   <strong><i class="pi pi-building"></i>{{ fmt(row.committeeCount) }}</strong>
                 </div>
 
-                <div class="approval-detail">
+                <!-- <div class="approval-detail">
                   <small>الكراتين المتوقعة</small>
                   <strong><i class="pi pi-box"></i>{{ fmt(row.expectedBoxCount) }}</strong>
-                </div>
+                </div> -->
 
                 <div class="approval-detail">
                   <small>الكراسات المطلوبة</small>
@@ -191,6 +191,16 @@
                 <div class="approval-detail">
                   <small>كراسات الاحتياطي</small>
                   <strong><i class="pi pi-bookmark"></i>{{ fmt(row.reserveBookletTotal) }}</strong>
+                </div>
+
+                <div class="approval-detail">
+                  <small>الأظرف المطلوبة</small>
+                  <strong><i class="pi pi-envelope"></i>{{ fmt(row.requiredEnvelopeTotal) }}</strong>
+                </div>
+
+                <div class="approval-detail">
+                  <small>أظرف الاحتياطي</small>
+                  <strong><i class="pi pi-inbox"></i>{{ fmt(row.reserveEnvelopeTotal) }}</strong>
                 </div>
               </div>
 
@@ -262,14 +272,14 @@
       <!-- ==========================================
            PAGINATION
       =========================================== -->
-      @if (filteredRows().length) {
+      @if (totalCount() > 0) {
         <div class="printing-pagination">
 
           <div class="pagination-info">
             <span class="pagination-info-icon"><i class="pi pi-list"></i></span>
             <span>
               عرض <strong>{{ paginationStart() }}–{{ paginationEnd() }}</strong>
-              من <strong>{{ filteredRows().length }}</strong> مادة
+              من <strong>{{ totalCount() }}</strong> مادة
             </span>
           </div>
 

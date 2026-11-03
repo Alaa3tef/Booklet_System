@@ -400,6 +400,31 @@
               </div>
 
               <div class="qc-scanner-body">
+                
+<div class="qc-manual-scan">
+  <label for="qc-manual-scan-input">
+    إدخال كود QR يدويًا
+  </label>
+
+  <span class="qc-search">
+    <i class="pi pi-keyboard"></i>
+
+    <input
+      id="qc-manual-scan-input"
+      pInputText
+      type="text"
+      class="qc-input"
+      placeholder="اكتبي كود الظرف واضغطي Enter..."
+      [ngModel]="manualScanCode()"
+      (ngModelChange)="manualScanCode.set($event)"
+      (keydown.enter)="$event.preventDefault(); submitManualScan()"
+      [disabled]="envelopesLoading() || completing() || allScanned()"
+      autocomplete="off"
+      dir="ltr"
+    />
+  </span>
+</div>
+
                 <p class="qc-station-hint">
                   <ng-container *ngIf="!allScanned(); else doneHint">
                     وجّه الماسح على QR الظرف، لا حاجة للكتابة أو الضغط على أي زر.
