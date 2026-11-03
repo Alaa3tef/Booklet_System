@@ -74,13 +74,13 @@ export class SidebarComponent implements OnInit {
     },
 
     // إدارة البيانات الأساسية (IT فقط)
-    // {
-      // label: 'إدارة البيانات الأساسية',
-      // icon: 'pi pi-database',
-      // expanded: false,
-      //     roles: ['it'],
+    {
+      label: 'إدارة البيانات الأساسية',
+      icon: 'pi pi-database',
+      expanded: false,
+          roles: ['it'],
 
-      // children: [
+      children: [
         {
           label: 'إدارة اللجان',
           icon: 'pi pi-circle-fill',
@@ -88,8 +88,8 @@ export class SidebarComponent implements OnInit {
 
         },
 
-      // ]
-    // },
+      ]
+    },
 
     {
       label: 'الإعداد',

@@ -64,7 +64,7 @@ export class CommitteeService {
       params = params.set('Ascending', query.ascending);
     }
 
-    return this.http.get<unknown>(`${this.baseUrl}/ProductionBatches/generated`, { params });
+    return this.http.get<unknown>(`${this.baseUrl}/ProductionBatches/generated-batches`, { params });
   }
   transferToPlanning(id: number): Observable<unknown> {
     return this.http.post(
