@@ -95,7 +95,7 @@ export class SidebarComponent implements OnInit {
       label: 'الإعداد',
       icon: 'pi pi-sliders-h',
       route: '/workflow/planning',
-      roles: ['projectmanagment' , 'superadmin']
+      roles: ['projectmanagment' , 'superadmin' , 'planning']
     },
 
     {

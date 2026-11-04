@@ -25,6 +25,8 @@ const workflowRouteByRole: Record<string, string> = {
   // 'project management': '/workflow/planning',
   // projectmanagement: '/workflow/planning',
   projectmanagment: '/workflow/planning',
+  planning: '/workflow/planning',
+
   printing: '/workflow/printing',
   // print: '/workflow/printing',
   quality: '/workflow/quality',
