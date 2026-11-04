@@ -80,6 +80,17 @@ export default class AuditLogsComponent implements OnInit, OnDestroy {
     this.showAdvanced = !this.showAdvanced;
   }
 
+  // يقصّ النص الطويل ويحط ... في الآخر
+truncate(text: string | null | undefined, max = 48): string {
+  const t = (text ?? '').trim();
+  return t.length > max ? t.slice(0, max).trimEnd() + '…' : t;
+}
+
+// يرجّع النص الكامل للاختيار الحالي (عشان الـ title بتاع الـ select نفسه)
+labelOf(list: any[] | null | undefined, idKey: string, id: any, labelKey = 'displayLabel'): string {
+  if (id === null || id === undefined || id === '') return '';
+  return list?.find(x => String(x[idKey]) === String(id))?.[labelKey] ?? '';
+}
   /** عدد الفلاتر المتقدمة المفعّلة (يظهر على الزر) */
   get advancedCount(): number {
     const v = this.form?.getRawValue();

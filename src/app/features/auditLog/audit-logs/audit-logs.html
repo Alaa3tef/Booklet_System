@@ -3,8 +3,19 @@
   <header class="page-header">
     <div class="title-block">
       <div class="title-icon">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+        <svg
+          width="22"
+          height="22"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <path
+            d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"
+          />
           <polyline points="14 2 14 8 20 8" />
           <line x1="8" y1="13" x2="16" y2="13" />
           <line x1="8" y1="17" x2="14" y2="17" />
@@ -18,7 +29,10 @@
 
     <div class="total-chip">
       <span>إجمالي السجلات</span>
-      <strong>{{ loading && totalCount === 0 ? '...' : (totalCount | number) }}</strong>
+      <strong
+        >{{ loading && totalCount === 0 ? '...' : (totalCount | number)
+        }}</strong
+      >
     </div>
   </header>
 
@@ -28,10 +42,23 @@
       <div class="field grow">
         <label>بحث</label>
         <div class="input-icon">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-            <circle cx="11" cy="11" r="7" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+          >
+            <circle cx="11" cy="11" r="7" />
+            <line x1="21" y1="21" x2="16.65" y2="16.65" />
           </svg>
-          <input type="text" formControlName="searchTerm" placeholder="ابحث في السجلات..." />
+          <input
+            type="text"
+            formControlName="searchTerm"
+            placeholder="ابحث في السجلات..."
+          />
         </div>
       </div>
 
@@ -48,7 +75,8 @@
         <select formControlName="userId">
           <option value="">الكل</option>
           <option *ngFor="let u of actors" [value]="u.userId">
-            {{ u.displayName || u.userName }}{{ u.isDeleted ? ' (محذوف)' : !u.isActive ? ' (غير نشط)' : '' }}
+            {{ u.displayName || u.userName }}{{ u.isDeleted ? ' (محذوف)' :
+            !u.isActive ? ' (غير نشط)' : '' }}
           </option>
         </select>
       </div>
@@ -68,25 +96,54 @@
     <div class="advanced" *ngIf="showAdvanced">
       <div class="field">
         <label>الدفعة</label>
-        <select formControlName="batchId">
+        <select
+          formControlName="batchId"
+          [title]="labelOf(batches, 'batchId', form.get('batchId')?.value)"
+        >
           <option value="">الكل</option>
-          <option *ngFor="let b of batches" [value]="b.batchId">{{ b.displayLabel }}</option>
+          <option
+            *ngFor="let b of batches"
+            [value]="b.batchId"
+            [title]="b.displayLabel"
+          >
+            {{ truncate(b.displayLabel) }}
+          </option>
         </select>
       </div>
 
       <div class="field">
         <label>اللجنة</label>
-        <select formControlName="committeeId">
-          <option value="">{{ form.get('batchId')?.value ? 'الكل' : 'اختاري الدفعة أولاً' }}</option>
-          <option *ngFor="let c of committees" [value]="c.committeeId">{{ c.displayLabel }}</option>
+        <select
+          formControlName="committeeId"
+          [title]="labelOf(committees, 'committeeId', form.get('committeeId')?.value)"
+        >
+          <option value="">
+            {{ form.get('batchId')?.value ? 'الكل' : 'اختاري الدفعة أولاً' }}
+          </option>
+          <option
+            *ngFor="let c of committees"
+            [value]="c.committeeId"
+            [title]="c.displayLabel"
+          >
+            {{ truncate(c.displayLabel) }}
+          </option>
         </select>
       </div>
 
       <div class="field">
         <label>أمر التوريد</label>
-        <select formControlName="deliveryOrderId">
+        <select
+          formControlName="deliveryOrderId"
+          [title]="labelOf(deliveryOrders, 'deliveryOrderId', form.get('deliveryOrderId')?.value)"
+        >
           <option value="">الكل</option>
-          <option *ngFor="let d of deliveryOrders" [value]="d.deliveryOrderId">{{ d.displayLabel }}</option>
+          <option
+            *ngFor="let d of deliveryOrders"
+            [value]="d.deliveryOrderId"
+            [title]="d.displayLabel"
+          >
+            {{ truncate(d.displayLabel) }}
+          </option>
         </select>
       </div>
 
@@ -106,8 +163,18 @@
 
     <div class="filters-actions">
       <button type="button" class="btn btn-ghost" (click)="toggleAdvanced()">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-          <line x1="4" y1="6" x2="20" y2="6" /><line x1="7" y1="12" x2="17" y2="12" /><line x1="10" y1="18" x2="14" y2="18" />
+        <svg
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+        >
+          <line x1="4" y1="6" x2="20" y2="6" />
+          <line x1="7" y1="12" x2="17" y2="12" />
+          <line x1="10" y1="18" x2="14" y2="18" />
         </svg>
         فلاتر متقدمة
         <span class="count" *ngIf="advancedCount > 0">{{ advancedCount }}</span>
@@ -115,10 +182,21 @@
 
       <div class="spacer"></div>
 
-      <button type="button" class="btn btn-outline" (click)="onReset()">إعادة تعيين</button>
+      <button type="button" class="btn btn-outline" (click)="onReset()">
+        إعادة تعيين
+      </button>
       <button type="submit" class="btn btn-primary">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-          <circle cx="11" cy="11" r="7" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
+        <svg
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+        >
+          <circle cx="11" cy="11" r="7" />
+          <line x1="21" y1="21" x2="16.65" y2="16.65" />
         </svg>
         بحث
       </button>
@@ -130,12 +208,17 @@
     <div class="table-toolbar">
       <div class="page-size">
         <span>عدد الصفوف</span>
-        <select [value]="pageSize" (change)="onPageSizeChange($any($event.target).value)">
+        <select
+          [value]="pageSize"
+          (change)="onPageSizeChange($any($event.target).value)"
+        >
           <option *ngFor="let s of pageSizeOptions" [value]="s">{{ s }}</option>
         </select>
       </div>
       <div class="toolbar-info">
-        <span *ngIf="totalCount > 0">عرض {{ fromItem }} - {{ toItem }} من {{ totalCount | number }}</span>
+        <span *ngIf="totalCount > 0"
+          >عرض {{ fromItem }} - {{ toItem }} من {{ totalCount | number }}</span
+        >
       </div>
     </div>
 
@@ -149,7 +232,7 @@
             <th>المستخدم</th>
             <th>التاريخ والوقت</th>
             <th class="col-summary">الملخص</th>
-            <th>المراجع</th>
+            <!-- <th>المراجع</th> -->
           </tr>
         </thead>
 
@@ -170,7 +253,7 @@
           <!-- Data -->
           <ng-container *ngIf="!loading">
             <tr *ngFor="let log of logs; trackBy: trackByIndex">
-              <td class="col-id muted">{{ log.id ?? '-' }}</td>
+              <td class="col-id muted">{{ log.id }}</td>
 
               <td>
                 <span class="badge" [ngClass]="actionClass(log.action)">
@@ -181,18 +264,27 @@
               <td>
                 <div class="entity">
                   <span class="entity-name">{{ log.entityName || '-' }}</span>
-                  <small class="muted" *ngIf="log.entityId">#{{ log.entityId }}</small>
+                  <small class="muted" *ngIf="log.entityId"
+                    >#{{ log.entityId }}</small
+                  >
                 </div>
               </td>
 
               <td>
                 <div class="user-cell">
-                  <span class="avatar">{{ (log.userFullName || log.userName || '?').charAt(0) }}</span>
+                  <span class="avatar"
+                    >{{ (log.userFullName || log.userName || '?').charAt(0)
+                    }}</span
+                  >
                   <div class="user-info">
-                    <span class="user-name">{{ log.userFullName || log.userName || '-' }}</span>
+                    <span class="user-name"
+                      >{{ log.userFullName || log.userName || '-' }}</span
+                    >
                     <small class="muted">
                       {{ log.userName }}
-                      <span class="deleted" *ngIf="log.isUserDeleted">• محذوف</span>
+                      <span class="deleted" *ngIf="log.isUserDeleted"
+                        >• محذوف</span
+                      >
                     </small>
                   </div>
                 </div>
@@ -200,25 +292,42 @@
 
               <td>
                 <div class="datetime">
-                  <span class="date ltr">{{ log.occurredAt | date: 'yyyy-MM-dd' }}</span>
-                  <small class="muted ltr">{{ log.occurredAt | date: 'HH:mm:ss' }}</small>
+                  <span class="date ltr"
+                    >{{ log.occurredAt | date: 'yyyy-MM-dd' }}</span
+                  >
+                  <small class="muted ltr"
+                    >{{ log.occurredAt | date: 'HH:mm:ss' }}</small
+                  >
                 </div>
               </td>
 
               <td class="col-summary">
-                <p class="summary" [title]="log.summary || ''">{{ log.summary || '-' }}</p>
+                <p class="summary" [title]="log.summary || ''">
+                  {{ log.summary || '-' }}
+                </p>
               </td>
 
-              <td>
+              <!-- <td>
                 <div class="chips">
-                  <span class="chip" *ngIf="log.batchId != null">دفعة {{ log.batchId }}</span>
-                  <span class="chip" *ngIf="log.committeeId != null">لجنة {{ log.committeeId }}</span>
-                  <span class="chip" *ngIf="log.boxId != null">صندوق {{ log.boxId }}</span>
-                  <span class="chip" *ngIf="log.deliveryOrderId != null">أمر توريد {{ log.deliveryOrderId }}</span>
-                  <span class="muted"
-                        *ngIf="log.batchId == null && log.committeeId == null && log.boxId == null && log.deliveryOrderId == null">-</span>
+                  <span class="chip" *ngIf="log.batchId != null"
+                    >دفعة {{ log.batchId }}</span
+                  >
+                  <span class="chip" *ngIf="log.committeeId != null"
+                    >لجنة {{ log.committeeId }}</span
+                  >
+                  <span class="chip" *ngIf="log.boxId != null"
+                    >صندوق {{ log.boxId }}</span
+                  >
+                  <span class="chip" *ngIf="log.deliveryOrderId != null"
+                    >أمر توريد {{ log.deliveryOrderId }}</span
+                  >
+                  <span
+                    class="muted"
+                    *ngIf="log.batchId == null && log.committeeId == null && log.boxId == null && log.deliveryOrderId == null"
+                    >-</span
+                  >
                 </div>
-              </td>
+              </td> -->
             </tr>
           </ng-container>
         </tbody>
@@ -227,9 +336,20 @@
       <!-- Empty -->
       <div class="empty-state" *ngIf="!loading && logs.length === 0">
         <div class="empty-icon">
-          <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+          <svg
+            width="34"
+            height="34"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.6"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
             <path d="M22 12h-6l-2 3h-4l-2-3H2" />
-            <path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z" />
+            <path
+              d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"
+            />
           </svg>
         </div>
         <h4>{{ errorMsg ? 'حدث خطأ' : 'لا توجد سجلات' }}</h4>
@@ -241,20 +361,54 @@
     <div class="pagination-bar" dir="rtl" *ngIf="totalCount > 0">
       <div class="pager" dir="rtl">
         <!-- الأولى -->
-        <button class="page-btn" (click)="goToPage(1)" [disabled]="!hasPreviousPage" title="الأولى">«</button>
-       <!-- التالية -->
-        <button class="page-btn" (click)="goToPage(pageNumber - 1)" [disabled]="!hasPreviousPage" title="السابقة">‹</button>
+        <button
+          class="page-btn"
+          (click)="goToPage(1)"
+          [disabled]="!hasPreviousPage"
+          title="الأولى"
+        >
+          «
+        </button>
+        <!-- التالية -->
+        <button
+          class="page-btn"
+          (click)="goToPage(pageNumber - 1)"
+          [disabled]="!hasPreviousPage"
+          title="السابقة"
+        >
+          ‹
+        </button>
 
         <ng-container *ngFor="let p of pages">
           <span *ngIf="p === '...'" class="dots">…</span>
-          <button *ngIf="p !== '...'" class="page-btn" [class.active]="p === pageNumber"
-                  (click)="goToPage($any(p))">{{ p }}</button>
+          <button
+            *ngIf="p !== '...'"
+            class="page-btn"
+            [class.active]="p === pageNumber"
+            (click)="goToPage($any(p))"
+          >
+            {{ p }}
+          </button>
         </ng-container>
 
-       <!-- السابقة -->
-        <button class="page-btn" (click)="goToPage(pageNumber + 1)" [disabled]="!hasNextPage" title="التالية">›</button>
+        <!-- السابقة -->
+        <button
+          class="page-btn"
+          (click)="goToPage(pageNumber + 1)"
+          [disabled]="!hasNextPage"
+          title="التالية"
+        >
+          ›
+        </button>
         <!-- الأخيرة -->
-        <button class="page-btn" (click)="goToPage(totalPages)" [disabled]="!hasNextPage" title="الأخيرة">»</button>
+        <button
+          class="page-btn"
+          (click)="goToPage(totalPages)"
+          [disabled]="!hasNextPage"
+          title="الأخيرة"
+        >
+          »
+        </button>
       </div>
 
       <div class="info">صفحة {{ pageNumber }} من {{ totalPages }}</div>
