@@ -209,8 +209,8 @@ readonly visibleNavItems = computed(() => {
     // Dashboard is restricted to system administrators and top management.
     if (item.route === '/dashboard') {
       return [
-        'superadmin', 'super admin', 'it',
-        'مسؤول النظام it', 'مدير النظام it',
+        'superadmin',
+        // 'مسؤول النظام it', 'مدير النظام it',
         'top', 'top management', 'topmanagment'
       ]
         .includes(currentRole);
