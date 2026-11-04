@@ -146,6 +146,12 @@ export class SidebarComponent implements OnInit {
       roles: [ 'superadmin']
     },
     {
+      label: 'سجل المراجعة',
+      icon: 'pi pi-database',
+      route: '/auditLog',
+      roles: [ 'superadmin']
+    },
+    {
       label: 'إدارة المخازن والتخزين',
       icon: 'pi pi-building',
       expanded: false,
