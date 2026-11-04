@@ -4,9 +4,9 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { AppConfigService } from '../../../shared/services/app-config.service';
 
-// ===============================
+// ==========================================
 // Models
-// ===============================
+// ==========================================
 
 export interface EduStageCommitteeType {
   id: number;
@@ -27,12 +27,21 @@ export interface EduStageCommitteeType {
 }
 
 export interface EduStageCommitteeTypeRequest {
-  educationalStageId: number;
-  committeeTypeId: number;
+  educationalStageId?: number;
+  committeeTypeId?: number;
   bonusType: number;
   bonus: number;
   bookletsPerEnvelope: number;
   envelopesPerBox: number;
+}
+
+export interface EducationalStageLookup {
+  id: number;
+  code: string;
+  name: string;
+  scope: string;
+  isActive: boolean;
+  dateCreated?: string;
 }
 
 export interface CommitteeTypeLookup {
@@ -64,9 +73,9 @@ export interface ApiResponse<T> {
   errors?: string[];
 }
 
-// ===============================
+// ==========================================
 // Service
-// ===============================
+// ==========================================
 
 @Injectable({
   providedIn: 'root'
@@ -74,13 +83,14 @@ export interface ApiResponse<T> {
 export class EduStageCommitteeTypesService {
 
   private http = inject(HttpClient);
- private readonly appConfig = inject(AppConfigService);
+  private readonly appConfig = inject(AppConfigService);
   private readonly apiUrl = `${this.appConfig.baseURL}api/EduStageCommitteeTypes`;
+  private readonly educationalStagesUrl = `${this.appConfig.baseURL}api/EducationalStages`;
   private readonly committeeTypesUrl = `${this.appConfig.baseURL}api/CommitteeTypes`;
 
-  // =================================
-  // GET ALL
-  // =================================
+  // ==========================================
+  // GET ALL EDU STAGE COMMITTEE TYPES
+  // ==========================================
 
   getAll(
     pageNumber: number = 1,
@@ -134,9 +144,9 @@ export class EduStageCommitteeTypesService {
     );
   }
 
-  // =================================
+  // ==========================================
   // GET BY ID
-  // =================================
+  // ==========================================
 
   getById(
     id: number
@@ -147,10 +157,9 @@ export class EduStageCommitteeTypesService {
     );
   }
 
-  // =================================
-  // CREATE / UPDATE
-  // Same POST endpoint
-  // =================================
+  // ==========================================
+  // POST - CREATE / UPDATE
+  // ==========================================
 
   save(
     request: EduStageCommitteeTypeRequest
@@ -162,20 +171,61 @@ export class EduStageCommitteeTypesService {
     );
   }
 
-  // =================================
-  // GET COMMITTEE TYPES LOOKUP
-  // =================================
+  // ==========================================
+  // GET EDUCATIONAL STAGES
+  // ==========================================
+
+  getEducationalStages(): Observable<ApiResponse<PagedData<EducationalStageLookup>>> {
+
+    const params = new HttpParams()
+      .set('PageNumber', 1)
+      .set('PageSize', 1000)
+      .set('IsPaged', false)
+      .set('Ascending', true);
+
+    return this.http.get<ApiResponse<PagedData<EducationalStageLookup>>>(
+      this.educationalStagesUrl,
+      { params }
+    );
+  }
+
+  // ==========================================
+  // GET COMMITTEE TYPES
+  // ==========================================
 
   getCommitteeTypes(): Observable<ApiResponse<PagedData<CommitteeTypeLookup>>> {
 
     const params = new HttpParams()
       .set('PageNumber', 1)
-      .set('PageSize', 100)
-      .set('IsPaged', true)
+      .set('PageSize', 1000)
+      .set('IsPaged', false)
       .set('Ascending', true);
 
     return this.http.get<ApiResponse<PagedData<CommitteeTypeLookup>>>(
       this.committeeTypesUrl,
+      { params }
+    );
+  }
+
+  // ==========================================
+  // CHECK EXISTING COMBINATION
+  // ==========================================
+
+  checkExistingCombination(
+    educationalStageId: number,
+    committeeTypeId: number
+  ): Observable<ApiResponse<PagedData<EduStageCommitteeType>>> {
+
+    const params = new HttpParams()
+      .set('EducationalStageId', educationalStageId)
+      .set('CommitteeTypeId', committeeTypeId)
+      .set('PageNumber', 1)
+      .set('PageSize', 10)
+      .set('IsPaged', true)
+      .set('Ascending', true);
+
+    return this.http.get<ApiResponse<PagedData<EduStageCommitteeType>>>(
+      this.apiUrl,
       { params }
     );
   }
