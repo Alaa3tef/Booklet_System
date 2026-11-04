@@ -537,7 +537,7 @@ export default class CommitteeSetupComponent implements OnInit, OnDestroy {
       this.resetFile();
 
       this.saveError.set(
-        'صيغة الملف غير مدعومة. اختاري ملف Excel بصيغة XLS أو XLSX.'
+        'صيغة الملف غير مدعومة. اختر ملف Excel بصيغة XLS أو XLSX.'
       );
 
       this.toast.add({

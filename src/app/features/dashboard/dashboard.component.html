@@ -30,7 +30,7 @@
               [disabled]="lookupsLoading()"
             >
               <option value="" [selected]="!draft().stage">
-                اختاري المرحلة
+                اختر المرحلة
               </option>
               @for (s of stages(); track s.id) {
                 <option [value]="s.id" [selected]="'' + s.id === draft().stage">
@@ -43,7 +43,7 @@
             ><small><span class="step">2</span>السنة</small>
             <!-- السنوات من API /api/Lookups/years -->
             <select (change)="setYear($any($event.target).value)" [disabled]="lookupsLoading()">
-              <option value="" [selected]="!draft().year">اختاري السنة</option>
+              <option value="" [selected]="!draft().year">اختر السنة</option>
               @for (y of yearOptions(); track y.value) {
                 <option
                   [value]="y.value"
@@ -61,7 +61,7 @@
               [disabled]="!draft().stage"
             >
               <option value="" [selected]="!draft().round">
-                {{ draft().stage ? "اختاري الدور" : "اختاري المرحلة أولًا" }}
+                {{ draft().stage ? "اختر الدور" : "اختر المرحلة أولًا" }}
               </option>
               @for (r of roundOptions(); track r.id) {
                 <option [value]="r.id" [selected]="'' + r.id === draft().round">
@@ -196,10 +196,9 @@
       @if (!ctx()) {
         <div class="state">
           <i class="pi pi-sliders-h"></i
-          ><strong>اختاري المرحلة والسنة والدور</strong
+          ><strong>اختر المرحلة والسنة والدور</strong
           ><span
-            >بعدها هتظهر البيانات، وتقدري تفلتري بالمحافظة والمادة
-            (اختياري).</span
+            >بعد ذلك، ستظهر البيانات، ويمكنك تصفيتها حسب المحافظة والمادة (اختياريًا).</span
           >
         </div>
       } @else {
@@ -463,7 +462,7 @@
                   progress;
                   context: {
                     title: 'المحافظات',
-                    hint: 'اختاري محافظة لعرض موادها ونسب إنجازها.',
+                    hint: 'اختر محافظة لعرض موادها ونسب إنجازها.',
                     icon: 'pi-map-marker',
                     unit: 'محافظة',
                     cta: 'عرض المواد',
@@ -477,7 +476,7 @@
                   progress;
                   context: {
                     title: 'المواد',
-                    hint: 'اختاري مادة لعرض نسبة التخزين في كل محافظة.',
+                    hint: 'اختر مادة لعرض نسبة التخزين في كل محافظة.',
                     icon: 'pi-book',
                     unit: 'مادة',
                     cta: 'عرض المحافظات',
@@ -491,7 +490,7 @@
                   progress;
                   context: {
                     title: gov()?.name,
-                    hint: 'مواد المحافظة ونسبة إنجاز كل مرحلة — اختاري صف لعرض لجانه.',
+                    hint: 'مواد المحافظة ونسبة إنجاز كل مرحلة — اختر صف لعرض لجانه.',
                     icon: 'pi-book',
                     unit: 'مادة',
                     cta: 'عرض اللجان',
@@ -505,7 +504,7 @@
                   progress;
                   context: {
                     title: subj()?.name,
-                    hint: 'نسبة التخزين في كل محافظة — اختاري صف لعرض لجانه.',
+                    hint: 'نسبة التخزين في كل محافظة — اختر صف لعرض لجانه.',
                     icon: 'pi-map-marker',
                     unit: 'محافظة',
                     cta: 'عرض اللجان',
@@ -524,7 +523,7 @@
                     @if (header()?.batchStatusName) {
                       · {{ header()?.batchStatusName }}
                     }
-                    — اختاري لجنة لعرض صناديقها.
+                    — اختر لجنة لعرض صناديقها.
                   </p>
                 </div>
                 <div class="head-tiles">
@@ -553,7 +552,7 @@
               <header class="lvl-head">
                 <div>
                   <h2>بحث عن لجنة</h2>
-                  <p>اكتبي رقم اللجنة أو اختاري حالة لتصفية النتائج.</p>
+                  <p>اكتبي رقم اللجنة أو اختر حالة لتصفية النتائج.</p>
                 </div>
                 <div class="count-tile">
                   <span class="count-ico"><i class="pi pi-users"></i></span

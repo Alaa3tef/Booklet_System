@@ -58,10 +58,10 @@
         <span class="idle-ico"><i class="pi pi-qrcode"></i></span>
         <div class="idle-txt">
           <b>الماسح شغّال</b>
-          <small>امسحي أي رف أو صندوق لمعرفة محتواه، أو اختاري لجنة لبدء السكان.</small>
+          <small>امسح أي رف أو صندوق لمعرفة محتواه، أو اختر لجنة لبدء السكان.</small>
         </div>
         @if (lastRead()) { <code class="idle-last">{{ lastRead() }}</code> }
-        <input #manual data-no-scan class="idle-input" type="text" autocomplete="off" placeholder="أو اكتبي الكود + Enter" (keydown.enter)="manualScan(manual)" />
+        <input #manual data-no-scan class="idle-input" type="text" autocomplete="off" placeholder="أو اكتب الكود + Enter" (keydown.enter)="manualScan(manual)" />
       </div>
     } -->
 
@@ -100,7 +100,7 @@
       } @else if (arLevel() === 'batch') {
 
         <header class="lvl-head">
-          <div><h2>الدفعات</h2><p>الدفعات المغلّفة — اختاري دفعة لعرض لجانها وبدء التخزين.</p></div>
+          <div><h2>الدفعات</h2><p>الدفعات المغلّفة — اختر دفعة لعرض لجانها وبدء التخزين.</p></div>
           <div class="count-tile"><span class="count-ico"><i class="pi pi-box"></i></span><b>{{ pg().total }}</b><small>دفعة</small></div>
         </header>
         <div class="pcards" [class.busy]="arLoading()">
@@ -124,7 +124,7 @@
       } @else {
 
         <header class="lvl-head">
-          <div><h2>{{ arBatch()?.governorateName }}</h2><p>{{ arBatch()?.subjectName }} · {{ arBatch()?.roundName }} — اختاري اللجنة لبدء التخزين.</p></div>
+          <div><h2>{{ arBatch()?.governorateName }}</h2><p>{{ arBatch()?.subjectName }} · {{ arBatch()?.roundName }} — اختر اللجنة لبدء التخزين.</p></div>
           <div class="count-tile"><span class="count-ico"><i class="pi pi-users"></i></span><b>{{ pg().total }}</b><small>لجنة</small></div>
         </header>
         <div class="pcards" [class.busy]="arLoading()">
@@ -160,7 +160,7 @@
       } @else if (whLevel() === 'gov') {
 
         <header class="lvl-head">
-          <div><h2>المحافظات</h2><p>المحافظات اللي ليها أوامر توريد — اختاري محافظة لعرض موادها.</p></div>
+          <div><h2>المحافظات</h2><p>المحافظات اللي ليها أوامر توريد — اختر محافظة لعرض موادها.</p></div>
           <div class="count-tile"><span class="count-ico"><i class="pi pi-map-marker"></i></span><b>{{ whGovernorates().length }}</b><small>محافظة</small></div>
         </header>
         <div class="pcards" [class.busy]="whLoading()">
@@ -184,7 +184,7 @@
       } @else if (whLevel() === 'order') {
 
         <header class="lvl-head">
-          <div><h2>مواد {{ whGov() }}</h2><p>اختاري المادة لعرض لجانها.</p></div>
+          <div><h2>مواد {{ whGov() }}</h2><p>اختر المادة لعرض لجانها.</p></div>
           <div class="count-tile"><span class="count-ico"><i class="pi pi-book"></i></span><b>{{ whOrders().length }}</b><small>مادة</small></div>
         </header>
         <div class="pcards" [class.busy]="whLoading()">
@@ -208,7 +208,7 @@
       } @else if (whLevel() === 'batch') {
 
         <header class="lvl-head">
-          <div><h2>دفعات {{ orderTitle(whSelectedOrder()) }}</h2><p>اختاري الدفعة لعرض لجانها.</p></div>
+          <div><h2>دفعات {{ orderTitle(whSelectedOrder()) }}</h2><p>اختر الدفعة لعرض لجانها.</p></div>
           <div class="count-tile"><span class="count-ico"><i class="pi pi-box"></i></span><b>{{ whBatches().length }}</b><small>دفعة</small></div>
         </header>
         <div class="pcards" [class.busy]="whLoading()">
@@ -232,7 +232,7 @@
       } @else {
 
         <header class="lvl-head">
-          <div><h2>{{ orderTitle(whSelectedOrder()) }}</h2><p>{{ whGov() }} — اختاري اللجنة لبدء التسليم.</p></div>
+          <div><h2>{{ orderTitle(whSelectedOrder()) }}</h2><p>{{ whGov() }} — اختر اللجنة لبدء التسليم.</p></div>
           <div class="count-tile"><span class="count-ico"><i class="pi pi-users"></i></span><b>{{ whCommittees().length }}</b><small>لجنة</small></div>
         </header>
         <div class="pcards" [class.busy]="whLoading()">
@@ -310,64 +310,64 @@
               <h4><i class="pi pi-qrcode"></i> قارئ الباركود</h4>
               <span class="scanner-chip" [class.busy]="busy()"><i></i> {{ busy() ? 'جاري المعالجة…' : 'جاهز للمسح' }}</span>
             </header>
-        <div
-  class="scanner-zone"
-  [class.feedback-ok]="feedback()?.kind === 'ok'"
-  [class.feedback-err]="feedback()?.kind === 'err'"
-  [class.feedback-warn]="feedback()?.kind === 'warn'"
-  [attr.aria-live]="feedback() ? 'assertive' : 'polite'"
-  aria-atomic="true"
->
-  <span class="scanner-box" aria-hidden="true">
-    @if (feedback()?.kind === 'ok') {
-      <i class="pi pi-check-circle"></i>
-    } @else if (feedback()?.kind === 'err') {
-      <i class="pi pi-times-circle"></i>
-    } @else if (feedback()?.kind === 'warn') {
-      <i class="pi pi-exclamation-triangle"></i>
-    } @else {
-      <i class="pi pi-qrcode"></i>
-      <span class="scanner-line"></span>
-    }
-  </span>
+            <div
+              class="scanner-zone"
+              [class.feedback-ok]="feedback()?.kind === 'ok'"
+              [class.feedback-err]="feedback()?.kind === 'err'"
+              [class.feedback-warn]="feedback()?.kind === 'warn'"
+              [attr.aria-live]="feedback() ? 'assertive' : 'polite'"
+              aria-atomic="true"
+            >
+              <span class="scanner-box" aria-hidden="true">
+                @if (feedback()?.kind === 'ok') {
+                  <i class="pi pi-check-circle"></i>
+                } @else if (feedback()?.kind === 'err') {
+                  <i class="pi pi-times-circle"></i>
+                } @else if (feedback()?.kind === 'warn') {
+                  <i class="pi pi-exclamation-triangle"></i>
+                } @else {
+                  <i class="pi pi-qrcode"></i>
+                  <span class="scanner-line"></span>
+                }
+              </span>
 
-  <div class="scanner-txt">
-    @if (feedback(); as f) {
-      <b class="scanner-feedback" [attr.data-kind]="f.kind">
-        {{ f.text }}
-      </b>
+              <div class="scanner-txt">
+                @if (feedback(); as f) {
+                  <b class="scanner-feedback" [attr.data-kind]="f.kind">
+                    {{ f.text }}
+                  </b>
 
-      <small>
-        القراءة الأخيرة:
-        <code>{{ lastRead() }}</code>
-      </small>
+                  <small>
+                    القراءة الأخيرة:
+                    <code>{{ lastRead() }}</code>
+                  </small>
 
-    } @else if (tab() === 'archive') {
+                } @else if (tab() === 'archive') {
 
-      <b>
-        {{ arStep() === 1
-          ? 'وجّهي القارئ نحو الصندوق'
-          : 'وجّهي القارئ نحو الرف' }}
-      </b>
+                  <b>
+                    {{ arStep() === 1
+                      ? 'وجّه القارئ نحو الصندوق'
+                      : 'وجّه القارئ نحو الرف' }}
+                  </b>
 
-      <small>
-        {{ arStep() === 1
-          ? 'الجلسة مفتوحة تلقائيًا — امسحي كود الصندوق.'
-          : 'امسحي كود الرف لتأكيد مكان تخزين الصندوق ' + pendingBox() }}
-      </small>
+                  <small>
+                    {{ arStep() === 1
+                      ? 'الجلسة مفتوحة تلقائيًا — امسح كود الصندوق.'
+                      : 'امسح كود الرف لتأكيد مكان تخزين الصندوق ' + pendingBox() }}
+                  </small>
 
-    } @else {
+                } @else {
 
-      <b>تم مسح {{ whScannedCount() }} من {{ whExpectedScanCount() }} صندوق</b>
+                  <b>تم مسح {{ whScannedCount() }} من {{ whExpectedScanCount() }} صندوق</b>
 
-      <small>
-        امسحي الصناديق، وبعدها اضغطي «تسليم» لإرسال القائمة مرة واحدة.
-      </small>
+                  <small>
+                    امسح الصناديق، وبعدها اضغط «تسليم» لإرسال القائمة مرة واحدة.
+                  </small>
 
-    }
-  </div>
-</div>
-            <input #manualS data-no-scan class="scanner-input" type="text" autocomplete="off" placeholder="أو اكتبي كود QR واضغطي Enter…" (keydown.enter)="manualScan(manualS)" />
+                }
+              </div>
+            </div>
+            <input #manualS data-no-scan class="scanner-input" type="text" autocomplete="off" placeholder="أو اكتب كود QR واضغط Enter…" (keydown.enter)="manualScan(manualS)" />
           </section>
 
           @if (tab() === 'archive') {
@@ -418,40 +418,40 @@
               <article class="bcard" [attr.data-state]="b.state">
                 <header><span class="bcard-kind">صندوق</span><span class="bcard-no">{{ b.seq }}</span></header>
                 <div class="bcard-mid">
-                 <span class="bcard-ico">
-  <i
-    class="pi"
-    [ngClass]="
-      b.state === 'done' || b.state === 'scanned'
-        ? 'pi-check-circle'
-        : 'pi-box'
-    "
-  ></i>
-</span>
+                  <span class="bcard-ico">
+                    <i
+                      class="pi"
+                      [ngClass]="
+                        b.state === 'done' || b.state === 'scanned'
+                          ? 'pi-check-circle'
+                          : 'pi-box'
+                      "
+                    ></i>
+                  </span>
                   <div><small>رقم الصندوق</small><b>{{ b.seq | number: '3.0-0' }}</b></div>
                 </div>
                 <code class="bcard-code">{{ b.code }}</code>
                 <footer>
-                 <span class="bcard-pill">
+                  <span class="bcard-pill">
 
-  @if (b.state === 'done') {
-    <i class="pi pi-check-circle"></i>
-    {{ tab() === 'archive' ? 'تم التخزين' : 'تم التسليم' }}
+                    @if (b.state === 'done') {
+                      <i class="pi pi-check-circle"></i>
+                      {{ tab() === 'archive' ? 'تم التخزين' : 'تم التسليم' }}
 
-  } @else if (b.state === 'scanned') {
-    <i class="pi pi-check-circle"></i>
-    تمت القراءة بنجاح
+                    } @else if (b.state === 'scanned') {
+                      <i class="pi pi-check-circle"></i>
+                      تمت القراءة بنجاح
 
-  } @else if (b.state === 'pending') {
-    <i class="pi pi-clock"></i>
-    {{ tab() === 'archive' ? 'في انتظار الرف' : 'في انتظار الإرسال' }}
+                    } @else if (b.state === 'pending') {
+                      <i class="pi pi-clock"></i>
+                      {{ tab() === 'archive' ? 'في انتظار الرف' : 'في انتظار الإرسال' }}
 
-  } @else {
-    <i class="pi pi-clock"></i>
-    في انتظار المسح
-  }
+                    } @else {
+                      <i class="pi pi-clock"></i>
+                      في انتظار المسح
+                    }
 
-</span>
+                  </span>
                   @if (b.note) { <small class="bcard-note">{{ b.note }}</small> }
                 </footer>
               </article>
@@ -464,9 +464,9 @@
         <div class="ses-foot">
           <button type="button" class="ses-close" (click)="closeSession()">إغلاق</button>
           <span class="ses-note"><i class="pi pi-info-circle"></i>
-            @if (tab() === 'archive') { امسحي الصندوق ثم الرف، وبعد آخر صندوق اضغطي «تأكيد تخزين اللجنة» (متبقي {{ sessionStats().remaining }}) }
+            @if (tab() === 'archive') { امسح الصندوق ثم الرف، وبعد آخر صندوق اضغط «تأكيد تخزين اللجنة» (متبقي {{ sessionStats().remaining }}) }
             @else {
-              امسحي الصناديق ثم اضغطي «تسليم» لإرسال القايمة كلها
+              امسح الصناديق ثم اضغط «تسليم» لإرسال القايمة كلها
               (تم مسح {{ whScannedCount() }} من {{ whExpectedScanCount() }})
             }
           </span>

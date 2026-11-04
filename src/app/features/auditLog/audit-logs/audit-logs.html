@@ -118,7 +118,7 @@
           [title]="labelOf(committees, 'committeeId', form.get('committeeId')?.value)"
         >
           <option value="">
-            {{ form.get('batchId')?.value ? 'الكل' : 'اختاري الدفعة أولاً' }}
+            {{ form.get('batchId')?.value ? 'الكل' : 'اختر الدفعة أولاً' }}
           </option>
           <option
             *ngFor="let c of committees"
