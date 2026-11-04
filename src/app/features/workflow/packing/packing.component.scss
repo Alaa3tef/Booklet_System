@@ -1,5 +1,5 @@
 @use '../../../shared/styles/workflow-panel';
-
+@use "sass:color";
 // الـ component بيستخدم ViewEncapsulation.None، فكل الـ classes عليها prefix "pk-"
 
 .pk,
@@ -104,7 +104,7 @@
       background: $color !important;
       color: #fff !important;
 
-      &:hover:not(:disabled) { background: darken($color, 6%) !important; }
+&:hover:not(:disabled) { background: color.adjust($color, $lightness: -6%) !important; }
     }
   }
 
