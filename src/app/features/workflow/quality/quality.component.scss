@@ -1,5 +1,5 @@
 // الـ component بيستخدم ViewEncapsulation.None، فكل الـ classes عليها prefix "qc-"
-
+@use "sass:color";
 .qc,
 .qc-dlg {
   --navy: var(--ebs-navy, #0b2e4f);
@@ -97,7 +97,7 @@
       background: $color !important;
       color: #fff !important;
 
-      &:hover:not(:disabled) { background: darken($color, 6%) !important; }
+     &:hover:not(:disabled) { background: color.adjust($color, $lightness: -6%) !important; }
     }
   }
 

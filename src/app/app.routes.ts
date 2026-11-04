@@ -89,6 +89,12 @@ export const routes: Routes = [
         data: { breadcrumb: ' أنواع اللجان' }
       },
       {
+        path: 'auditLog',
+        loadComponent: () =>
+          import('./features/auditLog/audit-logs/audit-logs'),
+        data: { breadcrumb: ' أنواع اللجان' }
+      },
+      {
         path: 'workflow/planning',
         loadComponent: () =>
           import('./features/workflow/planning/planning.component'),

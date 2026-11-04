@@ -70,7 +70,7 @@ export class SidebarComponent implements OnInit {
       label: 'الرئيسية',
       icon: 'pi pi-home',
       route: '/dashboard',
-      roles: ['Top',  'superadmin', 'it']
+      roles: ['Top',  'superadmin']
     },
 
     // إدارة البيانات الأساسية (IT فقط)
@@ -78,7 +78,7 @@ export class SidebarComponent implements OnInit {
       label: 'إدارة البيانات الأساسية',
       icon: 'pi pi-database',
       expanded: false,
-          roles: ['it'],
+      roles: ['it'],
 
       children: [
         {
@@ -143,6 +143,12 @@ export class SidebarComponent implements OnInit {
       label: 'انواع لجان المرحلة التعليمية',
       icon: 'pi pi-database',
       route: '/educationalStageCommitteType',
+      roles: [ 'superadmin']
+    },
+    {
+      label: 'سجل المراجعة',
+      icon: 'pi pi-database',
+      route: '/auditLog',
       roles: [ 'superadmin']
     },
     {

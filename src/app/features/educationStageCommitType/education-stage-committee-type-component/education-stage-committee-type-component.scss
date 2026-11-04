@@ -904,3 +904,63 @@
     grid-template-columns: 1fr;
   }
 }
+
+
+/* ==========================================
+   EDIT REFERENCE - READ ONLY
+========================================== */
+
+.edit-reference-section {
+  background: #f8fafc;
+  border: 1px solid #dbe5ef;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 20px;
+}
+
+.edit-reference-header {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  color: #173b60;
+  font-size: 13px;
+  font-weight: 700;
+  margin-bottom: 16px;
+
+  i {
+    color: #64748b;
+    font-size: 16px;
+  }
+}
+
+.readonly-field {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 43px;
+  padding: 10px 12px;
+  background: #edf2f7;
+  border: 1px solid #d8e0e9;
+  border-radius: 8px;
+  color: #334155;
+  cursor: not-allowed;
+
+  > i {
+    color: #64748b;
+  }
+
+  > span {
+    font-weight: 600;
+    flex: 1;
+  }
+
+  > small {
+    color: #64748b;
+    font-size: 11px;
+    direction: ltr;
+  }
+}
+
+.edit-reference-section .form-grid {
+  margin-bottom: 0;
+}

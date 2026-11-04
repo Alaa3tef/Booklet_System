@@ -12,8 +12,8 @@ const normalizeRole = (role: string | null | undefined): string =>
   (role ?? '').trim().toLowerCase().replace(/[\s_-]+/g, ' ');
 
 const dashboardRoles = new Set([
-  'superadmin', 'it',
-  'مسؤول النظام it', 'مدير النظام it',
+  'superadmin',
+  // 'مسؤول النظام it', 'مدير النظام it',
   'top', 'top management', 'topmanagment'
 ]);
 
@@ -26,6 +26,7 @@ const workflowRouteByRole: Record<string, string> = {
   // projectmanagement: '/workflow/planning',
   projectmanagment: '/workflow/planning',
   planning: '/workflow/planning',
+  it: '/committees/setup',
 
   printing: '/workflow/printing',
   // print: '/workflow/printing',

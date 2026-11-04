@@ -14,299 +14,1046 @@
   resultText="الأرقام لحظية وبتتحدث بزرار التحديث"
 >
   <div panel-content class="flow">
-
     @if (forbidden()) {
-      <div class="state state--err"><strong>ليس لديك صلاحية</strong><span>هذه الصفحة متاحة لـ TopManagment و SuperAdmin فقط.</span></div>
-    } @else {
-
-    <!-- ============ الفلاتر: المرحلة ← السنة ← الدور ============ -->
-    <section class="ctx">
-      <div class="row">
-        <label class="f"><small><span class="step">1</span>المرحلة التعليمية</small>
-          <select (change)="setStage($any($event.target).value)" [disabled]="lookupsLoading()">
-            <option value="" [selected]="!draft().stage">اختاري المرحلة</option>
-            @for (s of stages(); track s.id) { <option [value]="s.id" [selected]="'' + s.id === draft().stage">{{ s.name }}</option> }
-          </select></label>
-        <label class="f"><small><span class="step">2</span>السنة</small>
-          <select (change)="setYear($any($event.target).value)">
-            <option value="" [selected]="!draft().year">اختاري السنة</option>
-            @for (y of yearOptions; track y.value) { <option [value]="y.value" [selected]="'' + y.value === draft().year">{{ y.label }}</option> }
-          </select></label>
-        <label class="f"><small><span class="step">3</span>الدور</small>
-          <select (change)="setRound($any($event.target).value)" [disabled]="!draft().stage">
-            <option value="" [selected]="!draft().round">{{ draft().stage ? 'اختاري الدور' : 'اختاري المرحلة أولًا' }}</option>
-            @for (r of roundOptions(); track r.id) { <option [value]="r.id" [selected]="'' + r.id === draft().round">{{ r.name }}</option> }
-          </select></label>
-        <button type="button" class="btn solid" [disabled]="!ctxValid() || loading()" (click)="applyContext()"><i class="pi pi-check"></i> عرض البيانات</button>
-        <span class="spacer"></span>
-        @if (asOf(); as a) { <span class="asof"><i class="pi pi-clock"></i> الأرقام وقت: <b>{{ a | date: 'hh:mm:ss a' }}</b></span> }
-        <button type="button" class="btn ghost icon" aria-label="تحديث" [disabled]="!ctx() || loading()" (click)="refresh()"><i class="pi pi-refresh" [class.pi-spin]="loading()"></i></button>
+      <div class="state state--err">
+        <strong>ليس لديك صلاحية</strong
+        ><span>هذه الصفحة متاحة لـ TopManagment و SuperAdmin فقط.</span>
       </div>
-      @if (lookupsError(); as le) {
-        <div class="inline-err"><i class="pi pi-exclamation-triangle"></i> {{ le }} <button type="button" (click)="loadLookups()">إعادة المحاولة</button></div>
-      }
-
-      <!-- ============ الفلاتر الاختيارية: المحافظة / المادة ============ -->
-      @if (showGlobalFilters()) {
-        <div class="row adv">
-          <label class="f"><small>المحافظة (اختياري)</small>
-            <select (change)="setFilterGov($any($event.target).value)">
-              <option value="" [selected]="!filterGov()">كل المحافظات</option>
-              @for (g of govOptions(); track g.id) { <option [value]="g.id" [selected]="'' + g.id === filterGov()">{{ g.name }}</option> }
-            </select></label>
-          @if (showSubjectFilter()) {
-            <label class="f"><small>المادة (اختياري)</small>
-              <select (change)="setFilterSubject($any($event.target).value)">
-                <option value="" [selected]="!filterSubject()">كل المواد</option>
-                @for (s of subjectOptions(); track s.id) { <option [value]="s.id" [selected]="'' + s.id === filterSubject()">{{ s.name }}</option> }
-              </select></label>
-          }
-          @if (hasSearchBox()) {
-            <label class="f-search"><i class="pi pi-search"></i>
-              <input type="text" [placeholder]="level() === 'search' ? 'رقم اللجنة بالظبط…' : 'ابحث بالاسم…'"
-                     [value]="search()" (input)="onSearch($any($event.target).value)" (keydown.enter)="onSearchEnter()" />
-              @if (search()) { <button type="button" aria-label="مسح" (click)="onSearch('')"><i class="pi pi-times"></i></button> }
-            </label>
-          }
-          @if (level() === 'search') {
-            <label class="f"><small>حالة اللجنة</small>
-              <select (change)="setStatus($any($event.target).value)">
-                <option value="" [selected]="!statusFilter()">كل الحالات</option>
-                @for (s of statuses; track s.value) { <option [value]="s.value" [selected]="s.value === statusFilter()">{{ s.label }}</option> }
-              </select></label>
-          }
-          @for (c of chips(); track c.key) {
-            <span class="fchip"><b>{{ c.label }}:</b> {{ c.value }}
-              <button type="button" (click)="clearChip(c.key)" [attr.aria-label]="'إزالة ' + c.label"><i class="pi pi-times"></i></button></span>
-          }
-          @if (chips().length > 1) { <button type="button" class="btn ghost" (click)="clearFilters()"><i class="pi pi-filter-slash"></i> مسح الكل</button> }
-        </div>
-      }
-    </section>
-
-    @if (!ctx()) {
-      <div class="state"><i class="pi pi-sliders-h"></i><strong>اختاري المرحلة والسنة والدور</strong><span>بعدها هتظهر البيانات، وتقدري تفلتري بالمحافظة والمادة (اختياري).</span></div>
     } @else {
-
-    <!-- ============ التابات ============ -->
-    <div class="flow-tabs" role="tablist">
-      <button type="button" role="tab" [class.on]="tab() === 'gov'" (click)="setTab('gov')"><i class="pi pi-map-marker"></i> المحافظات</button>
-      <button type="button" role="tab" [class.on]="tab() === 'subject'" (click)="setTab('subject')"><i class="pi pi-book"></i> المواد</button>
-      <button type="button" role="tab" [class.on]="tab() === 'dept'" (click)="setTab('dept')"><i class="pi pi-sitemap"></i> الدفعات في الأقسام</button>
-      <button type="button" role="tab" [class.on]="tab() === 'delivery'" (click)="setTab('delivery')"><i class="pi pi-truck"></i> التسليم</button>
-      <button type="button" role="tab" [class.on]="tab() === 'search'" (click)="setTab('search')"><i class="pi pi-search"></i> بحث عن لجنة</button>
-    </div>
-
-    @if (crumbs().length) {
-      <nav class="crumbs" aria-label="المسار">
-        @if (canGoBack()) { <button type="button" class="crumb back" (click)="goBack()"><i class="pi pi-arrow-right"></i> رجوع</button> }
-        @for (c of crumbs(); track $index; let last = $last) {
-          <button type="button" class="crumb" [class.now]="last" [disabled]="last" (click)="c.go()">{{ c.label }}</button>
-          @if (!last) { <i class="pi pi-angle-left crumb-sep"></i> }
-        }
-      </nav>
-    }
-
-    <!-- ============ المحتوى ============ -->
-    @if (error(); as err) {
-      <div class="state state--err"><strong>تعذر تحميل البيانات</strong><span>{{ err }}</span>
-        <div class="state-actions"><button type="button" (click)="refresh()">إعادة المحاولة</button>
-          @if (canGoBack()) { <button type="button" class="alt" (click)="goBack()">رجوع للقائمة</button> }</div></div>
-    } @else if (loading() && !rows().length && !committeeRows().length && !boxes().length && !dept() && !delivery()) {
-      <div class="state"><i class="pi pi-spin pi-spinner"></i> جاري التحميل…</div>
-    } @else {
-
-      <!-- ---------- الأرقام الإجمالية (totals) ---------- -->
-      @if (isProgress() && totals(); as t) {
-        <section class="kpis" [class.busy]="loading()">
-          <div class="kpi"><small>الدفعات</small><b>{{ t.batchCount ?? 0 | number }}</b></div>
-          <div class="kpi"><small>اللجان</small><b>{{ t.totalCommittees ?? 0 | number }}</b></div>
-          <div class="kpi"><small>صناديق متوقعة</small><b>{{ t.boxes?.expected ?? 0 | number }}</b></div>
-          <div class="kpi"><small>تم تغليفها</small><b>{{ t.boxes?.packed ?? 0 | number }}</b></div>
-          <div class="kpi"><small>تم تخزينها</small><b>{{ t.boxes?.stored ?? 0 | number }}</b></div>
-          <div class="kpi"><small>تم تسليمها</small><b>{{ t.boxes?.delivered ?? 0 | number }}</b></div>
-        </section>
-        <section class="two" [class.busy]="loading()">
-          <div class="card">
-            <h3>نسبة إنجاز المراحل (الإجمالي)</h3>
-            <ul class="sbars">
-              @for (s of totalsStages(); track s.key) {
-                <li [attr.data-stage]="s.key"><span class="sl">{{ s.label }}</span><div class="track"><i [style.width.%]="width(s.percent)"></i></div><b class="sv" [class.none]="s.percent === null">{{ pct(s.percent) }}</b></li>
+      <!-- ============ الفلاتر: المرحلة ← السنة ← الدور ============ -->
+      <section class="ctx">
+        <div class="row">
+          <label class="f"
+            ><small><span class="step">1</span>المرحلة التعليمية</small>
+            <select
+              (change)="setStage($any($event.target).value)"
+              [disabled]="lookupsLoading()"
+            >
+              <option value="" [selected]="!draft().stage">
+                اختاري المرحلة
+              </option>
+              @for (s of stages(); track s.id) {
+                <option [value]="s.id" [selected]="'' + s.id === draft().stage">
+                  {{ s.name }}
+                </option>
               }
-            </ul>
-          </div>
-          <div class="card">
-            <h3>توزيع حالات اللجان</h3>
-            <div class="chips">
-              @for (s of totalsStatuses(); track s.status) { <span class="chip">{{ s.statusName || s.status }} · {{ s.count }}</span> }
-              @empty { <span class="muted">لا توجد بيانات.</span> }
-            </div>
-            <div class="exit"><span>نسبة الخروج من المخزن</span><div class="track"><i class="exit-fill" [style.width.%]="width(t.boxes?.exitPercent)"></i></div><b>{{ pct(t.boxes?.exitPercent) }}</b></div>
-          </div>
-        </section>
-      }
-
-      @switch (level()) {
-
-        <!-- ---------- قوائم التقدّم ---------- -->
-        @case ('gov-list') { <ng-container *ngTemplateOutlet="progress; context: { title: 'المحافظات', hint: 'اختاري محافظة لعرض موادها ونسب إنجازها.', icon: 'pi-map-marker', unit: 'محافظة', cta: 'عرض المواد' }" /> }
-        @case ('subj-list') { <ng-container *ngTemplateOutlet="progress; context: { title: 'المواد', hint: 'اختاري مادة لعرض نسبة التخزين في كل محافظة.', icon: 'pi-book', unit: 'مادة', cta: 'عرض المحافظات' }" /> }
-        @case ('gov-batches') { <ng-container *ngTemplateOutlet="progress; context: { title: gov()?.name, hint: 'مواد المحافظة ونسبة إنجاز كل مرحلة — اختاري صف لعرض لجانه.', icon: 'pi-book', unit: 'مادة', cta: 'عرض اللجان' }" /> }
-        @case ('subj-batches') { <ng-container *ngTemplateOutlet="progress; context: { title: subj()?.name, hint: 'نسبة التخزين في كل محافظة — اختاري صف لعرض لجانه.', icon: 'pi-map-marker', unit: 'محافظة', cta: 'عرض اللجان' }" /> }
-
-        <!-- ---------- لجان الدفعة / بحث ---------- -->
-        @case ('batch-committees') {
-          <header class="lvl-head">
-            <div><h2>{{ header()?.subjectName || batch()?.name }}</h2>
-              <p>{{ header()?.governorateName }} @if (header()?.batchStatusName) { · {{ header()?.batchStatusName }} } — اختاري لجنة لعرض صناديقها.</p></div>
-            <div class="head-tiles">
-              <div class="count-tile"><span class="count-ico"><i class="pi pi-users"></i></span><b>{{ pg().total }}</b><small>لجنة</small></div>
-              @if (header()?.boxes; as hb) { <div class="count-tile"><span class="count-ico"><i class="pi pi-box"></i></span><b>{{ hb.expected ?? hb.total ?? 0 }}</b><small>صندوق</small></div> }
-            </div>
-          </header>
-          @if (search()) { <p class="meta-hint"><i class="pi pi-info-circle"></i> البحث برقم اللجنة بالظبط.</p> }
-          <ng-container *ngTemplateOutlet="committeeGrid" />
-        }
-        @case ('search') {
-          <header class="lvl-head">
-            <div><h2>بحث عن لجنة</h2><p>اكتبي رقم اللجنة أو اختاري حالة لتصفية النتائج.</p></div>
-            <div class="count-tile"><span class="count-ico"><i class="pi pi-users"></i></span><b>{{ pg().total }}</b><small>لجنة</small></div>
-          </header>
-          <ng-container *ngTemplateOutlet="committeeGrid" />
-        }
-
-        <!-- ---------- صناديق اللجنة ---------- -->
-        @case ('boxes') {
-          <header class="lvl-head">
-            <div><h2>لجنة {{ header()?.committeeNumber ?? committee()?.name }}</h2>
-              <p>{{ header()?.subjectName }} {{ header()?.governorateName ? '· ' + header()?.governorateName : '' }} {{ header()?.schoolName ? '· ' + header()?.schoolName : '' }}</p></div>
-            <div class="head-tiles">
-              <div class="count-tile"><span class="count-ico"><i class="pi pi-flag"></i></span><b class="sm">{{ committeeStatus(header()) }}</b><small>حالة اللجنة</small></div>
-              <div class="count-tile"><span class="count-ico"><i class="pi pi-box"></i></span><b>{{ pg().total }}</b><small>صندوق</small></div>
-            </div>
-          </header>
-          <div class="bgrid" [class.busy]="loading()">
-            @for (b of boxes(); track b.boxId) {
-              <article class="bcard" [attr.data-tone]="tone(b.status)">
-                <header>
-                  <span class="bicon"><i class="pi pi-box"></i></span>
-                  <div class="bno"><small>صندوق رقم</small><b>{{ b.sequenceNo | number: '3.0-0' }}</b></div>
-                  <span class="pill" [attr.data-tone]="tone(b.status)">{{ b.statusName ?? statusLabel(b.status) }}</span>
-                </header>
-                @if (b.qrCode) { <code class="bcard-code">{{ b.qrCode }}</code> }
-                <div class="kv"><span>المكان الحالي</span><b>{{ boxPlace(b) }}</b></div>
-                @if (b.lastLocation) { <div class="kv"><span>آخر مكان</span><b>{{ place(b.lastLocation) }}</b></div> }
-                @if (b.expectedEnvelopeCount) { <div class="kv"><span>الأظرف المتوقعة</span><b>{{ b.expectedEnvelopeCount }}</b></div> }
-                <div class="times">
-                  <div class="kv"><span>التغليف</span><b class="ltr">{{ b.packedAt ? (b.packedAt | date: 'yyyy/MM/dd hh:mm a') : '—' }}</b></div>
-                  <div class="kv"><span>التخزين</span><b class="ltr">{{ b.storedAt ? (b.storedAt | date: 'yyyy/MM/dd hh:mm a') : '—' }}</b></div>
-                  <div class="kv"><span>التسليم</span><b class="ltr">{{ b.deliveredAt ? (b.deliveredAt | date: 'yyyy/MM/dd hh:mm a') : '—' }}</b></div>
-                </div>
-              </article>
-            } @empty { <p class="empty">لا توجد صناديق لهذه اللجنة.</p> }
-          </div>
-          <ng-container *ngTemplateOutlet="pager" />
-        }
-
-        <!-- ---------- الدفعات في كل قسم ---------- -->
-        @case ('dept') {
-          <header class="lvl-head">
-            <div><h2>الدفعات في كل قسم</h2><p>الدفعة بتتحسب مرة واحدة في قسم أقدم لجنة فيها.</p></div>
-            <div class="head-tiles">
-              <div class="count-tile"><span class="count-ico"><i class="pi pi-box"></i></span><b>{{ dept()?.totalBatches ?? 0 }}</b><small>دفعة</small></div>
-              <div class="count-tile"><span class="count-ico"><i class="pi pi-users"></i></span><b>{{ dept()?.totalCommittees ?? 0 }}</b><small>لجنة</small></div>
-            </div>
-          </header>
-          <div class="dgrid" [class.busy]="loading()">
-            @for (d of dept()?.items ?? []; track d.department; let i = $index) {
-              <article class="dcard">
-                <span class="dno">{{ i + 1 }}</span>
-                <h3>{{ d.departmentName }}</h3>
-                <div class="dnums">
-                  <div><b>{{ d.batchCount }}</b><small>دفعة</small></div>
-                  <div><b>{{ d.committeeCount }}</b><small>لجنة</small></div>
-                </div>
-                <div class="track"><i [style.width.%]="(d.batchCount / deptMax()) * 100"></i></div>
-              </article>
-            } @empty { <p class="empty">لا توجد بيانات.</p> }
+            </select></label
+          >
+          <label class="f"
+            ><small><span class="step">2</span>السنة</small>
+            <!-- السنوات من API /api/Lookups/years -->
+            <select (change)="setYear($any($event.target).value)" [disabled]="lookupsLoading()">
+              <option value="" [selected]="!draft().year">اختاري السنة</option>
+              @for (y of yearOptions(); track y.value) {
+                <option
+                  [value]="y.value"
+                  [selected]="'' + y.value === draft().year"
+                >
+                  {{ y.label }}
+                </option>
+              }
+            </select></label
+          >
+          <label class="f"
+            ><small><span class="step">3</span>الدور</small>
+            <select
+              (change)="setRound($any($event.target).value)"
+              [disabled]="!draft().stage"
+            >
+              <option value="" [selected]="!draft().round">
+                {{ draft().stage ? "اختاري الدور" : "اختاري المرحلة أولًا" }}
+              </option>
+              @for (r of roundOptions(); track r.id) {
+                <option [value]="r.id" [selected]="'' + r.id === draft().round">
+                  {{ r.name }}
+                </option>
+              }
+            </select></label
+          >
+          <button
+            type="button"
+            class="btn solid"
+            [disabled]="!ctxValid() || loading()"
+            (click)="applyContext()"
+          >
+            <i class="pi pi-check"></i> عرض البيانات
+          </button>
+          <span class="spacer"></span>
+          @if (asOf(); as a) {
+            <span class="asof"
+              ><i class="pi pi-clock"></i> الأرقام وقت:
+              <b>{{ a | date: "hh:mm:ss a" }}</b></span
+            >
+          }
+          <button
+            type="button"
+            class="btn ghost icon"
+            aria-label="تحديث"
+            [disabled]="!ctx() || loading()"
+            (click)="refresh()"
+          >
+            <i class="pi pi-refresh" [class.pi-spin]="loading()"></i>
+          </button>
+        </div>
+        @if (lookupsError(); as le) {
+          <div class="inline-err">
+            <i class="pi pi-exclamation-triangle"></i> {{ le }}
+            <button type="button" (click)="loadLookups()">
+              إعادة المحاولة
+            </button>
           </div>
         }
 
-        <!-- ---------- التسليم ---------- -->
-        @case ('delivery') {
-          <header class="lvl-head"><div><h2>ملخص التسليم</h2><p>اللي اتسلّم، واللي على أمر توريد، واللي مستني أمر.</p></div></header>
-          <div class="dtiles" [class.busy]="loading()">
-            @for (t of [
-              { k: 'delivered', label: 'تم التسليم', icon: 'pi-check-circle', tone: 'green' },
-              { k: 'onOrder', label: 'على أمر توريد', icon: 'pi-truck', tone: 'blue' },
-              { k: 'waitingForOrder', label: 'بانتظار أمر توريد', icon: 'pi-clock', tone: 'amber' }
-            ]; track t.k) {
-              <article class="dtile" [attr.data-tone]="t.tone">
-                <header><span class="dt-ico"><i class="pi" [ngClass]="t.icon"></i></span><h3>{{ t.label }}</h3></header>
-                <div class="dnums three">
-                  <div><b>{{ delivery()?.[t.k]?.batches ?? 0 }}</b><small>دفعة</small></div>
-                  <div><b>{{ delivery()?.[t.k]?.committees ?? 0 }}</b><small>لجنة</small></div>
-                  <div><b>{{ delivery()?.[t.k]?.boxes ?? 0 }}</b><small>صندوق</small></div>
-                </div>
-              </article>
+        <!-- ============ الفلاتر الاختيارية: المحافظة / المادة ============ -->
+        @if (showGlobalFilters()) {
+          <div class="row adv">
+            <label class="f"
+              ><small>المحافظة (اختياري)</small>
+              <select (change)="setFilterGov($any($event.target).value)">
+                <option value="" [selected]="!filterGov()">كل المحافظات</option>
+                @for (g of govOptions(); track g.id) {
+                  <option [value]="g.id" [selected]="'' + g.id === filterGov()">
+                    {{ g.name }}
+                  </option>
+                }
+              </select></label
+            >
+            @if (showSubjectFilter()) {
+              <label class="f"
+                ><small>المادة (اختياري)</small>
+                <select (change)="setFilterSubject($any($event.target).value)">
+                  <option value="" [selected]="!filterSubject()">
+                    كل المواد
+                  </option>
+                  @for (s of subjectOptions(); track s.id) {
+                    <option
+                      [value]="s.id"
+                      [selected]="'' + s.id === filterSubject()"
+                    >
+                      {{ s.name }}
+                    </option>
+                  }
+                </select></label
+              >
+            }
+            @if (hasSearchBox()) {
+              <label class="f-search"
+                ><i class="pi pi-search"></i>
+                <input
+                  type="text"
+                  [placeholder]="
+                    level() === 'search' ? 'رقم اللجنة بالظبط…' : 'ابحث بالاسم…'
+                  "
+                  [value]="search()"
+                  (input)="onSearch($any($event.target).value)"
+                  (keydown.enter)="onSearchEnter()"
+                />
+                @if (search()) {
+                  <button type="button" aria-label="مسح" (click)="onSearch('')">
+                    <i class="pi pi-times"></i>
+                  </button>
+                }
+              </label>
+            }
+            @if (level() === "search") {
+              <label class="f"
+                ><small>حالة اللجنة</small>
+                <select (change)="setStatus($any($event.target).value)">
+                  <option value="" [selected]="!statusFilter()">
+                    كل الحالات
+                  </option>
+                  @for (s of statuses; track s.value) {
+                    <option
+                      [value]="s.value"
+                      [selected]="s.value === statusFilter()"
+                    >
+                      {{ s.label }}
+                    </option>
+                  }
+                </select></label
+              >
+            }
+            @for (c of chips(); track c.key) {
+              <span class="fchip"
+                ><b>{{ c.label }}:</b> {{ c.value }}
+                <button
+                  type="button"
+                  (click)="clearChip(c.key)"
+                  [attr.aria-label]="'إزالة ' + c.label"
+                >
+                  <i class="pi pi-times"></i></button
+              ></span>
+            }
+            @if (chips().length > 1) {
+              <button type="button" class="btn ghost" (click)="clearFilters()">
+                <i class="pi pi-filter-slash"></i> مسح الكل
+              </button>
             }
           </div>
+        }
+      </section>
 
-          <h3 class="sec">أوامر التوريد</h3>
-          <div class="table-wrap" [class.busy]="loading()">
-            <table class="tbl">
-              <thead><tr><th>المحافظة</th><th>موعد التوريد</th><th>الحالة</th><th>الدفعات</th><th>اللجان</th><th>وقت التسليم</th></tr></thead>
-              <tbody>
-                @for (o of orders(); track o.id) {
-                  <tr>
-                    <td><b>{{ o.governorateName }}</b></td>
-                    <td>{{ o.deliveryDate | date: 'yyyy/MM/dd' }}</td>
-                    <td><span class="pill" [attr.data-tone]="orderTone(o)">{{ o.statusName ?? o.status }}</span></td>
-                    <td><div class="mini-prog"><span>{{ o.deliveredBatchCount }} / {{ o.batchCount }}</span><div class="track"><i [style.width.%]="orderPct(o.deliveredBatchCount, o.batchCount)"></i></div></div></td>
-                    <td><div class="mini-prog"><span>{{ o.deliveredCommitteeCount }} / {{ o.committeeCount }}</span><div class="track"><i [style.width.%]="orderPct(o.deliveredCommitteeCount, o.committeeCount)"></i></div></div></td>
-                    <td>{{ o.deliveredAt ? (o.deliveredAt | date: 'yyyy/MM/dd hh:mm a') : '—' }}</td>
-                  </tr>
-                } @empty { <tr><td colspan="6" class="empty-cell">لا توجد أوامر توريد.</td></tr> }
-              </tbody>
-            </table>
+      @if (!ctx()) {
+        <div class="state">
+          <i class="pi pi-sliders-h"></i
+          ><strong>اختاري المرحلة والسنة والدور</strong
+          ><span
+            >بعدها هتظهر البيانات، وتقدري تفلتري بالمحافظة والمادة
+            (اختياري).</span
+          >
+        </div>
+      } @else {
+        <!-- ============ التابات ============ -->
+        <div class="flow-tabs" role="tablist">
+          <button
+            type="button"
+            role="tab"
+            [class.on]="tab() === 'gov'"
+            (click)="setTab('gov')"
+          >
+            <i class="pi pi-map-marker"></i> المحافظات
+          </button>
+          <button
+            type="button"
+            role="tab"
+            [class.on]="tab() === 'subject'"
+            (click)="setTab('subject')"
+          >
+            <i class="pi pi-book"></i> المواد
+          </button>
+          <button
+            type="button"
+            role="tab"
+            [class.on]="tab() === 'dept'"
+            (click)="setTab('dept')"
+          >
+            <i class="pi pi-sitemap"></i> الدفعات في الأقسام
+          </button>
+          <button
+            type="button"
+            role="tab"
+            [class.on]="tab() === 'delivery'"
+            (click)="setTab('delivery')"
+          >
+            <i class="pi pi-truck"></i> التسليم
+          </button>
+          <button
+            type="button"
+            role="tab"
+            [class.on]="tab() === 'search'"
+            (click)="setTab('search')"
+          >
+            <i class="pi pi-search"></i> بحث عن لجنة
+          </button>
+        </div>
+
+        @if (crumbs().length) {
+          <nav class="crumbs" aria-label="المسار">
+            @if (canGoBack()) {
+              <button type="button" class="crumb back" (click)="goBack()">
+                <i class="pi pi-arrow-right"></i> رجوع
+              </button>
+            }
+            @for (c of crumbs(); track $index; let last = $last) {
+              <button
+                type="button"
+                class="crumb"
+                [class.now]="last"
+                [disabled]="last"
+                (click)="c.go()"
+              >
+                {{ c.label }}
+              </button>
+              @if (!last) {
+                <i class="pi pi-angle-left crumb-sep"></i>
+              }
+            }
+          </nav>
+        }
+
+        <!-- ============ المحتوى ============ -->
+        @if (error(); as err) {
+          <div class="state state--err">
+            <strong>تعذر تحميل البيانات</strong><span>{{ err }}</span>
+            <div class="state-actions">
+              <button type="button" (click)="refresh()">إعادة المحاولة</button>
+              @if (canGoBack()) {
+                <button type="button" class="alt" (click)="goBack()">
+                  رجوع للقائمة
+                </button>
+              }
+            </div>
           </div>
-          <ng-container *ngTemplateOutlet="pager" />
+        } @else if (
+          loading() &&
+          !rows().length &&
+          !committeeRows().length &&
+          !boxes().length &&
+          !dept() &&
+          !delivery()
+        ) {
+          <div class="state">
+            <i class="pi pi-spin pi-spinner"></i> جاري التحميل…
+          </div>
+        } @else {
+          <!-- ---------- الأرقام الإجمالية (totals) ---------- -->
+          @if (isProgress() && totals(); as t) {
+            <section class="kpis" [class.busy]="loading()">
+              <div class="kpi" data-c="navy">
+                <span class="kpi-ico"><i class="pi pi-th-large"></i></span>
+                <div>
+                  <small>الدفعات</small><b>{{ t.batchCount ?? 0 | number }}</b>
+                </div>
+              </div>
+              <div class="kpi" data-c="teal">
+                <span class="kpi-ico"><i class="pi pi-users"></i></span>
+                <div>
+                  <small>اللجان</small
+                  ><b>{{ t.totalCommittees ?? 0 | number }}</b>
+                </div>
+              </div>
+              <div class="kpi" data-c="amber">
+                <span class="kpi-ico"><i class="pi pi-box"></i></span>
+                <div>
+                  <small>صناديق متوقعة</small
+                  ><b>{{ t.boxes?.expected ?? 0 | number }}</b>
+                </div>
+              </div>
+              <div class="kpi" data-c="purple">
+                <span class="kpi-ico"><i class="pi pi-inbox"></i></span>
+                <div>
+                  <small>تم تغليفها</small
+                  ><b>{{ t.boxes?.packed ?? 0 | number }}</b>
+                </div>
+              </div>
+              <div class="kpi" data-c="green">
+                <span class="kpi-ico"><i class="pi pi-warehouse"></i></span>
+                <div>
+                  <small>تم تخزينها</small
+                  ><b>{{ t.boxes?.stored ?? 0 | number }}</b>
+                </div>
+              </div>
+              <div class="kpi" data-c="blue">
+                <span class="kpi-ico"><i class="pi pi-truck"></i></span>
+                <div>
+                  <small>تم تسليمها</small
+                  ><b>{{ t.boxes?.delivered ?? 0 | number }}</b>
+                </div>
+              </div>
+            </section>
+
+            <section class="two" [class.busy]="loading()">
+              <!-- دوائر المراحل -->
+              <div class="card">
+                <h3>نسبة إنجاز المراحل (الإجمالي)</h3>
+                <div class="rings">
+                  <div class="ring-main">
+                    <ng-container
+                      *ngTemplateOutlet="
+                        ring;
+                        context: {
+                          p: totalsOverall(),
+                          color: healthColor(totalsOverall()),
+                          big: true,
+                        }
+                      "
+                    />
+                    <small>متوسط الإنجاز</small>
+                  </div>
+                  <div class="ring-grid">
+                    @for (s of totalsStages(); track s.key) {
+                      <div class="ring-item" [attr.data-stage]="s.key">
+                        <ng-container
+                          *ngTemplateOutlet="
+                            ring;
+                            context: {
+                              p: s.percent,
+                              color: stageColor(s.key),
+                              big: false,
+                            }
+                          "
+                        />
+                        <span>{{ s.label }}</span>
+                      </div>
+                    }
+                  </div>
+                </div>
+              </div>
+
+              <!-- دونات حالات اللجان -->
+              <div class="card">
+                <h3>توزيع حالات اللجان</h3>
+                @if (statusDonut(); as dn) {
+                  @if (dn.total) {
+                    <div class="donut-wrap">
+                      <ng-container
+                        *ngTemplateOutlet="
+                          donut;
+                          context: { dn: dn, label: 'لجنة' }
+                        "
+                      />
+                      <ul class="legend">
+                        @for (g of dn.segs; track g.label) {
+                          <li>
+                            <i [style.background]="g.color"></i
+                            ><span>{{ g.label }}</span
+                            ><b>{{ g.value }}</b
+                            ><em>{{ g.share | number: "1.0-0" }}%</em>
+                          </li>
+                        }
+                      </ul>
+                    </div>
+                  } @else {
+                    <span class="muted">لا توجد بيانات.</span>
+                  }
+                }
+                <div class="exit">
+                  <span>نسبة الخروج من المخزن</span>
+                  <div class="track">
+                    <i
+                      class="exit-fill"
+                      [style.width.%]="width(t.boxes?.exitPercent)"
+                    ></i>
+                  </div>
+                  <b>{{ pct(t.boxes?.exitPercent) }}</b>
+                </div>
+              </div>
+            </section>
+
+            <!-- ============ Charts Section (Chart.js) ============ -->
+            @if (level() === 'gov-list' && rows().length) {
+              <section class="charts-section" [class.busy]="loading()">
+                <h3 class="charts-title">
+                  <i class="pi pi-chart-bar"></i> تحليلات بيانية
+                </h3>
+                <div class="charts-grid">
+                  <!-- Bar Chart: نسبة إنجاز المحافظات -->
+                  <div class="chart-card">
+                    <h4>نسبة الإنجاز الإجمالية — المحافظات</h4>
+                    <div class="chart-wrap">
+                      <canvas #govChartCanvas></canvas>
+                    </div>
+                  </div>
+
+                  <!-- Doughnut Chart: توزيع حالات اللجان -->
+                  <div class="chart-card">
+                    <h4>توزيع حالات اللجان</h4>
+                    <div class="chart-wrap chart-wrap--sm">
+                      <canvas #statusChartCanvas></canvas>
+                    </div>
+                  </div>
+
+                  <!-- Bar Chart: نسبة إنجاز المراحل -->
+                  <div class="chart-card">
+                    <h4>نسبة إنجاز المراحل</h4>
+                    <div class="chart-wrap chart-wrap--sm">
+                      <canvas #stagesChartCanvas></canvas>
+                    </div>
+                  </div>
+                </div>
+              </section>
+            }
+          }
+
+          @switch (level()) {
+            <!-- ---------- قوائم التقدّم ---------- -->
+            @case ("gov-list") {
+              <ng-container
+                *ngTemplateOutlet="
+                  progress;
+                  context: {
+                    title: 'المحافظات',
+                    hint: 'اختاري محافظة لعرض موادها ونسب إنجازها.',
+                    icon: 'pi-map-marker',
+                    unit: 'محافظة',
+                    cta: 'عرض المواد',
+                  }
+                "
+              />
+            }
+            @case ("subj-list") {
+              <ng-container
+                *ngTemplateOutlet="
+                  progress;
+                  context: {
+                    title: 'المواد',
+                    hint: 'اختاري مادة لعرض نسبة التخزين في كل محافظة.',
+                    icon: 'pi-book',
+                    unit: 'مادة',
+                    cta: 'عرض المحافظات',
+                  }
+                "
+              />
+            }
+            @case ("gov-batches") {
+              <ng-container
+                *ngTemplateOutlet="
+                  progress;
+                  context: {
+                    title: gov()?.name,
+                    hint: 'مواد المحافظة ونسبة إنجاز كل مرحلة — اختاري صف لعرض لجانه.',
+                    icon: 'pi-book',
+                    unit: 'مادة',
+                    cta: 'عرض اللجان',
+                  }
+                "
+              />
+            }
+            @case ("subj-batches") {
+              <ng-container
+                *ngTemplateOutlet="
+                  progress;
+                  context: {
+                    title: subj()?.name,
+                    hint: 'نسبة التخزين في كل محافظة — اختاري صف لعرض لجانه.',
+                    icon: 'pi-map-marker',
+                    unit: 'محافظة',
+                    cta: 'عرض اللجان',
+                  }
+                "
+              />
+            }
+
+            <!-- ---------- لجان الدفعة / بحث ---------- -->
+            @case ("batch-committees") {
+              <header class="lvl-head">
+                <div>
+                  <h2>{{ header()?.subjectName || batch()?.name }}</h2>
+                  <p>
+                    {{ header()?.governorateName }}
+                    @if (header()?.batchStatusName) {
+                      · {{ header()?.batchStatusName }}
+                    }
+                    — اختاري لجنة لعرض صناديقها.
+                  </p>
+                </div>
+                <div class="head-tiles">
+                  <div class="count-tile">
+                    <span class="count-ico"><i class="pi pi-users"></i></span
+                    ><b>{{ pg().total }}</b
+                    ><small>لجنة</small>
+                  </div>
+                  @if (header()?.boxes; as hb) {
+                    <div class="count-tile" data-c="amber">
+                      <span class="count-ico"><i class="pi pi-box"></i></span
+                      ><b>{{ hb.expected ?? hb.total ?? 0 }}</b
+                      ><small>صندوق</small>
+                    </div>
+                  }
+                </div>
+              </header>
+              @if (search()) {
+                <p class="meta-hint">
+                  <i class="pi pi-info-circle"></i> البحث برقم اللجنة بالظبط.
+                </p>
+              }
+              <ng-container *ngTemplateOutlet="committeeGrid" />
+            }
+            @case ("search") {
+              <header class="lvl-head">
+                <div>
+                  <h2>بحث عن لجنة</h2>
+                  <p>اكتبي رقم اللجنة أو اختاري حالة لتصفية النتائج.</p>
+                </div>
+                <div class="count-tile">
+                  <span class="count-ico"><i class="pi pi-users"></i></span
+                  ><b>{{ pg().total }}</b
+                  ><small>لجنة</small>
+                </div>
+              </header>
+              <ng-container *ngTemplateOutlet="committeeGrid" />
+            }
+
+            <!-- ---------- صناديق اللجنة ---------- -->
+            @case ("boxes") {
+              <header class="lvl-head">
+                <div>
+                  <h2>
+                    لجنة {{ header()?.committeeNumber ?? committee()?.name }}
+                  </h2>
+                  <p>
+                    {{ header()?.subjectName }}
+                    {{
+                      header()?.governorateName
+                        ? "· " + header()?.governorateName
+                        : ""
+                    }}
+                    {{
+                      header()?.schoolName ? "· " + header()?.schoolName : ""
+                    }}
+                  </p>
+                </div>
+                <div class="head-tiles">
+                  <div
+                    class="count-tile"
+                    [attr.data-c]="tone(header()?.status)"
+                  >
+                    <span class="count-ico"><i class="pi pi-flag"></i></span
+                    ><b class="sm">{{ committeeStatus(header()) }}</b
+                    ><small>حالة اللجنة</small>
+                  </div>
+                  <div class="count-tile" data-c="amber">
+                    <span class="count-ico"><i class="pi pi-box"></i></span
+                    ><b>{{ pg().total }}</b
+                    ><small>صندوق</small>
+                  </div>
+                </div>
+              </header>
+              <div class="bgrid" [class.busy]="loading()">
+                @for (b of boxes(); track b.boxId) {
+                  <article class="bcard" [attr.data-tone]="tone(b.status)">
+                    <header>
+                      <span class="bicon"><i class="pi pi-box"></i></span>
+                      <div class="bno">
+                        <small>صندوق رقم</small
+                        ><b>{{ b.sequenceNo | number: "3.0-0" }}</b>
+                      </div>
+                      <span class="pill" [attr.data-tone]="tone(b.status)">{{
+                        b.statusName ?? statusLabel(b.status)
+                      }}</span>
+                    </header>
+
+                    <!-- مسار الصندوق: تغليف ← تخزين ← تسليم -->
+                    <ol class="steps">
+                      <li [class.done]="!!b.packedAt" data-s="packed">
+                        <i
+                          class="pi"
+                          [ngClass]="b.packedAt ? 'pi-check' : 'pi-inbox'"
+                        ></i
+                        ><span>تغليف</span>
+                      </li>
+                      <li [class.done]="!!b.storedAt" data-s="stored">
+                        <i
+                          class="pi"
+                          [ngClass]="b.storedAt ? 'pi-check' : 'pi-warehouse'"
+                        ></i
+                        ><span>تخزين</span>
+                      </li>
+                      <li [class.done]="!!b.deliveredAt" data-s="delivered">
+                        <i
+                          class="pi"
+                          [ngClass]="b.deliveredAt ? 'pi-check' : 'pi-truck'"
+                        ></i
+                        ><span>تسليم</span>
+                      </li>
+                    </ol>
+
+                    @if (b.qrCode) {
+                      <code class="bcard-code">{{ b.qrCode }}</code>
+                    }
+                    <div class="kv">
+                      <span>المكان الحالي</span><b>{{ boxPlace(b) }}</b>
+                    </div>
+                    @if (b.lastLocation) {
+                      <div class="kv">
+                        <span>آخر مكان</span><b>{{ place(b.lastLocation) }}</b>
+                      </div>
+                    }
+                    @if (b.expectedEnvelopeCount) {
+                      <div class="kv">
+                        <span>الأظرف المتوقعة</span
+                        ><b>{{ b.expectedEnvelopeCount }}</b>
+                      </div>
+                    }
+                    <div class="times">
+                      <div class="kv">
+                        <span>التغليف</span
+                        ><b class="ltr">{{
+                          b.packedAt
+                            ? (b.packedAt | date: "yyyy/MM/dd hh:mm a")
+                            : "—"
+                        }}</b>
+                      </div>
+                      <div class="kv">
+                        <span>التخزين</span
+                        ><b class="ltr">{{
+                          b.storedAt
+                            ? (b.storedAt | date: "yyyy/MM/dd hh:mm a")
+                            : "—"
+                        }}</b>
+                      </div>
+                      <div class="kv">
+                        <span>التسليم</span
+                        ><b class="ltr">{{
+                          b.deliveredAt
+                            ? (b.deliveredAt | date: "yyyy/MM/dd hh:mm a")
+                            : "—"
+                        }}</b>
+                      </div>
+                    </div>
+                  </article>
+                } @empty {
+                  <p class="empty">لا توجد صناديق لهذه اللجنة.</p>
+                }
+              </div>
+              <ng-container *ngTemplateOutlet="pager" />
+            }
+
+            <!-- ---------- الدفعات في كل قسم ---------- -->
+            @case ("dept") {
+              <header class="lvl-head">
+                <div>
+                  <h2>الدفعات في كل قسم</h2>
+                  <p>الدفعة بتتحسب مرة واحدة في قسم أقدم لجنة فيها.</p>
+                </div>
+                <div class="head-tiles">
+                  <div class="count-tile">
+                    <span class="count-ico"><i class="pi pi-box"></i></span
+                    ><b>{{ dept()?.totalBatches ?? 0 }}</b
+                    ><small>دفعة</small>
+                  </div>
+                  <div class="count-tile" data-c="blue">
+                    <span class="count-ico"><i class="pi pi-users"></i></span
+                    ><b>{{ dept()?.totalCommittees ?? 0 }}</b
+                    ><small>لجنة</small>
+                  </div>
+                </div>
+              </header>
+
+              @if (deptDonut(); as dd) {
+                @if (dd.total) {
+                  <section class="card dept-chart" [class.busy]="loading()">
+                    <h3>توزيع الدفعات على الأقسام</h3>
+                    <div class="donut-wrap">
+                      <ng-container
+                        *ngTemplateOutlet="
+                          donut;
+                          context: { dn: dd, label: 'دفعة' }
+                        "
+                      />
+                      <ul class="legend">
+                        @for (g of dd.segs; track g.label) {
+                          <li>
+                            <i [style.background]="g.color"></i
+                            ><span>{{ g.label }}</span
+                            ><b>{{ g.value }}</b
+                            ><em>{{ g.share | number: "1.0-0" }}%</em>
+                          </li>
+                        }
+                      </ul>
+                    </div>
+                  </section>
+                }
+              }
+
+              <div class="dgrid" [class.busy]="loading()">
+                @for (
+                  d of dept()?.items ?? [];
+                  track d.department;
+                  let i = $index
+                ) {
+                  <article class="dcard" [style.--c]="deptColor(i)">
+                    <span class="dno">{{ i + 1 }}</span>
+                    <h3>{{ d.departmentName }}</h3>
+                    <div class="dnums">
+                      <div>
+                        <b>{{ d.batchCount }}</b
+                        ><small>دفعة</small>
+                      </div>
+                      <div>
+                        <b>{{ d.committeeCount }}</b
+                        ><small>لجنة</small>
+                      </div>
+                    </div>
+                    <div class="track tall">
+                      <i [style.width.%]="(d.batchCount / deptMax()) * 100"></i>
+                    </div>
+                  </article>
+                } @empty {
+                  <p class="empty">لا توجد بيانات.</p>
+                }
+              </div>
+            }
+
+            <!-- ---------- التسليم ---------- -->
+            @case ("delivery") {
+              <header class="lvl-head">
+                <div>
+                  <h2>ملخص التسليم</h2>
+                  <p>اللي اتسلّم، واللي على أمر توريد، واللي مستني أمر.</p>
+                </div>
+              </header>
+
+              <!-- شريط توزيع الصناديق -->
+              <section class="card" [class.busy]="loading()">
+                <h3>توزيع الصناديق</h3>
+                <div class="stack">
+                  @for (t of deliveryTiles(); track t.k) {
+                    <i
+                      [style.width.%]="t.share"
+                      [style.background]="t.color"
+                      [title]="t.label + ': ' + t.boxes"
+                    ></i>
+                  }
+                </div>
+                <ul class="legend row-legend">
+                  @for (t of deliveryTiles(); track t.k) {
+                    <li>
+                      <i [style.background]="t.color"></i
+                      ><span>{{ t.label }}</span
+                      ><b>{{ t.boxes }}</b
+                      ><em>{{ t.share | number: "1.0-0" }}%</em>
+                    </li>
+                  }
+                </ul>
+              </section>
+
+              <div class="dtiles" [class.busy]="loading()">
+                @for (t of deliveryTiles(); track t.k) {
+                  <article class="dtile" [attr.data-tone]="t.tone">
+                    <header>
+                      <span class="dt-ico"
+                        ><i class="pi" [ngClass]="t.icon"></i
+                      ></span>
+                      <h3>{{ t.label }}</h3>
+                    </header>
+                    <div class="dnums three">
+                      <div>
+                        <b>{{ t.batches }}</b
+                        ><small>دفعة</small>
+                      </div>
+                      <div>
+                        <b>{{ t.committees }}</b
+                        ><small>لجنة</small>
+                      </div>
+                      <div>
+                        <b>{{ t.boxes }}</b
+                        ><small>صندوق</small>
+                      </div>
+                    </div>
+                  </article>
+                }
+              </div>
+
+              <h3 class="sec">أوامر التوريد</h3>
+              <div class="table-wrap" [class.busy]="loading()">
+                <table class="tbl">
+                  <thead>
+                    <tr>
+                      <th>المحافظة</th>
+                      <th>موعد التوريد</th>
+                      <th>الحالة</th>
+                      <th>الدفعات</th>
+                      <th>اللجان</th>
+                      <th>وقت التسليم</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (o of orders(); track o.id) {
+                      <tr>
+                        <td>
+                          <b>{{ o.governorateName }}</b>
+                        </td>
+                        <td>{{ o.deliveryDate | date: "yyyy/MM/dd" }}</td>
+                        <td>
+                          <span class="pill" [attr.data-tone]="orderTone(o)">{{
+                            o.statusName ?? o.status
+                          }}</span>
+                        </td>
+                        <td>
+                          <div class="mini-prog">
+                            <span
+                              >{{ o.deliveredBatchCount }} /
+                              {{ o.batchCount }}</span
+                            >
+
+                            <div class="track">
+                              <i
+                                [style.width.%]="
+                                  orderPct(o.deliveredBatchCount, o.batchCount)
+                                "
+                                [style.background]="
+                                  healthColor(
+                                    orderPct(
+                                      o.deliveredBatchCount,
+                                      o.batchCount
+                                    )
+                                  )
+                                "
+                              ></i>
+                            </div>
+                          </div>
+                        </td>
+                        <td>
+                          <div class="mini-prog">
+                            <span
+                              >{{ o.deliveredCommitteeCount }} /
+                              {{ o.committeeCount }}</span
+                            >
+
+                            <div class="track">
+                              <i
+                                [style.width.%]="
+                                  orderPct(
+                                    o.deliveredCommitteeCount,
+                                    o.committeeCount
+                                  )
+                                "
+                                [style.background]="
+                                  healthColor(
+                                    orderPct(
+                                      o.deliveredCommitteeCount,
+                                      o.committeeCount
+                                    )
+                                  )
+                                "
+                              ></i>
+                            </div>
+                          </div>
+                        </td>
+                        <td>
+                          {{
+                            o.deliveredAt
+                              ? (o.deliveredAt | date: "yyyy/MM/dd hh:mm a")
+                              : "—"
+                          }}
+                        </td>
+                      </tr>
+                    } @empty {
+                      <tr>
+                        <td colspan="6" class="empty-cell">
+                          لا توجد أوامر توريد.
+                        </td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+              <ng-container *ngTemplateOutlet="pager" />
+            }
+          }
         }
       }
-    }
-    }
     }
 
     <!-- ============ templates ============ -->
 
+    <!-- دايرة نسبة (gauge) -->
+    <ng-template #ring let-p="p" let-color="color" let-big="big">
+      <div class="ring" [class.big]="big">
+        <svg viewBox="0 0 100 100" aria-hidden="true">
+          <circle class="ring-bg" cx="50" cy="50" r="42" />
+          <circle
+            class="ring-fg"
+            cx="50"
+            cy="50"
+            r="42"
+            transform="rotate(-90 50 50)"
+            [attr.stroke]="color"
+            [attr.stroke-dasharray]="ringDash(p)"
+          />
+        </svg>
+        <b [style.color]="color" [class.none]="p === null">{{ pct(p) }}</b>
+      </div>
+    </ng-template>
+
+    <!-- دونات -->
+    <ng-template #donut let-dn="dn" let-label="label">
+      <div class="donut">
+        <svg
+          viewBox="0 0 100 100"
+          role="img"
+          [attr.aria-label]="'توزيع ' + label"
+        >
+          <circle class="ring-bg" cx="50" cy="50" r="42" />
+          @for (g of dn.segs; track g.label) {
+            <circle
+              class="donut-seg"
+              cx="50"
+              cy="50"
+              r="42"
+              transform="rotate(-90 50 50)"
+              [attr.stroke]="g.color"
+              [attr.stroke-dasharray]="g.dash"
+              [attr.stroke-dashoffset]="g.offset"
+            >
+              <title>{{ g.label }}: {{ g.value }}</title>
+            </circle>
+          }
+        </svg>
+        <div class="donut-c">
+          <b>{{ dn.total | number }}</b
+          ><small>{{ label }}</small>
+        </div>
+      </div>
+    </ng-template>
+
     <!-- كروت التقدّم: محافظات / مواد / دفعات -->
-    <ng-template #progress let-title="title" let-hint="hint" let-icon="icon" let-unit="unit" let-cta="cta">
+    <ng-template
+      #progress
+      let-title="title"
+      let-hint="hint"
+      let-icon="icon"
+      let-unit="unit"
+      let-cta="cta"
+    >
       <header class="lvl-head">
-        <div><h2>{{ title }}</h2><p>{{ hint }}</p></div>
-        <div class="count-tile"><span class="count-ico"><i class="pi" [ngClass]="icon"></i></span><b>{{ pg().total }}</b><small>{{ unit }}</small></div>
+        <div>
+          <h2>{{ title }}</h2>
+          <p>{{ hint }}</p>
+        </div>
+        <div class="count-tile">
+          <span class="count-ico"><i class="pi" [ngClass]="icon"></i></span
+          ><b>{{ pg().total }}</b
+          ><small>{{ unit }}</small>
+        </div>
       </header>
       <div class="pcards" [class.busy]="loading()">
         @for (r of rowVMs(); track r.id) {
-          <article class="pcard">
+          <article class="pcard" [style.--hc]="healthColor(r.overall)">
             <header class="pcard-top">
-              <span class="pcard-ico"><i class="pi" [ngClass]="icon"></i></span>
-              <div><small>{{ unit }}</small><b>{{ r.title }}</b></div>
-              @if (r.batches !== null) { <span class="pcard-pill">{{ r.batches }} دفعة</span> }
-              @else if (r.status) { <span class="pcard-pill">{{ r.status }}</span> }
+              <ng-container
+                *ngTemplateOutlet="
+                  ring;
+                  context: {
+                    p: r.overall,
+                    color: healthColor(r.overall),
+                    big: false,
+                  }
+                "
+              />
+              <div>
+                <small>{{ unit }}</small
+                ><b>{{ r.title }}</b>
+              </div>
+              @if (r.batches !== null) {
+                <span class="pcard-pill">{{ r.batches }} دفعة</span>
+              } @else if (r.status) {
+                <span class="pcard-pill">{{ r.status }}</span>
+              }
             </header>
             <div class="mini3">
-              <div class="kpi"><small>لجان</small><b>{{ r.committees | number }}</b></div>
-              <div class="kpi"><small>صناديق</small><b>{{ (r.boxes?.expected ?? r.boxes?.total ?? 0) | number }}</b></div>
-              <div class="kpi"><small>خروج</small><b>{{ pct(r.exit) }}</b></div>
+              <div class="kpi" data-c="teal">
+                <small>لجان</small><b>{{ r.committees | number }}</b>
+              </div>
+              <div class="kpi" data-c="amber">
+                <small>صناديق</small
+                ><b>{{ r.boxes?.expected ?? r.boxes?.total ?? 0 | number }}</b>
+              </div>
+              <div class="kpi" data-c="green">
+                <small>خروج</small><b>{{ pct(r.exit) }}</b>
+              </div>
             </div>
             <ul class="sbars">
               @for (s of r.stages; track s.key) {
-                <li [attr.data-stage]="s.key"><span class="sl">{{ s.label }}</span><div class="track"><i [style.width.%]="width(s.percent)"></i></div><b class="sv" [class.none]="s.percent === null">{{ pct(s.percent) }}</b></li>
+                <li [attr.data-stage]="s.key">
+                  <span class="sl">{{ s.label }}</span>
+                  <div class="track">
+                    <i [style.width.%]="width(s.percent)"></i>
+                  </div>
+                  <b class="sv" [class.none]="s.percent === null">{{
+                    pct(s.percent)
+                  }}</b>
+                </li>
               }
             </ul>
-            <button type="button" class="pcard-btn" (click)="openRow(r)"><i class="pi pi-list"></i> {{ cta }}</button>
+            <button type="button" class="pcard-btn" (click)="openRow(r)">
+              <i class="pi pi-list"></i> {{ cta }}
+            </button>
           </article>
-        } @empty { <p class="empty">لا توجد بيانات مطابقة.</p> }
+        } @empty {
+          <p class="empty">لا توجد بيانات مطابقة.</p>
+        }
       </div>
       <ng-container *ngTemplateOutlet="pager" />
     </ng-template>
@@ -315,31 +1062,94 @@
     <ng-template #committeeGrid>
       <div class="pcards" [class.busy]="loading()">
         @for (c of committeeRows(); track c.committeeId) {
-          <article class="pcard">
+          <article class="pcard" [attr.data-tone]="tone(c.status)">
             <header class="pcard-top">
               <span class="pcard-ico"><i class="pi pi-users"></i></span>
-              <div><small>لجنة رقم</small><b>{{ c.committeeNumber }}</b></div>
-              <span class="pill" [attr.data-tone]="tone(c.status)">{{ committeeStatus(c) }}</span>
+              <div>
+                <small>لجنة رقم</small><b>{{ c.committeeNumber }}</b>
+              </div>
+              <span class="pill" [attr.data-tone]="tone(c.status)">{{
+                committeeStatus(c)
+              }}</span>
             </header>
             <p class="meta">
-              @if (c.schoolName) { <i class="pi pi-building"></i> {{ c.schoolName }} }
-              @if (c.educationalAdministration) { · {{ c.educationalAdministration }} }
+              @if (c.schoolName) {
+                <i class="pi pi-building"></i> {{ c.schoolName }}
+              }
+              @if (c.educationalAdministration) {
+                · {{ c.educationalAdministration }}
+              }
             </p>
-            @if (level() === 'search') { <p class="meta"><i class="pi pi-map-marker"></i> {{ c.governorateName }} · {{ c.subjectName }}</p> }
+            @if (level() === "search") {
+              <p class="meta">
+                <i class="pi pi-map-marker"></i> {{ c.governorateName }} ·
+                {{ c.subjectName }}
+              </p>
+            }
             <div class="tiles">
-              <div class="tile"><small>كراسات مطلوبة</small><b>{{ c.requiredBookletCount ?? 0 | number }}</b><em>+ {{ c.bonusBookletCount ?? 0 }} إضافي</em></div>
-              <div class="tile"><small>أظرف مطلوبة</small><b>{{ c.requiredEnvelopeCount ?? 0 | number }}</b><em>+ {{ c.bonusEnvelopeCount ?? 0 }} إضافي</em></div>
-            </div>
-            <div class="bx">
-              <div class="kv"><span>الصناديق</span><b>{{ c.boxes?.expected ?? c.boxes?.total ?? 0 }} متوقعة · {{ c.boxes?.packed ?? 0 }} مغلّفة · {{ c.boxes?.stored ?? 0 }} مخزنة · {{ c.boxes?.delivered ?? 0 }} مسلّمة</b></div>
-              <div class="bar2">
-                <i class="b-packed" [style.width.%]="ratio(c.boxes?.packed, c.boxes?.expected ?? c.boxes?.total)"></i>
-                <i class="b-stored" [style.width.%]="ratio(c.boxes?.stored, c.boxes?.expected ?? c.boxes?.total)"></i>
+              <div class="tile" data-c="blue">
+                <small>كراسات مطلوبة</small
+                ><b>{{ c.requiredBookletCount ?? 0 | number }}</b
+                ><em>+ {{ c.bonusBookletCount ?? 0 }} إضافي</em>
+              </div>
+              <div class="tile" data-c="amber">
+                <small>أظرف مطلوبة</small
+                ><b>{{ c.requiredEnvelopeCount ?? 0 | number }}</b
+                ><em>+ {{ c.bonusEnvelopeCount ?? 0 }} إضافي</em>
               </div>
             </div>
-            <button type="button" class="pcard-btn" (click)="openCommittee(c)"><i class="pi pi-box"></i> عرض الصناديق</button>
+            <div class="bx">
+              <div class="bx-head">
+                <span>الصناديق</span
+                ><b>{{ c.boxes?.expected ?? c.boxes?.total ?? 0 }} متوقعة</b>
+              </div>
+              <div class="bar2">
+                <i
+                  class="b-packed"
+                  [style.width.%]="
+                    ratio(c.boxes?.packed, c.boxes?.expected ?? c.boxes?.total)
+                  "
+                ></i>
+                <i
+                  class="b-stored"
+                  [style.width.%]="
+                    ratio(c.boxes?.stored, c.boxes?.expected ?? c.boxes?.total)
+                  "
+                ></i>
+                <i
+                  class="b-deliv"
+                  [style.width.%]="
+                    ratio(
+                      c.boxes?.delivered,
+                      c.boxes?.expected ?? c.boxes?.total
+                    )
+                  "
+                ></i>
+              </div>
+              <div class="bx-legend">
+                <span
+                  ><i class="d-packed"></i
+                  >{{ c.boxes?.packed ?? 0 }} مغلّفة</span
+                >
+
+                <span
+                  ><i class="d-stored"></i
+                  >{{ c.boxes?.stored ?? 0 }} مخزنة</span
+                >
+
+                <span
+                  ><i class="d-deliv"></i
+                  >{{ c.boxes?.delivered ?? 0 }} مسلّمة</span
+                >
+              </div>
+            </div>
+            <button type="button" class="pcard-btn" (click)="openCommittee(c)">
+              <i class="pi pi-box"></i> عرض الصناديق
+            </button>
           </article>
-        } @empty { <p class="empty">لا توجد لجان مطابقة.</p> }
+        } @empty {
+          <p class="empty">لا توجد لجان مطابقة.</p>
+        }
       </div>
       <ng-container *ngTemplateOutlet="pager" />
     </ng-template>
@@ -348,13 +1158,37 @@
     <ng-template #pager>
       @if (pg().pages > 1) {
         <nav class="pager" aria-label="الصفحات">
-          <span class="pager-info">{{ pageFrom() }}–{{ pageTo() }} من {{ pg().total }}</span>
+          <span class="pager-info"
+            >{{ pageFrom() }}–{{ pageTo() }} من {{ pg().total }}</span
+          >
+
           <div class="pager-btns">
-            <button type="button" (click)="goPage(pg().page - 1)" [disabled]="pg().page === 1 || loading()" aria-label="السابق"><i class="pi pi-angle-right"></i></button>
+            <button
+              type="button"
+              (click)="goPage(pg().page - 1)"
+              [disabled]="pg().page === 1 || loading()"
+              aria-label="السابق"
+            >
+              <i class="pi pi-angle-right"></i>
+            </button>
             @for (n of pageNumbers(); track n) {
-              <button type="button" [class.on]="n === pg().page" [disabled]="loading()" (click)="goPage(n)">{{ n }}</button>
+              <button
+                type="button"
+                [class.on]="n === pg().page"
+                [disabled]="loading()"
+                (click)="goPage(n)"
+              >
+                {{ n }}
+              </button>
             }
-            <button type="button" (click)="goPage(pg().page + 1)" [disabled]="pg().page === pg().pages || loading()" aria-label="التالي"><i class="pi pi-angle-left"></i></button>
+            <button
+              type="button"
+              (click)="goPage(pg().page + 1)"
+              [disabled]="pg().page === pg().pages || loading()"
+              aria-label="التالي"
+            >
+              <i class="pi pi-angle-left"></i>
+            </button>
           </div>
         </nav>
       }
@@ -362,6 +1196,8 @@
   </div>
 
   <ng-container system-options>
-    <span class="workflow-summary"><i class="pi pi-chart-bar"></i> لوحة الإدارة العليا</span>
+    <span class="workflow-summary"
+      ><i class="pi pi-chart-bar"></i> لوحة الإدارة العليا</span
+    >
   </ng-container>
 </app-workflow-step-layout>

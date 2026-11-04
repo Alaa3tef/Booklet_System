@@ -19,7 +19,7 @@ type Crumb = { label: string; go: () => void };
 
 interface ArCommittee { id: number; number: string; boxCount: number; }
 interface Placement { trackingCode: string; qrCode: string; place: string; }
-interface SessionBox { id: number; seq: number; code: string; state: 'done' | 'pending' | 'todo'; note: string; }
+interface SessionBox { id: number; seq: number; code: string; state: 'done' | 'pending' | 'todo' | 'scanned'; note: string; }
 interface Slot { text: string; state: 'ok' | 'wait' | 'idle'; }
 type BoxFilter = 'all' | 'todo' | 'done';
 interface SideItem { id: number; number: string; label: string; status: 'now' | 'done' | 'todo'; }
@@ -472,24 +472,31 @@ export default class ArchivingComponent implements OnInit {
         return { id: b.boxId, seq: b.sequenceNo, code: b.trackingCode, state, note: p?.place ?? b.storageLocationQrCode ?? '' };
       });
     }
-    const c = this.whSelected();
-    if (!c) return [];
-    const scannedCodes = new Set(this.whScannedCodes());
-    return c.boxes.map(b => {
-      const delivered = this.boxDelivered(b);
-      const scanned = scannedCodes.has(b.qrCode);
-      return {
-        id: b.boxId,
-        seq: b.sequenceNo,
-        code: b.qrCode,
-        state: (delivered ? 'done' : scanned ? 'pending' : 'todo') as SessionBox['state'],
-        note: delivered
-          ? 'اتسلّم'
-          : scanned
-            ? 'تم المسح — في انتظار إرسال اللجنة'
-            : b.storageLocationCode,
-      };
-    });
+   const c = this.whSelected();
+if (!c) return [];
+
+const scannedCodes = new Set(this.whScannedCodes());
+
+return c.boxes.map(b => {
+  const delivered = this.boxDelivered(b);
+  const scanned = scannedCodes.has(b.qrCode);
+
+  return {
+    id: b.boxId,
+    seq: b.sequenceNo,
+    code: b.qrCode,
+    state: (
+      delivered ? 'done' :
+      scanned ? 'scanned' :
+      'todo'
+    ) as SessionBox['state'],
+    note: delivered
+      ? 'تم التسليم'
+      : scanned
+        ? 'تمت القراءة بنجاح — في انتظار التسليم'
+        : b.storageLocationCode,
+  };
+});
   });
 
   readonly sessionStats = computed(() => {
@@ -599,7 +606,9 @@ export default class ArchivingComponent implements OnInit {
       (b.storageLocationId ?? 0) > 0 || this.placed().some(p => p.trackingCode === b.trackingCode);
 
     if (!pending) {
-      if (!asBox) return this.say('err', 'الكود ده مش صندوق تابع للجنة المختارة');
+      if (!asBox) {
+  return this.say('err', 'القراءة غير مطابقة — الكود لا يتبع أي صندوق في اللجنة المختارة');
+}
       if (isDone(asBox)) return this.say('warn', 'الصندوق ده متخزن قبل كده');
       this.pendingBox.set(code);
       return this.say('ok', 'تم مسح الصندوق — امسح كود الرف');
@@ -614,7 +623,9 @@ export default class ArchivingComponent implements OnInit {
     this.begin();
     this.api.resolveLocation(code).pipe(finalize(() => this.release())).subscribe({
       next: r => {
-        if (!r.success || !r.data) return this.say('err', r.message || 'كود الرف غير معروف');
+        if (!r.success || !r.data) {
+  return this.say('err', 'القراءة غير مطابقة — كود الرف غير معروف');
+}
         const place = `${r.data.rack} / ${r.data.shelf}`;
         this.placed.update(p => [...p, { trackingCode: pending, qrCode: code, place }]);
         this.pendingBox.set(null);
@@ -646,34 +657,41 @@ export default class ArchivingComponent implements OnInit {
   }
 
   // ---- مخزن: نجمع أكواد اللجنة أولًا، ثم نرسل طلبًا واحدًا بعد آخر صندوق.
-  private warehouseScan(code: string): void {
-    const committee = this.whSelected();
-    if (!committee) return;
+private warehouseScan(code: string): void {
+  const committee = this.whSelected();
+  if (!committee) return;
 
-    const box = committee.boxes.find(item => item.qrCode === code);
-    if (!box) {
-      this.say('err', 'الكود ده مش تابع للجنة المختارة');
-      return;
-    }
+  const box = committee.boxes.find(item => item.qrCode === code);
 
-    if (this.boxDelivered(box)) {
-      this.say('warn', `الصندوق ${box.sequenceNo} اتسلّم قبل كده`);
-      return;
-    }
-
-    if (this.whScannedCodes().includes(code)) {
-      this.say('warn', `الصندوق ${box.sequenceNo} اتعمله Scan بالفعل`);
-      return;
-    }
-
-    this.whScannedCodes.update(codes => [...codes, code]);
-
-    const scanned = this.whScannedCount();
-    const expected = this.whExpectedScanCount();
-
-    this.say('ok', `تم Scan الصندوق ${box.sequenceNo} — ${scanned} من ${expected}`);
-    // الإرسال بيتم بزرار "تسليم" في الـ footer — مفيش إرسال تلقائي.
+  // الكود غير تابع للجنة المختارة
+  if (!box) {
+    this.say('err', 'القراءة غير مطابقة — الكود لا يتبع اللجنة المختارة');
+    return;
   }
+
+  // الصندوق تم تسليمه بالفعل
+  if (this.boxDelivered(box)) {
+    this.say('warn', `الصندوق ${box.sequenceNo} تم تسليمه بالفعل`);
+    return;
+  }
+
+  // الصندوق تمت قراءته من قبل
+  if (this.whScannedCodes().includes(code)) {
+    this.say('warn', `الصندوق ${box.sequenceNo} تمت قراءته بالفعل`);
+    return;
+  }
+
+  // تسجيل القراءة الصحيحة
+  this.whScannedCodes.update(codes => [...codes, code]);
+
+  const scanned = this.whScannedCount();
+  const expected = this.whExpectedScanCount();
+
+  this.say(
+    'ok',
+    `تمت القراءة بنجاح — الصندوق ${box.sequenceNo} مطابق للجنة (${scanned} من ${expected})`
+  );
+}
 
   submitWarehouseDelivery(): void {
     const committee = this.whSelected();
@@ -782,12 +800,19 @@ export default class ArchivingComponent implements OnInit {
     this.errorCount.set(0); this.boxFilter.set('all'); this.sideSearch.set(''); this.queue = [];
   }
   private timer?: ReturnType<typeof setTimeout>;
-  private say(kind: Feedback['kind'], text: string): void {
-    if (kind === 'err' && this.session()) this.errorCount.update(n => n + 1);
-    this.feedback.set({ kind, text });
-    clearTimeout(this.timer);
-    this.timer = setTimeout(() => this.feedback.set(null), 3500);
+private say(kind: Feedback['kind'], text: string): void {
+  if (kind === 'err' && this.session()) {
+    this.errorCount.update(n => n + 1);
   }
+
+  this.feedback.set({ kind, text });
+
+  clearTimeout(this.timer);
+
+  this.timer = setTimeout(() => {
+    this.feedback.set(null);
+  }, 3500);
+}
   private toArray<T>(d: unknown): T[] {
     if (Array.isArray(d)) return d as T[];
     const inner = (d as { data?: unknown } | null)?.data;

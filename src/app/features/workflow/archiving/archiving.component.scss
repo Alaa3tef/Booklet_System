@@ -237,3 +237,142 @@ code, .mono { font-family: ui-monospace, Consolas, monospace; direction: ltr; un
   .p-dialog-footer { padding: 0; border: 0; background: #fff; }
 }
 ::ng-deep .p-dialog-mask.p-overlay-mask { background: rgba(8, 20, 38, .55); }
+/* =========================================================
+   SCANNER FEEDBACK — PROFESSIONAL SUCCESS / ERROR STATES
+========================================================= */
+
+.scanner {
+  .scanner-zone {
+    transition:
+      background .2s ease,
+      border-color .2s ease,
+      box-shadow .2s ease;
+
+    &.feedback-ok {
+      background: #ecfdf3;
+      border: 2px solid #16a34a;
+      box-shadow: 0 0 0 3px rgba(22, 163, 74, .07);
+
+      .scanner-box {
+        color: #16a34a;
+        background: #dcfce7;
+      }
+    }
+
+    &.feedback-err {
+      background: #fff1f2;
+      border: 2px solid #dc2626;
+      box-shadow: 0 0 0 3px rgba(220, 38, 38, .07);
+
+      .scanner-box {
+        color: #dc2626;
+        background: #fee2e2;
+      }
+    }
+
+    &.feedback-warn {
+      background: #fffbeb;
+      border: 2px solid #d99a0b;
+
+      .scanner-box {
+        color: #b77908;
+        background: #fef3c7;
+      }
+    }
+  }
+
+  .scanner-feedback {
+    display: block;
+    font-size: 16px;
+    font-weight: 900;
+    line-height: 1.8;
+
+    &[data-kind='ok'] {
+      color: #15803d;
+    }
+
+    &[data-kind='err'] {
+      color: #dc2626;
+    }
+
+    &[data-kind='warn'] {
+      color: #a16207;
+    }
+  }
+
+  .scanner-txt {
+    small {
+      display: block;
+      margin-top: 5px;
+    }
+  }
+
+  .scanner-box {
+    transition:
+      background .2s ease,
+      color .2s ease,
+      transform .2s ease;
+  }
+
+  .scanner-zone.feedback-ok .scanner-box,
+  .scanner-zone.feedback-err .scanner-box {
+    transform: scale(1.04);
+  }
+}
+
+/* =========================================================
+   SCANNED BOX — SUCCESS STATE
+========================================================= */
+
+.bcard {
+  &[data-state='scanned'] {
+    border: 1px solid #86efac;
+    border-top: 3px solid #16a34a;
+    background: #f0fdf4;
+
+    .bcard-ico {
+      background: #dcfce7;
+      color: #15803d;
+    }
+
+    .bcard-pill {
+      background: #dcfce7;
+      color: #15803d;
+    }
+
+    .bcard-code {
+      border-color: #bbf7d0;
+      background: #f0fdf4;
+    }
+  }
+}
+
+/* تحسين ظهور حالة الخطأ في قارئ الباركود */
+
+.scanner[data-kind='err'] {
+  border-color: #dc2626;
+
+  .scanner-head h4 i {
+    color: #dc2626;
+  }
+
+  .scanner-chip {
+    background: #fee2e2;
+    color: #dc2626;
+  }
+}
+
+/* تحسين حالة القراءة الصحيحة */
+
+.scanner[data-kind='ok'] {
+  border-color: #16a34a;
+
+  .scanner-head h4 i {
+    color: #16a34a;
+  }
+
+  .scanner-chip {
+    background: #dcfce7;
+    color: #15803d;
+  }
+}

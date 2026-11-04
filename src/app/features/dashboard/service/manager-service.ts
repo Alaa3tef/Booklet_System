@@ -84,4 +84,6 @@ export class ManagerService {
   lookupStages() { return this.lookup<StageLookup>('EducationalStages'); }
   lookupRounds() { return this.lookup<RoundLookup>('Rounds'); }
   lookupSubjects() { return this.lookup<SubjectLookup>('Subjects'); }
+  /** السنوات المتاحة: [26, 27, ...] */
+  lookupYears() { return this.http.get<ManagerResponse<number[]>>(`${this.api}/Lookups/years`); }
 }

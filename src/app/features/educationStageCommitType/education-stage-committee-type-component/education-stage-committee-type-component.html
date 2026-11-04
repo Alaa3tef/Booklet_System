@@ -3,12 +3,10 @@
 
   <!-- HEADER -->
   <div class="page-header">
-
     <div class="header-info">
       <div class="header-icon">
         <i class="pi pi-sitemap"></i>
       </div>
-
       <div>
         <h2>ربط المراحل التعليمية بأنواع اللجان</h2>
         <p>إدارة إعدادات اللجان والمكافآت وأعداد الكتيبات والأظرف</p>
@@ -23,7 +21,6 @@
       class="add-btn"
       (click)="openAddDialog()">
     </button>
-
   </div>
 
   <!-- ALERTS -->
@@ -86,7 +83,6 @@
         <h3>بيانات ربط اللجان</h3>
         <p>يمكنك البحث والفلترة للوصول إلى الربط المطلوب</p>
       </div>
-
       <span class="records-count">
         {{ totalRecords }} سجل
       </span>
@@ -97,10 +93,8 @@
 
       <div class="filter-item search-filter">
         <label>بحث</label>
-
         <div class="search-input-wrapper">
           <i class="pi pi-search"></i>
-
           <input
             pInputText
             type="text"
@@ -112,7 +106,6 @@
 
       <div class="filter-item">
         <label>المرحلة التعليمية</label>
-
         <p-select
           [(ngModel)]="filterEducationalStageId"
           [options]="educationalStagesLookup"
@@ -128,7 +121,6 @@
 
       <div class="filter-item">
         <label>نوع اللجنة</label>
-
         <p-select
           [(ngModel)]="filterCommitteeTypeId"
           [options]="committeeTypesLookup"
@@ -144,7 +136,6 @@
 
       <div class="filter-item">
         <label>الحالة</label>
-
         <p-select
           [(ngModel)]="filterIsActive"
           [options]="statusOptions"
@@ -159,7 +150,6 @@
 
     <!-- FILTER ACTIONS -->
     <div class="filter-actions">
-
       <button
         pButton
         type="button"
@@ -177,7 +167,6 @@
         class="reset-btn"
         (click)="resetFilters()">
       </button>
-
     </div>
 
     <!-- TABLE -->
@@ -232,11 +221,8 @@
                 <span class="cell-icon">
                   <i class="pi pi-graduation-cap"></i>
                 </span>
-
                 <div>
-                  <strong>
-                    {{ item.educationalStageName || '-' }}
-                  </strong>
+                  <strong>{{ item.educationalStageName || '-' }}</strong>
                   <small>ID: {{ item.educationalStageId }}</small>
                 </div>
               </div>
@@ -266,9 +252,7 @@
             </td>
 
             <td>
-              <strong class="bonus-value">
-                {{ item.bonus }}
-              </strong>
+              <strong class="bonus-value">{{ item.bonus }}</strong>
             </td>
 
             <td>{{ item.bookletsPerEnvelope }}</td>
@@ -280,15 +264,16 @@
                 class="status-badge"
                 [class.active]="item.isActive"
                 [class.inactive]="!item.isActive">
-
                 {{ item.isActive ? 'نشط' : 'غير نشط' }}
               </span>
             </td>
 
             <td>
-              {{ item.dateCreated
-                ? (item.dateCreated | date:'dd/MM/yyyy')
-                : '-' }}
+              {{
+                item.dateCreated
+                  ? (item.dateCreated | date:'dd/MM/yyyy')
+                  : '-'
+              }}
             </td>
 
             <td>
@@ -304,7 +289,6 @@
           </tr>
 
         </tbody>
-
       </table>
 
     </div>
@@ -335,9 +319,10 @@
     [draggable]="false"
     [resizable]="false"
     [closable]="!saving && !loadingDetails"
-    [style]="{ width: '1350px', maxWidth: '95vw' }"
-    [header]="isEditMode ? 'تعديل إعدادات اللجنة' : 'إضافة إعدادات جديدة'"
-    styleClass="edu-committee-dialog">
+    [style]="{ width: '1250px', maxWidth: '95vw' }"
+    [header]="isEditMode ? 'تعديل إعدادات اللجنة' : 'إضافة ربط جديد'"
+    styleClass="edu-committee-dialog"
+    (onHide)="closeDialog()">
 
     <form
       [formGroup]="committeeForm"
@@ -352,17 +337,21 @@
 
         <div>
           <h3>
-            {{ isEditMode ? 'تعديل بيانات الربط' : 'إضافة بيانات جديدة' }}
+            {{ isEditMode ? 'تعديل بيانات الربط' : 'بيانات الربط الجديد' }}
           </h3>
 
           <p>
-            أدخلي إعدادات اللجنة والمكافآت وأعداد الكتيبات والأظرف
+            {{
+              isEditMode
+                ? 'يمكنك تعديل إعدادات اللجنة فقط، ولا يمكن تغيير المرحلة أو نوع اللجنة'
+                : 'اختاري المرحلة التعليمية ونوع اللجنة والإعدادات الخاصة بها'
+            }}
           </p>
         </div>
 
       </div>
 
-      <!-- LOADING -->
+      <!-- LOADING DETAILS -->
       <div class="dialog-loading" *ngIf="loadingDetails">
         <i class="pi pi-spin pi-spinner"></i>
         جاري تحميل بيانات الربط...
@@ -370,26 +359,131 @@
 
       <ng-container *ngIf="!loadingDetails">
 
-        <!-- EDIT ONLY: EXISTING IDS -->
-        <div class="edit-reference" *ngIf="isEditMode">
+        <!-- ================================= -->
+        <!-- ADD MODE: SELECT STAGE AND TYPE -->
+        <!-- ================================= -->
 
-          <div class="field-title">
-            <i class="pi pi-info-circle"></i>
-            بيانات الربط الحالي
+        <div class="form-grid" *ngIf="!isEditMode">
+
+          <!-- Educational Stage -->
+          <div class="form-field">
+
+            <label>
+              المرحلة التعليمية
+              <span class="required">*</span>
+            </label>
+
+            <p-select
+              formControlName="educationalStageId"
+              [options]="educationalStagesLookup"
+              optionLabel="name"
+              optionValue="id"
+              placeholder="اختاري المرحلة التعليمية"
+              [filter]="true"
+              filterBy="name,code"
+              [showClear]="true"
+              appendTo="body"
+              [class.invalid-field]="
+                educationalStageIdControl?.invalid &&
+                educationalStageIdControl?.touched
+              ">
+
+              <ng-template #item let-option>
+                <div class="committee-option">
+                  <strong>{{ option.name }}</strong>
+                  <small>{{ option.code }}</small>
+                </div>
+              </ng-template>
+
+            </p-select>
+
+            <small
+              class="field-error"
+              *ngIf="
+                educationalStageIdControl?.invalid &&
+                educationalStageIdControl?.touched
+              ">
+              يجب اختيار المرحلة التعليمية
+            </small>
+
           </div>
 
-          <div class="reference-grid">
+          <!-- Committee Type -->
+          <div class="form-field">
 
-            <div class="reference-item">
-              <span>المرحلة التعليمية</span>
-              <strong>{{ editEducationalStageName || '-' }}</strong>
-              <small>ID: {{ editEducationalStageId }}</small>
+            <label>
+              نوع اللجنة
+              <span class="required">*</span>
+            </label>
+
+            <p-select
+              formControlName="committeeTypeId"
+              [options]="committeeTypesLookup"
+              optionLabel="name"
+              optionValue="id"
+              placeholder="اختاري نوع اللجنة"
+              [filter]="true"
+              filterBy="name,code"
+              [showClear]="true"
+              appendTo="body"
+              [class.invalid-field]="
+                committeeTypeIdControl?.invalid &&
+                committeeTypeIdControl?.touched
+              ">
+
+              <ng-template #item let-option>
+                <div class="committee-option">
+                  <strong>{{ option.name }}</strong>
+                  <small>{{ option.code }}</small>
+                </div>
+              </ng-template>
+
+            </p-select>
+
+            <small
+              class="field-error"
+              *ngIf="
+                committeeTypeIdControl?.invalid &&
+                committeeTypeIdControl?.touched
+              ">
+              يجب اختيار نوع اللجنة
+            </small>
+
+          </div>
+
+        </div>
+
+        <!-- ================================= -->
+        <!-- EDIT MODE: READ ONLY INFORMATION -->
+        <!-- ================================= -->
+
+        <div class="edit-reference-section" *ngIf="isEditMode">
+
+          <div class="edit-reference-header">
+            <i class="pi pi-lock"></i>
+            بيانات الربط الأساسية - غير قابلة للتعديل
+          </div>
+
+          <div class="form-grid">
+
+            <div class="form-field">
+              <label>المرحلة التعليمية</label>
+
+              <div class="readonly-field">
+                <i class="pi pi-graduation-cap"></i>
+                <span>{{ editEducationalStageName || '-' }}</span>
+                <small>ID: {{ editEducationalStageId }}</small>
+              </div>
             </div>
 
-            <div class="reference-item">
-              <span>نوع اللجنة</span>
-              <strong>{{ editCommitteeTypeName || '-' }}</strong>
-              <small>ID: {{ editCommitteeTypeId }}</small>
+            <div class="form-field">
+              <label>نوع اللجنة</label>
+
+              <div class="readonly-field">
+                <i class="pi pi-sitemap"></i>
+                <span>{{ editCommitteeTypeName || '-' }}</span>
+                <small>ID: {{ editCommitteeTypeId }}</small>
+              </div>
             </div>
 
           </div>
@@ -406,6 +500,7 @@
 
           <div class="bonus-options">
 
+            <!-- CLOSED -->
             <label
               class="bonus-option"
               [class.selected]="bonusTypeControl?.value === 0">
@@ -428,6 +523,7 @@
 
             </label>
 
+            <!-- OPEN -->
             <label
               class="bonus-option"
               [class.selected]="bonusTypeControl?.value === 1">
@@ -554,17 +650,17 @@
           label="إلغاء"
           icon="pi pi-times"
           class="cancel-btn"
-          [disabled]="saving || loadingDetails"
+          [disabled]="saving"
           (click)="closeDialog()">
         </button>
 
         <button
           pButton
           type="submit"
-          [label]="isEditMode ? 'حفظ التعديلات' : 'إضافة'"
+          [label]="isEditMode ? 'حفظ التعديلات' : 'إضافة الربط'"
           [icon]="saving ? 'pi pi-spin pi-spinner' : 'pi pi-check'"
           class="save-btn"
-          [disabled]="saving || loadingDetails || committeeForm.invalid">
+          [disabled]="saving || loadingDetails || loadingLookups">
         </button>
 
       </div>
