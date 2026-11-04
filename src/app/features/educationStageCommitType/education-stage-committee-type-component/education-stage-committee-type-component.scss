@@ -855,3 +855,52 @@
     flex: 1;
   }
 }
+
+
+/* Existing IDs - Edit Mode Only */
+
+.edit-reference {
+  margin-bottom: 20px;
+  padding: 15px;
+  border: 1px solid #dbeafe;
+  border-radius: 10px;
+  background: #f8fbff;
+}
+
+.reference-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.reference-item {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding: 12px;
+  background: #fff;
+  border: 1px solid #e5eaf1;
+  border-radius: 8px;
+}
+
+.reference-item span {
+  color: #64748b;
+  font-size: 11px;
+}
+
+.reference-item strong {
+  color: #17324d;
+  font-size: 13px;
+}
+
+.reference-item small {
+  color: #94a3b8;
+  font-size: 10px;
+}
+
+@media (max-width: 576px) {
+  .reference-grid {
+    grid-template-columns: 1fr;
+  }
+}
