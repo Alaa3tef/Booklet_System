@@ -310,21 +310,63 @@
               <h4><i class="pi pi-qrcode"></i> قارئ الباركود</h4>
               <span class="scanner-chip" [class.busy]="busy()"><i></i> {{ busy() ? 'جاري المعالجة…' : 'جاهز للمسح' }}</span>
             </header>
-            <div class="scanner-zone">
-              <span class="scanner-box" aria-hidden="true"><i class="pi pi-qrcode"></i><span class="scanner-line"></span></span>
-              <div class="scanner-txt">
-                @if (feedback(); as f) {
-                  <b>{{ f.text }}</b>
-                  <small>القراءة الأخيرة: <code>{{ lastRead() }}</code></small>
-                } @else if (tab() === 'archive') {
-                  <b>{{ arStep() === 1 ? 'وجّهي القارئ نحو الصندوق' : 'وجّهي القارئ نحو الرف' }}</b>
-                  <small>{{ arStep() === 1 ? 'الجلسة مفتوحة تلقائيًا — الترتيب غير مهم.' : 'الرف اللي هتحطي فيه الصندوق ' + pendingBox() }}</small>
-                } @else {
-                  <b>تم مسح {{ whScannedCount() }} من {{ whExpectedScanCount() }} صندوق</b>
-                  <small>امسحي الصناديق، وبعدها اضغطي «تسليم» لإرسال القايمة مرة واحدة.</small>
-                }
-              </div>
-            </div>
+        <div
+  class="scanner-zone"
+  [class.feedback-ok]="feedback()?.kind === 'ok'"
+  [class.feedback-err]="feedback()?.kind === 'err'"
+  [class.feedback-warn]="feedback()?.kind === 'warn'"
+  [attr.aria-live]="feedback() ? 'assertive' : 'polite'"
+  aria-atomic="true"
+>
+  <span class="scanner-box" aria-hidden="true">
+    @if (feedback()?.kind === 'ok') {
+      <i class="pi pi-check-circle"></i>
+    } @else if (feedback()?.kind === 'err') {
+      <i class="pi pi-times-circle"></i>
+    } @else if (feedback()?.kind === 'warn') {
+      <i class="pi pi-exclamation-triangle"></i>
+    } @else {
+      <i class="pi pi-qrcode"></i>
+      <span class="scanner-line"></span>
+    }
+  </span>
+
+  <div class="scanner-txt">
+    @if (feedback(); as f) {
+      <b class="scanner-feedback" [attr.data-kind]="f.kind">
+        {{ f.text }}
+      </b>
+
+      <small>
+        القراءة الأخيرة:
+        <code>{{ lastRead() }}</code>
+      </small>
+
+    } @else if (tab() === 'archive') {
+
+      <b>
+        {{ arStep() === 1
+          ? 'وجّهي القارئ نحو الصندوق'
+          : 'وجّهي القارئ نحو الرف' }}
+      </b>
+
+      <small>
+        {{ arStep() === 1
+          ? 'الجلسة مفتوحة تلقائيًا — امسحي كود الصندوق.'
+          : 'امسحي كود الرف لتأكيد مكان تخزين الصندوق ' + pendingBox() }}
+      </small>
+
+    } @else {
+
+      <b>تم مسح {{ whScannedCount() }} من {{ whExpectedScanCount() }} صندوق</b>
+
+      <small>
+        امسحي الصناديق، وبعدها اضغطي «تسليم» لإرسال القائمة مرة واحدة.
+      </small>
+
+    }
+  </div>
+</div>
             <input #manualS data-no-scan class="scanner-input" type="text" autocomplete="off" placeholder="أو اكتبي كود QR واضغطي Enter…" (keydown.enter)="manualScan(manualS)" />
           </section>
 
@@ -376,19 +418,40 @@
               <article class="bcard" [attr.data-state]="b.state">
                 <header><span class="bcard-kind">صندوق</span><span class="bcard-no">{{ b.seq }}</span></header>
                 <div class="bcard-mid">
-                  <span class="bcard-ico"><i class="pi" [ngClass]="b.state === 'done' ? 'pi-check' : 'pi-box'"></i></span>
+                 <span class="bcard-ico">
+  <i
+    class="pi"
+    [ngClass]="
+      b.state === 'done' || b.state === 'scanned'
+        ? 'pi-check-circle'
+        : 'pi-box'
+    "
+  ></i>
+</span>
                   <div><small>رقم الصندوق</small><b>{{ b.seq | number: '3.0-0' }}</b></div>
                 </div>
                 <code class="bcard-code">{{ b.code }}</code>
                 <footer>
-                  <span class="bcard-pill">
-                    @if (b.state === 'done') { <i class="pi pi-check"></i> {{ tab() === 'archive' ? 'تم التخزين' : 'تم التسليم' }} }
-                    @else if (b.state === 'pending') {
-                      <i class="pi pi-clock"></i>
-                      {{ tab() === 'archive' ? 'في انتظار الرف' : 'تم المسح — في انتظار الإرسال' }}
-                    }
-                    @else { <i class="pi pi-clock"></i> في انتظار المسح }
-                  </span>
+                 <span class="bcard-pill">
+
+  @if (b.state === 'done') {
+    <i class="pi pi-check-circle"></i>
+    {{ tab() === 'archive' ? 'تم التخزين' : 'تم التسليم' }}
+
+  } @else if (b.state === 'scanned') {
+    <i class="pi pi-check-circle"></i>
+    تمت القراءة بنجاح
+
+  } @else if (b.state === 'pending') {
+    <i class="pi pi-clock"></i>
+    {{ tab() === 'archive' ? 'في انتظار الرف' : 'في انتظار الإرسال' }}
+
+  } @else {
+    <i class="pi pi-clock"></i>
+    في انتظار المسح
+  }
+
+</span>
                   @if (b.note) { <small class="bcard-note">{{ b.note }}</small> }
                 </footer>
               </article>
