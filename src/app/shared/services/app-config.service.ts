@@ -36,7 +36,8 @@ export class AppConfigService {
   }
 
   get baseURL(): string {
-    return this.decrypt(this.config?.baseURL ?? '');
+    //return this.decrypt(this.config?.baseURL ?? '');
+    return this.config?.baseURL;
   }
 
   get apiBase(): string {
