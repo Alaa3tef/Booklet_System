@@ -315,14 +315,12 @@ private isITRole(role: string): boolean {
   // NORMALIZE ROLE
   // ==================================================
 
-  private normalizeRole(role: string): string {
-
-    return (role || '')
-      .trim()
-      .toLowerCase()
-      .replace(/\s+/g, ' ');
-
-  }
+private normalizeRole(role: string | null | undefined): string {
+  return (role || '')
+    .trim()
+    .toLowerCase()
+    .replace(/[\s_-]+/g, '');
+}
 
   // ==================================================
   // INIT

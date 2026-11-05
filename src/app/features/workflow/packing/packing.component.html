@@ -320,43 +320,66 @@
               <!-- Sidebar: scanner + progress -->
               <aside class="pk-side">
 
-                <div class="pk-box pk-scanner" [attr.data-state]="packDone() ? 'done' : (feedback()?.tone ?? 'idle')">
+                <div class="pk-box pk-scanner"
+                  [attr.data-state]="packDone() || sessionClosed() ? 'done' : (feedback()?.tone ?? 'idle')">
                   <div class="pk-label">
                     <i class="pi pi-qrcode"></i> قارئ الباركود
                     <span class="pk-live" [class.off]="!scanActive()">
-                      <i class="pk-dot"></i>{{ packDone() ? 'مكتملة' : packing() ? 'جاري الحفظ' : 'جاهز للمسح' }}
+                      <i class="pk-dot"></i>{{
+                        packDone()
+                          ? 'مكتملة'
+                          : packing()
+                            ? 'جاري الحفظ'
+                            : sessionClosed()
+                              ? 'الجلسة مغلقة'
+                              : 'جاهز للمسح'
+                      }}
                     </span>
                   </div>
 
-                  <div class="pk-reader" [class.reading]="!!scanBuffer()">
+                  <div class="pk-reader" [class.reading]="!!scanBuffer() && !sessionClosed()">
                     <div class="pk-reader-ico">
-                      <i class="pi" [ngClass]="packDone() ? 'pi-check-circle' : 'pi-qrcode'"></i>
+                      <i class="pi" [ngClass]="packDone() ? 'pi-check-circle' : sessionClosed() ? 'pi-lock' : 'pi-qrcode'"></i>
                       @if (scanActive()) { <span class="pk-laser"></span> }
                     </div>
                     <strong>
-                      {{ packDone() ? 'تم تأكيد التغليف' : scanBuffer() ? 'جاري قراءة الكود...' : 'وجّه القارئ نحو الصندوق أو الظرف' }}
+                      {{
+                        packDone()
+                          ? 'تم تأكيد التغليف'
+                          : sessionClosed()
+                            ? 'اكتمل المسح وتم إغلاق الجلسة'
+                            : scanBuffer()
+                              ? 'جاري قراءة الكود...'
+                              : 'وجّه القارئ نحو الصندوق أو الظرف'
+                      }}
                     </strong>
-                    @if (scanBuffer()) {
+                    @if (scanBuffer() && !sessionClosed()) {
                       <code class="pk-buffer pk-mono">{{ scanBuffer() }}</code>
+                    } @else if (sessionClosed() && !packDone()) {
+                      <small>لا يمكن مسح أي صندوق أو ظرف آخر — اضغط «تأكيد التغليف»</small>
                     } @else if (!packDone()) {
                       <small>الجلسة مفتوحة تلقائيًا — لا حاجة للضغط على أي زر أو الكتابة</small>
                     }
                   </div>
-<!-- Manual QR Input -->
-<label class="pk-search">
-  <i class="pi pi-keyboard"></i>
 
-  <input
-    type="text"
-    autocomplete="off"
-    placeholder="اكتبي كود QR واضغطي Enter..."
-    [ngModel]="manualQrCode()"
-    (ngModelChange)="manualQrCode.set($event)"
-    (keydown.enter)="$event.preventDefault(); $event.stopPropagation(); submitManualQr()"
-    [disabled]="!scanActive()"
-    dir="ltr"
-  />
-</label>
+                  <!-- Manual QR Input: بيتخفى لما الجلسة تتقفل -->
+                  @if (!sessionClosed()) {
+                    <label class="pk-search">
+                      <i class="pi pi-keyboard"></i>
+
+                      <input
+                        type="text"
+                        autocomplete="off"
+                        placeholder="اكتبي كود QR واضغطي Enter..."
+                        [ngModel]="manualQrCode()"
+                        (ngModelChange)="manualQrCode.set($event)"
+                        (keydown.enter)="$event.preventDefault(); $event.stopPropagation(); submitManualQr()"
+                        [disabled]="!scanActive()"
+                        dir="ltr"
+                      />
+                    </label>
+                  }
+
                   @if (feedback(); as f) {
                     @for (x of [f]; track x.id) {
                       <div class="pk-feedback" [attr.data-tone]="x.tone">
@@ -437,6 +460,14 @@
                     <div>
                       <strong>تم تغليف لجنة {{ packResult()?.committeeNumber }} بنجاح</strong>
                       <span>الحالة: {{ packResult()?.status }}</span>
+                    </div>
+                  </div>
+                } @else if (sessionClosed()) {
+                  <div class="pk-banner" data-tone="success">
+                    <i class="pi pi-lock"></i>
+                    <div>
+                      <strong>تم إغلاق جلسة المسح</strong>
+                      <span>اكتمل مسح كل الصناديق والأظرف، يمكنك الآن تأكيد التغليف.</span>
                     </div>
                   </div>
                 }

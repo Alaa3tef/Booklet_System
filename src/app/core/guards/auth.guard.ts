@@ -9,7 +9,10 @@ import { AuthService } from '../services/auth.service';
 import { catchError, map, of, timeout } from 'rxjs';
 
 const normalizeRole = (role: string | null | undefined): string =>
-  (role ?? '').trim().toLowerCase().replace(/[\s_-]+/g, ' ');
+  (role ?? '')
+    .trim()
+    .toLowerCase()
+    .replace(/[\s_-]+/g, '');
 
 const dashboardRoles = new Set([
   'superadmin',
@@ -38,6 +41,7 @@ const workflowRouteByRole: Record<string, string> = {
   storage: '/workflow/archiving',
   // warehouse: '/warehouses',
   prequality: '/workflow/printing-approved',
+  //prequality: '/workflow/printing-approved',
 
   // warehouses: '/warehouses',
   // 'warehouse management': '/warehouses'

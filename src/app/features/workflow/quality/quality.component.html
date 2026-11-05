@@ -261,14 +261,16 @@
             </small>
           </div>
 
-          <span class="qc-hd-pill" [class.on]="!!activeCommittee() && !completing()">
+          <span class="qc-hd-pill" [class.on]="!!activeCommittee() && !completing() && !sessionClosed()">
             <span class="qc-dot"></span>
             {{
               completing()
                 ? 'جاري الحفظ...'
-                : activeCommittee()
-                  ? 'الجلسة مفتوحة - الماسح جاهز'
-                  : 'اختر لجنة لبدء الجلسة'
+                : sessionClosed()
+                  ? 'تم إغلاق جلسة المسح - اكتمل المسح'
+                  : activeCommittee()
+                    ? 'الجلسة مفتوحة - الماسح جاهز'
+                    : 'اختر لجنة لبدء الجلسة'
             }}
           </span>
         </div>
@@ -392,47 +394,51 @@
 
             <!-- Scanner strip -->
             <div class="qc-scanner">
-              <div class="qc-radar" [attr.data-state]="feedback()?.kind || 'idle'">
+              <div class="qc-radar" [attr.data-state]="sessionClosed() ? 'success' : (feedback()?.kind || 'idle')">
                 <i class="qc-corner tl"></i><i class="qc-corner tr"></i>
                 <i class="qc-corner bl"></i><i class="qc-corner br"></i>
-                <i class="pi qc-radar-ico" [ngClass]="allScanned() ? 'pi-check-circle' : 'pi-qrcode'"></i>
-                <span class="qc-laser" *ngIf="!allScanned() && !envelopesLoading()"></span>
+                <i class="pi qc-radar-ico" [ngClass]="sessionClosed() ? 'pi-lock' : 'pi-qrcode'"></i>
+                <span class="qc-laser" *ngIf="!sessionClosed() && !envelopesLoading()"></span>
               </div>
 
               <div class="qc-scanner-body">
-                
-<div class="qc-manual-scan">
-  <label for="qc-manual-scan-input">
-    إدخال كود QR يدويًا
-  </label>
 
-  <span class="qc-search">
-    <i class="pi pi-keyboard"></i>
+                <!-- الإدخال اليدوي: بيتخفى لما الجلسة تتقفل -->
+                <div class="qc-manual-scan" *ngIf="!sessionClosed()">
+                  <label for="qc-manual-scan-input">
+                    إدخال كود QR يدويًا
+                  </label>
 
-    <input
-      id="qc-manual-scan-input"
-      pInputText
-      type="text"
-      class="qc-input"
-      placeholder="اكتبي كود الظرف واضغطي Enter..."
-      [ngModel]="manualScanCode()"
-      (ngModelChange)="manualScanCode.set($event)"
-      (keydown.enter)="$event.preventDefault(); submitManualScan()"
-      [disabled]="envelopesLoading() || completing() || allScanned()"
-      autocomplete="off"
-      dir="ltr"
-    />
-  </span>
-</div>
+                  <span class="qc-search">
+                    <i class="pi pi-keyboard"></i>
+
+                    <input
+                      id="qc-manual-scan-input"
+                      pInputText
+                      type="text"
+                      class="qc-input"
+                      placeholder="اكتبي كود الظرف واضغطي Enter..."
+                      [ngModel]="manualScanCode()"
+                      (ngModelChange)="manualScanCode.set($event)"
+                      (keydown.enter)="$event.preventDefault(); submitManualScan()"
+                      [disabled]="envelopesLoading() || completing() || sessionClosed()"
+                      autocomplete="off"
+                      dir="ltr"
+                    />
+                  </span>
+                </div>
 
                 <p class="qc-station-hint">
-                  <ng-container *ngIf="!allScanned(); else doneHint">
+                  <ng-container *ngIf="!sessionClosed(); else doneHint">
                     وجّه الماسح على QR الظرف، لا حاجة للكتابة أو الضغط على أي زر.
                   </ng-container>
-                  <ng-template #doneHint>تمت مطابقة جميع الأظرف بنجاح.</ng-template>
+                  <ng-template #doneHint>
+                    <i class="pi pi-lock"></i>
+                    تمت مطابقة جميع الأظرف وتم إغلاق جلسة المسح، لا يمكن مسح أي ظرف آخر.
+                  </ng-template>
                 </p>
 
-                <div class="qc-live" *ngIf="liveBuffer()">
+                <div class="qc-live" *ngIf="liveBuffer() && !sessionClosed()">
                   <i class="pi pi-spin pi-spinner"></i>
                   <span>جاري القراءة...</span>
                   <code>{{ liveBuffer() }}</code>
@@ -455,8 +461,16 @@
                 <div class="qc-feedback qc-feedback-idle" *ngIf="!feedback()">
                   <span class="qc-feedback-ico"><i class="pi pi-info-circle"></i></span>
                   <div>
-                    <strong>في انتظار المسح</strong>
-                    <span>{{ orderEnforced ? 'امسح الأظرف بالترتيب.' : 'امسح أي ظرف، الترتيب غير مهم.' }}</span>
+                    <strong>{{ sessionClosed() ? 'جلسة المسح مغلقة' : 'في انتظار المسح' }}</strong>
+                    <span>
+                      {{
+                        sessionClosed()
+                          ? 'اكتمل مسح كل الأظرف.'
+                          : orderEnforced
+                            ? 'امسح الأظرف بالترتيب.'
+                            : 'امسح أي ظرف، الترتيب غير مهم.'
+                      }}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -573,7 +587,7 @@
                       </div>
                     </div>
 
-                    <code class="qc-env-prefix">{{ envPrefix(e.code) }}</code>
+                    <code class="qc-env-prefix">{{ e.code }}</code>
 
                     <footer>
                       <span class="qc-state">
@@ -593,9 +607,9 @@
                 </ng-template>
               </div>
 
-              <div class="qc-note qc-note-success" *ngIf="allScanned()">
-                <i class="pi pi-check-circle"></i>
-                تمت مطابقة جميع الأظرف. يمكنك الآن إتمام مراجعة اللجنة.
+              <div class="qc-note qc-note-success" *ngIf="sessionClosed()">
+                <i class="pi pi-lock"></i>
+                تمت مطابقة جميع الأظرف وتم إغلاق جلسة المسح. يمكنك الآن إتمام مراجعة اللجنة.
               </div>
             </ng-container>
 
@@ -622,12 +636,12 @@
       <ng-template pTemplate="footer">
         <div class="qc-footer">
           <span class="qc-footer-hint">
-            <i class="pi pi-info-circle"></i>
+            <i class="pi" [ngClass]="sessionClosed() ? 'pi-lock' : 'pi-info-circle'"></i>
             <ng-container *ngIf="activeCommittee(); else noActiveHint">
-              <ng-container *ngIf="!allScanned(); else readyHint">
+              <ng-container *ngIf="!sessionClosed(); else readyHint">
                 يظهر زر الإتمام بعد مطابقة جميع الأظرف (متبقي {{ remainingCount() }}) · التقدم محفوظ عند التنقل أو الإغلاق
               </ng-container>
-              <ng-template #readyHint>جميع الأظرف مطابقة، يمكنك إتمام المراجعة.</ng-template>
+              <ng-template #readyHint>تم إغلاق جلسة المسح، جميع الأظرف مطابقة. يمكنك إتمام المراجعة.</ng-template>
             </ng-container>
             <ng-template #noActiveHint>اختر لجنة من القائمة لعرض أظرفها وبدء المسح.</ng-template>
           </span>
@@ -635,7 +649,7 @@
           <div class="qc-actions">
             <button pButton type="button" class="qc-btn qc-btn-ghost" label="إغلاق" [disabled]="completing()" (click)="closeDialog()"></button>
             <button
-              *ngIf="activeCommittee() && allScanned()"
+              *ngIf="activeCommittee() && sessionClosed()"
               pButton
               type="button"
               class="qc-btn qc-btn-success"
