@@ -190,9 +190,9 @@ export default class ArchivingComponent implements OnInit {
   readonly arSlots = computed<{ box: Slot; shelf: Slot }>(() => {
     const pending = this.pendingBox();
     const last = this.placed()[this.placed().length - 1];
-    if (pending) return { box: { text: pending, state: 'ok' }, shelf: { text: 'امسحي كود الرف', state: 'wait' } };
+    if (pending) return { box: { text: pending, state: 'ok' }, shelf: { text: 'امسح كود الرف', state: 'wait' } };
     if (last) return { box: { text: last.trackingCode, state: 'ok' }, shelf: { text: last.place, state: 'ok' } };
-    return { box: { text: 'امسحي الصندوق', state: 'wait' }, shelf: { text: '—', state: 'idle' } };
+    return { box: { text: 'امسح الصندوق', state: 'wait' }, shelf: { text: '—', state: 'idle' } };
   });
 
   // =====================================================================

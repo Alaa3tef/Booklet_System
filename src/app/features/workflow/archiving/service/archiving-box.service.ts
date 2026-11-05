@@ -188,7 +188,7 @@ export class ArchivingBoxService {
 
   resolveLocation(qrCode: string): Observable<ApiResponse<StorageLocationResolveDto>> {
     return this.http.get<ApiResponse<StorageLocationResolveDto>>(
-      `${this.baseUrl}/Boxes/storage/resolve-location/${encodeURIComponent(qrCode.trim())}`);
+      `${this.baseUrl}/Boxes/storage/resolve-location/${qrCode}`);
   }
 
   resolveBox(trackingCode: string): Observable<ApiResponse<BoxResolveDto>> {
