@@ -438,7 +438,7 @@
             <p class="hint"><i class="pi pi-spin pi-spinner"></i> جاري تحميل صناديق اللجنة…</p>
           }
 
-          <div class="bgrid">
+                    <div class="bgrid">
             @for (b of visibleBoxes(); track b.id) {
               <article class="bcard" [attr.data-state]="b.state">
                 <header><span class="bcard-kind">صندوق</span><span class="bcard-no">{{ b.seq }}</span></header>
@@ -455,6 +455,16 @@
                   </span>
                   <div><small>رقم الصندوق</small><b>{{ b.seq | number: '3.0-0' }}</b></div>
                 </div>
+
+                <!-- مكان التخزين (الرف) — ظاهر بشكل واضح -->
+                <div class="bcard-rack" *ngIf="b.rack">
+                  <span class="bcard-rack-ico"><i class="pi pi-warehouse"></i></span>
+                  <div>
+                    <small>متخزن في الرف</small>
+                    <b class="mono">{{ b.rack || 'غير محدد' }}</b>
+                  </div>
+                </div>
+
                 <code class="bcard-code">{{ b.code }}</code>
                 <footer>
                   <span class="bcard-pill">

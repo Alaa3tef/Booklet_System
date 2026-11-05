@@ -20,7 +20,7 @@ type Completion = { title: string; text: string };
 
 interface ArCommittee { id: number; number: string; boxCount: number; }
 interface Placement { trackingCode: string; qrCode: string; place: string; }
-interface SessionBox { id: number; seq: number; code: string; state: 'done' | 'pending' | 'todo' | 'scanned'; note: string; }
+interface SessionBox { id: number; seq: number; code: string; state: 'done' | 'pending' | 'todo' | 'scanned'; note: string; rack: string;}
 interface Slot { text: string; state: 'ok' | 'wait' | 'idle'; }
 type BoxFilter = 'all' | 'todo' | 'done';
 interface SideItem { id: number; number: string; label: string; status: 'now' | 'done' | 'todo'; }
@@ -465,7 +465,7 @@ export default class ArchivingComponent implements OnInit {
     return c ? { id: c.committeeId, number: c.committeeNumber, subject: this.orderTitle(o), chips: [o?.governorateName ?? '', this.orderTitle(o), b?.roundName ?? o?.roundName ?? ''] } : null;
   });
 
-  readonly sessionBoxes = computed<SessionBox[]>(() => {
+    readonly sessionBoxes = computed<SessionBox[]>(() => {
     if (this.tab() === 'archive') {
       if (!this.arSelected()) return [];
       const placedMap = new Map(this.placed().map(p => [p.trackingCode, p]));
@@ -473,7 +473,11 @@ export default class ArchivingComponent implements OnInit {
         const p = placedMap.get(b.trackingCode);
         const stored = (b.storageLocationId ?? 0) > 0;
         const state: SessionBox['state'] = p || stored ? 'done' : this.pendingBox() === b.trackingCode ? 'pending' : 'todo';
-        return { id: b.boxId, seq: b.sequenceNo, code: b.trackingCode, state, note: p?.place ?? b.storageLocationQrCode ?? '' };
+        return {
+          id: b.boxId, seq: b.sequenceNo, code: b.trackingCode, state,
+          note: p?.place ?? b.storageLocationQrCode ?? '',
+          rack: b.storageLocationQrCode ?? '',
+        };
       });
     }
 
@@ -499,7 +503,8 @@ export default class ArchivingComponent implements OnInit {
           ? 'تم التسليم'
           : scanned
             ? 'تمت القراءة بنجاح — في انتظار التسليم'
-            : b.storageLocationCode,
+            : '',
+        rack: b.storageLocationCode ?? '',
       };
     });
   });

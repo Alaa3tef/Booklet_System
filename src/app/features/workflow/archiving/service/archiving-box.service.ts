@@ -121,7 +121,7 @@ export interface DeliveryBatchDto {
 }
 /** GET /api/WarehouseDelivery/batches/{batchId}/committees */
 export interface DeliveryCommitteeBoxDto {
-  boxId: number; sequenceNo: number; qrCode: string; status: string; storageLocationCode: string;
+  boxId: number; sequenceNo: number; qrCode: string; status: string; storageLocationCode: string; rack?: string | null;
 }
 export interface DeliveryCommitteeDto {
   committeeId: number; committeeNumber: string; boxCount: number; boxes: DeliveryCommitteeBoxDto[];

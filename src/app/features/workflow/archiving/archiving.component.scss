@@ -20,7 +20,7 @@ $err-soft: #c85a5e;   /* أحمر هادي لرسالة عدم المطابقة 
 $lock: #486581;       /* لون حالة «المسح مقفول» */
 
 .flow { --accent: #{$teal}; --accent-soft: #{$teal-soft}; display: grid; gap: 16px; &.wh { --accent: #{$blue}; --accent-soft: #{$blue-soft}; } }
-code, .mono { font-family: ui-monospace, Consolas, monospace; direction: ltr; unicode-bidi: embed; }
+code, .mono { font-family: ui-monospace, Consolas, monospace; direction: rtl; unicode-bidi: embed; }
 .empty {
   grid-column: 1 / -1;
   min-height: 190px;
@@ -251,22 +251,36 @@ code, .mono { font-family: ui-monospace, Consolas, monospace; direction: ltr; un
     span { background: #eef2f7; border-radius: 999px; min-width: 26px; padding: 1px 8px; text-align: center; font-size: 12.5px; }
     &.on { background: $navy; border-color: $navy; color: #fff; span { background: rgba(255, 255, 255, .2); } } &:focus-visible { outline: 3px solid $blue; outline-offset: 2px; } } }
 
-/* كروت الصناديق (زي كروت الأظرف) */
-.bgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 14px; }
-.bcard { background: #fff; border: 1px solid $line; border-top: 3px solid $blue; border-radius: 14px; padding: 12px 14px; display: grid; gap: 10px;
+/* كروت الصناديق (زي كروت الأظرف) — متكبّرة + بلوك الرف */
+.bgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 18px; }
+.bcard { background: #fff; border: 1px solid $line; border-top: 4px solid $blue; border-radius: 18px; padding: 18px 20px; display: grid; gap: 14px;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, .04);
   header { display: flex; align-items: center; justify-content: space-between; }
-  .bcard-kind { background: $blue-soft; color: $blue; border-radius: 999px; padding: 2px 12px; font-size: 12px; font-weight: 800; }
-  .bcard-no { background: #eef2f7; color: $muted; border-radius: 8px; padding: 1px 9px; font-size: 12.5px; font-weight: 800; }
-  .bcard-mid { display: flex; align-items: center; gap: 12px; > div { small { display: block; color: $muted; font-size: 12px; } b { font-size: 26px; font-weight: 800; letter-spacing: .04em; } } }
-  .bcard-ico { width: 40px; height: 40px; border-radius: 10px; background: $blue-soft; color: $blue; display: grid; place-items: center; }
-  .bcard-code { background: #f3f6fa; border: 1px solid $line; border-radius: 8px; padding: 6px 10px; font-size: 11.5px; color: $muted; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .bcard-kind { background: $blue-soft; color: $blue; border-radius: 999px; padding: 3px 14px; font-size: 13.5px; font-weight: 800; }
+  .bcard-no { background: #eef2f7; color: $muted; border-radius: 8px; padding: 2px 11px; font-size: 14px; font-weight: 800; }
+  .bcard-mid { display: flex; align-items: center; gap: 14px; > div { small { display: block; color: $muted; font-size: 13px; } b { font-size: 34px; font-weight: 800; letter-spacing: .04em; line-height: 1.2; } } }
+  .bcard-ico { width: 52px; height: 52px; border-radius: 14px; background: $blue-soft; color: $blue; display: grid; place-items: center; font-size: 22px; }
+
+  /* مكان التخزين (الرف) */
+  .bcard-rack { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 14px; background: $blue-soft; border: 1.5px solid #bcd1fb;
+    .bcard-rack-ico { width: 42px; height: 42px; border-radius: 11px; background: $blue; color: #fff; display: grid; place-items: center; font-size: 18px; flex-shrink: 0; }
+    > div { min-width: 0; flex: 1; }
+    small { display: block; color: $blue; font-size: 12.5px; font-weight: 700; }
+    b { display: block; font-size: 20px; font-weight: 900; color: $navy; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    &.empty { background: #f3f6fa; border: 1.5px dashed #cbd5e1;
+      .bcard-rack-ico { background: #cbd5e1; }
+      small { color: $muted; } b { color: $muted; font-size: 16px; } } }
+
+  .bcard-code { background: #f3f6fa; border: 1px solid $line; border-radius: 8px; padding: 8px 12px; font-size: 12.5px; color: $muted; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   footer { display: flex; align-items: center; justify-content: space-between; gap: 6px; flex-wrap: wrap; }
-  .bcard-pill { display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 999px; background: $blue-soft; color: $blue; font-size: 12.5px; font-weight: 800; i { font-size: 11px; } }
-  .bcard-note { font-family: ui-monospace, Consolas, monospace; font-size: 11.5px; color: $muted; direction: ltr; }
-  &[data-state='done'] { border-top-color: $green; background: #fafffc; .bcard-ico { background: $green-soft; color: $green; } .bcard-pill { background: $green-soft; color: $green; } }
+  .bcard-pill { display: inline-flex; align-items: center; gap: 6px; padding: 5px 14px; border-radius: 999px; background: $blue-soft; color: $blue; font-size: 13.5px; font-weight: 800; i { font-size: 12px; } }
+  .bcard-note { font-family: ui-monospace, Consolas, monospace; font-size: 12px; color: $muted; direction: ltr; }
+  &[data-state='done'] { border-top-color: $green; background: #fafffc; .bcard-ico { background: $green-soft; color: $green; } .bcard-pill { background: $green-soft; color: $green; }
+    .bcard-rack { background: $green-soft; border-color: #a7e3bd; .bcard-rack-ico { background: $green; } small { color: $green; } } }
   &[data-state='pending'] { border-top-color: $amber; .bcard-ico, .bcard-pill { background: $amber-soft; color: #a16207; } }
-  &[data-state='scanned'] { border: 1px solid #86efac; border-top: 3px solid $green; background: #f0fdf4;
-    .bcard-ico, .bcard-pill { background: #dcfce7; color: #15803d; } .bcard-code { border-color: #bbf7d0; background: #f0fdf4; } } }
+  &[data-state='scanned'] { border: 1px solid #86efac; border-top: 4px solid $green; background: #f0fdf4;
+    .bcard-ico, .bcard-pill { background: #dcfce7; color: #15803d; } .bcard-code { border-color: #bbf7d0; background: #f0fdf4; }
+    .bcard-rack { background: #dcfce7; border-color: #86efac; .bcard-rack-ico { background: #15803d; } small { color: #15803d; } } } }
 
 .ses-foot { display: flex; align-items: center; gap: 16px; padding: 14px 26px; background: #fff; border-top: 1px solid $line; width: 100%;
   .ses-close { padding: 10px 22px; border-radius: 10px; border: 1px solid $line; background: #fff; font: inherit; font-weight: 700; cursor: pointer; color: $ink; &:hover { background: #f3f6fa; } }
