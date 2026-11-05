@@ -370,7 +370,7 @@
                       <input
                         type="text"
                         autocomplete="off"
-                        placeholder="اكتبي كود QR واضغطي Enter..."
+                        placeholder="اكتب كود QR واضغط Enter..."
                         [ngModel]="manualQrCode()"
                         (ngModelChange)="manualQrCode.set($event)"
                         (keydown.enter)="$event.preventDefault(); $event.stopPropagation(); submitManualQr()"
