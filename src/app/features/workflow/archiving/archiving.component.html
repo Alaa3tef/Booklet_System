@@ -305,17 +305,30 @@
 
         <div class="ses-main">
 
-          <section class="scanner" [attr.data-kind]="feedback()?.kind ?? 'idle'">
+          <!-- ===================== قارئ الباركود ===================== -->
+          <section
+            class="scanner"
+            [attr.data-kind]="feedback()?.kind ?? (readyToSubmit() ? 'ready' : 'idle')"
+          >
             <header class="scanner-head">
               <h4><i class="pi pi-qrcode"></i> قارئ الباركود</h4>
-              <span class="scanner-chip" [class.busy]="busy()"><i></i> {{ busy() ? 'جاري المعالجة…' : 'جاهز للمسح' }}</span>
+              <span class="scanner-count">
+                @if (tab() === 'warehouse') { {{ whScannedCount() }} / {{ whExpectedScanCount() }} }
+                @else { {{ sessionStats().done }} / {{ sessionStats().total }} }
+              </span>
+              <span class="scanner-chip" [class.busy]="busy()" [class.locked]="readyToSubmit() && !busy()">
+                <i></i> {{ busy() ? 'جاري المعالجة…' : readyToSubmit() ? 'المسح مقفول' : 'جاهز للمسح' }}
+              </span>
             </header>
+
             <div
               class="scanner-zone"
               [class.feedback-ok]="feedback()?.kind === 'ok'"
               [class.feedback-err]="feedback()?.kind === 'err'"
               [class.feedback-warn]="feedback()?.kind === 'warn'"
-              [attr.aria-live]="feedback() ? 'assertive' : 'polite'"
+              [class.feedback-lock]="feedback()?.kind === 'lock'"
+              role="status"
+              [attr.aria-live]="feedback()?.kind === 'err' ? 'assertive' : 'polite'"
               aria-atomic="true"
             >
               <span class="scanner-box" aria-hidden="true">
@@ -325,6 +338,10 @@
                   <i class="pi pi-times-circle"></i>
                 } @else if (feedback()?.kind === 'warn') {
                   <i class="pi pi-exclamation-triangle"></i>
+                } @else if (feedback()?.kind === 'lock') {
+                  <i class="pi pi-lock"></i>
+                } @else if (readyToSubmit()) {
+                  <i class="pi pi-check-circle"></i>
                 } @else {
                   <i class="pi pi-qrcode"></i>
                   <span class="scanner-line"></span>
@@ -333,13 +350,20 @@
 
               <div class="scanner-txt">
                 @if (feedback(); as f) {
-                  <b class="scanner-feedback" [attr.data-kind]="f.kind">
-                    {{ f.text }}
-                  </b>
+                  <span class="scanner-tag" [attr.data-kind]="f.kind">
+                    {{ f.kind === 'ok' ? 'تمت القراءة' : f.kind === 'err' ? 'خطأ في القراءة' : f.kind === 'lock' ? 'المسح مقفول' : 'تنبيه' }}
+                  </span>
+                  <b class="scanner-feedback" [attr.data-kind]="f.kind">{{ f.text }}</b>
+                  <small>القراءة الأخيرة: <code>{{ lastRead() }}</code></small>
 
+                } @else if (readyToSubmit()) {
+
+                  <span class="scanner-tag" data-kind="ok">اكتمل المسح</span>
+                  <b>{{ tab() === 'archive' ? 'تم تحديد مكان كل الصناديق' : 'تم مسح كل الصناديق' }}</b>
                   <small>
-                    القراءة الأخيرة:
-                    <code>{{ lastRead() }}</code>
+                    {{ tab() === 'archive'
+                      ? 'اضغط «تأكيد تخزين اللجنة» لإنهاء التخزين.'
+                      : 'اضغط «تسليم» لإرسال القائمة وإنهاء التسليم.' }}
                   </small>
 
                 } @else if (tab() === 'archive') {
@@ -349,7 +373,6 @@
                       ? 'وجّه القارئ نحو الصندوق'
                       : 'وجّه القارئ نحو الرف' }}
                   </b>
-
                   <small>
                     {{ arStep() === 1
                       ? 'الجلسة مفتوحة تلقائيًا — امسح كود الصندوق.'
@@ -359,15 +382,17 @@
                 } @else {
 
                   <b>تم مسح {{ whScannedCount() }} من {{ whExpectedScanCount() }} صندوق</b>
-
-                  <small>
-                    امسح الصناديق، وبعدها اضغط «تسليم» لإرسال القائمة مرة واحدة.
-                  </small>
+                  <small>امسح الصناديق، وبعدها اضغط «تسليم» لإرسال القائمة مرة واحدة.</small>
 
                 }
               </div>
             </div>
-            <input #manualS data-no-scan class="scanner-input" type="text" autocomplete="off" placeholder="أو اكتب كود QR واضغط Enter…" (keydown.enter)="manualScan(manualS)" />
+
+            <div class="scanner-progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" [attr.aria-valuenow]="scanProgress()">
+              <span [style.width.%]="scanProgress()"></span>
+            </div>
+
+            <input #manualS data-no-scan class="scanner-input" type="text" autocomplete="off" [disabled]="readyToSubmit()" [placeholder]="readyToSubmit() ? 'المسح مقفول — كل الصناديق اتمسحت' : 'أو اكتب كود QR واضغط Enter…'" (keydown.enter)="manualScan(manualS)" />
           </section>
 
           @if (tab() === 'archive') {
@@ -458,6 +483,20 @@
             } @empty { <p class="empty">لا توجد صناديق في الفلتر ده.</p> }
           </div>
         </div>
+
+        <!-- ===================== رسالة إنجاز اللجنة ===================== -->
+        @if (completion(); as done) {
+          <div class="done-overlay" role="alertdialog" aria-modal="true" aria-labelledby="doneTitle">
+            <div class="done-card">
+              <span class="done-ico"><i class="pi pi-check"></i></span>
+              <h3 id="doneTitle">{{ done.title }}</h3>
+              <p>{{ done.text }}</p>
+              <button type="button" class="done-btn" (click)="acknowledgeComplete()">
+                <i class="pi pi-check"></i> تمام
+              </button>
+            </div>
+          </div>
+        }
       </div>
 
       <ng-template pTemplate="footer">
@@ -470,7 +509,7 @@
               (تم مسح {{ whScannedCount() }} من {{ whExpectedScanCount() }})
             }
           </span>
-          @if (tab() === 'warehouse' && whScannedCount() > 0) {
+          @if (tab() === 'warehouse' && whScannedCount() > 0 && !completion()) {
             <button
               type="button"
               class="ses-finish"

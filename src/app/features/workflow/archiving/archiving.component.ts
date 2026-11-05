@@ -13,9 +13,10 @@ import {
 } from './service/archiving-box.service';
 
 type Tab = 'archive' | 'warehouse';
-type Feedback = { kind: 'ok' | 'warn' | 'err'; text: string };
+type Feedback = { kind: 'ok' | 'warn' | 'err' | 'lock'; text: string };
 type Lookup = { kind: 'location'; data: StorageLocationResolveDto } | { kind: 'box'; data: BoxResolveDto };
 type Crumb = { label: string; go: () => void };
+type Completion = { title: string; text: string };
 
 interface ArCommittee { id: number; number: string; boxCount: number; }
 interface Placement { trackingCode: string; qrCode: string; place: string; }
@@ -376,6 +377,9 @@ export default class ArchivingComponent implements OnInit {
   readonly feedback = signal<Feedback | null>(null);
   readonly lookup = signal<Lookup | null>(null);
 
+  /** رسالة الإنجاز: بتظهر فوق الجلسة بعد ما اللجنة تخلص، والمستخدم لازم يضغط «تمام» */
+  readonly completion = signal<Completion | null>(null);
+
   /** التابة الافتراضية (الأرشيف) بس — المخزن بيتحمّل لما تتضغط */
   ngOnInit(): void { this.loadTab(); }
 
@@ -472,31 +476,32 @@ export default class ArchivingComponent implements OnInit {
         return { id: b.boxId, seq: b.sequenceNo, code: b.trackingCode, state, note: p?.place ?? b.storageLocationQrCode ?? '' };
       });
     }
-   const c = this.whSelected();
-if (!c) return [];
 
-const scannedCodes = new Set(this.whScannedCodes());
+    const c = this.whSelected();
+    if (!c) return [];
 
-return c.boxes.map(b => {
-  const delivered = this.boxDelivered(b);
-  const scanned = scannedCodes.has(b.qrCode);
+    const scannedCodes = new Set(this.whScannedCodes());
 
-  return {
-    id: b.boxId,
-    seq: b.sequenceNo,
-    code: b.qrCode,
-    state: (
-      delivered ? 'done' :
-      scanned ? 'scanned' :
-      'todo'
-    ) as SessionBox['state'],
-    note: delivered
-      ? 'تم التسليم'
-      : scanned
-        ? 'تمت القراءة بنجاح — في انتظار التسليم'
-        : b.storageLocationCode,
-  };
-});
+    return c.boxes.map(b => {
+      const delivered = this.boxDelivered(b);
+      const scanned = scannedCodes.has(b.qrCode);
+
+      return {
+        id: b.boxId,
+        seq: b.sequenceNo,
+        code: b.qrCode,
+        state: (
+          delivered ? 'done' :
+          scanned ? 'scanned' :
+          'todo'
+        ) as SessionBox['state'],
+        note: delivered
+          ? 'تم التسليم'
+          : scanned
+            ? 'تمت القراءة بنجاح — في انتظار التسليم'
+            : b.storageLocationCode,
+      };
+    });
   });
 
   readonly sessionStats = computed(() => {
@@ -517,12 +522,43 @@ return c.boxes.map(b => {
     return q ? items.filter(i => i.number.includes(q) || i.label.includes(q)) : items;
   });
 
-  readonly canFinish = computed(() => this.tab() === 'archive' && this.arAllPlaced() && this.placed().length > 0);
+  readonly canFinish = computed(() =>
+    this.tab() === 'archive' && this.arAllPlaced() && this.placed().length > 0 && !this.completion());
+
+  /** خلص مسح كل الصناديق وفاضل زرار الإرسال/التأكيد */
+  readonly readyToSubmit = computed(() => {
+    if (this.completion()) return false;
+    if (this.tab() === 'archive') return this.arAllPlaced() && this.placed().length > 0;
+    const expected = this.whExpectedScanCount();
+    return expected > 0 && this.whScannedCount() >= expected;
+  });
+
+  /** نسبة شريط التقدم في قارئ الباركود */
+  readonly scanProgress = computed(() => {
+    if (this.tab() === 'archive') return this.sessionStats().pct;
+    const expected = this.whExpectedScanCount();
+    return expected ? Math.min(100, Math.round((this.whScannedCount() / expected) * 100)) : this.sessionStats().pct;
+  });
 
   openCommittee(id: number): void { this.tab() === 'archive' ? this.pickArCommittee(id) : this.pickWhCommittee(id); }
   closeSession(): void {
     if (!this.session()) return;
     this.tab() === 'archive' ? this.pickArCommittee(null) : this.pickWhCommittee(null);
+  }
+
+  /** زرار «تمام» في رسالة الإنجاز: يقفل شاشة السكان ويحدّث القوائم */
+  acknowledgeComplete(): void {
+    const archive = this.tab() === 'archive';
+    const batch = this.arBatch();
+    this.completion.set(null);
+    this.closeSession();
+    if (archive) {
+      if (batch) this.loadBatchCommittees(batch, true);
+    } else {
+      this.loadOrders();
+      const batchId = this.whBatchId();
+      if (batchId !== null) this.loadCommittees(batchId, true);
+    }
   }
 
   whDeliveredCount(c: DeliveryCommitteeDto): number { return c.boxes.filter(b => this.boxDelivered(b)).length; }
@@ -540,7 +576,11 @@ return c.boxes.map(b => {
    */
   @HostListener('document:keydown', ['$event'])
   onKey(e: KeyboardEvent): void {
-    if (e.key === 'Escape' && this.session()) { this.closeSession(); return; }
+    if (e.key === 'Escape' && this.session()) {
+      this.completion() ? this.acknowledgeComplete() : this.closeSession();
+      return;
+    }
+    if (this.completion()) return;   // رسالة الإنجاز ظاهرة — مفيش سكان
     const t = e.target as HTMLElement | null;
     if (t?.closest('[data-no-scan]')) return;
     if (e.ctrlKey || e.metaKey || e.altKey) return;
@@ -580,6 +620,7 @@ return c.boxes.map(b => {
 
   /** كل قراءة بتدخل طابور — مفيش قراءة بتضيع لو في طلب شغال */
   onScan(raw: string): void {
+    if (this.completion()) return;
     const code = raw.trim();
     if (!code) return;
     this.queue.push(code);
@@ -589,6 +630,16 @@ return c.boxes.map(b => {
     while (!this.busy() && this.queue.length) {
       const code = this.queue.shift()!;
       this.lastRead.set(code);
+      this.feedback.set(null);   // نمسح نتيجة القراءة السابقة قبل ما نعالج الجديدة
+
+      // كل الصناديق اتمسحت: المسح مقفول لحد الإرسال/التأكيد — منعرضش أي قراءة جديدة
+      if (this.readyToSubmit()) {
+        this.say('lock', this.tab() === 'archive'
+          ? 'المسح مقفول — تم تحديد مكان كل الصناديق، اضغط «تأكيد تخزين اللجنة»'
+          : 'المسح مقفول — تم مسح كل الصناديق، اضغط «تسليم» لإنهاء التسليم');
+        continue;
+      }
+
       if (this.tab() === 'archive') this.arSelected() ? this.archiveScan(code) : this.resolve(code);
       else this.whSelected() ? this.warehouseScan(code) : this.resolve(code);
     }
@@ -598,7 +649,7 @@ return c.boxes.map(b => {
 
   // ---- أرشيف: صندوق ثم رف (بيتجمّعوا محليًا والتأكيد بـ confirm-committee)
   private archiveScan(code: string): void {
-    if (this.arBoxesLoading()) return this.say('warn', 'جاري تحميل صناديق اللجنة — حاولي كمان لحظة');
+    if (this.arBoxesLoading()) return this.say('warn', 'جاري تحميل صناديق اللجنة — حاول كمان لحظة');
 
     const pending = this.pendingBox();
     const asBox = this.packedBoxes().find(b => b.trackingCode === code);
@@ -607,8 +658,8 @@ return c.boxes.map(b => {
 
     if (!pending) {
       if (!asBox) {
-  return this.say('err', 'القراءة غير مطابقة — الكود لا يتبع أي صندوق في اللجنة المختارة');
-}
+        return this.say('err', 'القراءة غير مطابقة — الكود لا يتبع أي صندوق في اللجنة المختارة');
+      }
       if (isDone(asBox)) return this.say('warn', 'الصندوق ده متخزن قبل كده');
       this.pendingBox.set(code);
       return this.say('ok', 'تم مسح الصندوق — امسح كود الرف');
@@ -624,13 +675,13 @@ return c.boxes.map(b => {
     this.api.resolveLocation(code).pipe(finalize(() => this.release())).subscribe({
       next: r => {
         if (!r.success || !r.data) {
-  return this.say('err', 'القراءة غير مطابقة — كود الرف غير معروف');
-}
+          return this.say('err', 'القراءة غير مطابقة — كود الرف غير معروف');
+        }
         const place = `${r.data.rack} / ${r.data.shelf}`;
         this.placed.update(p => [...p, { trackingCode: pending, qrCode: code, place }]);
         this.pendingBox.set(null);
         this.say('ok', this.arAllPlaced()
-          ? `تم تخزين الصندوق في ${place} — اضغطي «تأكيد تخزين اللجنة»`
+          ? `تم تخزين الصندوق في ${place} — اضغط «تأكيد تخزين اللجنة»`
           : `تم تخزين الصندوق في ${place}`);
       },
       error: e => this.say('err', this.errText(e)),
@@ -640,7 +691,6 @@ return c.boxes.map(b => {
   /** POST /Boxes/storage/confirm-committee */
   confirmCommittee(): void {
     const c = this.arSelected();
-    const batch = this.arBatch();
     if (!c || !this.placed().length || this.busy()) return;
     this.begin();
     this.api.confirmCommitteeStorage({ placements: this.placed().map(p => ({ trackingCode: p.trackingCode, qrCode: p.qrCode })) })
@@ -648,50 +698,55 @@ return c.boxes.map(b => {
         next: r => {
           if (!r.success) return this.say('err', r.message || 'تعذر تأكيد التخزين');
           this.doneCommittees.update(s => new Set(s).add(c.id));
-          this.messages.add({ severity: 'success', summary: 'تمت العملية', detail: `تم تأكيد تخزين اللجنة ${c.number}`, life: 3500 });
-          this.pickArCommittee(null);
-          if (batch) this.loadBatchCommittees(batch, true);
+          this.feedback.set(null);
+          // الإغلاق والتحديث بيحصلوا لما المستخدم يضغط «تمام»
+          this.completion.set({
+            title: 'تم تخزين اللجنة بنجاح',
+            text: `تم تخزين كل صناديق اللجنة ${c.number} وتسجيل أماكنها في المخزن.`,
+          });
         },
         error: e => this.say('err', this.errText(e)),
       });
   }
 
   // ---- مخزن: نجمع أكواد اللجنة أولًا، ثم نرسل طلبًا واحدًا بعد آخر صندوق.
-private warehouseScan(code: string): void {
-  const committee = this.whSelected();
-  if (!committee) return;
+  private warehouseScan(code: string): void {
+    const committee = this.whSelected();
+    if (!committee) return;
 
-  const box = committee.boxes.find(item => item.qrCode === code);
+    const box = committee.boxes.find(item => item.qrCode === code);
 
-  // الكود غير تابع للجنة المختارة
-  if (!box) {
-    this.say('err', 'القراءة غير مطابقة — الكود لا يتبع اللجنة المختارة');
-    return;
+    // الكود غير تابع للجنة المختارة
+    if (!box) {
+      this.say('err', 'القراءة غير مطابقة — الكود لا يتبع اللجنة المختارة');
+      return;
+    }
+
+    // الصندوق تم تسليمه بالفعل
+    if (this.boxDelivered(box)) {
+      this.say('warn', `الصندوق ${box.sequenceNo} تم تسليمه بالفعل`);
+      return;
+    }
+
+    // الصندوق تمت قراءته من قبل
+    if (this.whScannedCodes().includes(code)) {
+      this.say('warn', `الصندوق ${box.sequenceNo} تمت قراءته بالفعل`);
+      return;
+    }
+
+    // تسجيل القراءة الصحيحة
+    this.whScannedCodes.update(codes => [...codes, code]);
+
+    const scanned = this.whScannedCount();
+    const expected = this.whExpectedScanCount();
+
+    this.say(
+      'ok',
+      scanned >= expected
+        ? `تمت قراءة الصندوق ${box.sequenceNo} — تم مسح كل الصناديق (${scanned} من ${expected})، اضغط «تسليم»`
+        : `تمت القراءة بنجاح — الصندوق ${box.sequenceNo} مطابق للجنة (${scanned} من ${expected})`
+    );
   }
-
-  // الصندوق تم تسليمه بالفعل
-  if (this.boxDelivered(box)) {
-    this.say('warn', `الصندوق ${box.sequenceNo} تم تسليمه بالفعل`);
-    return;
-  }
-
-  // الصندوق تمت قراءته من قبل
-  if (this.whScannedCodes().includes(code)) {
-    this.say('warn', `الصندوق ${box.sequenceNo} تمت قراءته بالفعل`);
-    return;
-  }
-
-  // تسجيل القراءة الصحيحة
-  this.whScannedCodes.update(codes => [...codes, code]);
-
-  const scanned = this.whScannedCount();
-  const expected = this.whExpectedScanCount();
-
-  this.say(
-    'ok',
-    `تمت القراءة بنجاح — الصندوق ${box.sequenceNo} مطابق للجنة (${scanned} من ${expected})`
-  );
-}
 
   submitWarehouseDelivery(): void {
     const committee = this.whSelected();
@@ -739,13 +794,13 @@ private warehouseScan(code: string): void {
             );
           } else if (left === 0) {
             this.doneCommittees.update(set => new Set(set).add(committee.committeeId));
-            this.messages.add({
-              severity: 'success',
-              summary: 'تم التسليم بنجاح',
-              detail: `تم تسليم ${deliveredCount} صندوق للجنة ${committee.committeeNumber}`,
-              life: 5000,
+            this.feedback.set(null);
+            // الإغلاق والتحديث بيحصلوا لما المستخدم يضغط «تمام»
+            this.completion.set({
+              title: 'تم تسليم اللجنة بالكامل',
+              text: `تم تسليم كل صناديق اللجنة ${committee.committeeNumber} (${deliveredCount} صندوق) وتسجيل التسليم إلكترونيًا.`,
             });
-            this.say('ok', `اكتمل تسليم اللجنة — ${deliveredCount} صندوق`);
+            return;
           } else {
             this.messages.add({
               severity: 'success',
@@ -796,23 +851,18 @@ private warehouseScan(code: string): void {
     this.whScannedCodes.set([]);
     this.whSubmittedCount.set(0);
     this.whDeliveryError.set(false);
+    this.completion.set(null);
     this.lookup.set(null); this.feedback.set(null);
     this.errorCount.set(0); this.boxFilter.set('all'); this.sideSearch.set(''); this.queue = [];
   }
-  private timer?: ReturnType<typeof setTimeout>;
-private say(kind: Feedback['kind'], text: string): void {
-  if (kind === 'err' && this.session()) {
-    this.errorCount.update(n => n + 1);
+
+  /** النتيجة (نجاح/تحذير/خطأ) بتفضل ظاهرة لحد القراءة الجاية — من غير timeout */
+  private say(kind: Feedback['kind'], text: string): void {
+    if (kind === 'err' && this.session()) {
+      this.errorCount.update(n => n + 1);
+    }
+    this.feedback.set({ kind, text });
   }
-
-  this.feedback.set({ kind, text });
-
-  clearTimeout(this.timer);
-
-  this.timer = setTimeout(() => {
-    this.feedback.set(null);
-  }, 3500);
-}
   private toArray<T>(d: unknown): T[] {
     if (Array.isArray(d)) return d as T[];
     const inner = (d as { data?: unknown } | null)?.data;

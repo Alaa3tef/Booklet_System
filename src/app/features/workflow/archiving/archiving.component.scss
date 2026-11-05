@@ -16,6 +16,8 @@ $amber: #d99a0b;
 $amber-soft: #fff6dd;
 $red: #dc2626;
 $red-soft: #fdeceb;
+$err-soft: #c85a5e;   /* أحمر هادي لرسالة عدم المطابقة */
+$lock: #486581;       /* لون حالة «المسح مقفول» */
 
 .flow { --accent: #{$teal}; --accent-soft: #{$teal-soft}; display: grid; gap: 16px; &.wh { --accent: #{$blue}; --accent-soft: #{$blue-soft}; } }
 code, .mono { font-family: ui-monospace, Consolas, monospace; direction: ltr; unicode-bidi: embed; }
@@ -113,7 +115,7 @@ code, .mono { font-family: ui-monospace, Consolas, monospace; direction: ltr; un
     i { width: 9px; height: 9px; border-radius: 50%; background: #2fd5bd; box-shadow: 0 0 0 4px rgba(47, 213, 189, .25); } }
   .ses-x { margin-inline-start: auto; width: 42px; height: 42px; border-radius: 12px; border: 0; background: rgba(255, 255, 255, .12); color: #fff; font-size: 16px; cursor: pointer; &:hover { background: rgba(255, 255, 255, .22); } &:focus-visible { outline: 3px solid #fff; } } }
 
-.ses-body { flex: 1; min-height: 0; height: 100%; display: grid; grid-template-columns: 340px minmax(0, 1fr); }
+.ses-body { position: relative; flex: 1; min-height: 0; height: 100%; display: grid; grid-template-columns: 340px minmax(0, 1fr); }
 
 /* قايمة اللجان */
 .ses-side { background: #fff; border-inline-end: 1px solid $line; padding: 18px; display: flex; flex-direction: column; gap: 12px; min-height: 0;
@@ -133,22 +135,100 @@ code, .mono { font-family: ui-monospace, Consolas, monospace; direction: ltr; un
 /* المحتوى */
 .ses-main { padding: 20px 24px; overflow: auto; display: flex; flex-direction: column; gap: 16px; min-height: 0; }
 
-/* ---------- قارئ الباركود (شبه كارت التغليف) ---------- */
-.scanner { background: #fff; border: 2px solid var(--accent); border-radius: 18px; padding: 14px 16px; display: grid; gap: 12px;
-  &[data-kind='ok'] { border-color: $green; } &[data-kind='warn'] { border-color: $amber; } &[data-kind='err'] { border-color: $red; }
-  .scanner-head { display: flex; align-items: center; justify-content: space-between; gap: 10px;
-    h4 { margin: 0; display: inline-flex; align-items: center; gap: 8px; font-size: 15px; font-weight: 800; color: $ink; i { color: var(--accent); } } }
+/* =====================================================================
+   قارئ الباركود — تصميم جديد
+   - المنطقة الرئيسية بتتلوّن بالكامل حسب النتيجة (أخضر / أحمر / أصفر)
+   - النتيجة بتفضل ظاهرة لحد القراءة الجاية (من غير timeout)
+   ===================================================================== */
+.scanner {
+  --sc: var(--accent);
+  position: relative;
+  background: #fff;
+  border: 2px solid $line;
+  border-radius: 22px;
+  padding: 16px;
+  display: grid;
+  gap: 14px;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, .06);
+  transition: border-color .2s, box-shadow .2s;
+
+  &[data-kind='idle'] { border-color: var(--accent); }
+  &[data-kind='ready'], &[data-kind='ok'] { --sc: #{$green}; border-color: $green; box-shadow: 0 0 0 5px rgba(22, 163, 74, .12); }
+  &[data-kind='warn'] { --sc: #{$amber}; border-color: $amber; box-shadow: 0 0 0 5px rgba(217, 154, 11, .16); }
+  &[data-kind='err'] { --sc: #{$err-soft}; border-color: $err-soft; box-shadow: 0 0 0 5px rgba(200, 90, 94, .13); }
+  &[data-kind='lock'] { --sc: #{$lock}; border-color: $lock; box-shadow: 0 0 0 5px rgba(72, 101, 129, .14); }
+
+  .scanner-head { display: flex; align-items: center; gap: 12px;
+    h4 { margin: 0; margin-inline-end: auto; display: inline-flex; align-items: center; gap: 8px; font-size: 15px; font-weight: 800; color: $ink; i { color: var(--sc); } } }
+  .scanner-count { font-family: ui-monospace, Consolas, monospace; direction: ltr; font-size: 14px; font-weight: 800; color: $ink; background: #eef2f7; border-radius: 10px; padding: 3px 12px; }
   .scanner-chip { display: inline-flex; align-items: center; gap: 7px; padding: 3px 12px; border-radius: 999px; background: $green-soft; color: $green; font-size: 12.5px; font-weight: 800;
-    i { width: 8px; height: 8px; border-radius: 50%; background: currentColor; } &.busy { background: $amber-soft; color: #a16207; } }
-  .scanner-zone { display: flex; align-items: center; gap: 16px; padding: 16px; border: 2px dashed var(--accent); border-radius: 14px; background: var(--accent-soft); }
-  .scanner-box { position: relative; width: 64px; height: 64px; flex-shrink: 0; border-radius: 14px; background: #fff; display: grid; place-items: center; font-size: 30px; color: $ink; overflow: hidden; box-shadow: 0 2px 8px rgba(15, 23, 42, .08);
-    .scanner-line { position: absolute; inset-inline: 8px; top: 10px; height: 2px; background: $red; box-shadow: 0 0 6px rgba(220, 38, 38, .6); animation: scan-move 1.8s ease-in-out infinite alternate; } }
-  .scanner-txt { flex: 1; min-width: 0; b { display: block; font-size: 16px; font-weight: 800; color: $ink; } small { color: $muted; font-size: 13px; }
-    code { background: #fff; border-radius: 6px; padding: 1px 8px; } }
+    i { width: 8px; height: 8px; border-radius: 50%; background: currentColor; } &.busy { background: $amber-soft; color: #a16207; } &.locked { background: #e3eaf1; color: $lock; } }
+
+  .scanner-zone {
+    position: relative;
+    display: flex; align-items: center; gap: 22px;
+    min-height: 140px;
+    padding: 22px 26px;
+    border-radius: 18px;
+    color: #fff;
+    overflow: hidden;
+    background: linear-gradient(135deg, $navy 0%, $navy-2 100%);
+    transition: background .25s ease;
+
+    &::after { /* لمعة خفيفة */
+      content: ''; position: absolute; inset: 0; pointer-events: none;
+      background: radial-gradient(circle at 12% 0%, rgba(255, 255, 255, .16), transparent 55%);
+    }
+
+    &.feedback-ok { background: linear-gradient(135deg, #15803d, #16a34a); animation: pop .35s ease; }
+    &.feedback-err { background: linear-gradient(135deg, #b94a4f, #d46a6d); animation: shake .4s ease; }
+    &.feedback-warn { background: linear-gradient(135deg, #b45309, #d99a0b); animation: pop .35s ease; }
+    &.feedback-lock { background: linear-gradient(135deg, #334e68, #486581); animation: pop .35s ease; }
+  }
+  &[data-kind='ready'] .scanner-zone { background: linear-gradient(135deg, #15803d, #16a34a); }
+
+  .scanner-box {
+    position: relative; z-index: 1;
+    width: 92px; height: 92px; flex-shrink: 0;
+    display: grid; place-items: center;
+    border-radius: 22px;
+    background: rgba(255, 255, 255, .14);
+    border: 3px solid rgba(255, 255, 255, .4);
+    font-size: 44px; color: #fff; overflow: hidden;
+    .scanner-line { position: absolute; inset-inline: 10px; top: 12px; height: 3px; border-radius: 2px; background: #5eead4; box-shadow: 0 0 10px #5eead4; animation: scan-move 1.8s ease-in-out infinite alternate; }
+  }
+  .scanner-zone.feedback-ok .scanner-box,
+  .scanner-zone.feedback-err .scanner-box,
+  .scanner-zone.feedback-warn .scanner-box,
+  .scanner-zone.feedback-lock .scanner-box,
+  &[data-kind='ready'] .scanner-box { background: #fff; border-color: #fff; }
+  .scanner-zone.feedback-lock .scanner-box { color: $lock; }
+  .scanner-zone.feedback-ok .scanner-box,
+  &[data-kind='ready'] .scanner-box { color: $green; }
+  .scanner-zone.feedback-err .scanner-box { color: $err-soft; }
+  .scanner-zone.feedback-warn .scanner-box { color: #b45309; }
+
+  .scanner-txt { position: relative; z-index: 1; flex: 1; min-width: 0; display: grid; gap: 6px; justify-items: start;
+    b { display: block; font-size: 22px; font-weight: 900; line-height: 1.6; color: #fff; }
+    small { color: rgba(255, 255, 255, .88); font-size: 14px; }
+    code { background: rgba(0, 0, 0, .28); color: #fff; border-radius: 6px; padding: 2px 10px; } }
+  .scanner-tag { display: inline-block; padding: 3px 14px; border-radius: 999px; background: rgba(255, 255, 255, .22); color: #fff; font-size: 12.5px; font-weight: 800; letter-spacing: .02em; }
+
+  .scanner-progress { height: 10px; border-radius: 999px; background: #e8edf3; overflow: hidden;
+    span { display: block; height: 100%; width: 0; border-radius: inherit; background: var(--sc); transition: width .3s ease, background .2s; } }
+
   .scanner-input { width: 100%; border: 1px solid $line; border-radius: 12px; padding: 11px 14px; font: inherit; font-size: 13.5px; direction: ltr; text-align: center; background: #fff;
-    &:focus { outline: 2px solid var(--accent); border-color: transparent; } } }
-@keyframes scan-move { from { top: 10px; } to { top: calc(100% - 12px); } }
-@media (prefers-reduced-motion: reduce) { .scanner .scanner-line { animation: none; top: 50%; } }
+    &:disabled { background: #f1f4f8; color: $muted; cursor: not-allowed; }
+    &:focus { outline: 2px solid var(--sc); border-color: transparent; } }
+}
+@keyframes scan-move { from { top: 12px; } to { top: calc(100% - 15px); } }
+@keyframes shake { 0%, 100% { transform: translateX(0); } 20%, 60% { transform: translateX(-4px); } 40%, 80% { transform: translateX(4px); } }
+@keyframes pop { 0% { transform: scale(.97); } 60% { transform: scale(1.015); } 100% { transform: scale(1); } }
+@keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) {
+  .scanner .scanner-line { animation: none; top: 50%; }
+  .scanner .scanner-zone { animation: none !important; }
+}
 
 .stats { display: grid; grid-template-columns: auto repeat(4, minmax(0, 1fr)); gap: 12px; align-items: stretch; background: #fff; border: 1px solid $line; border-radius: 18px; padding: 14px; }
 .ring { --p: 0; width: 92px; height: 92px; border-radius: 50%; display: grid; place-content: center; text-align: center; position: relative;
@@ -184,13 +264,24 @@ code, .mono { font-family: ui-monospace, Consolas, monospace; direction: ltr; un
   .bcard-pill { display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 999px; background: $blue-soft; color: $blue; font-size: 12.5px; font-weight: 800; i { font-size: 11px; } }
   .bcard-note { font-family: ui-monospace, Consolas, monospace; font-size: 11.5px; color: $muted; direction: ltr; }
   &[data-state='done'] { border-top-color: $green; background: #fafffc; .bcard-ico { background: $green-soft; color: $green; } .bcard-pill { background: $green-soft; color: $green; } }
-  &[data-state='pending'] { border-top-color: $amber; .bcard-ico, .bcard-pill { background: $amber-soft; color: #a16207; } } }
+  &[data-state='pending'] { border-top-color: $amber; .bcard-ico, .bcard-pill { background: $amber-soft; color: #a16207; } }
+  &[data-state='scanned'] { border: 1px solid #86efac; border-top: 3px solid $green; background: #f0fdf4;
+    .bcard-ico, .bcard-pill { background: #dcfce7; color: #15803d; } .bcard-code { border-color: #bbf7d0; background: #f0fdf4; } } }
 
 .ses-foot { display: flex; align-items: center; gap: 16px; padding: 14px 26px; background: #fff; border-top: 1px solid $line; width: 100%;
   .ses-close { padding: 10px 22px; border-radius: 10px; border: 1px solid $line; background: #fff; font: inherit; font-weight: 700; cursor: pointer; color: $ink; &:hover { background: #f3f6fa; } }
   .ses-note { flex: 1; color: $muted; font-size: 13px; i { margin-inline-end: 6px; } }
   .ses-finish { display: inline-flex; align-items: center; gap: 10px; padding: 12px 28px; border: 0; border-radius: 12px; background: var(--accent); color: #fff; font: inherit; font-size: 15px; font-weight: 800; cursor: pointer;
     &:disabled { opacity: .6; cursor: default; } &:focus-visible { outline: 3px solid $navy; outline-offset: 2px; } } }
+
+/* ---------- رسالة إنجاز اللجنة ---------- */
+.done-overlay { position: absolute; inset: 0; z-index: 5; display: grid; place-items: center; padding: 24px; background: rgba(8, 20, 38, .6); -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px); animation: fade-in .2s ease; }
+.done-card { width: min(480px, 100%); background: #fff; border-radius: 26px; padding: 38px 32px 30px; text-align: center; display: grid; gap: 14px; justify-items: center; box-shadow: 0 30px 70px rgba(0, 0, 0, .35); animation: pop .35s ease;
+  .done-ico { width: 88px; height: 88px; border-radius: 50%; display: grid; place-items: center; font-size: 40px; color: #fff; background: linear-gradient(135deg, #15803d, #22c55e); box-shadow: 0 0 0 10px rgba(34, 197, 94, .15); }
+  h3 { margin: 6px 0 0; font-size: 26px; font-weight: 900; color: $ink; }
+  p { margin: 0; color: $muted; font-size: 15.5px; line-height: 1.9; }
+  .done-btn { margin-top: 10px; min-width: 220px; display: inline-flex; align-items: center; justify-content: center; gap: 10px; padding: 15px 36px; border: 0; border-radius: 14px; background: $green; color: #fff; font: inherit; font-size: 18px; font-weight: 800; cursor: pointer;
+    &:hover { background: #15803d; } &:focus-visible { outline: 3px solid $navy; outline-offset: 3px; } } }
 
 /* ---------- الصندوق ← الرف ---------- */
 .slots { display: flex; align-items: stretch; gap: 14px; flex-wrap: wrap; }
@@ -219,7 +310,10 @@ code, .mono { font-family: ui-monospace, Consolas, monospace; direction: ltr; un
   .ses-body { grid-template-columns: 1fr; overflow: auto; } .ses-side { max-height: 260px; border-inline-end: 0; border-bottom: 1px solid $line; }
   .stats { grid-template-columns: repeat(2, 1fr); } .ring { grid-column: 1 / -1; justify-self: center; }
 }
-@media (max-width: 640px) { .flow-tabs button { padding: 10px 14px; } .pcards { grid-template-columns: 1fr; } .lvl-head { flex-direction: column; align-items: flex-start; } .ses-head { flex-wrap: wrap; padding: 14px; } }
+@media (max-width: 640px) {
+  .flow-tabs button { padding: 10px 14px; } .pcards { grid-template-columns: 1fr; } .lvl-head { flex-direction: column; align-items: flex-start; } .ses-head { flex-wrap: wrap; padding: 14px; }
+  .scanner .scanner-zone { flex-direction: column; text-align: center; } .scanner .scanner-txt { justify-items: center; }
+}
 
 /* =====================================================================
    PrimeNG dialog — لازم يبقى في آخر الملف.
@@ -237,142 +331,3 @@ code, .mono { font-family: ui-monospace, Consolas, monospace; direction: ltr; un
   .p-dialog-footer { padding: 0; border: 0; background: #fff; }
 }
 ::ng-deep .p-dialog-mask.p-overlay-mask { background: rgba(8, 20, 38, .55); }
-/* =========================================================
-   SCANNER FEEDBACK — PROFESSIONAL SUCCESS / ERROR STATES
-========================================================= */
-
-.scanner {
-  .scanner-zone {
-    transition:
-      background .2s ease,
-      border-color .2s ease,
-      box-shadow .2s ease;
-
-    &.feedback-ok {
-      background: #ecfdf3;
-      border: 2px solid #16a34a;
-      box-shadow: 0 0 0 3px rgba(22, 163, 74, .07);
-
-      .scanner-box {
-        color: #16a34a;
-        background: #dcfce7;
-      }
-    }
-
-    &.feedback-err {
-      background: #fff1f2;
-      border: 2px solid #dc2626;
-      box-shadow: 0 0 0 3px rgba(220, 38, 38, .07);
-
-      .scanner-box {
-        color: #dc2626;
-        background: #fee2e2;
-      }
-    }
-
-    &.feedback-warn {
-      background: #fffbeb;
-      border: 2px solid #d99a0b;
-
-      .scanner-box {
-        color: #b77908;
-        background: #fef3c7;
-      }
-    }
-  }
-
-  .scanner-feedback {
-    display: block;
-    font-size: 16px;
-    font-weight: 900;
-    line-height: 1.8;
-
-    &[data-kind='ok'] {
-      color: #15803d;
-    }
-
-    &[data-kind='err'] {
-      color: #dc2626;
-    }
-
-    &[data-kind='warn'] {
-      color: #a16207;
-    }
-  }
-
-  .scanner-txt {
-    small {
-      display: block;
-      margin-top: 5px;
-    }
-  }
-
-  .scanner-box {
-    transition:
-      background .2s ease,
-      color .2s ease,
-      transform .2s ease;
-  }
-
-  .scanner-zone.feedback-ok .scanner-box,
-  .scanner-zone.feedback-err .scanner-box {
-    transform: scale(1.04);
-  }
-}
-
-/* =========================================================
-   SCANNED BOX — SUCCESS STATE
-========================================================= */
-
-.bcard {
-  &[data-state='scanned'] {
-    border: 1px solid #86efac;
-    border-top: 3px solid #16a34a;
-    background: #f0fdf4;
-
-    .bcard-ico {
-      background: #dcfce7;
-      color: #15803d;
-    }
-
-    .bcard-pill {
-      background: #dcfce7;
-      color: #15803d;
-    }
-
-    .bcard-code {
-      border-color: #bbf7d0;
-      background: #f0fdf4;
-    }
-  }
-}
-
-/* تحسين ظهور حالة الخطأ في قارئ الباركود */
-
-.scanner[data-kind='err'] {
-  border-color: #dc2626;
-
-  .scanner-head h4 i {
-    color: #dc2626;
-  }
-
-  .scanner-chip {
-    background: #fee2e2;
-    color: #dc2626;
-  }
-}
-
-/* تحسين حالة القراءة الصحيحة */
-
-.scanner[data-kind='ok'] {
-  border-color: #16a34a;
-
-  .scanner-head h4 i {
-    color: #16a34a;
-  }
-
-  .scanner-chip {
-    background: #dcfce7;
-    color: #15803d;
-  }
-}
