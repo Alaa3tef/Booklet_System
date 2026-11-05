@@ -143,7 +143,14 @@ export default class PackingComponent implements OnInit {
   private readonly lookups = inject(Lookups);
   private readonly destroyRef = inject(DestroyRef);
 
-readonly manualQrCode = signal('');
+  /**
+   * false = الجلسة تتقفل بعد مسح كل الصناديق + الأظرف الأساسية
+   * true  = لازم كمان الأظرف الاحتياطية تتمسح كلها قبل القفل
+   */
+  private readonly requireReserveToClose = false;
+
+  /** كود QR عند إدخاله يدويًا بدل جهاز القراءة */
+  readonly manualQrCode = signal('');
 
   readonly essentials = [
     'اختيار المادة ثم اللجنة المطلوب تغليفها',
@@ -196,17 +203,7 @@ readonly manualQrCode = signal('');
       this.governoratesLoading
     );
   }
-/** تنفيذ المسح اليدوي عند الضغط على Enter */
-submitManualQr(): void {
-  const code = this.manualQrCode().trim();
 
-  if (!code || !this.scanActive()) {
-    return;
-  }
-
-  this.manualQrCode.set('');
-  this.processScan(code);
-}
   private loadLookup(
     request$: Observable<unknown>,
     nameKeys: string[],
@@ -595,8 +592,25 @@ submitManualQr(): void {
       reserveScanned,
       boxesLeft: boxTotal - boxesConfirmed,
       mainLeft: mainTotal - mainScanned,
+      reserveLeft: reserveTotal - reserveScanned,
       progress: all ? Math.round((done / all) * 100) : 0
     };
+  });
+
+  /**
+   * جلسة المسح بتتقفل أوتوماتيك أول ما كل الصناديق وكل الأظرف تتمسح:
+   * مفيش قراءة من القارئ ولا إدخال يدوي بعد كده.
+   * (لو اتعمل reset لصندوق بترجع تفتح لحد ما يكتمل تاني)
+   */
+  readonly sessionClosed = computed(() => {
+    const t = this.totals();
+
+    return (
+      t.boxTotal > 0 &&
+      t.boxesLeft === 0 &&
+      t.mainLeft === 0 &&
+      (!this.requireReserveToClose || t.reserveLeft === 0)
+    );
   });
 
   readonly canPack = computed(() => {
@@ -632,6 +646,7 @@ submitManualQr(): void {
       this.boxes().length > 0 &&
       !this.packing() &&
       !this.packDone() &&
+      !this.sessionClosed() &&
       !this.leaveDialogVisible()
   );
 
@@ -644,7 +659,7 @@ submitManualQr(): void {
     const t = this.totals();
 
     if (this.canPack()) {
-      return 'اكتمل المسح — اضغط «تأكيد التغليف»';
+      return 'اكتمل المسح وتم إغلاق الجلسة — اضغط «تأكيد التغليف»';
     }
 
     const parts: string[] = [];
@@ -741,10 +756,17 @@ submitManualQr(): void {
 
   // ---------- Scanner: الجلسة مفتوحة دائمًا بدون input ----------
   // جهاز القراءة بيكتب الكود ثم Enter، فبنلتقطه من الكيبورد مباشرة.
+  // لو الجلسة اتقفلت (كل الصناديق والأظرف اتمسحت) بنتجاهل أي قراءة.
 
   @HostListener('document:keydown', ['$event'])
   onKeydown(event: KeyboardEvent): void {
     if (!this.scanActive()) {
+      // الجلسة اتقفلت أو القارئ متوقف: نفرّغ أي قراءة معلّقة ونسيب الكيبورد يشتغل عادي
+      if (this.scanBuffer()) {
+        this.scanBuffer.set('');
+        this.clearIdleTimer();
+      }
+
       return;
     }
 
@@ -781,6 +803,18 @@ submitManualQr(): void {
     this.armIdleReset();
   }
 
+  /** تنفيذ المسح اليدوي عند الضغط على Enter */
+  submitManualQr(): void {
+    const code = this.manualQrCode().trim();
+
+    if (!code || !this.scanActive()) {
+      return;
+    }
+
+    this.manualQrCode.set('');
+    this.processScan(code);
+  }
+
   private flushBuffer(): void {
     const code = this.scanBuffer().trim();
 
@@ -806,6 +840,11 @@ submitManualQr(): void {
   }
 
   private processScan(code: string): void {
+    // الجلسة مقفولة (أو القارئ متوقف) → تجاهل أي scan
+    if (!this.scanActive()) {
+      return;
+    }
+
     const boxes = this.boxes();
 
     // 1) QR الصندوق
@@ -819,7 +858,7 @@ submitManualQr(): void {
 
       this.patchBox(boxByQr.boxId, box => ({ ...box, qrScanned: true }));
       this.highlightBox(boxByQr.boxId);
-      this.notify('success', code, `تم تأكيد صندوق رقم ${boxByQr.sequenceNo}`);
+      this.afterSuccessfulScan(code, `تم تأكيد صندوق رقم ${boxByQr.sequenceNo}`);
       return;
     }
 
@@ -854,11 +893,24 @@ submitManualQr(): void {
     }));
 
     this.highlightBox(boxId);
-    this.notify(
-      'success',
+    this.afterSuccessfulScan(
       code,
       `تم مسح ظرف ${envelope.kind === 'main' ? 'أساسي' : 'احتياطي'} - صندوق ${box.sequenceNo}`
     );
+  }
+
+  /** بعد أي مسح ناجح: لو ده كان آخر عنصر الجلسة بتتقفل وبنفرّغ أي قراءة معلّقة */
+  private afterSuccessfulScan(code: string, text: string): void {
+    if (this.sessionClosed()) {
+      this.scanBuffer.set('');
+      this.clearIdleTimer();
+      this.manualQrCode.set('');
+
+      this.notify('success', code, 'اكتمل مسح كل الصناديق والأظرف وتم إغلاق جلسة المسح');
+      return;
+    }
+
+    this.notify('success', code, text);
   }
 
   resetBox(boxId: number): void {
@@ -1070,6 +1122,7 @@ submitManualQr(): void {
     this.feedback.set(null);
     this.scanLog.set([]);
     this.scanBuffer.set('');
+    this.manualQrCode.set('');
     this.problems.set([]);
     this.packResult.set(null);
     this.packError.set(null);

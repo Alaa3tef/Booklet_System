@@ -563,7 +563,7 @@ export default class QualityComponent implements OnInit, OnDestroy {
     }
 
     if (this.activeCommittee()?.id === c.id) {
-      return 'قيد الفحص';
+      return this.sessionClosed() ? 'اكتمل المسح' : 'قيد الفحص';
     }
 
     return this.scannedOf(c) > 0 ? 'جارية' : 'بانتظار الفحص';
@@ -574,7 +574,11 @@ export default class QualityComponent implements OnInit, OnDestroy {
       return 'pi-check-circle';
     }
 
-    return this.activeCommittee()?.id === c.id ? 'pi-qrcode' : 'pi-clock';
+    if (this.activeCommittee()?.id === c.id) {
+      return this.sessionClosed() ? 'pi-lock' : 'pi-qrcode';
+    }
+
+    return 'pi-clock';
   }
 
   /** آخر جزء من الكود (رقم الظرف) بخط كبير: ENV-27-A-29-01-777-001 → 001 */
@@ -625,6 +629,12 @@ export default class QualityComponent implements OnInit, OnDestroy {
   readonly allScanned = computed(
     () => this.totalCount() > 0 && this.scannedCount() === this.totalCount()
   );
+
+  /**
+   * جلسة المسح بتتقفل أوتوماتيك أول ما كل الأظرف تتمسح:
+   * مفيش قراءة من الماسح ولا إدخال يدوي بعد كده، ولا يقدر ياخد scan تاني.
+   */
+  readonly sessionClosed = computed(() => this.allScanned());
 
   readonly requiredScanned = computed(
     () => this.envelopes().filter(e => e.type === 'required' && e.scanned).length
@@ -732,7 +742,13 @@ export default class QualityComponent implements OnInit, OnDestroy {
   submitManualScan(): void {
     const code = this.manualScanCode().trim();
 
-    if (!code || !this.activeCommittee() || this.envelopesLoading() || this.completing()) {
+    if (
+      !code ||
+      !this.activeCommittee() ||
+      this.envelopesLoading() ||
+      this.completing() ||
+      this.sessionClosed()
+    ) {
       return;
     }
 
@@ -754,6 +770,7 @@ export default class QualityComponent implements OnInit, OnDestroy {
    * الماسح بيتصرف كأنه كيبورد: بيكتب الكود بسرعة وبعدين Enter.
    * بنسمعه على مستوى الصفحة طالما فيه لجنة مفتوحة وأظرفها اتحملت،
    * ومبنتدخلش لو اليوزر بيكتب في مربع بحث أو فلتر.
+   * لو الجلسة اتقفلت (كل الأظرف اتمسحت) بنتجاهل أي قراءة.
    */
   @HostListener('document:keydown', ['$event'])
   onDocumentKeydown(event: KeyboardEvent): void {
@@ -763,6 +780,15 @@ export default class QualityComponent implements OnInit, OnDestroy {
       this.envelopesLoading() ||
       this.completing()
     ) {
+      return;
+    }
+
+    // الجلسة مقفولة: مفيش قراءة جديدة، ونسيب الكيبورد يشتغل عادي (زرار الإتمام مثلاً)
+    if (this.sessionClosed()) {
+      if (this.buffer) {
+        this.resetBuffer();
+      }
+
       return;
     }
 
@@ -879,12 +905,19 @@ export default class QualityComponent implements OnInit, OnDestroy {
    * - مطابق ولسه ماتمسحش → يعدّيه
    * - اتمسح قبل كده → تنبيه
    * - مش تابع للجنة (أو في غير دوره) → خطأ ويتعاد المسح
+   * - الجلسة اتقفلت (كل الأظرف اتمسحت) → يتجاهل أي scan
    */
   private processScan(rawCode: string): void {
     const committee = this.activeCommittee();
     const raw = rawCode.trim();
 
-    if (!committee || !raw || this.completing() || this.envelopesLoading()) {
+    if (
+      !committee ||
+      !raw ||
+      this.completing() ||
+      this.envelopesLoading() ||
+      this.sessionClosed()
+    ) {
       return;
     }
 
@@ -941,11 +974,17 @@ export default class QualityComponent implements OnInit, OnDestroy {
 
     this.lastScannedCode.set(envelope.code);
 
+    // آخر ظرف اتمسح → الجلسة اتقفلت، نفرّغ أي قراءة معلّقة
+    if (this.sessionClosed()) {
+      this.resetBuffer();
+      this.manualScanCode.set('');
+    }
+
     this.feedback.set({
       kind: 'success',
       title: 'تمت المطابقة بنجاح',
-      message: this.allScanned()
-        ? 'اكتمل مسح كل الأظرف. يمكنك إتمام مراجعة اللجنة.'
+      message: this.sessionClosed()
+        ? 'اكتمل مسح كل الأظرف وتم إغلاق جلسة المسح. يمكنك إتمام مراجعة اللجنة.'
         : `تبقّى ${this.remainingCount()} ظرف. انتقل للظرف التالي.`,
       code: envelope.code
     });
