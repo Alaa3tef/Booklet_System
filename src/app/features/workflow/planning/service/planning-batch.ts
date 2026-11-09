@@ -91,6 +91,18 @@ export interface GovernorateDeliveryReadiness {
   blockingReasons: string[] | null;
 }
 
+export interface CreatedDeliveryOrder {
+  deliveryOrderId: number;
+  year: number;
+  roundId: number;
+  roundName: string;
+  educationalStageId: number;
+  educationalStageName: string;
+  governorateId: number;
+  governorateName: string;
+  scopeType: string;
+}
+
 export interface DeliveryOrderReadiness extends GovernorateDeliveryReadiness {
   year: number;
   roundId: number;
@@ -170,7 +182,14 @@ export class PlanningService {
     );
   }
 
-  createDeliveryOrder(request: CreateDeliveryOrderRequest): Observable<ApiResponse<unknown>> {
-    return this.http.post<ApiResponse<unknown>>(`${this.baseUrl}/delivery-orders`, request);
-  }
+  createDeliveryOrder(request: CreateDeliveryOrderRequest): Observable<ApiResponse<CreatedDeliveryOrder>> {
+  return this.http.post<ApiResponse<CreatedDeliveryOrder>>(`${this.baseUrl}/delivery-orders`, request);
+}
+
+/** GET api/Planning/delivery-orders/{id}/locations-pdf  → ملف PDF */
+getDeliveryOrderLocationsPdf(deliveryOrderId: number): Observable<Blob> {
+  return this.http.get(`${this.baseUrl}/delivery-orders/${deliveryOrderId}/locations-pdf`, {
+    responseType: 'blob'
+  });
+}
 }

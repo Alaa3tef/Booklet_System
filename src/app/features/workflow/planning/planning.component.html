@@ -2,17 +2,17 @@
   stepNumber="01"
   englishLabel="Planning"
   arabicTitle="مستخدم الإعداد"
-  arabicSubtitle="إدارة دفعات التخطيط وجاهزية أوامر التوزيع بالمحافظات"
+  arabicSubtitle="إدارة دفعات التخطيط وجاهزية أوامر التوريد بالمحافظات"
   theme="blue"
   activeNavKey="planning"
   illustrationIcon="pi pi-desktop"
   illustrationTaglineTop="التخطيط اليوم"
   illustrationTaglineBottom="لصناعة تعليم أفضل"
   panelIcon="pi pi-sliders-h"
-  panelTitle="إدارة وتخطيط الدفعات وأوامر التوزيع"
+  panelTitle="إدارة وتخطيط الدفعات وأوامر التوريد"
   functionLabel="مستخدم الإعداد"
   [essentials]="essentials"
-  resultText="متابعة جاهزية الدفعات وتوزيع المحافظات بسهولة ودقة"
+  resultText="متابعة جاهزية الدفعات وتوريد المحافظات بسهولة ودقة"
 >
 
   <div panel-content [class.has-selection-bar]="selectedCount() > 0 && activeTab() === 'materials'">
@@ -45,7 +45,7 @@
         [attr.aria-selected]="activeTab() === 'delivery-orders'"
         (click)="setTab('delivery-orders')">
         <i class="pi pi-truck"></i>
-        <span>أوامر التوزيع بالمحافظات</span>
+        <span>أوامر التوريد بالمحافظات</span>
         <span class="tab-count">{{ filteredDeliveryGovernorates().length }}</span>
       </button>
 
@@ -388,15 +388,15 @@
 
         <!-- <div class="planning-search-card delivery-search-card">
           <div class="planning-image delivery-hero-img">
-            <img src="assets/images/planning.png" alt="أوامر التوزيع" />
+            <img src="assets/images/planning.png" alt="أوامر التوريد" />
           </div>
 
           <div class="planning-search-content">
             <div class="planning-search-title">
               <div class="planning-search-icon"><i class="pi pi-truck"></i></div>
               <div class="planning-search-text">
-                <h3>جاهزية أوامر التوزيع بالمحافظات</h3>
-                <p>متابعة وتصفية المحافظات الجاهزة لإنشاء أوامر التوزيع بناءً على السنة والدور والمرحلة التعليمية</p>
+                <h3>جاهزية أوامر التوريد بالمحافظات</h3>
+                <p>متابعة وتصفية المحافظات الجاهزة لإنشاء أوامر التوريد بناءً على السنة والدور والمرحلة التعليمية</p>
               </div>
 
               <button
@@ -478,14 +478,14 @@
         <!-- GOVERNORATES CARDS GRID -->
         <div class="table-section">
           <div class="table-header">
-            <h4>نتائج جاهزية المحافظات لأوامر التوزيع</h4>
+            <h4>نتائج جاهزية المحافظات لأوامر التوريد</h4>
             <span class="results-count">{{ filteredDeliveryGovernorates().length }} محافظة</span>
           </div>
 
           @if (deliveryLoading()) {
             <div class="loading-state">
               <i class="pi pi-spin pi-spinner"></i>
-              <span>جاري استرجاع جاهزية أوامر التوزيع بالمحافظات...</span>
+              <span>جاري استرجاع جاهزية أوامر التوريد بالمحافظات...</span>
             </div>
           } @else {
             <div class="gov-grid">
@@ -508,7 +508,7 @@
                     @if (gov.canCreate) {
                       <span class="status-pill success">
                         <i class="pi pi-check-circle"></i>
-                        جاهز لأمر التوزيع
+                        جاهز لأمر التوريد
                       </span>
                     } @else {
                       <span class="status-pill warning">
@@ -573,7 +573,7 @@
                         [disabled]="creatingDeliveryFor() !== null"
                         (click)="openDeliveryOrderDialog(gov)">
                         <i class="pi pi-plus"></i>
-                        <span>إنشاء أمر توزيع</span>
+                        <span>إنشاء أمر توريد</span>
                       </button>
                     }
 
@@ -863,7 +863,7 @@
   appendTo="body"
   [baseZIndex]="3000"
   [style]="{ width: 'min(92vw, 460px)' }"
-  header="إنشاء أمر توزيع"
+  header="إنشاء أمر توريد"
   (onHide)="closeDeliveryOrderDialog()">
 
   @if (pendingDeliveryGovernorate(); as governorate) {
@@ -1000,7 +1000,7 @@
   appendTo="body"
   [baseZIndex]="3000"
   [style]="{ width: 'min(92vw, 480px)' }"
-  header="أسباب عدم إنشاء أمر التوزيع"
+  header="أسباب عدم إنشاء أمر التوريد"
   (onHide)="closeReasonsDialog()">
 
   @if (reasonsDialogGovernorate(); as g) {

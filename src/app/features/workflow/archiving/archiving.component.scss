@@ -251,36 +251,122 @@ code, .mono { font-family: ui-monospace, Consolas, monospace; direction: rtl; un
     span { background: #eef2f7; border-radius: 999px; min-width: 26px; padding: 1px 8px; text-align: center; font-size: 12.5px; }
     &.on { background: $navy; border-color: $navy; color: #fff; span { background: rgba(255, 255, 255, .2); } } &:focus-visible { outline: 3px solid $blue; outline-offset: 2px; } } }
 
-/* كروت الصناديق (زي كروت الأظرف) — متكبّرة + بلوك الرف */
-.bgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 18px; }
-.bcard { background: #fff; border: 1px solid $line; border-top: 4px solid $blue; border-radius: 18px; padding: 18px 20px; display: grid; gap: 14px;
-  box-shadow: 0 2px 8px rgba(15, 23, 42, .04);
-  header { display: flex; align-items: center; justify-content: space-between; }
-  .bcard-kind { background: $blue-soft; color: $blue; border-radius: 999px; padding: 3px 14px; font-size: 13.5px; font-weight: 800; }
-  .bcard-no { background: #eef2f7; color: $muted; border-radius: 8px; padding: 2px 11px; font-size: 14px; font-weight: 800; }
-  .bcard-mid { display: flex; align-items: center; gap: 14px; > div { small { display: block; color: $muted; font-size: 13px; } b { font-size: 34px; font-weight: 800; letter-spacing: .04em; line-height: 1.2; } } }
-  .bcard-ico { width: 52px; height: 52px; border-radius: 14px; background: $blue-soft; color: $blue; display: grid; place-items: center; font-size: 22px; }
+/* =====================================================================
+   كروت الصناديق — تصميم احترافي
+   - متغير واحد --st بيتحكم في لون الكارت كله حسب الحالة
+   - الصف العلوي: أيقونة + رقم الصندوق + شارة الحالة
+   - بعده مكان الرف ثم كود الـ QR
+   ===================================================================== */
+.bgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
 
-  /* مكان التخزين (الرف) */
-  .bcard-rack { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 14px; background: $blue-soft; border: 1.5px solid #bcd1fb;
-    .bcard-rack-ico { width: 42px; height: 42px; border-radius: 11px; background: $blue; color: #fff; display: grid; place-items: center; font-size: 18px; flex-shrink: 0; }
-    > div { min-width: 0; flex: 1; }
-    small { display: block; color: $blue; font-size: 12.5px; font-weight: 700; }
-    b { display: block; font-size: 20px; font-weight: 900; color: $navy; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    &.empty { background: #f3f6fa; border: 1.5px dashed #cbd5e1;
-      .bcard-rack-ico { background: #cbd5e1; }
-      small { color: $muted; } b { color: $muted; font-size: 16px; } } }
+.bcard {
+  /* لون الحالة — كل حاجة في الكارت بتتلوّن منه */
+  --st: #{$muted};
+  --st-soft: #eef2f7;
+  --st-line: #dbe3ee;
 
-  .bcard-code { background: #f3f6fa; border: 1px solid $line; border-radius: 8px; padding: 8px 12px; font-size: 12.5px; color: $muted; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  footer { display: flex; align-items: center; justify-content: space-between; gap: 6px; flex-wrap: wrap; }
-  .bcard-pill { display: inline-flex; align-items: center; gap: 6px; padding: 5px 14px; border-radius: 999px; background: $blue-soft; color: $blue; font-size: 13.5px; font-weight: 800; i { font-size: 12px; } }
+  position: relative;
+  display: grid;
+  gap: 12px;
+  padding: 16px 18px 16px 16px;
+  background: #fff;
+  border: 1px solid $line;
+  border-inline-start: 4px solid var(--st);
+  border-radius: 16px;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, .05);
+  transition: box-shadow .15s ease, transform .15s ease, border-color .15s ease;
+
+  &:hover { box-shadow: 0 8px 20px rgba(15, 23, 42, .08); transform: translateY(-1px); }
+
+  /* ----- الصف العلوي: الأيقونة + الرقم + الحالة ----- */
+  .bcard-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .bcard-id { display: flex; align-items: center; gap: 12px; min-width: 0; }
+  .bcard-ico {
+    width: 44px; height: 44px; flex-shrink: 0;
+    display: grid; place-items: center;
+    border-radius: 12px; font-size: 19px;
+    background: var(--st-soft); color: var(--st);
+  }
+  .bcard-id-txt {
+    display: grid; gap: 1px; min-width: 0;
+    small { color: $muted; font-size: 12px; font-weight: 700; }
+    b { font-size: 26px; font-weight: 800; line-height: 1.1; color: $ink; letter-spacing: .03em; font-variant-numeric: tabular-nums; }
+  }
+  .bcard-pill {
+    display: inline-flex; align-items: center; gap: 6px; flex-shrink: 0;
+    padding: 5px 12px; border-radius: 999px;
+    background: var(--st-soft); color: var(--st);
+    font-size: 12.5px; font-weight: 800; white-space: nowrap;
+    i { font-size: 12px; }
+  }
+
+  /* ----- مكان التخزين (الرف) ----- */
+  .bcard-rack {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 12px;
+    background: #f8fafc;
+    border: 1px solid $line;
+    border-radius: 12px;
+  }
+  .bcard-rack-ico {
+    width: 32px; height: 32px; flex-shrink: 0;
+    display: grid; place-items: center;
+    border-radius: 9px; font-size: 14px;
+    background: var(--st-soft); color: var(--st);
+  }
+  .bcard-rack-txt {
+    min-width: 0; flex: 1; display: grid; gap: 1px;
+    small { color: $muted; font-size: 11.5px; font-weight: 700; }
+    b {
+      font-family: ui-monospace, Consolas, monospace;
+      direction: ltr; text-align: start; unicode-bidi: isolate;
+      font-size: 15px; font-weight: 800; color: $ink;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+  }
+
+  /* ----- كود الـ QR ----- */
+  .bcard-code {
+    display: flex; align-items: center; gap: 8px;
+    padding: 7px 10px;
+    background: #f3f6fa;
+    border: 1px dashed #d5dde8;
+    border-radius: 10px;
+    color: $muted;
+    i { font-size: 13px; color: #94a3b8; flex-shrink: 0; }
+    code {
+      flex: 1; min-width: 0;
+      font-family: ui-monospace, Consolas, monospace;
+      direction: ltr; text-align: start; unicode-bidi: isolate;
+      font-size: 12px; color: $muted;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+  }
+
+  .bcard-foot { display: flex; justify-content: flex-end; }
   .bcard-note { font-family: ui-monospace, Consolas, monospace; font-size: 12px; color: $muted; direction: ltr; }
-  &[data-state='done'] { border-top-color: $green; background: #fafffc; .bcard-ico { background: $green-soft; color: $green; } .bcard-pill { background: $green-soft; color: $green; }
-    .bcard-rack { background: $green-soft; border-color: #a7e3bd; .bcard-rack-ico { background: $green; } small { color: $green; } } }
-  &[data-state='pending'] { border-top-color: $amber; .bcard-ico, .bcard-pill { background: $amber-soft; color: #a16207; } }
-  &[data-state='scanned'] { border: 1px solid #86efac; border-top: 4px solid $green; background: #f0fdf4;
-    .bcard-ico, .bcard-pill { background: #dcfce7; color: #15803d; } .bcard-code { border-color: #bbf7d0; background: #f0fdf4; }
-    .bcard-rack { background: #dcfce7; border-color: #86efac; .bcard-rack-ico { background: #15803d; } small { color: #15803d; } } } }
+
+  /* ----- الحالات ----- */
+  &[data-state='pending'] {
+    --st: #{$amber}; --st-soft: #{$amber-soft}; --st-line: #f3dfa2;
+    .bcard-ico, .bcard-pill, .bcard-rack-ico { color: #a16207; }
+  }
+  &[data-state='scanned'] {
+    --st: #{$green}; --st-soft: #{$green-soft}; --st-line: #bbf7d0;
+    background: #fafffc;
+    border-color: #bbf7d0; border-inline-start-color: $green;
+    .bcard-rack { background: #f0fdf4; border-color: #bbf7d0; }
+    .bcard-code { background: #f0fdf4; border-color: #bbf7d0; }
+  }
+  &[data-state='done'] {
+    --st: #{$green}; --st-soft: #{$green-soft}; --st-line: #bbf7d0;
+    background: #fafffc;
+    border-color: #bbf7d0; border-inline-start-color: $green;
+    .bcard-rack { background: #f0fdf4; border-color: #bbf7d0; }
+    .bcard-code { background: #f0fdf4; border-color: #bbf7d0; }
+  }
+}
+@media (prefers-reduced-motion: reduce) { .bcard { transition: none; &:hover { transform: none; } } }
 
 .ses-foot { display: flex; align-items: center; gap: 16px; padding: 14px 26px; background: #fff; border-top: 1px solid $line; width: 100%;
   .ses-close { padding: 10px 22px; border-radius: 10px; border: 1px solid $line; background: #fff; font: inherit; font-weight: 700; cursor: pointer; color: $ink; &:hover { background: #f3f6fa; } }
@@ -327,6 +413,7 @@ code, .mono { font-family: ui-monospace, Consolas, monospace; direction: rtl; un
 @media (max-width: 640px) {
   .flow-tabs button { padding: 10px 14px; } .pcards { grid-template-columns: 1fr; } .lvl-head { flex-direction: column; align-items: flex-start; } .ses-head { flex-wrap: wrap; padding: 14px; }
   .scanner .scanner-zone { flex-direction: column; text-align: center; } .scanner .scanner-txt { justify-items: center; }
+  .bgrid { grid-template-columns: 1fr; }
 }
 
 /* =====================================================================

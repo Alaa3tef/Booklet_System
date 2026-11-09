@@ -542,6 +542,29 @@ export default class PlanningComponent implements OnInit {
   clearDeliveryCreateValidationError(): void {
     this.deliveryCreateValidationError.set('');
   }
+/** يحمّل PDF مواقع أمر التوريد. أي فشل بيتجاهل بصمت */
+private downloadDeliveryOrderPdf(deliveryOrderId: number, governorateName?: string | null): void {
+  this.planningService.getDeliveryOrderLocationsPdf(deliveryOrderId).subscribe({
+    next: blob => {
+      try {
+        const pdfBlob = blob.type === 'application/pdf' ? blob : new Blob([blob], { type: 'application/pdf' });
+        const url = URL.createObjectURL(pdfBlob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `delivery-order-${deliveryOrderId}${governorateName ? '-' + governorateName : ''}-locations.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+      } catch {
+        /* تجاهل أي مشكلة في التحميل */
+      }
+    },
+    error: () => {
+      /* تجاهل أي مشكلة في التحميل */
+    }
+  });
+}
 
   createDeliveryOrder(): void {
     const governorate = this.pendingDeliveryGovernorate();
@@ -572,31 +595,37 @@ export default class PlanningComponent implements OnInit {
       governorateId,
       deliveryDate: this.deliveryDate()
     }).subscribe({
-      next: response => {
-        this.creatingDeliveryFor.set(null);
-        this.deliveryOrderDialogVisible.set(false);
-        this.pendingDeliveryGovernorate.set(null);
+     next: response => {
+  this.creatingDeliveryFor.set(null);
+  this.deliveryOrderDialogVisible.set(false);
+  this.pendingDeliveryGovernorate.set(null);
 
-        // clear old errors for this governorate
-        this.deliveryErrors.update(errors => {
-          const { [governorateId]: _removed, ...rest } = errors;
-          return rest;
-        });
+  this.deliveryErrors.update(errors => {
+    const { [governorateId]: _removed, ...rest } = errors;
+    return rest;
+  });
 
-        if (response?.success) {
-          this.createdDeliveryOrders.update(orders => ({
-            ...orders,
-            [governorateId]: true
-          }));
-        }
-        this.messageService.add({
-          severity: 'success',
-          summary: 'تم إنشاء أمر التوزيع',
-          detail: response?.message || 'تم إنشاء أمر التوزيع بنجاح',
-          life: 3500
-        });
-        this.loadDeliveryGovernorates();
-      },
+  if (response?.success) {
+    this.createdDeliveryOrders.update(orders => ({
+      ...orders,
+      [governorateId]: true
+    }));
+
+    // تحميل الـ PDF تلقائيًا (بصمت لو فشل)
+    const deliveryOrderId = (response as any)?.data?.deliveryOrderId ?? response?.data?.deliveryOrderId;
+    if (deliveryOrderId) {
+      this.downloadDeliveryOrderPdf(deliveryOrderId, governorate.governorateName);
+    }
+  }
+
+  this.messageService.add({
+    severity: 'success',
+    summary: 'تم إنشاء أمر التوزيع',
+    detail: response?.message || 'تم إنشاء أمر التوزيع بنجاح',
+    life: 3500
+  });
+  this.loadDeliveryGovernorates();
+},
       error: error => {
         this.creatingDeliveryFor.set(null);
         const reasons = this.extractErrorMessages(error);

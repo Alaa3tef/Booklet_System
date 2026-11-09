@@ -143,18 +143,12 @@ export default class PackingComponent implements OnInit {
   private readonly lookups = inject(Lookups);
   private readonly destroyRef = inject(DestroyRef);
 
-  /**
-   * false = الجلسة تتقفل بعد مسح كل الصناديق + الأظرف الأساسية
-   * true  = لازم كمان الأظرف الاحتياطية تتمسح كلها قبل القفل
-   */
-  private readonly requireReserveToClose = false;
-
   /** كود QR عند إدخاله يدويًا بدل جهاز القراءة */
   readonly manualQrCode = signal('');
 
   readonly essentials = [
     'اختيار المادة ثم اللجنة المطلوب تغليفها',
-    'مسح QR الصناديق وسيريال الأظرف بجهاز القراءة',
+    'مسح QR الصناديق وسيريال كل الأظرف (الأساسية والاحتياطية) بجهاز القراءة',
     'تأكيد التغليف بعد اكتمال المسح'
   ];
 
@@ -549,14 +543,21 @@ export default class PackingComponent implements OnInit {
     () => new Set(this.problems().map(problem => problem.boxId))
   );
 
+  /** اكتمال الصندوق = QR الصندوق + كل الأظرف الأساسية + كل الأظرف الاحتياطية */
   readonly boxViews = computed<BoxView[]>(() =>
     this.boxes().map(box => {
       const main = box.envelopes.filter(e => e.kind === 'main');
       const reserve = box.envelopes.filter(e => e.kind === 'reserve');
       const mainScanned = main.filter(e => e.scanned).length;
       const reserveScanned = reserve.filter(e => e.scanned).length;
-      const complete = box.qrScanned && mainScanned === main.length;
-      const steps = main.length + 1;
+
+      const complete =
+        box.qrScanned &&
+        mainScanned === main.length &&
+        reserveScanned === reserve.length;
+
+      const steps = 1 + main.length + reserve.length;
+      const done = (box.qrScanned ? 1 : 0) + mainScanned + reserveScanned;
 
       return {
         ...box,
@@ -567,7 +568,7 @@ export default class PackingComponent implements OnInit {
         reserveTotal: reserve.length,
         reserveScanned,
         complete,
-        progress: Math.round(((mainScanned + (box.qrScanned ? 1 : 0)) / steps) * 100)
+        progress: Math.round((done / steps) * 100)
       };
     })
   );
@@ -580,8 +581,8 @@ export default class PackingComponent implements OnInit {
     const mainScanned = views.reduce((sum, v) => sum + v.mainScanned, 0);
     const reserveTotal = views.reduce((sum, v) => sum + v.reserveTotal, 0);
     const reserveScanned = views.reduce((sum, v) => sum + v.reserveScanned, 0);
-    const all = boxTotal + mainTotal;
-    const done = boxesConfirmed + mainScanned;
+    const all = boxTotal + mainTotal + reserveTotal;
+    const done = boxesConfirmed + mainScanned + reserveScanned;
 
     return {
       boxTotal,
@@ -598,8 +599,8 @@ export default class PackingComponent implements OnInit {
   });
 
   /**
-   * جلسة المسح بتتقفل أوتوماتيك أول ما كل الصناديق وكل الأظرف تتمسح:
-   * مفيش قراءة من القارئ ولا إدخال يدوي بعد كده.
+   * جلسة المسح بتتقفل أوتوماتيك أول ما كل الصناديق وكل الأظرف
+   * (الأساسية + الاحتياطية) تتمسح: مفيش قراءة ولا إدخال يدوي بعد كده.
    * (لو اتعمل reset لصندوق بترجع تفتح لحد ما يكتمل تاني)
    */
   readonly sessionClosed = computed(() => {
@@ -609,21 +610,14 @@ export default class PackingComponent implements OnInit {
       t.boxTotal > 0 &&
       t.boxesLeft === 0 &&
       t.mainLeft === 0 &&
-      (!this.requireReserveToClose || t.reserveLeft === 0)
+      t.reserveLeft === 0
     );
   });
 
-  readonly canPack = computed(() => {
-    const t = this.totals();
-
-    return (
-      t.boxTotal > 0 &&
-      t.boxesLeft === 0 &&
-      t.mainLeft === 0 &&
-      !this.packing() &&
-      !this.packDone()
-    );
-  });
+  /** تأكيد التغليف مش بيتفعل غير لما الجلسة تتقفل (كل شيء اتمسح) */
+  readonly canPack = computed(
+    () => this.sessionClosed() && !this.packing() && !this.packDone()
+  );
 
   /** في مسح اتعمل ومتحفظش؟ */
   readonly hasUnsaved = computed(() => {
@@ -669,6 +663,9 @@ export default class PackingComponent implements OnInit {
     }
     if (t.mainLeft) {
       parts.push(`${t.mainLeft} ظرف أساسي`);
+    }
+    if (t.reserveLeft) {
+      parts.push(`${t.reserveLeft} ظرف احتياطي`);
     }
 
     return `متبقي مسح: ${parts.join(' و ')}`;
@@ -906,7 +903,11 @@ export default class PackingComponent implements OnInit {
       this.clearIdleTimer();
       this.manualQrCode.set('');
 
-      this.notify('success', code, 'اكتمل مسح كل الصناديق والأظرف وتم إغلاق جلسة المسح');
+      this.notify(
+        'success',
+        code,
+        'اكتمل مسح كل الصناديق والأظرف (الأساسية والاحتياطية) وتم إغلاق جلسة المسح'
+      );
       return;
     }
 

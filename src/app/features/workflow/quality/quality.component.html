@@ -82,22 +82,6 @@
 
     <!-- Filters (كلها اختيارية) -->
     <section class="qc-box qc-filters">
-      <!-- <div class="qc-field">
-        <label for="qc-batch-search">بحث</label>
-        <span class="qc-search">
-          <i class="pi pi-search"></i>
-          <input
-            id="qc-batch-search"
-            pInputText
-            type="text"
-            class="qc-input"
-            placeholder="ابحث في الدفعات..."
-            [ngModel]="batchSearch()"
-            (ngModelChange)="onBatchSearch($event)"
-          />
-        </span>
-      </div> -->
-
       <div class="qc-field">
         <label for="qc-governorate">المحافظة</label>
         <p-select
@@ -169,7 +153,7 @@
       [class.qc-loading]="batchesLoading()"
       *ngIf="!(batchesLoading() && !batches().length) && batches().length; else noBatches"
     >
-      <article class="qc-card" *ngFor="let b of batches(); trackBy: trackBatch" data-tone="info" >
+      <article class="qc-card" *ngFor="let b of batches(); trackBy: trackBatch" data-tone="info">
         <header>
           <span class="qc-ico"><i class="pi pi-objects-column"></i></span>
 
@@ -315,15 +299,22 @@
             </ng-container>
 
             <ng-container *ngIf="committees().length; else noCommittees">
-              <button
-                type="button"
+              <!--
+                كارت اللجنة: div بدل button عشان نتخلص من الـ tooltip/title بتاع المتصفح
+                مع الحفاظ على الـ accessibility (role + tabindex + keyboard)
+              -->
+              <div
                 class="qc-cm"
+                role="button"
                 *ngFor="let c of committees(); trackBy: trackCommittee"
                 [attr.data-tone]="isDone(c) ? 'success' : 'info'"
+                [attr.tabindex]="isDone(c) || completing() ? -1 : 0"
+                [attr.aria-disabled]="isDone(c) || completing()"
                 [class.is-active]="activeCommittee()?.id === c.id"
                 [class.is-done]="isDone(c)"
-                [disabled]="isDone(c) || completing()"
-                (click)="selectCommittee(c)"
+                (click)="!isDone(c) && !completing() && selectCommittee(c)"
+                (keydown.enter)="$event.preventDefault(); !isDone(c) && !completing() && selectCommittee(c)"
+                (keydown.space)="$event.preventDefault(); !isDone(c) && !completing() && selectCommittee(c)"
               >
                 <span class="qc-cm-top">
                   <span class="qc-cm-no">{{ c.committeeNumber }}</span>
@@ -351,7 +342,7 @@
                   </span>
                   <span class="qc-track"><span [style.width.%]="progressOf(c)"></span></span>
                 </span>
-              </button>
+              </div>
             </ng-container>
 
             <ng-template #noCommittees>

@@ -1062,7 +1062,7 @@ export default class QualityComponent implements OnInit, OnDestroy {
         if (next) {
           this.selectCommittee(next);
         }
-
+        this.loadBatches()
         this.loadCommittees(true);
       },
       error: (error: unknown) => {

@@ -583,6 +583,7 @@
   .qc-alert { margin: 0; }
 }
 
+// كارت اللجنة: بقى div[role=button] بدل <button> (من غير title/tooltip من المتصفح)
 .qc-cm {
   flex: none;
   display: flex;
@@ -598,9 +599,22 @@
   font: inherit;
   text-align: start;
   cursor: pointer;
+  outline: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
   transition: border-color .2s, background .2s, box-shadow .2s, transform .2s;
 
-  &:hover:not(:disabled) { border-color: var(--blue); border-inline-start-color: var(--tone); transform: translateY(-1px); box-shadow: 0 6px 16px rgba(11, 46, 79, .08); }
+  &:hover:not([aria-disabled='true']) {
+    border-color: var(--blue);
+    border-inline-start-color: var(--tone);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(11, 46, 79, .08);
+  }
+
+  &:focus-visible:not([aria-disabled='true']) {
+    border-color: var(--blue);
+    box-shadow: 0 0 0 3px rgba(21, 101, 192, .22);
+  }
 
   &.is-active {
     border-color: var(--blue);
@@ -610,8 +624,8 @@
   }
 
   &.is-done { background: rgba(25, 135, 84, .05); }
-  &:disabled { cursor: default; }
-  &.is-done:disabled { opacity: .85; }
+  &[aria-disabled='true'] { cursor: default; }
+  &.is-done[aria-disabled='true'] { opacity: .85; }
 }
 
 .qc-cm-top { display: flex; align-items: center; gap: .65rem; min-width: 0; }

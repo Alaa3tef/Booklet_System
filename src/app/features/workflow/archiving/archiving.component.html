@@ -438,60 +438,59 @@
             <p class="hint"><i class="pi pi-spin pi-spinner"></i> جاري تحميل صناديق اللجنة…</p>
           }
 
-                    <div class="bgrid">
-            @for (b of visibleBoxes(); track b.id) {
-              <article class="bcard" [attr.data-state]="b.state">
-                <header><span class="bcard-kind">صندوق</span><span class="bcard-no">{{ b.seq }}</span></header>
-                <div class="bcard-mid">
-                  <span class="bcard-ico">
-                    <i
-                      class="pi"
-                      [ngClass]="
-                        b.state === 'done' || b.state === 'scanned'
-                          ? 'pi-check-circle'
-                          : 'pi-box'
-                      "
-                    ></i>
-                  </span>
-                  <div><small>رقم الصندوق</small><b>{{ b.seq | number: '3.0-0' }}</b></div>
-                </div>
+            <div class="bgrid">
+  @for (b of visibleBoxes(); track b.id) {
+    <article class="bcard" [attr.data-state]="b.state">
 
-                <!-- مكان التخزين (الرف) — ظاهر بشكل واضح -->
-                <div class="bcard-rack" *ngIf="b.rack">
-                  <span class="bcard-rack-ico"><i class="pi pi-warehouse"></i></span>
-                  <div>
-                    <small>متخزن في الرف</small>
-                    <b class="mono">{{ b.rack || 'غير محدد' }}</b>
-                  </div>
-                </div>
-
-                <code class="bcard-code">{{ b.code }}</code>
-                <footer>
-                  <span class="bcard-pill">
-
-                    @if (b.state === 'done') {
-                      <i class="pi pi-check-circle"></i>
-                      {{ tab() === 'archive' ? 'تم التخزين' : 'تم التسليم' }}
-
-                    } @else if (b.state === 'scanned') {
-                      <i class="pi pi-check-circle"></i>
-                      تمت القراءة بنجاح
-
-                    } @else if (b.state === 'pending') {
-                      <i class="pi pi-clock"></i>
-                      {{ tab() === 'archive' ? 'في انتظار الرف' : 'في انتظار الإرسال' }}
-
-                    } @else {
-                      <i class="pi pi-clock"></i>
-                      في انتظار المسح
-                    }
-
-                  </span>
-                  @if (b.note) { <small class="bcard-note">{{ b.note }}</small> }
-                </footer>
-              </article>
-            } @empty { <p class="empty">لا توجد صناديق في الفلتر ده.</p> }
+      <header class="bcard-head">
+        <div class="bcard-id">
+          <span class="bcard-ico">
+            <i class="pi" [ngClass]="b.state === 'done' || b.state === 'scanned' ? 'pi-check-circle' : 'pi-box'"></i>
+          </span>
+          <div class="bcard-id-txt">
+            <small>صندوق رقم</small>
+            <b>{{ b.seq | number: '3.0-0' }}</b>
           </div>
+        </div>
+
+        <span class="bcard-pill">
+          @if (b.state === 'done') {
+            <i class="pi pi-check-circle"></i> {{ tab() === 'archive' ? 'تم التخزين' : 'تم التسليم' }}
+          } @else if (b.state === 'scanned') {
+            <i class="pi pi-check-circle"></i> تمت القراءة
+          } @else if (b.state === 'pending') {
+            <i class="pi pi-clock"></i> {{ tab() === 'archive' ? 'في انتظار الرف' : 'في انتظار الإرسال' }}
+          } @else {
+            <i class="pi pi-clock"></i> في انتظار المسح
+          }
+        </span>
+      </header>
+
+      @if (b.rack) {
+        <div class="bcard-rack">
+          <span class="bcard-rack-ico"><i class="pi pi-warehouse"></i></span>
+          <div class="bcard-rack-txt">
+            <small>متخزن في الرف</small>
+            <b>{{ b.rack }}</b>
+          </div>
+        </div>
+      }
+
+      <div class="bcard-code" [title]="b.code">
+        <i class="pi pi-qrcode"></i>
+        <code>{{ b.code }}</code>
+      </div>
+
+      @if (b.note) {
+        <footer class="bcard-foot">
+          <small class="bcard-note">{{ b.note }}</small>
+        </footer>
+      }
+    </article>
+  } @empty {
+    <p class="empty">لا توجد صناديق في الفلتر ده.</p>
+  }
+</div>
         </div>
 
         <!-- ===================== رسالة إنجاز اللجنة ===================== -->

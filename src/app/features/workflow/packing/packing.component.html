@@ -12,7 +12,7 @@
   panelTitle="التغليف"
   functionLabel="مستخدم التغليف"
   [essentials]="essentials"
-  resultText="يتم تسجيل حالة التغليف بعد مسح جميع الصناديق والأظرف الأساسية"
+  resultText="يتم تسجيل حالة التغليف بعد مسح جميع الصناديق والأظرف الأساسية والاحتياطية"
 >
   <div panel-content class="pk">
 
@@ -358,7 +358,7 @@
                     } @else if (sessionClosed() && !packDone()) {
                       <small>لا يمكن مسح أي صندوق أو ظرف آخر — اضغط «تأكيد التغليف»</small>
                     } @else if (!packDone()) {
-                      <small>الجلسة مفتوحة تلقائيًا — لا حاجة للضغط على أي زر أو الكتابة</small>
+                      <small>الجلسة مفتوحة تلقائيًا — يجب مسح الأظرف الأساسية والاحتياطية</small>
                     }
                   </div>
 
@@ -467,7 +467,7 @@
                     <i class="pi pi-lock"></i>
                     <div>
                       <strong>تم إغلاق جلسة المسح</strong>
-                      <span>اكتمل مسح كل الصناديق والأظرف، يمكنك الآن تأكيد التغليف.</span>
+                      <span>اكتمل مسح كل الصناديق والأظرف (الأساسية والاحتياطية)، يمكنك الآن تأكيد التغليف.</span>
                     </div>
                   </div>
                 }
@@ -503,7 +503,7 @@
                       (click)="highlightBox(box.boxId)">
                       <i class="pi" [ngClass]="box.complete ? 'pi-check-circle' : 'pi-box'"></i>
                       <b>{{ box.sequenceNo }}</b>
-                      <small>{{ box.mainScanned }}/{{ box.mainTotal }}</small>
+                      <small>{{ box.mainScanned + box.reserveScanned }}/{{ box.mainTotal + box.reserveTotal }}</small>
                     </button>
                   }
                 </div>
@@ -553,7 +553,7 @@
                     @if (box.reserve.length) {
                       <div class="pk-group">
                         <div class="pk-group-head">
-                          <span><i class="pi pi-clone"></i> الأظرف الاحتياطية </span>
+                          <span><i class="pi pi-clone"></i> الأظرف الاحتياطية (مطلوب مسحها)</span>
                           <b>{{ box.reserveScanned }} / {{ box.reserveTotal }}</b>
                         </div>
                         <div class="pk-env-grid">
@@ -610,6 +610,6 @@
   </div>
 
   <ng-container system-options>
-    <span class="system-option-info"><i class="pi pi-info-circle"></i> يجب مسح QR كل الصناديق وكل الأظرف الأساسية قبل تأكيد التغليف.</span>
+    <span class="system-option-info"><i class="pi pi-info-circle"></i> يجب مسح QR كل الصناديق وكل الأظرف (الأساسية والاحتياطية) قبل تأكيد التغليف.</span>
   </ng-container>
 </app-workflow-step-layout>
