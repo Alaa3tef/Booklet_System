@@ -6,11 +6,17 @@ import { finalize, Subscription } from 'rxjs';
 
 import { AuthService } from '../../../core/services/auth.service';
 import { WorkflowStepLayoutComponent } from '../../../shared/workflow-step-layout/workflow-step-layout.component';
+// ⚠️ عدّلي المسار/اسم الملف حسب مكان الـ Lookups service عندك
+import { Lookups } from '../../../shared/services/lookups';
 import {
   StorageLocationResolveDto, BoxResolveDto, ArchivingBoxService,
   DeliveryOrderDto, DeliveryBatchDto, DeliveryCommitteeDto, DeliverCommitteeResult,
   PackedItemDto, PackedCommitteeDto, CommitteeBoxItemDto,
 } from './service/archiving-box.service';
+import { FormsModule } from '@angular/forms';
+import { ButtonModule } from 'primeng/button';
+import { SelectModule } from 'primeng/select';
+import { TooltipModule } from 'primeng/tooltip';
 
 type Tab = 'archive' | 'warehouse';
 type Feedback = { kind: 'ok' | 'warn' | 'err' | 'lock'; text: string };
@@ -24,6 +30,7 @@ interface SessionBox { id: number; seq: number; code: string; state: 'done' | 'p
 interface Slot { text: string; state: 'ok' | 'wait' | 'idle'; }
 type BoxFilter = 'all' | 'todo' | 'done';
 interface SideItem { id: number; number: string; label: string; status: 'now' | 'done' | 'todo'; }
+interface LookupOption { id: number; name: string; }
 
 const PAGE_SIZE = 12;
 const DELIVERED_TEXT = 'تم التسليم';
@@ -32,12 +39,13 @@ const isDeliveredText = (s?: string) => /deliver|تم التسليم|مسلم|م
 @Component({
   selector: 'app-archiving',
   standalone: true,
-  imports: [CommonModule, DialogModule, WorkflowStepLayoutComponent],
+  imports: [CommonModule, DialogModule, WorkflowStepLayoutComponent , FormsModule, SelectModule, ButtonModule, TooltipModule],
   templateUrl: './archiving.component.html',
   styleUrl: './archiving.component.scss',
 })
 export default class ArchivingComponent implements OnInit {
   private api = inject(ArchivingBoxService);
+  private lookups = inject(Lookups);
   private messages = inject(MessageService);
   private authService = inject(AuthService);
 
@@ -47,6 +55,11 @@ export default class ArchivingComponent implements OnInit {
   readonly warehouseOnly = signal(false);
   readonly roleLoadError = signal<string | null>(null);
 
+  arGovernorateOptions = computed(() =>
+  this.arGovernorates().map(g => ({ label: g.name, value: g.id })));
+
+arSubjectOptions = computed(() =>
+  this.arSubjects().map(s => ({ label: s.name, value: s.id })));
   // =====================================================================
   //  Pagination
   //   - دفعات الأرشيف ولجان الدفعة (الأرشيف) ولجان المخزن: من الباك
@@ -99,12 +112,62 @@ export default class ArchivingComponent implements OnInit {
   readonly pendingBox = signal<string | null>(null);
   readonly placed = signal<Placement[]>([]);
 
-  /** GET /Boxes/packed-items — pagination من الباك */
+  // ---------------------------------------------------------------------
+  //  فلاتر الدفعات (محافظة / مادة) — بتتبعت للباك مع packed-items
+  // ---------------------------------------------------------------------
+  readonly arGovernorates = signal<LookupOption[]>([]);
+  readonly arSubjects = signal<LookupOption[]>([]);
+  readonly arGovId = signal<number | null>(null);
+  readonly arSubjectId = signal<number | null>(null);
+  readonly arHasFilter = computed(() => this.arGovId() !== null || this.arSubjectId() !== null);
+
+  // بنلغي الطلب القديم لو المستخدم غيّر الفلتر بسرعة
+  private archiveSub?: Subscription;
+
+  /** تحميل قوائم المحافظات والمواد للـ dropdowns */
+  private loadFilterLookups(): void {
+    this.lookups.getLookupGovernorateData().subscribe({
+      next: r => this.arGovernorates.set(this.toOptions(r)),
+      error: e => this.say('err', this.errText(e)),
+    });
+    this.lookups.getLookupSubjectData().subscribe({
+      next: r => this.arSubjects.set(this.toOptions(r)),
+      error: e => this.say('err', this.errText(e)),
+    });
+  }
+
+  onArGovChange(value: string): void {
+    this.arGovId.set(value ? Number(value) : null);
+    this.applyArFilter();
+  }
+  onArSubjectChange(value: string): void {
+    this.arSubjectId.set(value ? Number(value) : null);
+    this.applyArFilter();
+  }
+  clearArFilters(): void {
+    if (!this.arHasFilter()) return;
+    this.arGovId.set(null);
+    this.arSubjectId.set(null);
+    this.applyArFilter();
+  }
+  private applyArFilter(): void {
+    this.resetPage();
+    this.loadArchive();
+  }
+
+  /** GET /Boxes/packed-items — pagination + فلاتر من الباك */
   loadArchive(): void {
     const { page, size } = this.pg();
+    this.archiveSub?.unsubscribe();
     this.arLoading.set(true);
     this.arError.set(null);
-    this.api.getPackedItems({ isPaged: true, pageNumber: page, pageSize: size }).subscribe({
+    this.archiveSub = this.api.getPackedItems({
+      isPaged: true,
+      pageNumber: page,
+      pageSize: size,
+      governorateId: this.arGovId() ?? undefined,
+      subjectId: this.arSubjectId() ?? undefined,
+    }).subscribe({
       next: r => {
         const items = this.toArray<PackedItemDto>(r.data);
         this.arItems.set(items);
@@ -172,7 +235,7 @@ export default class ArchivingComponent implements OnInit {
   arGoBatches(): void {
     this.arBatch.set(null); this.arCommittees.set([]); this.arCommitteeId.set(null);
     this.resetPage(); this.resetScan();
-    this.loadArchive();
+    this.loadArchive();   // الفلاتر المختارة بتفضل زي ما هي
   }
 
   readonly arBoxes = computed(() => {
@@ -381,7 +444,10 @@ export default class ArchivingComponent implements OnInit {
   readonly completion = signal<Completion | null>(null);
 
   /** التابة الافتراضية (الأرشيف) بس — المخزن بيتحمّل لما تتضغط */
-  ngOnInit(): void { this.loadTab(); }
+  ngOnInit(): void {
+    this.loadFilterLookups();
+    this.loadTab();
+  }
 
   setTab(t: Tab): void {
     if (this.warehouseOnly() && t === 'archive') return;
@@ -465,7 +531,7 @@ export default class ArchivingComponent implements OnInit {
     return c ? { id: c.committeeId, number: c.committeeNumber, subject: this.orderTitle(o), chips: [o?.governorateName ?? '', this.orderTitle(o), b?.roundName ?? o?.roundName ?? ''] } : null;
   });
 
-    readonly sessionBoxes = computed<SessionBox[]>(() => {
+  readonly sessionBoxes = computed<SessionBox[]>(() => {
     if (this.tab() === 'archive') {
       if (!this.arSelected()) return [];
       const placedMap = new Map(this.placed().map(p => [p.trackingCode, p]));
@@ -577,7 +643,7 @@ export default class ArchivingComponent implements OnInit {
   /**
    * الماسح شغّال على مستوى الصفحة كلها من غير focus على أي input:
    * بنلقط keydown على document، وبنقرا e.code عشان الكيبورد العربي، وEnter/Tab بينهوا القراءة.
-   * أي عنصر جواه [data-no-scan] (زي بحث اللجان) بيتجاهل.
+   * أي عنصر جواه [data-no-scan] (زي بحث اللجان والفلاتر) بيتجاهل.
    */
   @HostListener('document:keydown', ['$event'])
   onKey(e: KeyboardEvent): void {
@@ -873,6 +939,23 @@ export default class ArchivingComponent implements OnInit {
     const inner = (d as { data?: unknown } | null)?.data;
     return Array.isArray(inner) ? (inner as T[]) : [];
   }
+
+  /**
+   * بيحوّل رد الـ Lookups (سواء array مباشرة أو ApiResponse أو paged) لـ {id, name}.
+   * لو أسماء الحقول في الـ API عندك مختلفة، ضيفيها في القوائم تحت.
+   */
+  private toOptions(res: unknown): LookupOption[] {
+    let list = this.toArray<any>(res);
+    if (!list.length) list = this.toArray<any>((res as { data?: unknown } | null)?.data);
+    return list
+      .map(x => ({
+        id: Number(x?.id ?? x?.governorateId ?? x?.subjectId ?? x?.value),
+        name: String(x?.name ?? x?.nameAr ?? x?.arabicName ?? x?.governorateName ?? x?.subjectName ?? x?.title ?? x?.label ?? ''),
+      }))
+      .filter(o => Number.isFinite(o.id) && o.id > 0 && o.name)
+      .sort((a, b) => a.name.localeCompare(b.name, 'ar'));
+  }
+
   private errText(e: any): string {
     return e?.error?.message || e?.error?.errors?.[0] || e?.message || 'حصل خطأ في الاتصال';
   }
