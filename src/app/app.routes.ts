@@ -131,6 +131,12 @@ export const routes: Routes = [
         data: { breadcrumb: 'التخزين' }
       },
       {
+        path: 'workflow/reports',
+        loadComponent: () =>
+          import('./features/workflow/reports/reports.component'),
+        data: { breadcrumb: 'تقارير أعمال الأقسام' }
+      },
+      {
         path: 'users',
         loadComponent: () =>
           import('./features/user-management/user-management.component'),

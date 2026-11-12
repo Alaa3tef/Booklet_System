@@ -1535,3 +1535,35 @@ background: #1565c0;
   .details-pagination { justify-content: center; }
   .details-search { width: 100%; }
 }
+/* ===== بحث أوامر التوريد بالمحافظات ===== */
+.delivery-search-card {
+  .planning-search-title {
+    flex-wrap: wrap;
+    row-gap: 10px;
+
+    .clear-all-btn,
+    .action-btn-search { flex-shrink: 0; }
+  }
+
+  /* 3 أعمدة بدل 6 في صف واحد عشان النصوص متتقصش */
+  .fields-grid.cols-auto {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 14px 16px;
+    margin-bottom: 0;
+
+    @media (max-width: 1100px) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    @media (max-width: 640px)  { grid-template-columns: 1fr; }
+
+    .field { min-width: 0; }
+
+    .p-select,
+    p-select { width: 100%; min-width: 0; }
+
+    .p-select-label {
+      overflow: visible;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+  }
+}

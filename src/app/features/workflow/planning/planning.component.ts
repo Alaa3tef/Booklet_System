@@ -1,4 +1,4 @@
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, OnDestroy, OnInit, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { forkJoin, of, catchError } from 'rxjs';
@@ -31,6 +31,7 @@ interface SelectOption {
 }
 
 type StepState = 'done' | 'current' | 'pending' | 'rejected';
+type TabKey = 'materials' | 'delivery-orders';
 
 function todayAsDateInput(): string {
   const date = new Date();
@@ -69,7 +70,7 @@ function buildPages(total: number, currentPage: number): (number | 'dots')[] {
   templateUrl: './planning.component.html',
   styleUrl: './planning.component.scss'
 })
-export default class PlanningComponent implements OnInit {
+export default class PlanningComponent implements OnInit, OnDestroy {
   private readonly lookupService = inject(Lookups);
   private readonly committeeService = inject(CommitteeService);
   private readonly planningService = inject(PlanningService);
@@ -83,21 +84,27 @@ export default class PlanningComponent implements OnInit {
   ];
 
   // ==========================================
-  // TABS ('materials' | 'delivery-orders')
+  // TABS — دفعات المواد نشطة في الأول
   // ==========================================
-  readonly activeTab = signal<'materials' | 'delivery-orders'>('materials');
+  readonly activeTab = signal<TabKey>('materials');
   private deliveryLookupsLoaded = false;
   readonly deliveryLookupsLoading = signal(false);
 
-  setTab(tab: 'materials' | 'delivery-orders'): void {
+  /** كل ضغطة على تاب بتنده الـ endpoint بتاعه */
+  setTab(tab: TabKey): void {
     this.activeTab.set(tab);
-    if (tab === 'delivery-orders') {
-      if (!this.deliveryLookupsLoaded && !this.deliveryLookupsLoading()) {
-        this.loadDeliveryLookups();
-      } else if (this.deliveryLookupsLoaded && !this.deliveryLoading()) {
-        this.loadDeliveryGovernorates();
-      }
+
+    if (tab === 'materials') {
+      this.resetPage();
+      this.loadBatches();
+      return;
     }
+
+    // delivery-orders: الـ endpoint فورًا، والـ lookups (أدوار/مراحل) بالتوازي
+    if (!this.deliveryLookupsLoaded && !this.deliveryLookupsLoading()) {
+      this.loadDeliveryLookups();
+    }
+    this.loadDeliveryGovernorates();
   }
 
   // ==========================================
@@ -116,7 +123,7 @@ export default class PlanningComponent implements OnInit {
   ];
 
   // ==========================================
-  // TAB 1: MATERIALS / BATCHES (دفعات المواد)
+  // TAB 1: MATERIALS / BATCHES
   // ==========================================
   readonly batches = signal<PlanningBatch[]>([]);
   readonly batchesLoading = signal(false);
@@ -211,9 +218,7 @@ export default class PlanningComponent implements OnInit {
     });
   }
 
-  // ==========================================
-  // PAGINATION FOR BATCHES (client-side لحد ما الباك يجهز)
-  // ==========================================
+  // ---------- pagination for batches (client-side) ----------
   readonly pageSize = signal(6);
   readonly currentPage = signal(1);
 
@@ -274,7 +279,6 @@ export default class PlanningComponent implements OnInit {
     this.goToPage(this.currentPage() + 1);
   }
 
-  // Active filters helper
   readonly activeFilters = computed(() => {
     const list: { key: string; title: string; value: string }[] = [];
     const gov = this.labelOf(this.governorates(), this.searchGovernorate());
@@ -345,7 +349,137 @@ export default class PlanningComponent implements OnInit {
   readonly creatingDeliveryFor = signal<number | null>(null);
   readonly createdDeliveryOrders = signal<Record<number, boolean>>({});
 
-  // ---------- reasons (blocking reasons + failed-create errors) ----------
+  // ---------- filters (server-side) ----------
+  readonly deliverySearch = signal('');
+  /** الرقم اللي بيتبعت للباك كـ Year (مثلاً 27) */
+  readonly deliveryYear = signal<number | null>(null);
+  /** النص اللي بيتكتب في الحقل */
+  readonly deliveryYearInput = signal<string>('');
+  /** المحافظة: بتتبعت للباك كـ GovernorateId (مثلاً 23) */
+  readonly deliveryGovernorateId = signal<string | number>('all');
+  readonly deliveryStageId = signal<string | number>('all');
+  readonly deliverySort = signal<'none' | 'true' | 'false'>('none');
+
+  private deliverySearchTimer: ReturnType<typeof setTimeout> | null = null;
+  private deliveryRequestId = 0;
+
+  readonly sortOptions: SelectOption[] = [
+    { label: 'الترتيب الافتراضي', value: 'none' },
+    { label: 'الاسم: من أ إلى ي', value: 'true' },
+    { label: 'الاسم: من ي إلى أ', value: 'false' }
+  ];
+
+  readonly activeDeliveryFilters = computed(() => {
+    const list: { key: string; title: string; value: string }[] = [];
+    const term = this.deliverySearch().trim();
+    const year = this.deliveryYear();
+    const gov = this.labelOf(this.governorates(), this.deliveryGovernorateId());
+    const round = this.labelOf(this.rounds(), this.deliveryRoundId());
+    const stage = this.labelOf(this.educationalStages(), this.deliveryStageId());
+    const eligible = this.deliveryEligibleFilter();
+
+    if (term) list.push({ key: 'search', title: 'بحث', value: term });
+    if (gov) list.push({ key: 'governorate', title: 'المحافظة', value: gov });
+    if (year) list.push({ key: 'year', title: 'السنة', value: String(year) });
+    if (round) list.push({ key: 'round', title: 'الدور', value: round });
+    if (stage) list.push({ key: 'stage', title: 'المرحلة', value: stage });
+    if (eligible !== 'all') {
+      list.push({
+        key: 'eligible',
+        title: 'الجاهزية',
+        value: eligible === 'true' ? 'المؤهلة فقط' : 'غير المؤهلة'
+      });
+    }
+    if (this.deliverySort() !== 'none') {
+      list.push({
+        key: 'sort',
+        title: 'الترتيب',
+        value: this.deliverySort() === 'true' ? 'الاسم: من أ إلى ي' : 'الاسم: من ي إلى أ'
+      });
+    }
+    return list;
+  });
+
+  /** بحث نصي بـ debounce */
+  onDeliverySearch(value: string): void {
+    this.deliverySearch.set(value ?? '');
+    if (this.deliverySearchTimer) clearTimeout(this.deliverySearchTimer);
+    this.deliverySearchTimer = setTimeout(() => {
+      this.resetDeliveryPage();
+      this.loadDeliveryGovernorates();
+    }, 400);
+  }
+
+  /** السنة: أرقام بس، وبتتبعت زي ما هي كـ Year=27 */
+  onDeliveryYearChange(value: string | number | null): void {
+    const digits = String(value ?? '').replace(/\D/g, '').slice(0, 4);
+    this.deliveryYearInput.set(digits);
+    this.deliveryYear.set(digits ? Number(digits) : null);
+
+    if (this.deliverySearchTimer) clearTimeout(this.deliverySearchTimer);
+    this.deliverySearchTimer = setTimeout(() => {
+      this.resetDeliveryPage();
+      this.loadDeliveryGovernorates();
+    }, 400);
+  }
+
+  onDeliveryFilterChange(): void {
+    this.resetDeliveryPage();
+    this.loadDeliveryGovernorates();
+  }
+
+  setDeliveryRound(v: string | number): void {
+    this.deliveryRoundId.set(v ?? 'all');
+    this.onDeliveryFilterChange();
+  }
+
+  setDeliveryGovernorate(v: string | number): void {
+    this.deliveryGovernorateId.set(v ?? 'all');
+    this.onDeliveryFilterChange();
+  }
+
+  setDeliveryStage(v: string | number): void {
+    this.deliveryStageId.set(v ?? 'all');
+    this.onDeliveryFilterChange();
+  }
+
+  setDeliveryEligible(v: string): void {
+    this.deliveryEligibleFilter.set(v ?? 'all');
+    this.onDeliveryFilterChange();
+  }
+
+  setDeliverySort(v: string): void {
+    this.deliverySort.set(v === 'true' || v === 'false' ? v : 'none');
+    this.onDeliveryFilterChange();
+  }
+
+  removeDeliveryFilter(key: string): void {
+    if (key === 'search') this.deliverySearch.set('');
+    if (key === 'governorate') this.deliveryGovernorateId.set('all');
+    if (key === 'year') {
+      this.deliveryYear.set(null);
+      this.deliveryYearInput.set('');
+    }
+    if (key === 'round') this.deliveryRoundId.set('all');
+    if (key === 'stage') this.deliveryStageId.set('all');
+    if (key === 'eligible') this.deliveryEligibleFilter.set('all');
+    if (key === 'sort') this.deliverySort.set('none');
+    this.onDeliveryFilterChange();
+  }
+
+  clearDeliveryFilters(): void {
+    this.deliverySearch.set('');
+    this.deliveryGovernorateId.set('all');
+    this.deliveryYear.set(null);
+    this.deliveryYearInput.set('');
+    this.deliveryRoundId.set('all');
+    this.deliveryStageId.set('all');
+    this.deliveryEligibleFilter.set('all');
+    this.deliverySort.set('none');
+    this.onDeliveryFilterChange();
+  }
+
+  // ---------- reasons ----------
   readonly deliveryErrors = signal<Record<number, string[]>>({});
   readonly reasonsDialogVisible = signal(false);
   readonly reasonsDialogGovernorate = signal<GovernorateDeliveryReadiness | null>(null);
@@ -353,24 +487,20 @@ export default class PlanningComponent implements OnInit {
   readonly reasonsDialogList = computed(() => {
     const gov = this.reasonsDialogGovernorate();
     if (!gov) return [];
-    // read the signal so the list stays in sync with new errors
     this.deliveryErrors();
     return this.getReasons(gov);
   });
 
-  /** blocking reasons from the API + errors from a failed create attempt */
   getReasons(gov: GovernorateDeliveryReadiness): string[] {
     const blocking = gov.blockingReasons ?? [];
     const failed = this.deliveryErrors()[gov.governorateId] ?? [];
     return [...new Set([...blocking, ...failed].filter(r => !!r?.trim()))];
   }
 
-  /** an order was created in this session */
   hasOrder(gov: GovernorateDeliveryReadiness): boolean {
     return !!this.createdDeliveryOrders()[gov.governorateId];
   }
 
-  /** error state = there are reasons and no successfully created order */
   hasError(gov: GovernorateDeliveryReadiness): boolean {
     return !this.hasOrder(gov) && this.getReasons(gov).length > 0;
   }
@@ -385,10 +515,6 @@ export default class PlanningComponent implements OnInit {
     this.reasonsDialogGovernorate.set(null);
   }
 
-  /**
-   * Handles every common error shape:
-   * string, {message}, {detail}, {errors: []}, ASP.NET {errors: {Field: []}}, {title}
-   */
   private extractErrorMessages(error: any): string[] {
     const body = error?.error;
     const out: string[] = [];
@@ -421,12 +547,39 @@ export default class PlanningComponent implements OnInit {
     return [...new Set(out)];
   }
 
-  // ---------- delivery pagination ----------
+  // ---------- delivery pagination (server-side دايمًا) ----------
   readonly deliveryPageSize = signal(6);
   readonly deliveryCurrentPage = signal(1);
-  readonly deliveryShowAll = computed(() => this.deliveryPageSize() === 0);
 
-  readonly totalGovernoratesCount = computed(() => this.deliveryGovernorates().length);
+  readonly deliveryPageSizeOptions = [
+    { label: '6', value: 6 },
+    { label: '12', value: 12 },
+    { label: '24', value: 24 },
+    { label: '50', value: 50 }
+  ];
+
+  readonly deliveryTotalCount = signal(0);
+  readonly deliveryTotalPagesFromApi = signal(1);
+
+  readonly deliveryTotalPages = computed(() => Math.max(1, this.deliveryTotalPagesFromApi()));
+
+  readonly deliveryPaginationStart = computed(() =>
+    this.deliveryTotalCount() === 0
+      ? 0
+      : (this.deliveryCurrentPage() - 1) * this.deliveryPageSize() + 1
+  );
+  readonly deliveryPaginationEnd = computed(() =>
+    Math.min(
+      this.deliveryPaginationStart() + this.deliveryGovernorates().length - 1,
+      this.deliveryTotalCount()
+    )
+  );
+  readonly deliveryPaginationPages = computed<(number | 'dots')[]>(() =>
+    buildPages(this.deliveryTotalPages(), this.deliveryCurrentPage())
+  );
+
+  // ---------- KPI (الإجمالي من الباك، والباقي من الصفحة الحالية) ----------
+  readonly totalGovernoratesCount = computed(() => this.deliveryTotalCount());
   readonly eligibleGovernoratesCount = computed(
     () => this.deliveryGovernorates().filter(g => g.canCreate).length
   );
@@ -443,52 +596,20 @@ export default class PlanningComponent implements OnInit {
     this.deliveryGovernorates().reduce((sum, g) => sum + (g.totalBoxes || 0), 0)
   );
 
-  // Filtered governorates view
-  readonly filteredDeliveryGovernorates = computed(() => {
-    const list = this.deliveryGovernorates();
-    const eligibleFilter = this.deliveryEligibleFilter();
-    if (eligibleFilter === 'true') {
-      return list.filter(g => g.canCreate);
-    }
-    if (eligibleFilter === 'false') {
-      return list.filter(g => !g.canCreate);
-    }
-    return list;
-  });
-
-  readonly deliveryTotalPages = computed(() =>
-    this.deliveryShowAll()
-      ? 1
-      : Math.max(1, Math.ceil(this.filteredDeliveryGovernorates().length / this.deliveryPageSize()))
-  );
-  readonly paginatedDeliveryGovernorates = computed(() => {
-    if (this.deliveryShowAll()) return this.filteredDeliveryGovernorates();
-    const page = Math.min(this.deliveryCurrentPage(), this.deliveryTotalPages());
-    const start = (page - 1) * this.deliveryPageSize();
-    return this.filteredDeliveryGovernorates().slice(start, start + this.deliveryPageSize());
-  });
-  readonly deliveryPaginationStart = computed(() =>
-    this.filteredDeliveryGovernorates().length === 0
-      ? 0
-      : this.deliveryShowAll() ? 1 : (this.deliveryCurrentPage() - 1) * this.deliveryPageSize() + 1
-  );
-  readonly deliveryPaginationEnd = computed(() =>
-    this.deliveryShowAll()
-      ? this.filteredDeliveryGovernorates().length
-      : Math.min(this.deliveryCurrentPage() * this.deliveryPageSize(), this.filteredDeliveryGovernorates().length)
-  );
-  readonly deliveryPaginationPages = computed<(number | 'dots')[]>(() =>
-    buildPages(this.deliveryTotalPages(), this.deliveryCurrentPage())
-  );
-
   resetDeliveryPage(): void {
     this.deliveryCurrentPage.set(1);
   }
 
   goToDeliveryPage(page: number): void {
-    if (page >= 1 && page <= this.deliveryTotalPages()) {
-      this.deliveryCurrentPage.set(page);
-    }
+    if (page < 1 || page > this.deliveryTotalPages() || page === this.deliveryCurrentPage()) return;
+    this.deliveryCurrentPage.set(page);
+    this.loadDeliveryGovernorates();
+  }
+
+  onDeliveryPageSizeChange(size: number): void {
+    this.deliveryPageSize.set(size);
+    this.resetDeliveryPage();
+    this.loadDeliveryGovernorates();
   }
 
   openDeliveryOrderDialog(governorate: GovernorateDeliveryReadiness): void {
@@ -542,29 +663,29 @@ export default class PlanningComponent implements OnInit {
   clearDeliveryCreateValidationError(): void {
     this.deliveryCreateValidationError.set('');
   }
-/** يحمّل PDF مواقع أمر التوريد. أي فشل بيتجاهل بصمت */
-private downloadDeliveryOrderPdf(deliveryOrderId: number, governorateName?: string | null): void {
-  this.planningService.getDeliveryOrderLocationsPdf(deliveryOrderId).subscribe({
-    next: blob => {
-      try {
-        const pdfBlob = blob.type === 'application/pdf' ? blob : new Blob([blob], { type: 'application/pdf' });
-        const url = URL.createObjectURL(pdfBlob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `delivery-order-${deliveryOrderId}${governorateName ? '-' + governorateName : ''}-locations.pdf`;
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        setTimeout(() => URL.revokeObjectURL(url), 1000);
-      } catch {
-        /* تجاهل أي مشكلة في التحميل */
+
+  private downloadDeliveryOrderPdf(deliveryOrderId: number, governorateName?: string | null): void {
+    this.planningService.getDeliveryOrderLocationsPdf(deliveryOrderId).subscribe({
+      next: blob => {
+        try {
+          const pdfBlob = blob.type === 'application/pdf' ? blob : new Blob([blob], { type: 'application/pdf' });
+          const url = URL.createObjectURL(pdfBlob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `delivery-order-${deliveryOrderId}${governorateName ? '-' + governorateName : ''}-locations.pdf`;
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          setTimeout(() => URL.revokeObjectURL(url), 1000);
+        } catch {
+          /* تجاهل */
+        }
+      },
+      error: () => {
+        /* تجاهل */
       }
-    },
-    error: () => {
-      /* تجاهل أي مشكلة في التحميل */
-    }
-  });
-}
+    });
+  }
 
   createDeliveryOrder(): void {
     const governorate = this.pendingDeliveryGovernorate();
@@ -595,37 +716,33 @@ private downloadDeliveryOrderPdf(deliveryOrderId: number, governorateName?: stri
       governorateId,
       deliveryDate: this.deliveryDate()
     }).subscribe({
-     next: response => {
-  this.creatingDeliveryFor.set(null);
-  this.deliveryOrderDialogVisible.set(false);
-  this.pendingDeliveryGovernorate.set(null);
+      next: response => {
+        this.creatingDeliveryFor.set(null);
+        this.deliveryOrderDialogVisible.set(false);
+        this.pendingDeliveryGovernorate.set(null);
 
-  this.deliveryErrors.update(errors => {
-    const { [governorateId]: _removed, ...rest } = errors;
-    return rest;
-  });
+        this.deliveryErrors.update(errors => {
+          const { [governorateId]: _removed, ...rest } = errors;
+          return rest;
+        });
 
-  if (response?.success) {
-    this.createdDeliveryOrders.update(orders => ({
-      ...orders,
-      [governorateId]: true
-    }));
+        if (response?.success) {
+          this.createdDeliveryOrders.update(orders => ({ ...orders, [governorateId]: true }));
 
-    // تحميل الـ PDF تلقائيًا (بصمت لو فشل)
-    const deliveryOrderId = (response as any)?.data?.deliveryOrderId ?? response?.data?.deliveryOrderId;
-    if (deliveryOrderId) {
-      this.downloadDeliveryOrderPdf(deliveryOrderId, governorate.governorateName);
-    }
-  }
+          const deliveryOrderId = (response as any)?.data?.deliveryOrderId ?? response?.data?.deliveryOrderId;
+          if (deliveryOrderId) {
+            this.downloadDeliveryOrderPdf(deliveryOrderId, governorate.governorateName);
+          }
+        }
 
-  this.messageService.add({
-    severity: 'success',
-    summary: 'تم إنشاء أمر التوزيع',
-    detail: response?.message || 'تم إنشاء أمر التوزيع بنجاح',
-    life: 3500
-  });
-  this.loadDeliveryGovernorates();
-},
+        this.messageService.add({
+          severity: 'success',
+          summary: 'تم إنشاء أمر التوزيع',
+          detail: response?.message || 'تم إنشاء أمر التوزيع بنجاح',
+          life: 3500
+        });
+        this.loadDeliveryGovernorates();
+      },
       error: error => {
         this.creatingDeliveryFor.set(null);
         const reasons = this.extractErrorMessages(error);
@@ -650,15 +767,15 @@ private downloadDeliveryOrderPdf(deliveryOrderId: number, governorateName?: stri
   // BATCH DETAILS DIALOG (server-side pagination)
   // ==========================================
   batchDetailsDialogVisible = false;
-  batchDetailsLoading = false;                 // تحميل أول مرة (الدايلوج كله)
+  batchDetailsLoading = false;
   selectedBatchDetails: BatchDetails | null = null;
 
   private detailsBatchId: number | null = null;
-  private detailsRequestId = 0;                // لتجاهل الردود القديمة
+  private detailsRequestId = 0;
   private detailsSearchTimer: ReturnType<typeof setTimeout> | null = null;
 
   readonly detailsCommittees = signal<BatchCommittee[]>([]);
-  readonly detailsTableLoading = signal(false); // تحميل الجدول فقط (تغيير صفحة/بحث)
+  readonly detailsTableLoading = signal(false);
   readonly detailsTotal = signal(0);
   readonly detailsPage = signal(1);
   readonly detailsPageSize = signal(5);
@@ -697,9 +814,6 @@ private downloadDeliveryOrderPdf(deliveryOrderId: number, governorateName?: stri
     this.loadBatchDetails(true);
   }
 
-  /**
-   * GET api/Planning/batches/{id}?PageNumber=&PageSize=&SearchTerm=&IsPaged=true
-   */
   loadBatchDetails(initial = false): void {
     if (this.detailsBatchId == null) return;
 
@@ -714,7 +828,7 @@ private downloadDeliveryOrderPdf(deliveryOrderId: number, governorateName?: stri
       searchTerm: this.detailsSearch()
     }).subscribe({
       next: res => {
-        if (requestId !== this.detailsRequestId) return; // رد قديم، تجاهليه
+        if (requestId !== this.detailsRequestId) return;
 
         const raw = res as any;
         const data = raw?.data?.data ?? raw?.data ?? raw;
@@ -742,12 +856,6 @@ private downloadDeliveryOrderPdf(deliveryOrderId: number, governorateName?: stri
     });
   }
 
-  /**
-   * committees ممكن ترجع:
-   *  - Array مباشرة
-   *  - Object مقسّم صفحات: { items | data | results: [], totalCount | totalRecords | total | count }
-   * وده كان سبب "_data.slice is not a function".
-   */
   private normalizeCommittees(data: any): { list: BatchCommittee[]; total: number } {
     const fallbackTotal = Number(data?.totalCommittees) || 0;
     const source = data?.committees;
@@ -795,7 +903,7 @@ private downloadDeliveryOrderPdf(deliveryOrderId: number, governorateName?: stri
 
   closeBatchDetails(): void {
     if (this.detailsSearchTimer) clearTimeout(this.detailsSearchTimer);
-    this.detailsRequestId++; // أي رد جاي بعد الإغلاق يتجاهل
+    this.detailsRequestId++;
     this.batchDetailsDialogVisible = false;
     this.selectedBatchDetails = null;
     this.detailsBatchId = null;
@@ -803,16 +911,18 @@ private downloadDeliveryOrderPdf(deliveryOrderId: number, governorateName?: stri
   }
 
   // ==========================================
-  // LIFECYCLE
+  // LIFECYCLE — تاب المواد بس
   // ==========================================
   ngOnInit(): void {
-    this.loadLookups();
-    this.loadBatches();
+    this.loadLookups();   // محافظات + مواد
+    this.loadBatches();   // endpoint دفعات المواد
   }
 
-  /**
-   * Helper to robustly extract an Array from any API response structure.
-   */
+  ngOnDestroy(): void {
+    if (this.deliverySearchTimer) clearTimeout(this.deliverySearchTimer);
+    if (this.detailsSearchTimer) clearTimeout(this.detailsSearchTimer);
+  }
+
   private extractLookupArray(response: any): any[] {
     if (!response) return [];
     if (Array.isArray(response)) return response;
@@ -829,9 +939,6 @@ private downloadDeliveryOrderPdf(deliveryOrderId: number, governorateName?: stri
     return [];
   }
 
-  /**
-   * Maps an array of lookup objects to SelectOption items with numeric value and Arabic label.
-   */
   private mapToOptions(
     rawList: any[],
     defaultLabel: string,
@@ -843,7 +950,6 @@ private downloadDeliveryOrderPdf(deliveryOrderId: number, governorateName?: stri
     rawList.forEach((item: any) => {
       if (!item) return;
 
-      // Extract ID / Value
       let value: number | string | null = null;
       for (const k of idKeys) {
         if (item[k] !== undefined && item[k] !== null && String(item[k]).trim() !== '') {
@@ -853,7 +959,6 @@ private downloadDeliveryOrderPdf(deliveryOrderId: number, governorateName?: stri
         }
       }
 
-      // Extract Label
       const nameKeys = ['nameAr', 'arabicName', 'name', 'title', 'roundName', 'governorateName', 'subjectName', 'stageName', 'label'];
       let label: string | null = null;
       for (const k of nameKeys) {
@@ -900,6 +1005,7 @@ private downloadDeliveryOrderPdf(deliveryOrderId: number, governorateName?: stri
     });
   }
 
+  /** الأدوار + المراحل (بالتوازي مع نداء الـ endpoint، ومش بيستنوا بعض) */
   private loadDeliveryLookups(): void {
     this.deliveryLookupsLoading.set(true);
 
@@ -918,26 +1024,14 @@ private downloadDeliveryOrderPdf(deliveryOrderId: number, governorateName?: stri
       )
     }).subscribe({
       next: ({ rounds, stages }) => {
-        const rList = this.extractLookupArray(rounds);
-        const stList = this.extractLookupArray(stages);
-
-        const rOpts = this.mapToOptions(rList, 'اختر الدور');
-        const stOpts = this.mapToOptions(stList, 'كل المراحل التعليمية');
+        const rOpts = this.mapToOptions(this.extractLookupArray(rounds), 'كل الأدوار');
+        const stOpts = this.mapToOptions(this.extractLookupArray(stages), 'كل المراحل التعليمية');
 
         this.rounds.set(rOpts);
         this.educationalStages.set(stOpts);
 
-        const firstRound = rOpts.find(r => r.value !== 'all');
-        if (firstRound && (this.deliveryRoundId() === 'all' || !this.deliveryRoundId())) {
-          this.deliveryRoundId.set(firstRound.value);
-        }
-
         this.deliveryLookupsLoaded = rOpts.length > 1 && stOpts.length > 1;
         this.deliveryLookupsLoading.set(false);
-
-        if (this.activeTab() === 'delivery-orders') {
-          this.loadDeliveryGovernorates();
-        }
       },
       error: err => {
         console.error('Error loading delivery lookups:', err);
@@ -946,16 +1040,7 @@ private downloadDeliveryOrderPdf(deliveryOrderId: number, governorateName?: stri
     });
   }
 
-  /**
-   * GET api/Planning/batches/for-approve?GovernorateId=&SubjectId=
-   *
-   * لما الباك يضيف الـ Pagination:
-   *   1) ابعتي { pageNumber: this.currentPage(), pageSize: this.pageSize(), isPaged: !this.showAll() }
-   *      كـ paging في getBatchesForApprove
-   *   2) خلي paginatedBatches = filteredBatches (من غير slice)
-   *   3) خدي totalCount من الـ response وحطيه في signal بدل filteredBatches().length
-   *   4) goToPage / onPageSizeChange ينادوا loadBatches()
-   */
+  /** GET api/Planning/batches/for-approve */
   loadBatches(): void {
     this.batchesLoading.set(true);
 
@@ -967,8 +1052,7 @@ private downloadDeliveryOrderPdf(deliveryOrderId: number, governorateName?: stri
 
     this.planningService.getBatchesForApprove(govId, subId).subscribe({
       next: res => {
-        const list = this.extractLookupArray(res);
-        this.batches.set(list);
+        this.batches.set(this.extractLookupArray(res));
         this.batchesLoading.set(false);
       },
       error: err => {
@@ -987,50 +1071,62 @@ private downloadDeliveryOrderPdf(deliveryOrderId: number, governorateName?: stri
 
   /**
    * GET api/Planning/delivery-orders/governorates
-   * Query params: Year, RoundId, EducationalStageId, OnlyEligible
+   * كل الفلاتر اختيارية (RoundId مش إجباري). دايمًا PageNumber + PageSize + IsPaged=true
    */
   loadDeliveryGovernorates(): void {
     const roundVal = this.deliveryRoundId();
-
-    // RoundId is mandatory for the backend! If not set, pick the first valid round or wait
-    let validRoundId: number | undefined;
-    if (roundVal && roundVal !== 'all' && Number(roundVal) > 0) {
-      validRoundId = Number(roundVal);
-    } else {
-      const firstRound = this.rounds().find(r => r.value !== 'all');
-      if (firstRound && Number(firstRound.value) > 0) {
-        validRoundId = Number(firstRound.value);
-        this.deliveryRoundId.set(validRoundId);
-      }
-    }
-
-    if (!validRoundId) {
-      // No round chosen yet, do not trigger 400 error
-      this.deliveryGovernorates.set([]);
-      this.resetDeliveryPage();
-      return;
-    }
-
-    this.deliveryLoading.set(true);
-
+    const stageVal = this.deliveryStageId();
+    const govVal = this.deliveryGovernorateId();
     const eligibleVal = this.deliveryEligibleFilter();
+    const term = this.deliverySearch().trim();
+    const sort = this.deliverySort();
 
     const query: DeliveryOrdersGovernoratesQuery = {
-      roundId: validRoundId,
-      onlyEligible: eligibleVal === 'true' ? true : eligibleVal === 'false' ? false : undefined
+      roundId: roundVal !== 'all' && Number(roundVal) > 0 ? Number(roundVal) : undefined,
+      year: this.deliveryYear() ?? undefined,
+      governorateId: govVal !== 'all' && Number(govVal) > 0 ? Number(govVal) : undefined,
+      educationalStageId: stageVal !== 'all' && Number(stageVal) > 0 ? Number(stageVal) : undefined,
+      onlyEligible: eligibleVal === 'true' ? true : eligibleVal === 'false' ? false : undefined,
+      searchTerm: term || undefined,
+      sortBy: sort !== 'none' ? 'GovernorateName' : undefined,
+      ascending: sort !== 'none' ? sort === 'true' : undefined,
+      pageNumber: this.deliveryCurrentPage(),
+      pageSize: this.deliveryPageSize(),
+      isPaged: true
     };
+
+    const requestId = ++this.deliveryRequestId;
+    this.deliveryLoading.set(true);
 
     this.planningService.getDeliveryOrdersGovernorates(query).subscribe({
       next: res => {
-        const list = this.extractLookupArray(res);
+        if (requestId !== this.deliveryRequestId) return;
+
+        const page = (res as any)?.data;
+        const list: GovernorateDeliveryReadiness[] = Array.isArray(page?.data)
+          ? page.data
+          : this.extractLookupArray(res);
+
         this.deliveryGovernorates.set(list);
-        this.resetDeliveryPage();
+        this.deliveryTotalCount.set(Number(page?.totalCount) || list.length);
+        this.deliveryTotalPagesFromApi.set(Number(page?.totalPages) || 1);
+        if (Number(page?.currentPage) > 0) {
+          this.deliveryCurrentPage.set(Number(page.currentPage));
+        }
         this.deliveryLoading.set(false);
+
+        if (list.length === 0 && this.deliveryTotalCount() > 0 && this.deliveryCurrentPage() > 1) {
+          this.deliveryCurrentPage.set(this.deliveryTotalPages());
+          this.loadDeliveryGovernorates();
+        }
       },
       error: err => {
+        if (requestId !== this.deliveryRequestId) return;
         console.error('Error loading delivery governorates:', err);
         this.deliveryLoading.set(false);
         this.deliveryGovernorates.set([]);
+        this.deliveryTotalCount.set(0);
+        this.deliveryTotalPagesFromApi.set(1);
         this.messageService.add({
           severity: 'error',
           summary: 'خطأ',
@@ -1041,7 +1137,6 @@ private downloadDeliveryOrderPdf(deliveryOrderId: number, governorateName?: stri
     });
   }
 
-  // Helper for batch tracker steps
   trackerSteps(batch: PlanningBatch): { label: string; state: StepState }[] {
     return [
       { label: batch.statusNameAr || 'بانتظار التخطيط', state: 'current' },
@@ -1049,7 +1144,6 @@ private downloadDeliveryOrderPdf(deliveryOrderId: number, governorateName?: stri
     ];
   }
 
-  // Calculate storage completion percentage for governorates
   getStoredProgress(gov: GovernorateDeliveryReadiness): number {
     if (!gov.totalBatches || gov.totalBatches <= 0) return 0;
     return Math.min(100, Math.round(((gov.storedBatches || 0) / gov.totalBatches) * 100));

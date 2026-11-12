@@ -1,0 +1,614 @@
+@use '../../reports.component.scss' as *;
+// ═══════════════════════════════════════════════════════════
+//  أضيفي الكود ده في آخر ملف department-reports.component.scss
+//  (الـ component بيستخدم ViewEncapsulation.None فالكلاسات عامة،
+//   وكلها بأسماء جديدة: pager-* و trk-* فمش هتتعارض مع القديم)
+// ═══════════════════════════════════════════════════════════
+
+$trk-primary: #6366f1;
+$trk-green:   #10b981;
+$trk-cyan:    #06b6d4;
+$trk-amber:   #f59e0b;
+$trk-red:     #ef4444;
+$trk-text:    #1f2937;
+$trk-muted:   #6b7280;
+$trk-border:  #e5e7eb;
+$trk-bg:      #f8fafc;
+
+// ───────────────────────── Pager ─────────────────────────
+.pager {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 18px;
+  padding: 10px 14px;
+  background: $trk-bg;
+  border: 1px solid $trk-border;
+  border-radius: 14px;
+
+  .pager-info {
+    font-size: 13px;
+    color: $trk-muted;
+    font-weight: 600;
+  }
+
+  .pager-nav {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+
+  .pager-btn {
+    min-width: 36px;
+    height: 36px;
+    padding: 0 10px;
+    border: 1px solid $trk-border;
+    border-radius: 10px;
+    background: #fff;
+    color: #374151;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: border-color .15s, color .15s, background .15s, transform .15s;
+
+    &:hover:not(:disabled):not(.active) {
+      border-color: $trk-primary;
+      color: $trk-primary;
+      transform: translateY(-1px);
+    }
+
+    &.active {
+      background: $trk-primary;
+      border-color: $trk-primary;
+      color: #fff;
+      box-shadow: 0 4px 10px rgba($trk-primary, .3);
+    }
+
+    &:disabled {
+      opacity: .45;
+      cursor: not-allowed;
+    }
+  }
+
+  .pager-dots {
+    color: $trk-muted;
+    padding: 0 4px;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  .pager-size {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: $trk-muted;
+
+    .pager-select {
+      height: 36px;
+      padding: 0 10px;
+      border: 1px solid $trk-border;
+      border-radius: 10px;
+      background: #fff;
+      color: #374151;
+      font-family: inherit;
+      font-weight: 700;
+      cursor: pointer;
+
+      &:focus {
+        outline: none;
+        border-color: $trk-primary;
+        box-shadow: 0 0 0 3px rgba($trk-primary, .15);
+      }
+    }
+  }
+}
+
+// ───────────────────────── Tracking card ─────────────────────────
+.trk-card {
+  margin-top: 28px;
+  padding: 26px;
+  background: #fff;
+  border: 1px solid $trk-border;
+  border-radius: 20px;
+  box-shadow: 0 6px 24px rgba(15, 23, 42, .05);
+
+  .trk-head {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 20px;
+
+    .trk-head-icon {
+      flex: 0 0 auto;
+      width: 48px;
+      height: 48px;
+      border-radius: 14px;
+      display: grid;
+      place-items: center;
+      font-size: 22px;
+      color: $trk-primary;
+      background: rgba($trk-primary, .1);
+    }
+
+    h3 {
+      margin: 0 0 4px;
+      font-size: 20px;
+      font-weight: 800;
+      color: $trk-text;
+    }
+
+    p {
+      margin: 0;
+      font-size: 13px;
+      line-height: 1.7;
+      color: $trk-muted;
+    }
+  }
+
+  .trk-label {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 13px;
+    font-weight: 700;
+    color: $trk-text;
+  }
+
+  // شريط البحث
+  .trk-search {
+    position: relative;
+    display: flex;
+    gap: 10px;
+
+    .trk-search-icon {
+      position: absolute;
+      inset-inline-start: 16px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #9ca3af;
+      pointer-events: none;
+    }
+
+    .trk-input {
+      flex: 1;
+      height: 48px;
+      padding-inline: 44px 16px;
+      border: 1.5px solid $trk-border;
+      border-radius: 12px;
+      background: $trk-bg;
+      font-family: 'Cairo', monospace, sans-serif;
+      font-size: 14px;
+      letter-spacing: .3px;
+      direction: ltr;
+      text-align: left;
+      transition: border-color .15s, box-shadow .15s, background .15s;
+
+      &:focus {
+        outline: none;
+        background: #fff;
+        border-color: $trk-primary;
+        box-shadow: 0 0 0 4px rgba($trk-primary, .12);
+      }
+    }
+
+    .trk-btn {
+      flex: 0 0 auto;
+      height: 48px;
+      padding: 0 24px;
+      border: none;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #6366f1, #4f46e5);
+      color: #fff;
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 700;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      box-shadow: 0 6px 14px rgba($trk-primary, .3);
+      transition: transform .15s, box-shadow .15s, opacity .15s;
+
+      &:hover:not(:disabled) {
+        transform: translateY(-1px);
+        box-shadow: 0 8px 18px rgba($trk-primary, .38);
+      }
+
+      &:disabled {
+        opacity: .55;
+        cursor: not-allowed;
+        box-shadow: none;
+      }
+    }
+  }
+
+  .trk-error {
+    margin-top: 14px;
+    padding: 12px 16px;
+    border-radius: 12px;
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    color: #b91c1c;
+    font-size: 14px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  // ───────── النتيجة ─────────
+  .trk-result {
+    margin-top: 22px;
+    padding: 22px;
+    border: 1px solid $trk-border;
+    border-radius: 18px;
+    background: linear-gradient(180deg, #fff 0%, $trk-bg 100%);
+    animation: trkFade .25s ease-out;
+  }
+
+  .trk-result-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 18px;
+
+    .trk-code-wrap {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .trk-kind {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 12px;
+      border-radius: 999px;
+      background: rgba($trk-primary, .1);
+      color: $trk-primary;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .trk-code {
+      font-size: 20px;
+      font-weight: 800;
+      color: $trk-text;
+      direction: ltr;
+      letter-spacing: .4px;
+    }
+
+    .trk-icon-btn {
+      width: 34px;
+      height: 34px;
+      border: 1px solid $trk-border;
+      border-radius: 10px;
+      background: #fff;
+      color: $trk-muted;
+      cursor: pointer;
+      display: grid;
+      place-items: center;
+      transition: color .15s, border-color .15s;
+
+      &:hover { color: $trk-primary; border-color: $trk-primary; }
+    }
+
+    .trk-copied {
+      color: $trk-green;
+      font-weight: 700;
+    }
+
+    .trk-clear {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 14px;
+      border: 1px solid $trk-border;
+      border-radius: 10px;
+      background: #fff;
+      color: $trk-muted;
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: color .15s, border-color .15s, background .15s;
+
+      &:hover { color: $trk-red; border-color: #fecaca; background: #fef2f2; }
+    }
+  }
+
+  // الحالة الحالية
+  .trk-status {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 12px;
+    margin-bottom: 14px;
+
+    .trk-status-item {
+      padding: 14px 16px;
+      border-radius: 14px;
+      background: rgba($trk-primary, .06);
+      border: 1px solid rgba($trk-primary, .15);
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+
+      span {
+        font-size: 12px;
+        color: $trk-muted;
+        font-weight: 600;
+      }
+
+      strong {
+        font-size: 16px;
+        color: $trk-text;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .trk-pill {
+        align-self: flex-start;
+        padding: 3px 12px;
+        border-radius: 999px;
+        background: $trk-green;
+        color: #fff;
+        font-size: 14px;
+      }
+    }
+  }
+
+  // بيانات الصندوق
+  .trk-info {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+    gap: 12px;
+    margin-bottom: 14px;
+
+    .trk-info-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 14px;
+      border: 1px solid $trk-border;
+      border-radius: 14px;
+      background: #fff;
+
+      > i {
+        flex: 0 0 auto;
+        width: 38px;
+        height: 38px;
+        border-radius: 10px;
+        display: grid;
+        place-items: center;
+        color: $trk-primary;
+        background: rgba($trk-primary, .1);
+      }
+
+      div {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        min-width: 0;
+      }
+
+      span { font-size: 12px; color: $trk-muted; }
+
+      strong {
+        font-size: 14px;
+        color: $trk-text;
+        overflow-wrap: anywhere;
+      }
+    }
+  }
+
+  // التنبيهات
+  .trk-alert {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+    padding: 11px 14px;
+    border-radius: 12px;
+    font-size: 13px;
+    font-weight: 600;
+
+    &--info   { background: #eff6ff; border: 1px solid #bfdbfe; color: #1d4ed8; }
+    &--danger { background: #fef2f2; border: 1px solid #fecaca; color: #b91c1c; }
+  }
+
+  .trk-section-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 20px 0 12px;
+    font-size: 15px;
+    font-weight: 800;
+    color: $trk-text;
+
+    i { color: $trk-primary; }
+  }
+
+  // ───────── مسار المراحل ─────────
+  .trk-timeline {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 12px;
+  }
+
+  .trk-step {
+    --c: #9ca3af;
+    position: relative;
+    padding: 14px;
+    border: 1px solid $trk-border;
+    border-top: 4px solid var(--c);
+    border-radius: 14px;
+    background: #fff;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    transition: transform .15s, box-shadow .15s;
+
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(15, 23, 42, .08);
+    }
+
+    &--done   { --c: #{$trk-green}; }
+    &--active { --c: #{$trk-cyan}; }
+    &--wait   { --c: #{$trk-amber}; }
+
+    .trk-step-head {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .trk-step-marker {
+      flex: 0 0 auto;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      color: var(--c);
+      background: color-mix(in srgb, var(--c) 14%, #fff);
+      font-size: 18px;
+    }
+
+    .trk-step-title {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+
+      small  { font-size: 11px; color: $trk-muted; }
+      strong { font-size: 15px; color: $trk-text; }
+    }
+
+    .trk-step-tag {
+      flex: 0 0 auto;
+      padding: 3px 10px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--c);
+      background: color-mix(in srgb, var(--c) 14%, #fff);
+    }
+
+    .trk-times {
+      margin: 0;
+      display: grid;
+      gap: 6px;
+
+      > div {
+        display: flex;
+        justify-content: space-between;
+        gap: 8px;
+        padding: 6px 10px;
+        border-radius: 8px;
+        background: $trk-bg;
+        font-size: 12px;
+      }
+
+      dt { color: $trk-muted; font-weight: 600; }
+      dd { margin: 0; color: $trk-text; text-align: end; }
+    }
+
+    .trk-people {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+
+      li {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 6px;
+        padding: 6px 10px;
+        border-radius: 8px;
+        background: color-mix(in srgb, var(--c) 8%, #fff);
+        font-size: 12px;
+        color: $trk-text;
+
+        i { color: var(--c); }
+        span { font-weight: 700; }
+        small { margin-inline-start: auto; color: $trk-muted; }
+      }
+    }
+  }
+}
+
+@keyframes trkFade {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+// موبايل
+@media (max-width: 640px) {
+  .trk-card {
+    padding: 16px;
+
+    .trk-search { flex-direction: column; }
+    .trk-search .trk-btn { justify-content: center; }
+  }
+
+  .pager { justify-content: center; }
+}
+
+// ───────────────────────── Required fields / validation ─────────────────────────
+.required-badge {
+  display: inline-block;
+  margin-inline-start: 6px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: rgba(#ef4444, .1);
+  color: #dc2626;
+  font-size: 11px;
+  font-weight: 700;
+  vertical-align: middle;
+}
+
+.filter-field {
+  .field-error {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-top: 6px;
+    color: #dc2626;
+    font-size: 12px;
+    font-weight: 600;
+  }
+
+  &.is-invalid {
+    .date-input,
+    .text-input,
+    .p-select {
+      border-color: #ef4444 !important;
+      box-shadow: 0 0 0 3px rgba(#ef4444, .12);
+    }
+
+    > label { color: #dc2626; }
+  }
+
+  .date-input.invalid {
+    border-color: #ef4444;
+    background: #fef2f2;
+  }
+}

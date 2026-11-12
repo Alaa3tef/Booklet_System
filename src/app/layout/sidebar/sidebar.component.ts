@@ -133,6 +133,14 @@ export class SidebarComponent implements OnInit {
       roles: ['warehouse' , 'superadmin']
     },
 
+    {
+      label: 'التقارير',
+      icon: 'pi pi-chart-bar',
+      route: '/workflow/reports',
+      roles: ['printing', 'quality', 'packing', 'warehouse', 'superadmin',
+              'projectmanagment', 'planning', 'prequality']
+    },
+
 {
       label: 'انواع اللجان',
       icon: 'pi pi-database',

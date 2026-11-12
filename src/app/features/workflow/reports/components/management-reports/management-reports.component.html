@@ -1,0 +1,100 @@
+<div class="reports-page" dir="rtl">
+
+  <!-- ══════════════════════════════════════════════════════════
+       تقرير متابعة الإنتاج (Image 4) - Super Admin / Management / Planning
+  ══════════════════════════════════════════════════════════ -->
+  <section class="wh-card">
+    <small class="wh-eyebrow">التخطيط والإدارة</small>
+    <h2 class="wh-title">تقرير متابعة الإنتاج</h2>
+    <p class="wh-sub">حالة الدفعات واللجان الآن، من قبل الطباعة حتى التسليم.</p>
+
+    <div class="wh-grid five">
+      <!-- العام -->
+      <div class="filter-field">
+        <label>العام</label>
+        <p-select [options]="prodYearOpts()"
+                  [ngModel]="prodYear()"
+                  (ngModelChange)="prodYear.set($event)"
+                  optionLabel="label" optionValue="value"
+                  placeholder="اختر العام" styleClass="w-full" />
+      </div>
+
+      <!-- المرحلة -->
+      <div class="filter-field">
+        <label>المرحلة</label>
+        <p-select [options]="prodStageOpts()"
+                  [ngModel]="prodStage()"
+                  (ngModelChange)="prodStage.set($event)"
+                  optionLabel="label" optionValue="value"
+                  placeholder="اختر المرحلة" styleClass="w-full" />
+      </div>
+
+      <!-- الدور -->
+      <div class="filter-field">
+        <label>الدور</label>
+        <p-select [options]="prodRoundOpts()"
+                  [ngModel]="prodRound()"
+                  (ngModelChange)="prodRound.set($event)"
+                  optionLabel="label" optionValue="value"
+                  placeholder="اختر الدور" styleClass="w-full" />
+      </div>
+
+      <!-- المحافظة -->
+      <div class="filter-field">
+        <label>المحافظة</label>
+        <p-select [options]="prodGovOpts()"
+                  [ngModel]="prodGov()"
+                  (ngModelChange)="prodGov.set($event)"
+                  optionLabel="label" optionValue="value"
+                  placeholder="اختر المحافظة" styleClass="w-full" />
+      </div>
+
+      <!-- المادة -->
+      <div class="filter-field">
+        <label>المادة</label>
+        <p-select [options]="prodSubjectOpts()"
+                  [ngModel]="prodSubject()"
+                  (ngModelChange)="prodSubject.set($event)"
+                  optionLabel="label" optionValue="value"
+                  placeholder="اختر المادة" styleClass="w-full" />
+      </div>
+    </div>
+
+    <!-- Summary Notice Bar (Image 4) -->
+    <div class="summary-line">
+      PDF: تفاصيل اللجان لكل دفعة في المحافظة والمادة المختارتين.
+    </div>
+
+    @if (prodError()) {
+      <div class="error-banner"><i class="pi pi-exclamation-triangle"></i> {{ prodError() }}</div>
+    }
+
+    @if (prodSuccess()) {
+      <div class="notice" style="background: #f0fdf4; color: #166534; border-color: #bbf7d0; margin-bottom: 16px;">
+        <i class="pi pi-check-circle"></i> {{ prodSuccess() }}
+      </div>
+    }
+
+    <!-- Action Buttons (Image 4) -->
+    <div class="wh-actions">
+      <button class="wh-btn pdf" (click)="exportProduction('pdf')" [disabled]="prodExporting()">
+        <i class="pi pi-file-pdf"></i> تنزيل PDF
+      </button>
+      <button class="wh-btn excel" (click)="exportProduction('excel')" [disabled]="prodExporting()">
+        <i class="pi pi-file-excel"></i> تنزيل Excel
+      </button>
+    </div>
+
+    <p class="wh-note">
+      التنزيل يشمل كل البيانات المطابقة للاختيار، يعرض PDF متابعة الإنتاج ويضم Excel الملخص والأقسام والدفعات وتفاصيل اللجان
+    </p>
+
+    @if (prodExporting()) {
+      <div class="loading-state" style="padding: 24px 0;">
+        <p-progressSpinner strokeWidth="4" />
+        <p>جارٍ تجهيز ملف التقرير وتنزيله…</p>
+      </div>
+    }
+  </section>
+
+</div>

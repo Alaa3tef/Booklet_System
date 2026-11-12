@@ -25,7 +25,6 @@ export interface PlanningBatch {
   nextStatusNameAr: string;
 }
 
-/** Query params المشتركة للـ Pagination في الباك */
 export interface PagedQuery {
   pageNumber?: number;
   pageSize?: number;
@@ -79,10 +78,23 @@ export interface BatchDetails {
   committees: BatchCommittee[];
 }
 
+export interface PagedResult<T> {
+  currentPage: number;
+  totalPages: number;
+  totalCount: number;
+  pageSize: number;
+  hasPreviousPage: boolean;
+  hasNextPage: boolean;
+  succeeded?: boolean;
+  messages?: string[];
+  data: T[];
+}
+
 /** GET api/Planning/delivery-orders/governorates */
 export interface GovernorateDeliveryReadiness {
   governorateId: number;
   governorateName: string | null;
+  deliveryOrderId?: number | null;
   canCreate: boolean;
   totalBatches: number;
   storedBatches: number;
@@ -115,7 +127,15 @@ export interface DeliveryOrdersGovernoratesQuery {
   year?: number;
   roundId?: number;
   educationalStageId?: number;
+  governorateId?: number;
   onlyEligible?: boolean;
+  searchTerm?: string;
+  sortBy?: string;
+  ascending?: boolean;
+  pageNumber?: number;
+  pageSize?: number;
+  pageSizeOrAll?: number;
+  isPaged?: boolean;
 }
 
 export interface CreateDeliveryOrderRequest {
@@ -132,20 +152,16 @@ export class PlanningService {
   private readonly appConfig = inject(AppConfigService);
   private readonly baseUrl = `${this.appConfig.baseURL}api/Planning`;
 
-  /** يضيف بارامترات الـ Pagination للـ HttpParams (لو اتبعتت بس) */
   private applyPaging(params: HttpParams, q?: PagedQuery): HttpParams {
     if (!q) return params;
     if (q.pageNumber != null && q.pageNumber > 0) params = params.set('PageNumber', q.pageNumber.toString());
     if (q.pageSize != null && q.pageSize > 0) params = params.set('PageSize', q.pageSize.toString());
+    if (q.isPaged != null) params = params.set('IsPaged', String(q.isPaged));
     if (q.searchTerm?.trim()) params = params.set('SearchTerm', q.searchTerm.trim());
     if (q.ascending != null) params = params.set('Ascending', String(q.ascending));
     return params;
   }
 
-  /**
-   * الباك لسه مضافش عليه Pagination للدفعات، فمن غير query بيشتغل زي الأول.
-   * بعد ما الباك يجهز ابعتي pageNumber / pageSize / isPaged.
-   */
   getBatchesForApprove(governorateId?: number, subjectId?: number, paging?: PagedQuery): Observable<ApiResponse<PlanningBatch[]>> {
     let params = new HttpParams();
     if (governorateId != null && governorateId > 0) {
@@ -170,8 +186,34 @@ export class PlanningService {
     );
   }
 
-  getDeliveryOrdersGovernorates(query: DeliveryOrdersGovernoratesQuery): Observable<ApiResponse<GovernorateDeliveryReadiness[]>> {
-    return this.http.get<ApiResponse<GovernorateDeliveryReadiness[]>>(`${this.baseUrl}/delivery-orders/governorates`);
+  /**
+   * GET api/Planning/delivery-orders/governorates
+   * دايمًا IsPaged=true (الباك بيرجع الصفحة الحالية بس)
+   */
+  getDeliveryOrdersGovernorates(query: DeliveryOrdersGovernoratesQuery): Observable<ApiResponse<PagedResult<GovernorateDeliveryReadiness>>> {
+    let params = new HttpParams();
+
+    if (query.year != null && query.year > 0) params = params.set('Year', query.year.toString());
+    if (query.roundId != null && query.roundId > 0) params = params.set('RoundId', query.roundId.toString());
+    if (query.educationalStageId != null && query.educationalStageId > 0) {
+      params = params.set('EducationalStageId', query.educationalStageId.toString());
+    }
+    if (query.governorateId != null && query.governorateId > 0) {
+      params = params.set('GovernorateId', query.governorateId.toString());
+    }
+    if (query.onlyEligible != null) params = params.set('OnlyEligible', String(query.onlyEligible));
+    if (query.searchTerm?.trim()) params = params.set('SearchTerm', query.searchTerm.trim());
+    if (query.sortBy?.trim()) params = params.set('SortBy', query.sortBy.trim());
+    if (query.ascending != null) params = params.set('Ascending', String(query.ascending));
+    if (query.pageNumber != null && query.pageNumber > 0) params = params.set('PageNumber', query.pageNumber.toString());
+    if (query.pageSize != null && query.pageSize > 0) params = params.set('PageSize', query.pageSize.toString());
+    if (query.pageSizeOrAll != null && query.pageSizeOrAll > 0) params = params.set('PageSizeOrAll', query.pageSizeOrAll.toString());
+    params = params.set('IsPaged', String(query.isPaged ?? true));
+
+    return this.http.get<ApiResponse<PagedResult<GovernorateDeliveryReadiness>>>(
+      `${this.baseUrl}/delivery-orders/governorates`,
+      { params }
+    );
   }
 
   getDeliveryOrderReadiness(governorateId: number): Observable<ApiResponse<DeliveryOrderReadiness>> {
@@ -183,13 +225,13 @@ export class PlanningService {
   }
 
   createDeliveryOrder(request: CreateDeliveryOrderRequest): Observable<ApiResponse<CreatedDeliveryOrder>> {
-  return this.http.post<ApiResponse<CreatedDeliveryOrder>>(`${this.baseUrl}/delivery-orders`, request);
-}
+    return this.http.post<ApiResponse<CreatedDeliveryOrder>>(`${this.baseUrl}/delivery-orders`, request);
+  }
 
-/** GET api/Planning/delivery-orders/{id}/locations-pdf  → ملف PDF */
-getDeliveryOrderLocationsPdf(deliveryOrderId: number): Observable<Blob> {
-  return this.http.get(`${this.baseUrl}/delivery-orders/${deliveryOrderId}/locations-pdf`, {
-    responseType: 'blob'
-  });
-}
+  /** GET api/Planning/delivery-orders/{id}/locations-pdf */
+  getDeliveryOrderLocationsPdf(deliveryOrderId: number): Observable<Blob> {
+    return this.http.get(`${this.baseUrl}/delivery-orders/${deliveryOrderId}/locations-pdf`, {
+      responseType: 'blob'
+    });
+  }
 }

@@ -1,0 +1,652 @@
+<div class="reports-page" dir="rtl">
+
+  <!-- ══════════════════════════════════════════════════════════
+       SECTION 1: تقرير مواقع الصناديق
+  ══════════════════════════════════════════════════════════ -->
+  <section class="wh-card">
+    <small class="wh-eyebrow">المخزن</small>
+    <h2 class="wh-title">تقرير مواقع الصناديق</h2>
+    <p class="wh-sub">
+      اعرف مكان الصناديق حسب الدفعة أو المحافظة أو المادة، ونزّل كل النتائج في PDF أو Excel.
+    </p>
+
+    <div class="wh-grid">
+      <!-- رقم الدفعة -->
+      <div class="filter-field">
+        <label>رقم الدفعة <span class="optional">اختياري</span></label>
+        <input type="number"
+               class="text-input"
+               placeholder="كل الدفعات"
+               [ngModel]="boxBatchId()"
+               (ngModelChange)="boxBatchId.set($event)" />
+      </div>
+
+      <!-- المحافظة -->
+      <div class="filter-field">
+        <label>المحافظة</label>
+        <p-select [options]="governorateOpts()"
+                  [ngModel]="boxGov()"
+                  (ngModelChange)="boxGov.set($event)"
+                  optionLabel="label" optionValue="value"
+                  placeholder="كل المحافظات" styleClass="w-full" />
+      </div>
+
+      <!-- المادة -->
+      <div class="filter-field">
+        <label>المادة</label>
+        <p-select [options]="subjectOpts()"
+                  [ngModel]="boxSubject()"
+                  (ngModelChange)="boxSubject.set($event)"
+                  optionLabel="label" optionValue="value"
+                  placeholder="كل المواد" styleClass="w-full" />
+      </div>
+
+      <!-- حالة الصندوق -->
+      <div class="filter-field">
+        <label>حالة الصندوق</label>
+        <p-select [options]="boxStatusOpts"
+                  [ngModel]="boxStatus()"
+                  (ngModelChange)="boxStatus.set($event)"
+                  optionLabel="label" optionValue="value"
+                  placeholder="كل الحالات"
+                  styleClass="w-full" />
+      </div>
+    </div>
+
+    <button class="wh-btn primary" (click)="loadBoxLocations()" [disabled]="boxLoading()">
+      <i class="pi pi-search"></i>
+      {{ boxLoading() ? 'جارٍ التحميل…' : 'عرض المواقع' }}
+    </button>
+
+    <p class="wh-note">
+      الموقع الحالي للصندوق بحالة مخزن فقط. الصندوق المسلَّم يظهر بآخر موقع تخزين، وليس كمخزون موجود الآن.
+      هذا التقرير يعرض الحالة الحالية، ولا يعتمد على فترة تقرير العمل أدناه.
+    </p>
+
+    @if (boxError()) {
+      <div class="error-banner"><i class="pi pi-exclamation-triangle"></i> {{ boxError() }}</div>
+    }
+
+    <!-- نتائج البحث عن مواقع الصناديق -->
+    @if (boxSearched()) {
+      <div class="summary-line">{{ boxFilterSummary() }}</div>
+
+      <div class="summary-grid">
+        <div class="summary-box">
+          <span>الصناديق المطابقة</span>
+          <strong>{{ boxSummary().matchingBoxes }}</strong>
+        </div>
+        <div class="summary-box">
+          <span>مسجلة بالمخزن</span>
+          <strong>{{ boxSummary().inStorage }}</strong>
+        </div>
+        <div class="summary-box">
+          <span>خرجت للتسليم</span>
+          <strong>{{ boxSummary().dispatched }}</strong>
+        </div>
+        <div class="summary-box">
+          <span>بلا موقع مسجل</span>
+          <strong>{{ boxSummary().noLocation }}</strong>
+        </div>
+      </div>
+
+      <div class="wh-actions">
+        <button class="wh-btn pdf" (click)="exportBoxLocations('pdf')" [disabled]="boxExporting()">
+          <i class="pi pi-file-pdf"></i> تنزيل PDF
+        </button>
+        <button class="wh-btn excel" (click)="exportBoxLocations('excel')" [disabled]="boxExporting()">
+          <i class="pi pi-file-excel"></i> تنزيل Excel
+        </button>
+      </div>
+
+      <p class="wh-note">
+        التنزيل يشمل كل الصفحات للفلتر المعروض أعلاه. عند تغيير الفلتر اضغط «عرض المواقع» لتحديث النتائج.
+      </p>
+
+      <div class="loc-table-wrap">
+        <table class="loc-table">
+          <thead>
+            <tr>
+              <th>الصندوق</th>
+              <th>الدفعة / اللجنة</th>
+              <th>المحافظة / المادة</th>
+              <th>المخزن</th>
+              <th>الموقع</th>
+              <th>الحالة / نوع الموقع</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (row of allBoxes(); track row.boxId) {
+              <tr>
+                <td class="mono font-bold">{{ row.trackingCode }}</td>
+                <td>
+                  <div><strong>دفعة {{ row.batchId }} - لجنة {{ row.committeeNumber }}</strong></div>
+                  <small>{{ row.governorate }}</small>
+                </td>
+                <td>
+                  <div>{{ row.governorate }}</div>
+                  <small>{{ row.subject }} - {{ row.year }} - {{ row.round }}</small>
+                </td>
+                <td>{{ row.warehouse }}</td>
+                <td>
+                  <div class="mono font-semibold">{{ row.locationCode }}</div>
+                  <small>{{ row.areaName }}</small>
+                  <small>{{ row.locationDetails }}</small>
+                </td>
+                <td>
+                  <span class="status-badge status-completed">{{ row.statusLabel }}</span>
+                  <small>{{ row.locationKind }}</small>
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="6" class="empty-cell">لا توجد صناديق مطابقة للبحث المحدد.</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pagination -->
+      @if (boxTotalCount() > 0) {
+        <div class="pager">
+          <span class="pager-info">{{ boxRangeText() }}</span>
+
+          @if (boxTotalPages() > 1) {
+            <div class="pager-nav">
+              <button class="pager-btn pager-arrow" aria-label="السابق"
+                      (click)="goToBoxPage(boxPage() - 1)"
+                      [disabled]="boxPage() === 1 || boxLoading()">
+                <i class="pi pi-chevron-right"></i>
+              </button>
+
+              @for (it of boxPagerItems(); track $index) {
+                @if (it < 0) {
+                  <span class="pager-dots">…</span>
+                } @else {
+                  <button class="pager-btn"
+                          [class.active]="it === boxPage()"
+                          [disabled]="boxLoading()"
+                          (click)="goToBoxPage(it)">{{ it }}</button>
+                }
+              }
+
+              <button class="pager-btn pager-arrow" aria-label="التالي"
+                      (click)="goToBoxPage(boxPage() + 1)"
+                      [disabled]="boxPage() === boxTotalPages() || boxLoading()">
+                <i class="pi pi-chevron-left"></i>
+              </button>
+            </div>
+          }
+        </div>
+      }
+    }
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════════
+       SECTION 2: تقرير العمل خلال فترة
+  ══════════════════════════════════════════════════════════ -->
+  <header class="section-head">
+    <div class="section-icon"><i class="pi pi-chart-bar"></i></div>
+    <div>
+      <small class="wh-eyebrow">متابعة أعمال الأقسام</small>
+      <h2 class="wh-title">تقرير العمل خلال فترة</h2>
+      <p class="wh-sub">الوارد والمنجز والمتبقي للقسم بالكامل، مع الموظف الذي أخذ كل عملية.</p>
+    </div>
+  </header>
+
+  <!-- FILTER CARD -->
+  <div class="filter-card">
+    <div class="filter-grid">
+
+      <!-- القسم (إجباري: التخزين / التسليم) -->
+      <div class="filter-field">
+        <label><i class="pi pi-building"></i> القسم <span class="optional">مطلوب</span></label>
+        <p-select [options]="departmentOpts()"
+                  [ngModel]="selectedDept()"
+                  (ngModelChange)="onDeptChange($event)"
+                  optionLabel="label" optionValue="value"
+                  placeholder="اختر القسم"
+                  styleClass="w-full" />
+      </div>
+
+      <!-- من تاريخ -->
+      <div class="filter-field">
+        <label><i class="pi pi-calendar"></i> من تاريخ</label>
+        <input type="date" class="date-input"
+               [ngModel]="fromDate()" (ngModelChange)="fromDate.set($event)" />
+      </div>
+
+      <!-- وقت البداية -->
+      <div class="filter-field">
+        <label><i class="pi pi-clock"></i> وقت البداية <span class="optional">اختياري</span></label>
+        <input type="time" class="date-input"
+               [ngModel]="fromTime()" (ngModelChange)="fromTime.set($event)" />
+      </div>
+
+      <!-- إلى تاريخ -->
+      <div class="filter-field">
+        <label><i class="pi pi-calendar"></i> إلى تاريخ</label>
+        <input type="date" class="date-input"
+               [ngModel]="toDate()" (ngModelChange)="toDate.set($event)" />
+      </div>
+
+      <!-- وقت النهاية -->
+      <div class="filter-field">
+        <label><i class="pi pi-clock"></i> وقت النهاية <span class="optional">اختياري</span></label>
+        <input type="time" class="date-input"
+               [ngModel]="toTime()" (ngModelChange)="toTime.set($event)" />
+      </div>
+
+      <!-- المحافظة -->
+      <div class="filter-field">
+        <label><i class="pi pi-map-marker"></i> المحافظة</label>
+        <p-select [options]="governorateOpts()"
+                  [ngModel]="selectedGov()"
+                  (ngModelChange)="selectedGov.set($event)"
+                  optionLabel="label" optionValue="value"
+                  placeholder="كل المحافظات" styleClass="w-full" />
+      </div>
+
+      <!-- المادة -->
+      <div class="filter-field">
+        <label><i class="pi pi-book"></i> المادة</label>
+        <p-select [options]="subjectOpts()"
+                  [ngModel]="selectedSubject()"
+                  (ngModelChange)="selectedSubject.set($event)"
+                  optionLabel="label" optionValue="value"
+                  placeholder="كل المواد" styleClass="w-full" />
+      </div>
+
+      <!-- رقم الدفعة -->
+      <div class="filter-field">
+        <label><i class="pi pi-hashtag"></i> رقم الدفعة <span class="optional">اختياري</span></label>
+        <input pInputText type="number" class="text-input" placeholder="كل الدفعات"
+               [ngModel]="batchIdInput()" (ngModelChange)="batchIdInput.set($event)" />
+      </div>
+    </div>
+
+    <div class="filter-hint">
+      الوقت اختياري وتوقيت القاهرة. ترك البداية فارغة يعني بداية اليوم وترك النهاية فارغة يعني نهاية اليوم المختار، أو حتى الآن إذا كان اليوم الحالي. يمكنك اختيار المحافظة أو المادة أو كليهما، الحد الأقصى سنة.
+    </div>
+
+    <div class="filter-actions">
+      <button class="search-btn" (click)="searchReport()" [disabled]="loading() || !selectedDept() || !fromDate() || !toDate()" >
+        <i class="pi pi-search"></i>
+        @if (!loading()) { <span>عرض التقرير</span> } @else { <span>جارٍ التحميل…</span> }
+      </button>
+    </div>
+  </div>
+
+  @if (error()) {
+    <div class="error-banner"><i class="pi pi-exclamation-triangle"></i> {{ error() }}</div>
+  }
+
+  <!-- EMPTY STATE -->
+  @if (!loading() && !report() && !hasSearched()) {
+    <div class="empty-state">
+      <i class="pi pi-calendar"></i>
+      @if (!selectedDept()) {
+        <h3>اختر القسم أولاً</h3>
+        <p>حدد القسم (المخزن — التخزين أو المخزن — التسليم) ثم اختر الفترة واضغط «عرض التقرير»</p>
+      } @else {
+        <h3>اختر فترة العمل</h3>
+        <p>راجع ما كان لدى القسم عند البداية وما استلمه وأنجزه وما تبقى عند النهاية</p>
+      }
+    </div>
+  }
+
+  @if (loading()) {
+    <div class="loading-state">
+      <p-progressSpinner strokeWidth="4" />
+      <p>جارٍ تحميل البيانات…</p>
+    </div>
+  }
+
+  <!-- RESULTS OF PERIOD WORK REPORT -->
+  <ng-container *ngIf="!loading() && report() as r">
+    <div class="report-meta">
+      <span class="dept-badge">{{ r.departmentName }}</span>
+      <span class="meta-range"><i class="pi pi-clock"></i> {{ reportDateRange }}</span>
+      <span class="meta-gen">صدر في: {{ formatDate(r.generatedAtUtc) }}</span>
+
+      <span class="meta-actions">
+        <button class="export-btn excel" (click)="exportAs('excel')" [disabled]="exporting()">
+          <i class="pi pi-file-excel"></i> تنزيل Excel
+        </button>
+        <button class="export-btn pdf" (click)="exportAs('pdf')" [disabled]="exporting()">
+          <i class="pi pi-file-pdf"></i> تنزيل PDF
+        </button>
+      </span>
+    </div>
+
+    <!-- @if (r.notices.length) {
+      <div class="notices">
+        @for (n of r.notices; track $index) {
+          <div class="notice"><i class="pi pi-info-circle"></i> {{ n }}</div>
+        }
+      </div>
+    } -->
+
+    <!-- KPI Cards -->
+    <div class="kpi-row">
+      <div class="kpi-card opening">
+        <div class="kpi-icon"><i class="pi pi-database"></i></div>
+        <div class="kpi-body">
+          <span class="kpi-label">رصيد أول الفترة</span>
+          <span class="kpi-value">{{ r.totals.opening.committees }}</span>
+          <span class="kpi-sub">لجنة</span>
+          <span class="kpi-sub2">{{ r.totals.opening.boxes }} صندوق</span>
+        </div>
+      </div>
+      <div class="kpi-card received">
+        <div class="kpi-icon"><i class="pi pi-arrow-down-left"></i></div>
+        <div class="kpi-body">
+          <span class="kpi-label">الوارد خلال الفترة</span>
+          <span class="kpi-value">{{ r.totals.received.committees }}</span>
+          <span class="kpi-sub">لجنة</span>
+          <span class="kpi-sub2">{{ r.totals.received.boxes }} صندوق</span>
+        </div>
+      </div>
+      <div class="kpi-card completed">
+        <div class="kpi-icon"><i class="pi pi-check-circle"></i></div>
+        <div class="kpi-body">
+          <span class="kpi-label">المنجز خلال الفترة</span>
+          <span class="kpi-value">{{ r.totals.completed.committees }}</span>
+          <span class="kpi-sub">لجنة</span>
+          <span class="kpi-sub2">{{ r.totals.completed.boxes }} صندوق</span>
+        </div>
+      </div>
+      <div class="kpi-card pending">
+        <div class="kpi-icon"><i class="pi pi-clock"></i></div>
+        <div class="kpi-body">
+          <span class="kpi-label">المتبقي عند النهاية</span>
+          <span class="kpi-value">{{ r.totals.pending.committees }}</span>
+          <span class="kpi-sub">لجنة</span>
+          <span class="kpi-sub2">{{ r.totals.pending.boxes }} صندوق</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- CHARTS -->
+    <div class="charts-row">
+      <div class="chart-card">
+        <h3><i class="pi pi-chart-bar"></i> ملخص الأداء</h3>
+        <div class="chart-container"><canvas #summaryChart></canvas></div>
+      </div>
+      @if (r.batches.data.length) {
+        <div class="chart-card">
+          <h3><i class="pi pi-chart-pie"></i> توزيع الدفعات (أعلى 10)</h3>
+          <div class="chart-container"><canvas #batchChart></canvas></div>
+        </div>
+      }
+    </div>
+
+    <!-- VIEW TABS -->
+    <div class="view-tabs">
+      @for (v of WORK_VIEWS; track v.key) {
+        <button class="view-tab"
+                [class.active]="currentView() === v.key"
+                (click)="onViewChange(v.key)">
+          {{ v.label }}
+        </button>
+      }
+    </div>
+
+    <!-- BATCHES -->
+    @if (r.batches.data.length) {
+      <div class="batches-section" id="batches-section">
+        @for (batch of r.batches.data; track batch.id) {
+          <div class="batch-card">
+            <div class="batch-header" (click)="toggleBatch(batch.id)">
+              <div class="batch-title-area">
+                <div class="batch-id-badge">#{{ batch.id }}</div>
+                <div>
+                  <span class="batch-title">{{ batch.governorate }} — {{ batch.subject }}</span>
+                  <span class="batch-sub">{{ batch.round }} · سنة {{ batch.year }}</span>
+                </div>
+              </div>
+              <div class="batch-stats">
+                <span class="stat-pill opening">{{ batch.totals.opening.committees }} رصيد</span>
+                <span class="stat-pill received">{{ batch.totals.received.committees }} وارد</span>
+                <span class="stat-pill completed">{{ batch.totals.completed.committees }} منجز</span>
+                <span class="stat-pill pending">{{ batch.totals.pending.committees }} متبقي</span>
+                <i class="pi"
+                   [class.pi-chevron-down]="!isBatchExpanded(batch.id)"
+                   [class.pi-chevron-up]="isBatchExpanded(batch.id)"></i>
+              </div>
+            </div>
+
+            @if (isBatchExpanded(batch.id)) {
+              <div class="committees-table">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>اللجنة</th>
+                      <th>المدرسة</th>
+                      <th>البوكليت</th>
+                      <th>الأظرف</th>
+                      <th>الحالة</th>
+                      <th>وقت الوارد</th>
+                      <th>وقت الإنجاز</th>
+                      <th>الصناديق</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (c of batch.committees; track c.id) {
+                      <tr>
+                        <td><strong>{{ c.number }}</strong></td>
+                        <td>{{ c.schoolName }}</td>
+                        <td>{{ c.requiredBooklets + c.bonusBooklets }}</td>
+                        <td>{{ c.envelopes }}</td>
+                        <td>
+                          <span class="status-badge" [ngClass]="workStatusClass(c.work)">
+                            {{ workStatusLabel(c.work) }}
+                          </span>
+                        </td>
+                        <td>{{ formatDate(c.work.receivedAt) }}</td>
+                        <td>{{ formatDate(c.work.completedAt) }}</td>
+                        <td><span class="boxes-count">{{ c.boxes.length ?? 0 }} صندوق</span></td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            }
+          </div>
+        }
+
+        <!-- Pagination (من بيانات الباك: currentPage / totalPages / totalCount / pageSize) -->
+        <div class="pager">
+          <span class="pager-info">{{ batchRangeText() }}</span>
+
+          @if (batchTotalPages() > 1) {
+            <div class="pager-nav">
+              <button class="pager-btn pager-arrow" aria-label="السابق"
+                      (click)="onPageChange(batchCurrentPage() - 1)"
+                      [disabled]="batchCurrentPage() === 1 || loading()">
+                <i class="pi pi-chevron-right"></i>
+              </button>
+
+              @for (it of batchPagerItems(); track $index) {
+                @if (it < 0) {
+                  <span class="pager-dots">…</span>
+                } @else {
+                  <button class="pager-btn"
+                          [class.active]="it === batchCurrentPage()"
+                          [disabled]="loading()"
+                          (click)="onPageChange(it)">{{ it }}</button>
+                }
+              }
+
+              <button class="pager-btn pager-arrow" aria-label="التالي"
+                      (click)="onPageChange(batchCurrentPage() + 1)"
+                      [disabled]="batchCurrentPage() === batchTotalPages() || loading()">
+                <i class="pi pi-chevron-left"></i>
+              </button>
+            </div>
+          }
+
+          <label class="pager-size">
+            <span>عدد الدفعات في الصفحة</span>
+            <select class="pager-select"
+                    [ngModel]="pageSize()"
+                    (ngModelChange)="onPageSizeChange($event)">
+              @for (n of pageSizeOpts; track n) {
+                <option [ngValue]="n">{{ n }}</option>
+              }
+            </select>
+          </label>
+        </div>
+      </div>
+    } @else {
+      <div class="empty-batches">
+        <i class="pi pi-inbox"></i>
+        <p>لا توجد دفعات في هذه الفترة</p>
+      </div>
+    }
+  </ng-container>
+
+  <!-- ══════════════════════════════════════════════════════════
+       SECTION 3: أين الصندوق أو الظرف الآن؟
+  ══════════════════════════════════════════════════════════ -->
+  <section class="trk-card">
+
+    <header class="trk-head">
+      <div class="trk-head-icon"><i class="pi pi-qrcode"></i></div>
+      <div>
+        <h3>أين الصندوق أو الظرف الآن؟</h3>
+        <p>ابحث بالكود الكامل لمعرفة المرحلة الحالية والموظفين الذين أخذوا الحركات. البحث مستقل عن فترة التقرير وفلاتره.</p>
+      </div>
+    </header>
+
+    <label class="trk-label" for="trackCodeInput">كود الصندوق أو الظرف</label>
+    <div class="trk-search">
+      <i class="pi pi-search trk-search-icon"></i>
+      <input id="trackCodeInput" pInputText class="trk-input"
+             placeholder="CRT-… / ENV-… / ENVR-…"
+             [ngModel]="trackCode()"
+             (ngModelChange)="trackCode.set($event)"
+             (keyup.enter)="trackBox()" />
+      <button class="trk-btn" (click)="trackBox()" [disabled]="trackLoading() || !trackCode().trim()">
+        @if (trackLoading()) {
+          <i class="pi pi-spin pi-spinner"></i> جارٍ البحث…
+        } @else {
+          <i class="pi pi-search"></i> بحث وتتبع
+        }
+      </button>
+    </div>
+
+    @if (trackError()) {
+      <div class="trk-error"><i class="pi pi-times-circle"></i> {{ trackError() }}</div>
+    }
+
+    @if (trackResult(); as t) {
+      <div class="trk-result">
+
+        <!-- الكود + النوع -->
+        <div class="trk-result-top">
+          <div class="trk-code-wrap">
+            <span class="trk-kind">
+              <i class="pi" [ngClass]="t.kind === 'Box' ? 'pi-box' : 'pi-envelope'"></i>
+              {{ trackKindLabel(t.kind) }}
+            </span>
+            <strong class="trk-code mono">{{ t.code }}</strong>
+            <button class="trk-icon-btn" type="button" (click)="copyTrackCode(t.code)"
+                    [attr.aria-label]="'نسخ الكود'">
+              <i class="pi" [ngClass]="trackCopied() ? 'pi-check' : 'pi-copy'"></i>
+            </button>
+            @if (trackCopied()) { <small class="trk-copied">تم النسخ</small> }
+          </div>
+
+          <button class="trk-clear" type="button" (click)="clearTrackResult()">
+            <i class="pi pi-times"></i> مسح
+          </button>
+        </div>
+
+        <!-- الحالة والمرحلة الحالية -->
+        <div class="trk-status">
+          <div class="trk-status-item">
+            <span>الحالة الحالية</span>
+            <strong class="trk-pill">{{ t.currentStatus }}</strong>
+          </div>
+          <div class="trk-status-item">
+            <span>المرحلة الحالية</span>
+            <strong>{{ t.currentStage }}</strong>
+          </div>
+          @if (t.warehouse || t.storageLocation) {
+            <div class="trk-status-item">
+              <span>الموقع {{ t.locationIsHistorical ? '(آخر موقع تخزين)' : '' }}</span>
+              <strong><i class="pi pi-map-marker"></i> {{ t.warehouse }} {{ t.storageLocation }}</strong>
+            </div>
+          }
+        </div>
+
+        <!-- بيانات الصندوق -->
+        <div class="trk-info">
+          <div class="trk-info-item">
+            <i class="pi pi-hashtag"></i>
+            <div><span>الدفعة</span><strong>#{{ t.batchId }}</strong></div>
+          </div>
+          <div class="trk-info-item">
+            <i class="pi pi-users"></i>
+            <div><span>اللجنة</span><strong>{{ t.committeeNumber }}</strong></div>
+          </div>
+          <div class="trk-info-item">
+            <i class="pi pi-building"></i>
+            <div><span>المدرسة</span><strong>{{ t.schoolName }}</strong></div>
+          </div>
+          <div class="trk-info-item">
+            <i class="pi pi-book"></i>
+            <div><span>المحافظة / المادة</span><strong>{{ t.governorate }} — {{ t.subject }}</strong></div>
+          </div>
+        </div>
+
+        @if (t.isBlocked) {
+          <div class="trk-alert trk-alert--danger"><i class="pi pi-ban"></i> هذا العنصر محجوز حالياً.</div>
+        }
+
+        @for (n of t.notices; track $index) {
+          <div class="trk-alert trk-alert--info"><i class="pi pi-info-circle"></i> {{ n }}</div>
+        }
+
+        <!-- مسار المراحل -->
+        <h4 class="trk-section-title"><i class="pi pi-sitemap"></i> مسار المراحل</h4>
+        <ol class="trk-timeline">
+          @for (s of t.stages; track s.department; let idx = $index) {
+            <li class="trk-step" [ngClass]="'trk-step--' + stepState(s.work)">
+              <div class="trk-step-head">
+                <span class="trk-step-marker">
+                  <i class="pi" [ngClass]="stageIcon(s.work)"></i>
+                </span>
+                <div class="trk-step-title">
+                  <small>المرحلة {{ idx + 1 }}</small>
+                  <strong>{{ s.name }}</strong>
+                </div>
+                <span class="trk-step-tag">{{ stepLabel(s.work) }}</span>
+              </div>
+
+              <dl class="trk-times">
+                <div><dt>وارد</dt><dd>{{ formatDate(s.work.receivedAt) }}</dd></div>
+                <div><dt>منجز</dt><dd>{{ formatDate(s.work.completedAt) }}</dd></div>
+              </dl>
+
+              @if (s.work.completedActions?.length) {
+                <ul class="trk-people">
+                  @for (a of s.work.completedActions; track $index) {
+                    <li>
+                      <i class="pi pi-user"></i>
+                      <span>{{ a.employeeName }}</span>
+                      <small>{{ formatDate(a.at) }}</small>
+                    </li>
+                  }
+                </ul>
+              }
+            </li>
+          }
+        </ol>
+      </div>
+    }
+  </section>
+
+</div>

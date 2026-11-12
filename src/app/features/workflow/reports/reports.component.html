@@ -1,0 +1,51 @@
+<div class="reports-shell" dir="rtl">
+
+  <!-- شريط التبديل التجريبي / الإداري للـ SuperAdmin فقط -->
+  @if (isSuperAdmin()) {
+    <div class="shell-role-switcher">
+      <div class="switcher-label">
+        <i class="pi pi-shield"></i>
+        <span>عرض التقارير حسب الدور (صلاحية SuperAdmin):</span>
+      </div>
+      <div class="switcher-buttons">
+        <button type="button"
+                class="switch-btn"
+                [class.active]="reportType() === 'management'"
+                (click)="setRoleOverride('management')">
+          <i class="pi pi-chart-line"></i> التخطيط والإدارة (متابعة الإنتاج)
+        </button>
+        <button type="button"
+                class="switch-btn"
+                [class.active]="reportType() === 'warehouse'"
+                (click)="setRoleOverride('warehouse')">
+          <i class="pi pi-warehouse"></i> المخزن (مواقع الصناديق)
+        </button>
+        <button type="button"
+                class="switch-btn"
+                [class.active]="reportType() === 'operations'"
+                (click)="setRoleOverride('printing')">
+          <i class="pi pi-sitemap"></i> الأقسام (طباعة / جودة / تغليف)
+        </button>
+        @if (manualRoleOverride()) {
+          <button type="button" class="switch-reset" (click)="setRoleOverride(null)">
+            <i class="pi pi-refresh"></i> استعادة الدور الفعلي
+          </button>
+        }
+      </div>
+    </div>
+  }
+
+  <!-- عرض التصميم المناسب بحسب دور المستخدم دون تعديل الصفحات -->
+  @switch (reportType()) {
+    @case ('warehouse') {
+      <app-warehouse-reports />
+    }
+    @case ('management') {
+      <app-management-reports />
+    }
+    @default {
+      <app-department-reports />
+    }
+  }
+
+</div>

@@ -1,0 +1,548 @@
+<div class="reports-page" dir="rtl">
+
+  <!-- ════════════════════════════════════════════════════
+       HEADER
+  ════════════════════════════════════════════════════ -->
+  <div class="page-header">
+    <div class="header-left">
+      <div class="header-icon">
+        <i class="pi pi-chart-bar"></i>
+      </div>
+      <div>
+        <h1>تقارير أعمال الأقسام</h1>
+        <p>تتبّع أداء كل قسم خلال الفترات الزمنية المختلفة</p>
+      </div>
+    </div>
+    <div class="header-right" *ngIf="report()">
+      <button class="export-btn excel"
+              (click)="exportAs('excel')"
+              [disabled]="exporting()">
+        <i class="pi pi-file-excel"></i> تنزيل Excel
+      </button>
+      <button class="export-btn pdf"
+              (click)="exportAs('pdf')"
+              [disabled]="exporting()">
+        <i class="pi pi-file-pdf"></i> تنزيل PDF
+      </button>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════
+       FILTER CARD
+  ════════════════════════════════════════════════════ -->
+  <div class="filter-card">
+    <div class="filter-grid">
+
+      <!-- القسم (مطلوب) -->
+      <div class="filter-field" [class.is-invalid]="deptInvalid()">
+        <label>
+          <i class="pi pi-building"></i> القسم
+          <!-- <span class="required-badge">مطلوب</span> -->
+        </label>
+        <p-select
+          [options]="departmentOpts()"
+          [ngModel]="selectedDept()"
+          (ngModelChange)="onDeptChange($event)"
+          optionLabel="label"
+          optionValue="value"
+          placeholder="اختر القسم"
+          styleClass="w-full"
+        />
+        <small class="field-error" *ngIf="deptInvalid()">اختر القسم أولاً</small>
+      </div>
+
+      <!-- المحافظة -->
+      <div class="filter-field">
+        <label><i class="pi pi-map-marker"></i> المحافظة</label>
+        <p-select
+          [options]="governorateOpts()"
+          [ngModel]="selectedGov()"
+          (ngModelChange)="selectedGov.set($event)"
+          optionLabel="label"
+          optionValue="value"
+          placeholder="كل المحافظات"
+          styleClass="w-full"
+        />
+      </div>
+
+      <!-- المادة -->
+      <div class="filter-field">
+        <label><i class="pi pi-book"></i> المادة</label>
+        <p-select
+          [options]="subjectOpts()"
+          [ngModel]="selectedSubject()"
+          (ngModelChange)="selectedSubject.set($event)"
+          optionLabel="label"
+          optionValue="value"
+          placeholder="كل المواد"
+          styleClass="w-full"
+        />
+      </div>
+
+      <!-- من تاريخ (مطلوب) -->
+      <div class="filter-field" [class.is-invalid]="fromInvalid()">
+        <label>
+          <i class="pi pi-calendar"></i> من تاريخ
+          <!-- <span class="required-badge">مطلوب</span> -->
+        </label>
+        <input type="date"
+               class="date-input"
+               [class.invalid]="fromInvalid()"
+               [ngModel]="fromDate()"
+               (ngModelChange)="onFromDateChange($event)" />
+        <small class="field-error" *ngIf="fromInvalid() && !fromDate()">تاريخ البداية مطلوب</small>
+      </div>
+
+      <!-- إلى تاريخ (مطلوب) -->
+      <div class="filter-field" [class.is-invalid]="toInvalid()">
+        <label>
+          <i class="pi pi-calendar"></i> إلى تاريخ
+          <!-- <span class="required-badge">مطلوب</span> -->
+        </label>
+        <input type="date"
+               class="date-input"
+               [class.invalid]="toInvalid()"
+               [ngModel]="toDate()"
+               (ngModelChange)="onToDateChange($event)" />
+        <small class="field-error" *ngIf="toInvalid() && !toDate()">تاريخ النهاية مطلوب</small>
+      </div>
+
+      <!-- من وقت -->
+      <div class="filter-field">
+        <label><i class="pi pi-clock"></i> من وقت <span class="optional">اختياري</span></label>
+        <input type="time"
+               class="date-input"
+               [ngModel]="fromTime()"
+               (ngModelChange)="fromTime.set($event)" />
+      </div>
+
+      <!-- إلى وقت -->
+      <div class="filter-field">
+        <label><i class="pi pi-clock"></i> إلى وقت <span class="optional">اختياري</span></label>
+        <input type="time"
+               class="date-input"
+               [ngModel]="toTime()"
+               (ngModelChange)="toTime.set($event)" />
+      </div>
+
+      <!-- رقم الدفعة -->
+      <div class="filter-field">
+        <label><i class="pi pi-hashtag"></i> رقم الدفعة <span class="optional">اختياري</span></label>
+        <input pInputText
+               type="number"
+               class="text-input"
+               placeholder="اختياري"
+               [ngModel]="batchIdInput()"
+               (ngModelChange)="batchIdInput.set($event)" />
+      </div>
+
+    </div>
+
+    <div class="filter-hint">
+      القسم وتاريخ البداية وتاريخ النهاية مطلوبون. الوقت اختياري وبتوقيت القاهرة؛ إذا تُرك فارغاً يُعدّ بداية اليوم عند البداية وأداء اليوم الحالي عند النهاية.
+      يمكنك تخصيص المحافظة أو المادة أو كليهما، والحد الأقصى للفترة سنة.
+    </div>
+
+    <div class="filter-actions">
+      <button class="search-btn" (click)="searchReport()" [disabled]="loading() || !selectedDept() || !fromDate() || !toDate()" >
+        <i class="pi pi-search"></i>
+        <span *ngIf="!loading()">عرض التقرير</span>
+        <span *ngIf="loading()">جارٍ التحميل…</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════
+       ERROR
+  ════════════════════════════════════════════════════ -->
+  <div class="error-banner" *ngIf="error()">
+    <i class="pi pi-exclamation-triangle"></i> {{ error() }}
+  </div>
+
+  <!-- ════════════════════════════════════════════════════
+       EMPTY STATE
+  ════════════════════════════════════════════════════ -->
+  <div class="empty-state" *ngIf="!loading() && !report() && !hasSearched()">
+    <i class="pi pi-calendar"></i>
+    <h3>اختر فترة العمل</h3>
+    <p>اختر القسم وحدد تاريخ البداية والنهاية ثم اضغط "عرض التقرير"</p>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════
+       LOADING
+  ════════════════════════════════════════════════════ -->
+  <div class="loading-state" *ngIf="loading()">
+    <p-progressSpinner strokeWidth="4" />
+    <p>جارٍ تحميل البيانات…</p>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════
+       REPORT CONTENT
+  ════════════════════════════════════════════════════ -->
+  <ng-container *ngIf="!loading() && report() as r">
+
+    <!-- Report meta -->
+    <div class="report-meta">
+      <span class="dept-badge">{{ r.departmentName }}</span>
+      <span class="meta-range">
+        <i class="pi pi-clock"></i>
+        {{ reportDateRange }}
+      </span>
+      <span class="meta-gen">
+        صدر في: {{ formatDate(r.generatedAtUtc) }}
+      </span>
+    </div>
+
+    <!-- Notices -->
+    <!-- <div class="notices" *ngIf="r.notices?.length">
+      <div class="notice" *ngFor="let n of r.notices">
+        <i class="pi pi-info-circle"></i> {{ n }}
+      </div>
+    </div> -->
+
+    <!-- Incomplete warning -->
+    <!-- <div class="incomplete-warning" *ngIf="r.incompleteHistoryCount > 0">
+      <i class="pi pi-exclamation-triangle"></i>
+      يوجد <strong>{{ r.incompleteHistoryCount }}</strong> لجنة أو صندوق بتاريخ حركة غير مكتمل وقد لا تُمثل الأرقام العمل الفعلي.
+    </div> -->
+
+    <!-- ─── KPI CARDS ─────────────────────────────────────────────── -->
+    <div class="kpi-row">
+      <div class="kpi-card opening">
+        <div class="kpi-icon"><i class="pi pi-database"></i></div>
+        <div class="kpi-body">
+          <span class="kpi-label">رصيد أول الفترة</span>
+          <span class="kpi-value">{{ r.totals.opening.committees }}</span>
+          <span class="kpi-sub">لجنة</span>
+          <span class="kpi-sub2" *ngIf="deptIncludesBoxes()">
+            {{ r.totals.opening.boxes }} صندوق
+          </span>
+        </div>
+      </div>
+      <div class="kpi-card received">
+        <div class="kpi-icon"><i class="pi pi-arrow-down-left"></i></div>
+        <div class="kpi-body">
+          <span class="kpi-label">الوارد خلال الفترة</span>
+          <span class="kpi-value">{{ r.totals.received.committees }}</span>
+          <span class="kpi-sub">لجنة</span>
+          <span class="kpi-sub2" *ngIf="deptIncludesBoxes()">
+            {{ r.totals.received.boxes }} صندوق
+          </span>
+        </div>
+      </div>
+      <div class="kpi-card completed">
+        <div class="kpi-icon"><i class="pi pi-check-circle"></i></div>
+        <div class="kpi-body">
+          <span class="kpi-label">المنجز خلال الفترة</span>
+          <span class="kpi-value">{{ r.totals.completed.committees }}</span>
+          <span class="kpi-sub">لجنة</span>
+          <span class="kpi-sub2" *ngIf="deptIncludesBoxes()">
+            {{ r.totals.completed.boxes }} صندوق
+          </span>
+        </div>
+      </div>
+      <div class="kpi-card pending">
+        <div class="kpi-icon"><i class="pi pi-clock"></i></div>
+        <div class="kpi-body">
+          <span class="kpi-label">المتبقي عند النهاية</span>
+          <span class="kpi-value">{{ r.totals.pending.committees }}</span>
+          <span class="kpi-sub">لجنة</span>
+          <span class="kpi-sub2" *ngIf="deptIncludesBoxes()">
+            {{ r.totals.pending.boxes }} صندوق
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Completed batches tag -->
+    <div class="completed-batches-tag" *ngIf="r.totals.fullyCompletedBatches > 0">
+      <i class="pi pi-check-circle"></i>
+      <strong>{{ r.totals.fullyCompletedBatches }}</strong> دفعة اكتملت كل لجانها خلال هذه الفترة
+    </div>
+
+    <!-- ─── CHARTS ────────────────────────────────────────────────── -->
+    <div class="charts-row">
+      <div class="chart-card">
+        <h3><i class="pi pi-chart-bar"></i> ملخص الأداء</h3>
+        <div class="chart-container">
+          <canvas #summaryChart></canvas>
+        </div>
+      </div>
+      <div class="chart-card" *ngIf="r.batches?.data?.length">
+        <h3><i class="pi pi-chart-pie"></i> توزيع الدفعات (أعلى 5)</h3>
+        <div class="chart-container">
+          <canvas #batchChart></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── VIEW FILTER TABS ──────────────────────────────────────── -->
+    <div class="view-tabs">
+      <button *ngFor="let v of WORK_VIEWS"
+              class="view-tab"
+              [class.active]="currentView() === v.key"
+              (click)="onViewChange(v.key)">
+        {{ v.label }}
+      </button>
+    </div>
+
+    <!-- ─── BATCHES ───────────────────────────────────────────────── -->
+    <div class="batches-section" id="batches-section" *ngIf="r.batches?.data?.length; else noBatches">
+
+      <div class="batch-card" *ngFor="let batch of r.batches.data">
+
+        <!-- Batch header -->
+        <div class="batch-header" (click)="toggleBatch(batch.id)">
+          <div class="batch-title-area">
+            <div class="batch-id-badge">#{{ batch.id }}</div>
+            <div>
+              <span class="batch-title">{{ batch.governorate }} — {{ batch.subject }}</span>
+              <span class="batch-sub">{{ batch.round }} · سنة {{ batch.year }}</span>
+            </div>
+          </div>
+          <div class="batch-stats">
+            <span class="stat-pill opening">{{ batch.totals.opening.committees }} رصيد</span>
+            <span class="stat-pill received">{{ batch.totals.received.committees }} وارد</span>
+            <span class="stat-pill completed">{{ batch.totals.completed.committees }} منجز</span>
+            <span class="stat-pill pending">{{ batch.totals.pending.committees }} متبقي</span>
+            <i class="pi"
+               [class.pi-chevron-down]="!isBatchExpanded(batch.id)"
+               [class.pi-chevron-up]="isBatchExpanded(batch.id)"></i>
+          </div>
+        </div>
+
+        <!-- Committees table -->
+        <div class="committees-table" *ngIf="isBatchExpanded(batch.id)">
+          <table>
+            <thead>
+              <tr>
+                <th>اللجنة</th>
+                <th>المدرسة</th>
+                <th>البوكليت</th>
+                <th>الأظرف</th>
+                <th>الحالة</th>
+                <th>وقت الوارد</th>
+                <th>وقت الإنجاز</th>
+                <th *ngIf="deptIncludesBoxes()">الصناديق</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let c of batch.committees">
+                <td><strong>{{ c.number }}</strong></td>
+                <td>{{ c.schoolName }}</td>
+                <td>{{ c.requiredBooklets + c.bonusBooklets }}</td>
+                <td>{{ c.envelopes }}</td>
+                <td>
+                  <span class="status-badge" [class]="workStatusClass(c.work)">
+                    {{ workStatusLabel(c.work) }}
+                  </span>
+                </td>
+                <td>{{ formatDate(c.work.receivedAt) }}</td>
+                <td>{{ formatDate(c.work.completedAt) }}</td>
+                <td *ngIf="deptIncludesBoxes()">
+                  <span class="boxes-count">{{ c.boxes.length ?? 0 }} صندوق</span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+      </div>
+
+      <!-- Pagination (من بيانات الباك: currentPage / totalPages / totalCount / pageSize) -->
+      <div class="pager">
+        <span class="pager-info">{{ batchRangeText() }}</span>
+
+        @if (batchTotalPages() > 1) {
+          <div class="pager-nav">
+            <button class="pager-btn pager-arrow" aria-label="السابق"
+                    (click)="onPageChange(batchCurrentPage() - 1)"
+                    [disabled]="batchCurrentPage() === 1 || loading()">
+              <i class="pi pi-chevron-right"></i>
+            </button>
+
+            @for (it of batchPagerItems(); track $index) {
+              @if (it < 0) {
+                <span class="pager-dots">…</span>
+              } @else {
+                <button class="pager-btn"
+                        [class.active]="it === batchCurrentPage()"
+                        [disabled]="loading()"
+                        (click)="onPageChange(it)">{{ it }}</button>
+              }
+            }
+
+            <button class="pager-btn pager-arrow" aria-label="التالي"
+                    (click)="onPageChange(batchCurrentPage() + 1)"
+                    [disabled]="batchCurrentPage() === batchTotalPages() || loading()">
+              <i class="pi pi-chevron-left"></i>
+            </button>
+          </div>
+        }
+
+        <label class="pager-size">
+          <span>عدد الدفعات في الصفحة</span>
+          <select class="pager-select"
+                  [ngModel]="pageSize()"
+                  (ngModelChange)="onPageSizeChange($event)">
+            @for (n of pageSizeOpts; track n) {
+              <option [ngValue]="n">{{ n }}</option>
+            }
+          </select>
+        </label>
+      </div>
+
+    </div>
+
+    <ng-template #noBatches>
+      <div class="empty-batches">
+        <i class="pi pi-inbox"></i>
+        <p>لا توجد دفعات في هذه الفترة</p>
+      </div>
+    </ng-template>
+
+  </ng-container>
+
+  <!-- ════════════════════════════════════════════════════
+       TRACKING SECTION
+  ════════════════════════════════════════════════════ -->
+  <section class="trk-card">
+
+    <header class="trk-head">
+      <div class="trk-head-icon"><i class="pi pi-qrcode"></i></div>
+      <div>
+        <h3>أين الصندوق أو الظرف الآن؟</h3>
+        <p>ابحث بالكود الكامل لمعرفة المرحلة الحالية والموظفين الذين أخذوا الحركات. البحث مستقل عن فترة التقرير وفلاتره.</p>
+      </div>
+    </header>
+
+    <label class="trk-label" for="trackCodeInput">كود الصندوق أو الظرف</label>
+    <div class="trk-search">
+      <i class="pi pi-search trk-search-icon"></i>
+      <input id="trackCodeInput" pInputText class="trk-input"
+             placeholder="CRT-… / ENV-… / ENVR-…"
+             [ngModel]="trackCode()"
+             (ngModelChange)="trackCode.set($event)"
+             (keyup.enter)="trackBox()" />
+      <button class="trk-btn" (click)="trackBox()" [disabled]="trackLoading() || !trackCode().trim()">
+        @if (trackLoading()) {
+          <i class="pi pi-spin pi-spinner"></i> جارٍ البحث…
+        } @else {
+          <i class="pi pi-search"></i> بحث وتتبع
+        }
+      </button>
+    </div>
+
+    @if (trackError()) {
+      <div class="trk-error"><i class="pi pi-times-circle"></i> {{ trackError() }}</div>
+    }
+
+    @if (trackResult(); as t) {
+      <div class="trk-result">
+
+        <!-- الكود + النوع -->
+        <div class="trk-result-top">
+          <div class="trk-code-wrap">
+            <span class="trk-kind">
+              <i class="pi" [ngClass]="t.kind === 'Box' ? 'pi-box' : 'pi-envelope'"></i>
+              {{ trackKindLabel(t.kind) }}
+            </span>
+            <strong class="trk-code mono">{{ t.code }}</strong>
+            <button class="trk-icon-btn" type="button" (click)="copyTrackCode(t.code)"
+                    [attr.aria-label]="'نسخ الكود'">
+              <i class="pi" [ngClass]="trackCopied() ? 'pi-check' : 'pi-copy'"></i>
+            </button>
+            @if (trackCopied()) { <small class="trk-copied">تم النسخ</small> }
+          </div>
+
+          <button class="trk-clear" type="button" (click)="clearTrackResult()">
+            <i class="pi pi-times"></i> مسح
+          </button>
+        </div>
+
+        <!-- الحالة والمرحلة الحالية -->
+        <div class="trk-status">
+          <div class="trk-status-item">
+            <span>الحالة الحالية</span>
+            <strong class="trk-pill">{{ t.currentStatus }}</strong>
+          </div>
+          <div class="trk-status-item">
+            <span>المرحلة الحالية</span>
+            <strong>{{ t.currentStage }}</strong>
+          </div>
+          @if (t.warehouse || t.storageLocation) {
+            <div class="trk-status-item">
+              <span>الموقع {{ t.locationIsHistorical ? '(آخر موقع تخزين)' : '' }}</span>
+              <strong><i class="pi pi-map-marker"></i> {{ t.warehouse }} {{ t.storageLocation }}</strong>
+            </div>
+          }
+        </div>
+
+        <!-- بيانات الصندوق -->
+        <div class="trk-info">
+          <div class="trk-info-item">
+            <i class="pi pi-hashtag"></i>
+            <div><span>الدفعة</span><strong>#{{ t.batchId }}</strong></div>
+          </div>
+          <div class="trk-info-item">
+            <i class="pi pi-users"></i>
+            <div><span>اللجنة</span><strong>{{ t.committeeNumber }}</strong></div>
+          </div>
+          <div class="trk-info-item">
+            <i class="pi pi-building"></i>
+            <div><span>المدرسة</span><strong>{{ t.schoolName }}</strong></div>
+          </div>
+          <div class="trk-info-item">
+            <i class="pi pi-book"></i>
+            <div><span>المحافظة / المادة</span><strong>{{ t.governorate }} — {{ t.subject }}</strong></div>
+          </div>
+        </div>
+
+        @if (t.isBlocked) {
+          <div class="trk-alert trk-alert--danger"><i class="pi pi-ban"></i> هذا العنصر محجوز حالياً.</div>
+        }
+
+        @for (n of t.notices; track $index) {
+          <div class="trk-alert trk-alert--info"><i class="pi pi-info-circle"></i> {{ n }}</div>
+        }
+
+        <!-- مسار المراحل -->
+        <h4 class="trk-section-title"><i class="pi pi-sitemap"></i> مسار المراحل</h4>
+        <ol class="trk-timeline">
+          @for (s of t.stages; track s.department; let idx = $index) {
+            <li class="trk-step" [ngClass]="'trk-step--' + stepState(s.work)">
+              <div class="trk-step-head">
+                <span class="trk-step-marker">
+                  <i class="pi" [ngClass]="stageIcon(s.work)"></i>
+                </span>
+                <div class="trk-step-title">
+                  <small>المرحلة {{ idx + 1 }}</small>
+                  <strong>{{ s.name }}</strong>
+                </div>
+                <span class="trk-step-tag">{{ stepLabel(s.work) }}</span>
+              </div>
+
+              <dl class="trk-times">
+                <div><dt>وارد</dt><dd>{{ formatDate(s.work.receivedAt) }}</dd></div>
+                <div><dt>منجز</dt><dd>{{ formatDate(s.work.completedAt) }}</dd></div>
+              </dl>
+
+              @if (s.work.completedActions?.length) {
+                <ul class="trk-people">
+                  @for (a of s.work.completedActions; track $index) {
+                    <li>
+                      <i class="pi pi-user"></i>
+                      <span>{{ a.employeeName }}</span>
+                      <small>{{ formatDate(a.at) }}</small>
+                    </li>
+                  }
+                </ul>
+              }
+            </li>
+          }
+        </ol>
+      </div>
+    }
+  </section>
+
+</div>
