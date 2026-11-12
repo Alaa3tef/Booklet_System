@@ -92,7 +92,55 @@
 
     <!-- ============================ الأرشيف ============================ -->
     @if (tab() === 'archive') {
+       <!-- فلاتر الدفعات -->
+    @if (arLevel() === 'batch') {
+  <section class="pk-box pk-filters" data-no-scan>
+    <div class="pk-field">
+      <label>المحافظة</label>
+      <p-select
+        [options]="arGovernorateOptions()"
+        optionLabel="label"
+        optionValue="value"
+        placeholder="كل المحافظات"
+        [ngModel]="arGovId()"
+        (ngModelChange)="onArGovChange($event)"
+        [disabled]="arLoading()"
+        [showClear]="true"
+        [filter]="true"
+        filterPlaceholder="ابحث عن محافظة..."
+        emptyMessage="لا توجد محافظات"
+        styleClass="pk-input"
+        panelStyleClass="pk-panel" />
+    </div>
 
+    <div class="pk-field">
+      <label>المادة</label>
+      <p-select
+        [options]="arSubjectOptions()"
+        optionLabel="label"
+        optionValue="value"
+        placeholder="كل المواد"
+        [ngModel]="arSubjectId()"
+        (ngModelChange)="onArSubjectChange($event)"
+        [disabled]="arLoading()"
+        [showClear]="true"
+        [filter]="true"
+        filterPlaceholder="ابحث عن مادة..."
+        emptyMessage="لا توجد مواد"
+        styleClass="pk-input"
+        panelStyleClass="pk-panel" />
+    </div>
+
+    @if (arHasFilter()) {
+      <div class="pk-actions">
+        <button pButton type="button" class="pk-btn pk-btn-icon"
+          pTooltip="مسح الفلاتر" tooltipPosition="top" (click)="clearArFilters()">
+          <i class="pi pi-filter-slash"></i>
+        </button>
+      </div>
+    }
+  </section>
+}
       @if (arError(); as err) {
         <div class="state state--err"><strong>تعذر تحميل البيانات</strong><span>{{ err }}</span><button type="button" (click)="refresh()">إعادة المحاولة</button></div>
       } @else if (arLoading() && !arItems().length && arLevel() === 'batch') {
@@ -117,7 +165,7 @@
               </div>
               <button type="button" class="pcard-btn" (click)="pickArBatch(b)"><i class="pi pi-list"></i> عرض اللجان</button>
             </article>
-          } @empty { <p class="empty">لا توجد دفعات.</p> }
+          } @empty { <p class="empty">{{ arHasFilter() ? 'لا توجد دفعات مطابقة للفلتر.' : 'لا توجد دفعات.' }}</p> }
         </div>
         <ng-container *ngTemplateOutlet="pager" />
 
